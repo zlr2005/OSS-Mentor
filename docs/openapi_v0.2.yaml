@@ -1,0 +1,94 @@
+openapi: 3.0.3
+info:
+  title: OSS-Mentor Local Recommendation API
+  version: 0.2.0
+  description: Local MVP API for stored templates and transient custom profiles.
+servers:
+  - url: http://127.0.0.1:8765
+paths:
+  /health:
+    get:
+      summary: Check local API availability
+      responses:
+        "200": {description: API is available}
+  /api/v1/profiles:
+    get:
+      summary: List public-safe local profile templates
+      responses:
+        "200": {description: Profile summaries without detailed skills or identity fields}
+  /api/v1/recommendations:
+    get:
+      summary: Get explainable recommendations for a stored profile
+      parameters:
+        - name: profile_key
+          in: query
+          required: true
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200": {description: Ranked recommendations and skill-gap explanations}
+        "400": {description: Invalid query parameter}
+        "404": {description: Profile not found}
+  /api/v1/recommendations/custom:
+    post:
+      summary: Get recommendations from a transient custom profile
+      description: The supplied profile is validated and used only for this request; it is not persisted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profile]
+              properties:
+                limit: {type: integer, minimum: 1, maximum: 100, default: 10}
+                profile:
+                  $ref: "#/components/schemas/CustomProfile"
+      responses:
+        "200":
+          description: Ranked recommendations with profile_persisted set to false
+        "400": {description: Invalid profile or limit}
+        "413": {description: Request body exceeds 32 KiB}
+        "415": {description: Content-Type is not application/json}
+components:
+  schemas:
+    CustomProfile:
+      type: object
+      additionalProperties: false
+      required:
+        - service_track
+        - preferred_languages
+        - operating_systems
+        - preferred_task_types
+        - max_code_difficulty
+        - max_setup_difficulty
+        - desired_skill_stretch
+        - skills
+      properties:
+        display_name: {type: string, minLength: 1, maxLength: 60}
+        service_track: {type: string, enum: [newcomer, growth]}
+        preferred_languages:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items: {type: string, maxLength: 40}
+        operating_systems:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items: {type: string, enum: [windows, macos, linux]}
+        preferred_task_types:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items: {type: string, enum: [bug_fix, testing, documentation, feature, refactor, build_tooling]}
+        max_code_difficulty: {type: integer, minimum: 0, maximum: 3}
+        max_setup_difficulty: {type: integer, minimum: 0, maximum: 3}
+        desired_skill_stretch: {type: integer, minimum: 0, maximum: 2}
+        skills:
+          type: object
+          minProperties: 1
+          maxProperties: 24
+          additionalProperties: {type: integer, minimum: 0, maximum: 4}
