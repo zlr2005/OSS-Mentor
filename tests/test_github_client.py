@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+import urllib.error
 from email.message import Message
 
 from oss_mentor.collector.github_client import (
@@ -52,6 +53,18 @@ class SequenceOpener:
         return self.responses.pop(0)
 
 
+class RetryOnceOpener:
+    def __init__(self, response: FakeResponse) -> None:
+        self.response = response
+        self.calls = 0
+
+    def __call__(self, request, *, timeout: int):
+        self.calls += 1
+        if self.calls == 1:
+            raise urllib.error.URLError("temporary")
+        return self.response
+
+
 class GitHubClientTests(unittest.TestCase):
     def test_parse_link_header(self) -> None:
         value = (
@@ -97,6 +110,7 @@ class GitHubClientTests(unittest.TestCase):
         self.assertEqual("help wanted", pages[0].payload[0]["name"])
         self.assertEqual("bug", pages[1].payload[0]["name"])
         self.assertEqual(2, len(opener.requests))
+        self.assertEqual(2, client.request_count)
         authorization = opener.requests[0][0].get_header("Authorization")
         self.assertEqual("Bearer test-token-not-persisted", authorization)
 
@@ -110,7 +124,23 @@ class GitHubClientTests(unittest.TestCase):
         with self.assertRaisesRegex(GitHubApiError, "outside API origin"):
             client.get("https://example.com/steal")
 
+    def test_request_count_includes_retry_attempts(self) -> None:
+        url = "https://api.github.com/repos/example/demo"
+        opener = RetryOnceOpener(FakeResponse(url=url, payload={"id": 1}))
+        client = GitHubClient(
+            api_base="https://api.github.com",
+            api_version="2026-03-10",
+            user_agent="OSS-Mentor-test/0",
+            token="test-token-not-persisted",
+            max_retries=1,
+            backoff_base_seconds=0,
+            opener=opener,
+            sleep=lambda _: None,
+            random_source=lambda: 0,
+        )
+        client.get("/repos/example/demo")
+        self.assertEqual(2, client.request_count)
+
 
 if __name__ == "__main__":
     unittest.main()
-

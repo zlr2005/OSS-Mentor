@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from oss_mentor.matching import match_candidate
+from oss_mentor.matching import match_candidate, recommendation_availability
 
 
 def task(**overrides):
@@ -77,6 +77,48 @@ class MatchingTests(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertEqual("growth", result.track)
         self.assertEqual(1, result.maximum_skill_gap)
+
+    def test_language_and_task_type_preferences_are_hard_constraints(self) -> None:
+        self.assertIsNone(
+            match_candidate(profile(preferred_languages=["Go"]), task())
+        )
+        self.assertIsNone(
+            match_candidate(profile(preferred_task_types=["documentation"]), task())
+        )
+
+    def test_availability_counts_current_and_alternative_options(self) -> None:
+        tasks = [
+            task(),
+            task(
+                task_candidate_id=2,
+                primary_language="Go",
+                requirements=[
+                    {"skill_name": "Go", "minimum_level": 1, "importance": 1.0}
+                ],
+            ),
+            task(
+                task_candidate_id=3,
+                primary_language="Go",
+                task_types=["documentation"],
+                requirements=[
+                    {"skill_name": "Go", "minimum_level": 1, "importance": 1.0}
+                ],
+            ),
+        ]
+        current = profile(skills={"python": 1, "testing": 1, "go": 0})
+        availability = recommendation_availability(
+            current,
+            tasks,
+            languages=("python", "go"),
+            task_types=("bug_fix", "documentation"),
+            operating_systems=("macos", "linux"),
+        )
+        self.assertEqual(1, availability["current_selection_count"])
+        self.assertEqual(1, availability["language_counts"]["python"])
+        self.assertEqual(1, availability["language_counts"]["go"])
+        self.assertEqual(1, availability["language_task_type_counts"]["go"]["bug_fix"])
+        self.assertEqual(1, availability["language_task_type_counts"]["go"]["documentation"])
+        self.assertEqual(0, current["skills"]["go"])
 
 
 if __name__ == "__main__":

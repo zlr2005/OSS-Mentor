@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -75,6 +75,11 @@ class SQLiteCandidateStore:
         ecosystems_last_synced_at: str | None,
         ecosystem: str | None = None,
         primary_language: str | None = None,
+        github_verified_at: str | None = None,
+        is_archived: bool = False,
+        is_disabled: bool = False,
+        pushed_at: str | None = None,
+        mark_synced: bool = False,
     ) -> int:
         now = self._now()
         connection.execute(
@@ -115,6 +120,30 @@ class SQLiteCandidateStore:
                 WHERE full_name = ?
                 """,
                 (ecosystem, primary_language, full_name),
+            )
+        if "github_verified_at" in columns:
+            connection.execute(
+                """
+                UPDATE repository SET
+                    github_verified_at = COALESCE(?, github_verified_at),
+                    is_archived = ?,
+                    is_disabled = ?,
+                    pushed_at = COALESCE(?, pushed_at),
+                    last_candidate_sync_at = CASE WHEN ? THEN ?
+                        ELSE last_candidate_sync_at END,
+                    updated_at = ?
+                WHERE full_name = ?
+                """,
+                (
+                    github_verified_at,
+                    int(is_archived),
+                    int(is_disabled),
+                    pushed_at,
+                    int(mark_synced),
+                    now,
+                    now,
+                    full_name,
+                ),
             )
         row = connection.execute(
             "SELECT repository_id FROM repository WHERE full_name = ?", (full_name,)
@@ -243,14 +272,136 @@ class SQLiteCandidateStore:
             newcomer_count = connection.execute(
                 "SELECT COUNT(*) FROM task_candidate WHERE newcomer_label_signal = 1"
             ).fetchone()[0]
+            eligible_newcomer_count = connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM task_candidate AS tc
+                JOIN repository AS r USING (repository_id)
+                WHERE tc.newcomer_label_signal = 1
+                  AND tc.candidate_eligibility = 'eligible'
+                  AND COALESCE(r.is_archived, 0) = 0
+                  AND COALESCE(r.is_disabled, 0) = 0
+                """
+            ).fetchone()[0]
             total = connection.execute("SELECT COUNT(*) FROM task_candidate").fetchone()[0]
         return {
             "database_path": str(self.database_path),
             "candidate_count": int(total),
             "newcomer_signal_count": int(newcomer_count),
+            "eligible_newcomer_signal_count": int(eligible_newcomer_count),
             "eligibility_counts": {
                 str(row["candidate_eligibility"]): int(row["count"]) for row in rows
             },
+        }
+
+    def stale_candidates(
+        self,
+        *,
+        repositories: list[str],
+        older_than_hours: int,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Return candidates whose current GitHub verification is stale."""
+
+        self.initialize()
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=older_than_hours)).isoformat()
+        clauses = [
+            "(tc.github_verified_at IS NULL OR tc.github_verified_at < ?)",
+        ]
+        parameters: list[Any] = [cutoff]
+        if repositories:
+            placeholders = ", ".join("?" for _ in repositories)
+            clauses.append(f"r.full_name IN ({placeholders})")
+            parameters.extend(repositories)
+        parameters.append(limit)
+        with self.connect() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT
+                    tc.task_candidate_id, tc.repository_id, tc.issue_number,
+                    tc.github_verified_at, tc.candidate_eligibility,
+                    r.full_name AS repository
+                FROM task_candidate AS tc
+                JOIN repository AS r USING (repository_id)
+                WHERE {' AND '.join(clauses)}
+                ORDER BY
+                    CASE WHEN tc.github_verified_at IS NULL THEN 0 ELSE 1 END,
+                    tc.github_verified_at,
+                    tc.task_candidate_id
+                LIMIT ?
+                """,
+                parameters,
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def mark_candidate_unavailable(
+        self,
+        *,
+        task_candidate_id: int,
+        reason: str = "github_unavailable",
+        verified_at: str | None = None,
+    ) -> None:
+        now = verified_at or self._now()
+        with self.connect() as connection:
+            connection.execute(
+                """
+                UPDATE task_candidate SET
+                    candidate_eligibility = 'excluded',
+                    ineligibility_reasons_json = ?,
+                    warnings_json = '[]',
+                    github_verified_at = ?,
+                    normalized_at = ?
+                WHERE task_candidate_id = ?
+                """,
+                (json.dumps([reason]), now, now, task_candidate_id),
+            )
+
+    def mark_repositories_refreshed(self, full_names: list[str]) -> None:
+        if not full_names:
+            return
+        now = self._now()
+        placeholders = ", ".join("?" for _ in full_names)
+        with self.connect() as connection:
+            connection.execute(
+                f"""
+                UPDATE repository
+                SET last_candidate_refresh_at = ?, updated_at = ?
+                WHERE full_name IN ({placeholders})
+                """,
+                [now, now, *full_names],
+            )
+
+    def candidate_report_rows(self) -> dict[str, list[dict[str, Any]]]:
+        """Return aggregate-safe source rows for the local candidate report."""
+
+        self.initialize()
+        with self.connect() as connection:
+            repositories = connection.execute(
+                """
+                SELECT repository_id, full_name, primary_language, is_archived,
+                       is_disabled, github_verified_at, last_candidate_sync_at,
+                       last_candidate_refresh_at
+                FROM repository ORDER BY full_name
+                """
+            ).fetchall()
+            candidates = connection.execute(
+                """
+                SELECT tc.task_candidate_id, tc.repository_id, tc.state,
+                       tc.assignment_state, tc.is_locked, tc.has_linked_open_pr,
+                       tc.body_text,
+                       tc.candidate_eligibility, tc.ineligibility_reasons_json,
+                       tc.warnings_json, tc.newcomer_label_signal,
+                       tc.github_verified_at, tc.task_types_json,
+                       r.full_name AS repository, r.primary_language,
+                       r.is_archived, r.is_disabled
+                FROM task_candidate AS tc
+                JOIN repository AS r USING (repository_id)
+                ORDER BY tc.task_candidate_id
+                """
+            ).fetchall()
+        return {
+            "repositories": [dict(row) for row in repositories],
+            "candidates": [dict(row) for row in candidates],
         }
 
     def list_candidates(
@@ -506,6 +657,8 @@ class SQLiteCandidateStore:
                 JOIN repository AS r USING (repository_id)
                 WHERE tc.candidate_eligibility = 'eligible'
                   AND tc.task_feature_version IS NOT NULL
+                  AND COALESCE(r.is_archived, 0) = 0
+                  AND COALESCE(r.is_disabled, 0) = 0
                 """
             ).fetchall()
             requirements = connection.execute(

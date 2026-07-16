@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+import urllib.error
 from email.message import Message
 
 from oss_mentor.collector.ecosystems_client import (
@@ -40,6 +41,18 @@ class RecordingOpener:
         return self.response
 
 
+class RetryOnceOpener:
+    def __init__(self, response: FakeResponse) -> None:
+        self.response = response
+        self.calls = 0
+
+    def __call__(self, request, *, timeout: int):
+        self.calls += 1
+        if self.calls == 1:
+            raise urllib.error.URLError("temporary")
+        return self.response
+
+
 class EcosystemsClientTests(unittest.TestCase):
     def test_repository_name_is_path_encoded(self) -> None:
         expected = (
@@ -66,6 +79,19 @@ class EcosystemsClientTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(EcosystemsApiError, "outside API origin"):
             client.get("https://example.com/items")
+
+    def test_request_count_includes_retry_attempts(self) -> None:
+        url = "https://issues.ecosyste.ms/api/v1/items"
+        client = EcosystemsClient(
+            api_base="https://issues.ecosyste.ms/api/v1",
+            user_agent="OSS-Mentor-test/0",
+            max_retries=1,
+            backoff_base_seconds=0,
+            opener=RetryOnceOpener(FakeResponse(url, [])),
+            sleep=lambda _: None,
+        )
+        client.get("/items")
+        self.assertEqual(2, client.request_count)
 
 
 if __name__ == "__main__":

@@ -14,10 +14,30 @@ class RepositoryConfigTests(unittest.TestCase):
     def test_wave_selection_and_labels(self) -> None:
         wave_one = load_repositories(self.settings.repository_config_path, wave=1)
         wave_two = load_repositories(self.settings.repository_config_path, wave=2)
+        wave_three = load_repositories(self.settings.repository_config_path, wave=3)
+        wave_four = load_repositories(self.settings.repository_config_path, wave=4)
+        wave_five = load_repositories(self.settings.repository_config_path, wave=5)
 
         self.assertEqual(5, len(wave_one))
         self.assertEqual(5, len(wave_two))
-        self.assertEqual(10, len({repo.full_name for repo in [*wave_one, *wave_two]}))
+        self.assertEqual(12, len(wave_three))
+        self.assertEqual(5, len(wave_four))
+        self.assertEqual(1, len(wave_five))
+        self.assertEqual(
+            28,
+            len(
+                {
+                    repo.full_name
+                    for repo in [
+                        *wave_one,
+                        *wave_two,
+                        *wave_three,
+                        *wave_four,
+                        *wave_five,
+                    ]
+                }
+            ),
+        )
 
         matplotlib = next(
             repository
@@ -41,4 +61,3 @@ class RepositoryConfigTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

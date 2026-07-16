@@ -40,6 +40,18 @@ def match_candidate(profile: dict[str, Any], task: dict[str, Any]) -> MatchResul
         return None
     if int(task["estimated_setup_difficulty"]) > int(profile["max_setup_difficulty"]):
         return None
+    preferred_languages = {
+        value.casefold() for value in profile["preferred_languages"]
+    }
+    task_language = str(task.get("primary_language") or "").casefold()
+    if preferred_languages and task_language not in preferred_languages:
+        return None
+    preferred_types = {
+        value.casefold() for value in profile["preferred_task_types"]
+    }
+    task_types = {value.casefold() for value in task["task_types"]}
+    if preferred_types and not preferred_types.intersection(task_types):
+        return None
 
     gaps: list[dict[str, Any]] = []
     weighted_covered = 0.0
@@ -73,14 +85,8 @@ def match_candidate(profile: dict[str, Any], task: dict[str, Any]) -> MatchResul
 
     coverage = weighted_covered / total_importance if total_importance else 1.0
     maximum_gap = max((item["gap"] for item in gaps), default=0)
-    preferred_languages = {value.casefold() for value in profile["preferred_languages"]}
-    language_match = not task.get("primary_language") or str(
-        task["primary_language"]
-    ).casefold() in preferred_languages
-    preferred_types = {value.casefold() for value in profile["preferred_task_types"]}
-    type_overlap = bool(
-        preferred_types.intersection(value.casefold() for value in task["task_types"])
-    )
+    language_match = not task.get("primary_language") or task_language in preferred_languages
+    type_overlap = bool(preferred_types.intersection(task_types))
     preference_score = (5 if language_match else 0) + (5 if type_overlap else 0)
     reasons = [f"skill_coverage={coverage:.2f}"]
     if language_match:
@@ -120,3 +126,65 @@ def rank_for_profile(
     return sorted(results, key=lambda item: (-item.match_score, item.repository, item.issue_number))[
         :limit
     ]
+
+
+def recommendation_availability(
+    profile: dict[str, Any],
+    tasks: list[dict[str, Any]],
+    *,
+    languages: tuple[str, ...],
+    task_types: tuple[str, ...],
+    operating_systems: tuple[str, ...],
+) -> dict[str, Any]:
+    """Count matches for the current selection and each selectable alternative."""
+
+    def count(candidate_profile: dict[str, Any]) -> int:
+        return sum(
+            match_candidate(candidate_profile, task) is not None for task in tasks
+        )
+
+    def profile_for_language(
+        language: str, *, task_type: str | None = None
+    ) -> dict[str, Any]:
+        """Mirror the UI's behavior when a user selects a new language."""
+
+        skills = dict(profile.get("skills") or {})
+        skill_key = language.casefold()
+        skills[skill_key] = max(int(skills.get(skill_key, 0)), 1)
+        candidate_profile = {
+            **profile,
+            "preferred_languages": [language],
+            "skills": skills,
+        }
+        if task_type is not None:
+            candidate_profile["preferred_task_types"] = [task_type]
+        return candidate_profile
+
+    language_counts = {
+        language: count(profile_for_language(language))
+        for language in languages
+    }
+    task_type_counts = {
+        task_type: count({**profile, "preferred_task_types": [task_type]})
+        for task_type in task_types
+    }
+    os_counts = {
+        operating_system: count(
+            {**profile, "operating_systems": [operating_system]}
+        )
+        for operating_system in operating_systems
+    }
+    combinations = {
+        language: {
+            task_type: count(profile_for_language(language, task_type=task_type))
+            for task_type in task_types
+        }
+        for language in languages
+    }
+    return {
+        "current_selection_count": count(profile),
+        "language_counts": language_counts,
+        "task_type_counts": task_type_counts,
+        "operating_system_counts": os_counts,
+        "language_task_type_counts": combinations,
+    }

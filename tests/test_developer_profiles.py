@@ -11,10 +11,19 @@ class DeveloperProfileTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         profiles = load_profiles(root / "config" / "demo_profiles_v0.1.json")
 
-        self.assertEqual(2, len(profiles))
+        self.assertEqual(4, len(profiles))
         self.assertEqual({"newcomer", "growth"}, {p.service_track for p in profiles})
         self.assertTrue(all(p.profile_source == "demo" for p in profiles))
         self.assertTrue(all("Python" in p.skills for p in profiles))
+        newcomer_operating_systems = {
+            operating_system
+            for profile in profiles
+            if profile.service_track == "newcomer"
+            for operating_system in profile.operating_systems
+        }
+        self.assertEqual(
+            {"windows", "macos", "linux"}, newcomer_operating_systems
+        )
 
     def test_custom_profile_is_normalized_for_matching(self) -> None:
         profile = custom_profile_for_matching(
@@ -47,6 +56,21 @@ class DeveloperProfileTests(unittest.TestCase):
                     "max_setup_difficulty": 1,
                     "desired_skill_stretch": 0,
                     "skills": {"platform:macos": 4},
+                }
+            )
+
+    def test_custom_profile_rejects_language_not_offered_by_ui(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unsupported value"):
+            custom_profile_for_matching(
+                {
+                    "service_track": "growth",
+                    "preferred_languages": ["Cobol"],
+                    "operating_systems": ["linux"],
+                    "preferred_task_types": ["feature"],
+                    "max_code_difficulty": 2,
+                    "max_setup_difficulty": 2,
+                    "desired_skill_stretch": 1,
+                    "skills": {"cobol": 2},
                 }
             )
 
