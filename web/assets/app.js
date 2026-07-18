@@ -6,10 +6,14 @@ const state = {
   mode: "preset",
   feedbackContext: null,
   feedbackClientId: null,
+  availability: null,
+  availabilityRequest: 0,
 };
 const elements = {
   form: document.querySelector("#recommendation-form"),
   select: document.querySelector("#profile-select"),
+  quickLanguage: document.querySelector("#quick-language"),
+  quickOs: document.querySelector("#quick-os"),
   summary: document.querySelector("#profile-summary"),
   button: document.querySelector("#recommend-button"),
   buttonLabel: document.querySelector("#recommend-button-label"),
@@ -24,7 +28,10 @@ const elements = {
   customTrack: document.querySelector("#custom-track"),
   profileError: document.querySelector("#profile-error"),
   privacyNote: document.querySelector("#privacy-note"),
+  inventoryStatus: document.querySelector("#inventory-status"),
 };
+
+const minimumVisibleInventory = 5;
 
 const reasonLabels = {
   preferred_language: "符合你偏好的编程语言",
@@ -91,6 +98,37 @@ function renderProfile(profile) {
     可接受代码难度 ${profile.max_code_difficulty}/3，环境难度 ${profile.max_setup_difficulty}/3
     <div class="profile-tags">${tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
   `;
+}
+
+function buildQuickProfile() {
+  const track = elements.select.value === "growth" ? "growth" : "newcomer";
+  const language = elements.quickLanguage.value;
+  const operatingSystem = elements.quickOs.value;
+  const growth = track === "growth";
+  return {
+    display_name: growth ? "快速进阶画像" : "快速新人画像",
+    service_track: track,
+    preferred_languages: [language],
+    operating_systems: [operatingSystem],
+    preferred_task_types: growth
+      ? ["bug_fix", "testing", "build_tooling", "feature", "refactor"]
+      : ["bug_fix", "testing", "documentation"],
+    max_code_difficulty: growth ? 3 : 1,
+    max_setup_difficulty: growth ? 3 : 2,
+    desired_skill_stretch: growth ? 1 : 0,
+    skills: {
+      [language.toLowerCase()]: growth ? 2 : 1,
+      testing: growth ? 2 : 1,
+      git: growth ? 3 : 1,
+      build_tooling: growth ? 1 : 0,
+      documentation: growth ? 1 : 0,
+    },
+  };
+}
+
+function updateQuickProfile() {
+  state.selected = buildQuickProfile();
+  renderProfile(state.selected);
 }
 
 function translateReason(reason) {
@@ -206,6 +244,71 @@ function collectCustomProfile() {
   };
 }
 
+function updateOptionInventory(selector, counts) {
+  document.querySelectorAll(`${selector} input`).forEach(input => {
+    const count = Number(counts[String(input.value).toLowerCase()] || 0);
+    const label = input.closest("label");
+    let badge = label.querySelector(".availability-count");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "availability-count";
+      label.appendChild(badge);
+    }
+    badge.textContent = `${count} 个`;
+    input.disabled = count === 0 && !input.checked;
+    label.classList.toggle("option-unavailable", count === 0);
+    label.classList.toggle("option-low", count > 0 && count < minimumVisibleInventory);
+  });
+}
+
+async function refreshAvailability() {
+  if (state.mode !== "custom") return null;
+  const requestId = ++state.availabilityRequest;
+  state.availability = null;
+  let profile;
+  try {
+    profile = collectCustomProfile();
+  } catch (error) {
+    elements.inventoryStatus.textContent = error.message;
+    elements.inventoryStatus.dataset.state = "empty";
+    elements.button.disabled = true;
+    return null;
+  }
+  elements.inventoryStatus.textContent = "正在计算当前选择的可用任务…";
+  elements.inventoryStatus.dataset.state = "loading";
+  try {
+    const payload = await getJson("/api/v1/recommendation-options", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile }),
+    });
+    if (requestId !== state.availabilityRequest) return null;
+    state.availability = payload.availability;
+    updateOptionInventory("#language-choices", state.availability.language_counts);
+    updateOptionInventory("#task-choices", state.availability.task_type_counts);
+    updateOptionInventory("#os-choices", state.availability.operating_system_counts);
+    const count = Number(state.availability.current_selection_count || 0);
+    elements.inventoryStatus.textContent = count
+      ? `当前组合有 ${count} 个可推荐任务；少于 ${minimumVisibleInventory} 个的选项已标记。`
+      : "当前组合没有可推荐任务，请选择带库存的语言、任务类型或提高技能与难度上限。";
+    elements.inventoryStatus.dataset.state = count ? "ready" : "empty";
+    elements.button.disabled = count === 0;
+    return count;
+  } catch (error) {
+    if (requestId !== state.availabilityRequest) return null;
+    elements.inventoryStatus.textContent = `无法读取选项库存：${error.message}`;
+    elements.inventoryStatus.dataset.state = "empty";
+    elements.button.disabled = true;
+    return null;
+  }
+}
+
+let availabilityTimer = null;
+function scheduleAvailabilityRefresh() {
+  clearTimeout(availabilityTimer);
+  availabilityTimer = setTimeout(refreshAvailability, 120);
+}
+
 function applyTrackDefaults() {
   const growth = elements.customTrack.value === "growth";
   document.querySelector("#code-difficulty").value = growth ? "3" : "1";
@@ -217,6 +320,7 @@ function applyTrackDefaults() {
   document.querySelectorAll("[data-skill]").forEach(input => {
     input.value = String(levels[input.dataset.skill] ?? 0);
   });
+  scheduleAvailabilityRefresh();
 }
 
 function setMode(mode) {
@@ -230,9 +334,10 @@ function setMode(mode) {
   elements.customMode.setAttribute("aria-pressed", String(custom));
   elements.privacyNote.textContent = custom
     ? "自定义画像不写入数据库；反馈状态仅保存在本地。"
-    : "预设画像和推荐反馈保存在本地 SQLite 中。";
+    : "快速画像不写入数据库；推荐反馈仅保存在本地 SQLite 中。";
   elements.button.disabled = custom ? false : !state.selected;
   elements.profileError.hidden = true;
+  if (custom) scheduleAvailabilityRefresh();
 }
 
 async function loadProfiles() {
@@ -245,15 +350,16 @@ async function loadProfiles() {
     const payload = await getJson("/api/v1/profiles");
     state.profiles = payload.items;
     if (state.profiles.length) {
-      elements.select.innerHTML = state.profiles.map(profile =>
-        `<option value="${escapeHtml(profile.profile_key)}">${escapeHtml(profile.display_name)}</option>`
-      ).join("");
-      const newcomer = state.profiles.find(profile => profile.service_track === "newcomer");
-      state.selected = newcomer || state.profiles[0];
-      elements.select.value = state.selected.profile_key;
+      elements.select.innerHTML = `
+        <option value="newcomer">零贡献 / 首次贡献者</option>
+        <option value="growth">进阶开发者</option>
+      `;
+      elements.select.value = "newcomer";
       elements.select.disabled = false;
+      elements.quickLanguage.disabled = false;
+      elements.quickOs.disabled = false;
+      updateQuickProfile();
       elements.button.disabled = false;
-      renderProfile(state.selected);
       const requestedMode = new URLSearchParams(window.location.search).get("mode");
       if (requestedMode === "custom") {
         setMode("custom");
@@ -280,14 +386,26 @@ async function loadRecommendations({ scrollToResults = true } = {}) {
   try {
     if (state.mode === "custom") {
       const profile = collectCustomProfile();
+      clearTimeout(availabilityTimer);
+      const availableCount = await refreshAvailability();
+      if (!availableCount) {
+        throw new Error("当前选择没有可推荐任务，请调整带库存的选项后再试。");
+      }
       request = getJson("/api/v1/recommendations/custom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profile, limit: 10, feedback_client_id: getFeedbackClientId() }),
       });
     } else {
-      const query = new URLSearchParams({ profile_key: state.selected.profile_key, limit: "10" });
-      request = getJson(`/api/v1/recommendations?${query}`);
+      request = getJson("/api/v1/recommendations/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: state.selected,
+          limit: 10,
+          feedback_client_id: getFeedbackClientId(),
+        }),
+      });
     }
   } catch (error) {
     elements.profileError.textContent = error.message;
@@ -317,7 +435,9 @@ async function loadRecommendations({ scrollToResults = true } = {}) {
     elements.count.textContent = "推荐加载失败";
     showMessage("无法生成推荐", error.message, "error");
   } finally {
-    elements.button.disabled = state.mode === "preset" && !state.selected;
+    elements.button.disabled = state.mode === "custom"
+      ? !state.availability?.current_selection_count
+      : !state.selected;
     elements.buttonLabel.textContent = "查看我的推荐";
   }
 }
@@ -361,10 +481,20 @@ async function saveFeedback(button) {
 elements.presetMode.addEventListener("click", () => setMode("preset"));
 elements.customMode.addEventListener("click", () => setMode("custom"));
 elements.customTrack.addEventListener("change", applyTrackDefaults);
-elements.select.addEventListener("change", event => {
-  state.selected = state.profiles.find(profile => profile.profile_key === event.target.value);
-  renderProfile(state.selected);
+elements.customFields.addEventListener("change", event => {
+  if (event.target.matches("#language-choices input") && event.target.checked) {
+    const skill = document.querySelector(
+      `[data-skill="${String(event.target.value).toLowerCase()}"]`
+    );
+    if (skill && Number(skill.value) === 0) skill.value = "1";
+  }
+  scheduleAvailabilityRefresh();
 });
+elements.select.addEventListener("change", event => {
+  updateQuickProfile();
+});
+elements.quickLanguage.addEventListener("change", updateQuickProfile);
+elements.quickOs.addEventListener("change", updateQuickProfile);
 elements.form.addEventListener("submit", event => {
   event.preventDefault();
   loadRecommendations();

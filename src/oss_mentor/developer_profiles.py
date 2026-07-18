@@ -11,6 +11,15 @@ from typing import Any
 CUSTOM_PROFILE_VERSION = "custom-profile-v0.2"
 ALLOWED_SERVICE_TRACKS = {"newcomer", "growth"}
 ALLOWED_OPERATING_SYSTEMS = {"windows", "macos", "linux"}
+ALLOWED_LANGUAGES = {"python", "javascript", "typescript", "java", "go", "rust"}
+LANGUAGE_DISPLAY_NAMES = {
+    "python": "Python",
+    "javascript": "JavaScript",
+    "typescript": "TypeScript",
+    "java": "Java",
+    "go": "Go",
+    "rust": "Rust",
+}
 ALLOWED_TASK_TYPES = {
     "bug_fix",
     "testing",
@@ -106,9 +115,15 @@ def custom_profile_for_matching(payload: Any) -> dict[str, Any]:
             raise ValueError(f"{field} must be an integer between 0 and {upper}")
         return value
 
-    languages = _custom_string_list(
-        payload.get("preferred_languages"), "preferred_languages", maximum=8
-    )
+    languages = [
+        LANGUAGE_DISPLAY_NAMES[value]
+        for value in _custom_string_list(
+            payload.get("preferred_languages"),
+            "preferred_languages",
+            maximum=6,
+            allowed=ALLOWED_LANGUAGES,
+        )
+    ]
     operating_systems = _custom_string_list(
         payload.get("operating_systems"),
         "operating_systems",

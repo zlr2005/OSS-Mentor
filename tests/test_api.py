@@ -134,6 +134,28 @@ class ApiTests(unittest.TestCase):
         self.assertEqual("user_input", response.body["profile"]["profile_source"])
         self.assertFalse(response.body["profile_persisted"])
 
+    def test_custom_option_inventory_prevents_empty_language_choice(self) -> None:
+        response = self.api.handle(
+            "POST",
+            "/api/v1/recommendation-options",
+            body={
+                "profile": {
+                    "service_track": "newcomer",
+                    "preferred_languages": ["Python"],
+                    "operating_systems": ["macos"],
+                    "preferred_task_types": ["bug_fix"],
+                    "max_code_difficulty": 1,
+                    "max_setup_difficulty": 2,
+                    "desired_skill_stretch": 0,
+                    "skills": {"Python": 1},
+                }
+            },
+        )
+        self.assertEqual(200, response.status)
+        availability = response.body["availability"]
+        self.assertEqual(1, availability["current_selection_count"])
+        self.assertEqual(0, availability["language_counts"]["go"])
+
     def test_feedback_is_saved_and_returned_with_recommendations(self) -> None:
         saved = self.api.handle(
             "POST",

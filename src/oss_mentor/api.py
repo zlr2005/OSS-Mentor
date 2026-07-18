@@ -12,14 +12,17 @@ from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
 
 from oss_mentor.developer_profiles import (
+    ALLOWED_LANGUAGES,
+    ALLOWED_OPERATING_SYSTEMS,
+    ALLOWED_TASK_TYPES,
     CUSTOM_PROFILE_VERSION,
     custom_profile_for_matching,
 )
-from oss_mentor.matching import rank_for_profile
+from oss_mentor.matching import rank_for_profile, recommendation_availability
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
-API_VERSION = "v0.3"
+API_VERSION = "v0.4"
 MAX_JSON_BODY_BYTES = 32 * 1024
 FEEDBACK_STATES = {"interested", "not_suitable", "started", "completed"}
 PROFILE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
@@ -212,6 +215,27 @@ class RecommendationApi:
             response.body["custom_profile_version"] = CUSTOM_PROFILE_VERSION
             response.body["profile_persisted"] = False
             return response
+        if method == "POST" and path == "/api/v1/recommendation-options":
+            if not isinstance(body, dict):
+                return self._error(400, "invalid_body", "request body must be a JSON object")
+            try:
+                profile = custom_profile_for_matching(body.get("profile"))
+            except ValueError as exc:
+                return self._error(400, "invalid_profile", str(exc))
+            availability = recommendation_availability(
+                profile,
+                self.store.matchable_candidates(),
+                languages=tuple(sorted(ALLOWED_LANGUAGES)),
+                task_types=tuple(sorted(ALLOWED_TASK_TYPES)),
+                operating_systems=tuple(sorted(ALLOWED_OPERATING_SYSTEMS)),
+            )
+            return ApiResponse(
+                200,
+                {
+                    "availability": availability,
+                    "api_version": API_VERSION,
+                },
+            )
         if method == "POST" and path == "/api/v1/feedback":
             if not isinstance(body, dict):
                 return self._error(400, "invalid_body", "request body must be a JSON object")
@@ -255,6 +279,7 @@ class RecommendationApi:
             "/api/v1/profiles",
             "/api/v1/recommendations",
             "/api/v1/recommendations/custom",
+            "/api/v1/recommendation-options",
             "/api/v1/feedback",
         }:
             return self._error(405, "method_not_allowed", "method is not supported for this route")
@@ -268,7 +293,7 @@ def make_handler(
     static_root: Path | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "OSS-Mentor-MVP/0.3"
+        server_version = "OSS-Mentor-MVP/0.4"
 
         def _send_json(self, response: ApiResponse, *, allow: str | None = None) -> None:
             encoded = json.dumps(

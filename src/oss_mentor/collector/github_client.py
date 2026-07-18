@@ -106,6 +106,8 @@ class GitHubClient:
         self._opener = opener
         self._sleep = sleep
         self._random = random_source
+        self.request_count = 0
+        self.rate_limit_remaining: int | None = None
         parsed = urllib.parse.urlsplit(self.api_base)
         self._allowed_origin = (parsed.scheme.lower(), parsed.netloc.lower())
 
@@ -190,9 +192,16 @@ class GitHubClient:
 
         for attempt in range(self.max_retries + 1):
             fetched_at = datetime.now(timezone.utc)
+            self.request_count += 1
             try:
                 with self._opener(request, timeout=self.timeout_seconds) as response:
                     headers = _headers_to_dict(response.headers)
+                    remaining = headers.get("x-ratelimit-remaining")
+                    if remaining is not None:
+                        try:
+                            self.rate_limit_remaining = int(remaining)
+                        except ValueError:
+                            pass
                     payload = self._decode_payload(response.read())
                     return GitHubResponse(
                         url=response.geturl(),
@@ -203,6 +212,12 @@ class GitHubClient:
                     )
             except urllib.error.HTTPError as exc:
                 headers = _headers_to_dict(exc.headers)
+                remaining = headers.get("x-ratelimit-remaining")
+                if remaining is not None:
+                    try:
+                        self.rate_limit_remaining = int(remaining)
+                    except ValueError:
+                        pass
                 payload = self._decode_payload(exc.read())
                 if exc.code == 304:
                     return GitHubResponse(
@@ -265,4 +280,3 @@ class GitHubClient:
             links = parse_link_header(response.headers.get("link"))
             next_url = links.get("next")
             next_params = {}
-

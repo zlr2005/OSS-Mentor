@@ -68,6 +68,7 @@ class EcosystemsClient:
         self.backoff_base_seconds = backoff_base_seconds
         self._opener = opener
         self._sleep = sleep
+        self.request_count = 0
         parsed = urllib.parse.urlsplit(self.api_base)
         self._allowed_origin = (parsed.scheme.lower(), parsed.netloc.lower())
 
@@ -111,6 +112,7 @@ class EcosystemsClient:
         )
         for attempt in range(self.max_retries + 1):
             fetched_at = datetime.now(timezone.utc)
+            self.request_count += 1
             try:
                 with self._opener(request, timeout=self.timeout_seconds) as response:
                     return EcosystemsResponse(

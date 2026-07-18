@@ -31,6 +31,8 @@ class WebUiTests(unittest.TestCase):
         self.assertTrue(
             {
                 "profile-select",
+                "quick-language",
+                "quick-os",
                 "custom-mode",
                 "custom-fields",
                 "custom-track",
@@ -38,6 +40,7 @@ class WebUiTests(unittest.TestCase):
                 "recommendation-list",
                 "result-count",
                 "message",
+                "inventory-status",
             }.issubset(parser.ids)
         )
 
@@ -48,12 +51,20 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("/api/v1/profiles", text)
         self.assertIn("/api/v1/recommendations", text)
         self.assertIn("/api/v1/recommendations/custom", text)
+        self.assertIn("/api/v1/recommendation-options", text)
         self.assertIn("/api/v1/feedback", text)
+        self.assertIn("buildQuickProfile", text)
         self.assertIn("data-feedback-state", text)
         self.assertIn("profile_persisted", (Path(__file__).resolve().parents[1] / "src" / "oss_mentor" / "api.py").read_text(encoding="utf-8"))
         self.assertIn("match_score", text)
         self.assertIn("skill_gaps", text)
         self.assertIn("为什么推荐", text)
+
+        html = load_static_asset(self.root, "/").body.decode("utf-8")
+        self.assertIn('data-skill="typescript"', html)
+        self.assertIn('data-skill="java"', html)
+        self.assertIn('data-skill="go"', html)
+        self.assertIn('data-skill="rust"', html)
 
     def test_static_router_is_allowlist_based(self) -> None:
         self.assertIsNone(load_static_asset(self.root, "/../pyproject.toml"))

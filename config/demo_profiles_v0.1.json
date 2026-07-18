@@ -19,6 +19,40 @@
       }
     },
     {
+      "profile_key": "newcomer_python_windows",
+      "display_name": "匿名 Python 新手（Windows）",
+      "service_track": "newcomer",
+      "preferred_languages": ["Python"],
+      "operating_systems": ["windows"],
+      "preferred_task_types": ["bug_fix", "testing", "documentation"],
+      "max_code_difficulty": 1,
+      "max_setup_difficulty": 2,
+      "desired_skill_stretch": 0,
+      "profile_source": "demo",
+      "skills": {
+        "Python": 1,
+        "testing": 1,
+        "git": 1
+      }
+    },
+    {
+      "profile_key": "newcomer_python_linux",
+      "display_name": "匿名 Python 新手（Linux）",
+      "service_track": "newcomer",
+      "preferred_languages": ["Python"],
+      "operating_systems": ["linux"],
+      "preferred_task_types": ["bug_fix", "testing", "documentation"],
+      "max_code_difficulty": 1,
+      "max_setup_difficulty": 2,
+      "desired_skill_stretch": 0,
+      "profile_source": "demo",
+      "skills": {
+        "Python": 1,
+        "testing": 1,
+        "git": 1
+      }
+    },
+    {
       "profile_key": "growth_python_crossplatform",
       "display_name": "匿名 Python 进阶开发者",
       "service_track": "growth",

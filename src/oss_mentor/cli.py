@@ -6,10 +6,16 @@ import argparse
 import json
 import sys
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
 from oss_mentor.api import serve
+from oss_mentor.candidate_refresh import CandidateRefresher
+from oss_mentor.candidate_report import (
+    build_candidate_report,
+    render_candidate_report_markdown,
+)
 from oss_mentor.candidate_sync import CandidateSynchronizer
 from oss_mentor.collector.ecosystems_client import (
     EcosystemsApiError,
@@ -21,7 +27,11 @@ from oss_mentor.collector.config import (
     Settings,
     load_repositories,
 )
-from oss_mentor.collector.github_client import GitHubApiError, GitHubClient
+from oss_mentor.collector.github_client import (
+    GitHubApiError,
+    GitHubClient,
+    RateLimitExceeded,
+)
 from oss_mentor.collector.raw_store import RawStore
 from oss_mentor.collector.repository_collector import RepositoryCollector
 from oss_mentor.collector.source_comparison import IssueSourceComparator
@@ -50,9 +60,16 @@ def _apply_path_overrides(settings: Settings, args: argparse.Namespace) -> Setti
 def _select_repositories(
     settings: Settings, args: argparse.Namespace
 ) -> list[RepositoryConfig]:
+    all_enabled = bool(getattr(args, "all_enabled", False))
+    if all_enabled and (
+        getattr(args, "repo", None) or getattr(args, "include_disabled", False)
+    ):
+        raise ConfigError(
+            "--all-enabled cannot be combined with --repo or --include-disabled"
+        )
     repositories = load_repositories(
         settings.repository_config_path,
-        wave=args.wave,
+        wave=None if all_enabled else args.wave,
         enabled_only=not getattr(args, "include_disabled", False),
     )
     requested = set(getattr(args, "repo", None) or [])
@@ -69,6 +86,36 @@ def _select_repositories(
                 + ", ".join(missing)
             )
     return repositories
+
+
+def _database_path(settings: Settings, args: argparse.Namespace) -> Path:
+    return (
+        Path(args.database).expanduser().resolve()
+        if getattr(args, "database", None)
+        else settings.repo_root / "data" / "oss_mentor.sqlite3"
+    )
+
+
+def _candidate_store(settings: Settings, args: argparse.Namespace) -> SQLiteCandidateStore:
+    return SQLiteCandidateStore(
+        _database_path(settings, args),
+        settings.repo_root / "db" / "sqlite" / "001_mvp.sql",
+    )
+
+
+def _write_json(path: str | None, payload: object) -> None:
+    if not path:
+        return
+    destination = Path(path).expanduser().resolve()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _repository_summary(repository: RepositoryConfig) -> dict[str, object]:
@@ -266,16 +313,45 @@ def command_compare_issue_sources(settings: Settings, args: argparse.Namespace) 
 
 def command_sync_candidates(settings: Settings, args: argparse.Namespace) -> int:
     repositories = _select_repositories(settings, args)
-    if len(repositories) != 1:
-        raise ConfigError("sync-candidates requires exactly one --repo owner/name")
-    repository = repositories[0]
+    if not repositories:
+        raise ConfigError("no repositories selected")
+    if args.dry_run:
+        _json_dump(
+            {
+                "mode": "dry-run",
+                "repository_count": len(repositories),
+                "limit_per_repo": args.limit_per_repo,
+                "estimated_requests": {
+                    "github_max": sum(
+                        1
+                        + len(repository.candidate_labels)
+                        + args.limit_per_repo * 2
+                        for repository in repositories
+                    ),
+                    "ecosystems_max": sum(
+                        2 + len(repository.candidate_labels)
+                        for repository in repositories
+                    ),
+                },
+                "repositories": [
+                    {
+                        "full_name": repository.full_name,
+                        "candidate_labels": list(repository.candidate_labels),
+                    }
+                    for repository in repositories
+                ],
+            }
+        )
+        return 0
     if not args.allow_network:
         print("Refusing candidate sync without --allow-network.", file=sys.stderr)
         return 2
-    if settings.github_token is None and not args.allow_anonymous:
+    if settings.github_token is None and (
+        len(repositories) > 1 or not args.allow_anonymous
+    ):
         print(
-            "GITHUB_TOKEN is not set. Provide one or explicitly pass "
-            "--allow-anonymous for a small public sync.",
+            "GITHUB_TOKEN is not set. Batch candidate sync requires a read-only "
+            "token; --allow-anonymous is limited to a one-repository smoke test.",
             file=sys.stderr,
         )
         return 2
@@ -296,47 +372,200 @@ def command_sync_candidates(settings: Settings, args: argparse.Namespace) -> int
         max_retries=settings.max_retries,
         backoff_base_seconds=settings.backoff_base_seconds,
     )
-    database_path = (
-        Path(args.database).expanduser().resolve()
-        if args.database
-        else settings.repo_root / "data" / "oss_mentor.sqlite3"
-    )
-    store = SQLiteCandidateStore(
-        database_path,
-        settings.repo_root / "db" / "sqlite" / "001_mvp.sql",
-    )
+    store = _candidate_store(settings, args)
+    store.initialize()
     synchronizer = CandidateSynchronizer(
         ecosystems_client, github_client, store
     )
-    try:
-        result = synchronizer.sync(
-            repository.full_name,
-            limit=args.limit,
-            hydrate_github=not args.no_github_hydration,
-            candidate_labels=repository.candidate_labels,
-            ecosystem=repository.ecosystem,
-            primary_language=repository.primary_language,
-        )
-    except (EcosystemsApiError, GitHubApiError, OSError, ValueError) as exc:
-        _json_dump(
-            {
-                "event": "candidate_sync_failed",
+    started_at = _utc_now()
+    repository_reports: list[dict[str, object]] = []
+    errors: list[dict[str, object]] = []
+    discovered_count = hydrated_count = timeline_checked_count = 0
+    unavailable_count = 0
+    successful_count = 0
+    rate_limited = False
+
+    for index, repository in enumerate(repositories):
+        github_before = github_client.request_count
+        ecosystems_before = ecosystems_client.request_count
+        try:
+            result = synchronizer.sync(
+                repository.full_name,
+                limit=args.limit_per_repo,
+                hydrate_github=not args.no_github_hydration,
+                candidate_labels=repository.candidate_labels,
+                ecosystem=repository.ecosystem,
+                primary_language=repository.primary_language,
+            )
+        except RateLimitExceeded as exc:
+            rate_limited = True
+            error = {
                 "repository": repository.full_name,
                 "error_type": type(exc).__name__,
                 "error": str(exc),
             }
+            errors.append(error)
+            repository_reports.append({**error, "status": "failed"})
+            for skipped in repositories[index + 1 :]:
+                repository_reports.append(
+                    {"repository": skipped.full_name, "status": "skipped_rate_limit"}
+                )
+            break
+        except (EcosystemsApiError, GitHubApiError, OSError, ValueError) as exc:
+            error = {
+                "repository": repository.full_name,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+            errors.append(error)
+            repository_reports.append({**error, "status": "failed"})
+            continue
+
+        successful_count += 1
+        discovered_count += result.discovered_count
+        hydrated_count += result.hydrated_count
+        timeline_checked_count += result.timeline_checked_count
+        repository_unavailable = int(getattr(result, "unavailable_count", 0))
+        unavailable_count += repository_unavailable
+        repository_reports.append(
+            {
+                "repository": repository.full_name,
+                "status": "completed",
+                "discovered_count": result.discovered_count,
+                "hydrated_count": result.hydrated_count,
+                "timeline_checked_count": result.timeline_checked_count,
+                "unavailable_count": repository_unavailable,
+                "warnings": list(getattr(result, "warnings", ())),
+                "github_request_count": github_client.request_count - github_before,
+                "ecosystems_request_count": ecosystems_client.request_count
+                - ecosystems_before,
+            }
         )
-        return 1
-    _json_dump(
-        {
-            "event": "candidate_sync_finished",
-            "repository": result.repository,
-            "discovered_count": result.discovered_count,
-            "hydrated_count": result.hydrated_count,
-            "timeline_checked_count": result.timeline_checked_count,
-            **result.summary,
-        }
+
+    failed_count = len(repositories) - successful_count
+    status = "completed" if failed_count == 0 else ("partial" if successful_count else "failed")
+    report = {
+        "run_id": str(uuid4()),
+        "status": status,
+        "started_at": started_at,
+        "finished_at": _utc_now(),
+        "repository_count": len(repositories),
+        "successful_repository_count": successful_count,
+        "failed_repository_count": failed_count,
+        "rate_limited": rate_limited,
+        "github_request_count": github_client.request_count,
+        "github_rate_limit_remaining": getattr(
+            github_client, "rate_limit_remaining", None
+        ),
+        "ecosystems_request_count": ecosystems_client.request_count,
+        "discovered_count": discovered_count,
+        "hydrated_count": hydrated_count,
+        "timeline_checked_count": timeline_checked_count,
+        "unavailable_count": unavailable_count,
+        "repositories": repository_reports,
+        "errors": errors,
+        "database_summary": store.summary(),
+    }
+    _write_json(args.output, report)
+    _json_dump(report)
+    return 0 if status == "completed" else 1
+
+
+def command_refresh_candidates(settings: Settings, args: argparse.Namespace) -> int:
+    repositories = _select_repositories(settings, args)
+    if not repositories:
+        raise ConfigError("no repositories selected")
+    store = _candidate_store(settings, args)
+    if args.dry_run:
+        stale = store.stale_candidates(
+            repositories=[repository.full_name for repository in repositories],
+            older_than_hours=args.older_than_hours,
+            limit=args.limit,
+        )
+        _json_dump(
+            {
+                "mode": "dry-run",
+                "repository_count": len(repositories),
+                "candidate_count": len(stale),
+                "older_than_hours": args.older_than_hours,
+                "limit": args.limit,
+                "estimated_github_requests_max": len(repositories) + 2 * len(stale),
+            }
+        )
+        return 0
+    if not args.allow_network:
+        print("Refusing candidate refresh without --allow-network.", file=sys.stderr)
+        return 2
+    if settings.github_token is None:
+        print("GITHUB_TOKEN is required for candidate refresh.", file=sys.stderr)
+        return 2
+
+    github_client = GitHubClient(
+        api_base=settings.github_api_base,
+        api_version=settings.github_api_version,
+        user_agent=settings.user_agent,
+        token=settings.github_token,
+        timeout_seconds=settings.http_timeout_seconds,
+        max_retries=settings.max_retries,
+        backoff_base_seconds=settings.backoff_base_seconds,
     )
+    ecosystems_client = EcosystemsClient(
+        api_base=settings.ecosystems_issues_api_base,
+        user_agent=settings.user_agent,
+        timeout_seconds=settings.http_timeout_seconds,
+        max_retries=settings.max_retries,
+        backoff_base_seconds=settings.backoff_base_seconds,
+    )
+    synchronizer = CandidateSynchronizer(ecosystems_client, github_client, store)
+    started_at = _utc_now()
+    result = CandidateRefresher(synchronizer, store).refresh(
+        repositories,
+        older_than_hours=args.older_than_hours,
+        limit=args.limit,
+    )
+    status = "completed"
+    if result.rate_limited or result.failed_count:
+        status = "partial" if result.refreshed_count or result.unavailable_count else "failed"
+    report = {
+        "run_id": str(uuid4()),
+        "status": status,
+        "started_at": started_at,
+        "finished_at": _utc_now(),
+        "repository_count": len(repositories),
+        "selected_count": result.selected_count,
+        "refreshed_count": result.refreshed_count,
+        "unavailable_count": result.unavailable_count,
+        "failed_count": result.failed_count,
+        "timeline_checked_count": result.timeline_checked_count,
+        "rate_limited": result.rate_limited,
+        "github_request_count": github_client.request_count,
+        "github_rate_limit_remaining": getattr(
+            github_client, "rate_limit_remaining", None
+        ),
+        "ecosystems_request_count": ecosystems_client.request_count,
+        "repositories_refreshed": list(result.repositories_refreshed),
+        "errors": list(result.errors),
+        "database_summary": store.summary(),
+    }
+    _write_json(args.output, report)
+    _json_dump(report)
+    return 0 if status == "completed" else 1
+
+
+def command_candidate_report(settings: Settings, args: argparse.Namespace) -> int:
+    store = _candidate_store(settings, args)
+    report = build_candidate_report(store)
+    _write_json(args.output, report)
+    markdown_path = (
+        Path(args.markdown_output).expanduser().resolve()
+        if args.markdown_output
+        else settings.repo_root / "docs" / "candidate_pool_report_v0.3.md"
+    )
+    markdown_path.parent.mkdir(parents=True, exist_ok=True)
+    markdown_path.write_text(
+        render_candidate_report_markdown(report), encoding="utf-8"
+    )
+    _json_dump(report)
     return 0
 
 
@@ -512,7 +741,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     def add_selection_arguments(command: argparse.ArgumentParser) -> None:
-        command.add_argument("--wave", type=int, default=1, choices=(1, 2))
+        command.add_argument("--wave", type=int, default=1, choices=(1, 2, 3, 4, 5))
         command.add_argument(
             "--repo",
             action="append",
@@ -570,8 +799,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Discover candidates via Ecosyste.ms and persist verified GitHub data in SQLite.",
     )
     add_selection_arguments(sync_command)
-    sync_command.add_argument("--limit", type=int, default=20, choices=range(1, 101))
+    sync_command.add_argument(
+        "--all-enabled",
+        action="store_true",
+        help="Select every enabled repository across all configured waves.",
+    )
+    sync_command.add_argument(
+        "--limit",
+        "--limit-per-repo",
+        dest="limit_per_repo",
+        type=int,
+        default=20,
+        choices=range(1, 101),
+    )
     sync_command.add_argument("--database", help="SQLite database path.")
+    sync_command.add_argument("--output", help="Optional JSON run report path.")
+    sync_command.add_argument(
+        "--dry-run", action="store_true", help="Print the plan without network access."
+    )
     sync_command.add_argument(
         "--no-github-hydration",
         action="store_true",
@@ -580,6 +825,34 @@ def build_parser() -> argparse.ArgumentParser:
     sync_command.add_argument("--allow-network", action="store_true")
     sync_command.add_argument("--allow-anonymous", action="store_true")
     sync_command.set_defaults(handler=command_sync_candidates)
+
+    refresh_command = subparsers.add_parser(
+        "refresh-candidates",
+        help="Refresh stale candidate eligibility and repository health from GitHub.",
+    )
+    add_selection_arguments(refresh_command)
+    refresh_command.add_argument("--all-enabled", action="store_true")
+    refresh_command.add_argument(
+        "--older-than-hours", type=int, default=24, choices=range(1, 24 * 365 + 1)
+    )
+    refresh_command.add_argument("--limit", type=int, default=500, choices=range(1, 5001))
+    refresh_command.add_argument("--database", help="SQLite database path.")
+    refresh_command.add_argument("--output", help="Optional JSON run report path.")
+    refresh_command.add_argument("--dry-run", action="store_true")
+    refresh_command.add_argument("--allow-network", action="store_true")
+    refresh_command.set_defaults(handler=command_refresh_candidates)
+
+    report_command = subparsers.add_parser(
+        "candidate-report", help="Generate an aggregate candidate-pool report offline."
+    )
+    report_command.add_argument("--database", help="SQLite database path.")
+    report_command.add_argument("--output", help="Optional JSON report path.")
+    report_command.add_argument(
+        "--markdown-output",
+        default=None,
+        help="Aggregate Markdown report path.",
+    )
+    report_command.set_defaults(handler=command_candidate_report)
 
     candidate_list_command = subparsers.add_parser(
         "list-candidates", help="List normalized candidates from the local SQLite DB."

@@ -35,11 +35,36 @@
           </div>
 
           <div id="preset-fields">
-            <label for="profile-select">我目前更接近</label>
-            <div class="select-wrap">
-              <select id="profile-select" name="profile" disabled>
-                <option>正在加载画像…</option>
-              </select>
+            <div class="field-group">
+              <label for="profile-select">贡献阶段</label>
+              <div class="select-wrap">
+                <select id="profile-select" name="profile" disabled>
+                  <option>正在加载模板…</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="quick-language">偏好语言</label>
+              <div class="select-wrap">
+                <select id="quick-language" disabled>
+                  <option value="Python">Python</option>
+                  <option value="JavaScript">JavaScript</option>
+                  <option value="TypeScript">TypeScript</option>
+                  <option value="Java">Java</option>
+                  <option value="Go">Go</option>
+                  <option value="Rust">Rust</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="quick-os">使用的操作系统</label>
+              <div class="select-wrap">
+                <select id="quick-os" disabled>
+                  <option value="windows">Windows</option>
+                  <option value="macos">macOS</option>
+                  <option value="linux">Linux</option>
+                </select>
+              </div>
             </div>
             <div class="profile-summary" id="profile-summary" aria-live="polite"></div>
           </div>
@@ -91,6 +116,10 @@
               <div class="skill-input-grid">
                 <label>Python <select data-skill="python"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
                 <label>JavaScript <select data-skill="javascript"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>TypeScript <select data-skill="typescript"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>Java <select data-skill="java"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>Go <select data-skill="go"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>Rust <select data-skill="rust"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
                 <label>测试 <select data-skill="testing"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
                 <label>Git <select data-skill="git"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
                 <label>构建工具 <select data-skill="build_tooling"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
@@ -106,6 +135,7 @@
                 <label>期望技能跨度<select id="skill-stretch"><option value="0" selected>0</option><option value="1">1</option><option value="2">2</option></select></label>
               </div>
             </details>
+            <p class="inventory-status" id="inventory-status" role="status">正在计算当前选择的可用任务…</p>
             <p class="form-error" id="profile-error" role="alert" hidden></p>
           </div>
 
@@ -113,7 +143,7 @@
             <span id="recommend-button-label">查看我的推荐</span>
             <span aria-hidden="true">→</span>
           </button>
-          <p class="privacy-note" id="privacy-note">预设画像和推荐反馈保存在本地 SQLite 中。</p>
+          <p class="privacy-note" id="privacy-note">快速画像不写入数据库；推荐反馈仅保存在本地 SQLite 中。</p>
         </form>
       </section>
 
