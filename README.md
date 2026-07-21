@@ -173,6 +173,10 @@ python -m oss_mentor list-candidates --eligibility eligible
 同步时会优先查询试点配置中的新人候选标签，再以近期开放 Issue 补足数量；
 因此同一套候选池同时支持新手信号和进阶任务发现。
 
+无需访问外部 API 的固定演示数据位于 `fixtures/oss_mentor_demo.sqlite3`。它只包含
+少量公开任务元数据和匿名 demo 画像，不包含 Issue 正文、反馈事件或真实用户数据。
+使用方法和重新导出流程见 [`fixtures/README.md`](fixtures/README.md)。
+
 提取可解释特征并查看两个通道的排序：
 
 ```powershell
