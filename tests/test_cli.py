@@ -185,5 +185,152 @@ class CliTests(unittest.TestCase):
         self.assertEqual(4, sum(row["status"] == "skipped_rate_limit" for row in report["repositories"]))
 
 
+    @staticmethod
+    def _quality_record() -> dict[str, object]:
+        return {
+            "task_candidate_id": 1,
+            "repository": "example/project",
+            "primary_language": "Python",
+            "is_archived": False,
+            "is_disabled": False,
+            "issue_number": 7,
+            "html_url": "https://github.com/example/project/issues/7",
+            "title": "Fix parser bug",
+            "body_text": "Steps to reproduce the parser bug.",
+            "labels_json": '["bug"]',
+            "state": "open",
+            "assignment_state": "unassigned",
+            "has_linked_open_pr": False,
+            "last_activity_at": "2026-01-02T00:00:00+00:00",
+            "github_verified_at": "2026-01-03T00:00:00+00:00",
+            "candidate_eligibility": "eligible",
+            "newcomer_label_signal": True,
+            "task_types_json": '["bug_fix"]',
+            "text_clarity_score": 80.0,
+            "estimated_code_difficulty": 1,
+            "estimated_setup_difficulty": 1,
+            "estimated_project_context_difficulty": 1,
+            "estimated_collaboration_difficulty": 0,
+            "estimated_effort_bucket": "half_day",
+            "novice_fit_probability": 0.8,
+            "newcomer_score": 80.0,
+            "growth_value_score": 40.0,
+            "feature_evidence_json": '{"source":"test"}',
+            "feature_extracted_at": "2026-01-04T00:00:00+00:00",
+            "task_feature_version": "task-features-v0.1",
+            "requirements": [
+                {
+                    "skill_name": "Python",
+                    "minimum_level": 1,
+                    "importance": 1.0,
+                    "requirement_source": "repository_primary_language",
+                    "feature_version": "task-features-v0.1",
+                }
+            ],
+            "skill_requirement_count": 1,
+        }
+
+    def test_data_quality_report_writes_json_and_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            database_path = root / "quality.sqlite3"
+            database_path.touch()
+            json_path = root / "reports" / "quality.json"
+            markdown_path = root / "docs" / "quality.md"
+            store = SimpleNamespace(
+                database_path=database_path,
+                data_quality_records=lambda: [self._quality_record()],
+            )
+            output = io.StringIO()
+
+            with patch(
+                "oss_mentor.cli._sqlite_store", return_value=store
+            ) as store_factory:
+                with redirect_stdout(output):
+                    result = main(
+                        [
+                            "report-data-quality",
+                            "--database",
+                            str(database_path),
+                            "--output",
+                            str(json_path),
+                            "--markdown-output",
+                            str(markdown_path),
+                        ]
+                    )
+
+            self.assertEqual(0, result)
+            store_factory.assert_called_once()
+            self.assertEqual(
+                str(database_path), store_factory.call_args.args[1]
+            )
+
+            report = json.loads(json_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                "data_quality_report_v0.2", report["schema_version"]
+            )
+            self.assertEqual(
+                1,
+                report["scope_summary"]["eligible_candidates"][
+                    "total_count"
+                ],
+            )
+            self.assertTrue(
+                report["acceptance_summary"]["overall_passed"]
+            )
+
+            markdown = markdown_path.read_text(encoding="utf-8")
+            self.assertIn("# OSS-Mentor 数据质量报告 v0.2", markdown)
+            self.assertIn("任务类型覆盖率", markdown)
+
+            summary = json.loads(output.getvalue())
+            self.assertEqual(
+                "data_quality_report_generated", summary["event"]
+            )
+            self.assertEqual(str(json_path.resolve()), summary["json_output"])
+            self.assertEqual(
+                str(markdown_path.resolve()), summary["markdown_output"]
+            )
+
+    def test_data_quality_report_without_paths_prints_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = Path(temporary) / "quality.sqlite3"
+            database_path.touch()
+            store = SimpleNamespace(
+                database_path=database_path,
+                data_quality_records=lambda: [self._quality_record()],
+            )
+            output = io.StringIO()
+
+            with patch("oss_mentor.cli._sqlite_store", return_value=store):
+                with redirect_stdout(output):
+                    result = main(
+                        [
+                            "report-data-quality",
+                            "--database",
+                            str(database_path),
+                        ]
+                    )
+
+            self.assertEqual(0, result)
+            summary = json.loads(output.getvalue())
+            self.assertEqual(
+                "data_quality_report_generated", summary["event"]
+            )
+            self.assertIsNone(summary["json_output"])
+            self.assertIsNone(summary["markdown_output"])
+            self.assertEqual(
+                1,
+                summary["scope_summary"]["eligible_candidates"][
+                    "total_count"
+                ],
+            )
+            self.assertEqual(1.0, summary["task_type_coverage_rate"])
+            self.assertEqual(
+                1.0, summary["skill_requirement_coverage_rate"]
+            )
+
+
+
 if __name__ == "__main__":
     unittest.main()
