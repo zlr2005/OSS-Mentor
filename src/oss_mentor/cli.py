@@ -35,6 +35,10 @@ from oss_mentor.collector.github_client import (
 from oss_mentor.collector.raw_store import RawStore
 from oss_mentor.collector.repository_collector import RepositoryCollector
 from oss_mentor.collector.source_comparison import IssueSourceComparator
+from oss_mentor.data_quality import (
+    build_data_quality_report,
+    render_data_quality_markdown,
+)
 from oss_mentor.developer_profiles import load_profiles
 from oss_mentor.matching import rank_for_profile
 from oss_mentor.sqlite_store import SQLiteCandidateStore
@@ -569,6 +573,56 @@ def command_candidate_report(settings: Settings, args: argparse.Namespace) -> in
     return 0
 
 
+def command_report_data_quality(
+    settings: Settings, args: argparse.Namespace
+) -> int:
+    store = _sqlite_store(settings, args.database)
+    if not store.database_path.is_file():
+        raise ConfigError(f"SQLite database does not exist: {store.database_path}")
+
+    report = build_data_quality_report(store.data_quality_records())
+    _write_json(args.output, report)
+
+    markdown_path: Path | None = None
+    if args.markdown_output:
+        markdown_path = Path(args.markdown_output).expanduser().resolve()
+        markdown_path.parent.mkdir(parents=True, exist_ok=True)
+        markdown_path.write_text(
+            render_data_quality_markdown(report),
+            encoding="utf-8",
+        )
+
+    primary_scope = report["policy"]["primary_scope"]
+    primary_quality = report["quality_by_scope"][primary_scope]
+    _json_dump(
+        {
+            "event": "data_quality_report_generated",
+            "database_path": str(store.database_path),
+            "json_output": (
+                str(Path(args.output).expanduser().resolve())
+                if args.output
+                else None
+            ),
+            "markdown_output": (
+                str(markdown_path) if markdown_path is not None else None
+            ),
+            "scope_summary": report["scope_summary"],
+            "primary_scope": primary_scope,
+            "task_type_coverage_rate": primary_quality[
+                "task_type_quality"
+            ]["coverage_rate"],
+            "skill_requirement_coverage_rate": primary_quality[
+                "skill_requirement_quality"
+            ]["coverage_rate"],
+            "difficulty_valid_rate": primary_quality["difficulty_quality"][
+                "valid_rate"
+            ],
+            "acceptance_summary": report["acceptance_summary"],
+        }
+    )
+    return 0
+
+
 def command_list_candidates(settings: Settings, args: argparse.Namespace) -> int:
     database_path = (
         Path(args.database).expanduser().resolve()
@@ -853,6 +907,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Aggregate Markdown report path.",
     )
     report_command.set_defaults(handler=command_candidate_report)
+
+    data_quality_command = subparsers.add_parser(
+        "report-data-quality",
+        help="Generate an offline task-feature data-quality report.",
+    )
+    data_quality_command.add_argument(
+        "--database", help="SQLite database path."
+    )
+    data_quality_command.add_argument(
+        "--output", help="Optional JSON report path."
+    )
+    data_quality_command.add_argument(
+        "--markdown-output",
+        help="Optional Markdown report path.",
+    )
+    data_quality_command.set_defaults(handler=command_report_data_quality)
 
     candidate_list_command = subparsers.add_parser(
         "list-candidates", help="List normalized candidates from the local SQLite DB."

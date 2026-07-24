@@ -491,6 +491,107 @@ class SQLiteCandidateStore:
             }
             for row in rows
         ]
+    def data_quality_records(self) -> list[dict[str, Any]]:
+        """Return one raw quality-analysis record per task candidate.
+
+        JSON columns stay encoded so the reporting layer can distinguish
+        missing values from malformed JSON. Skill requirements are queried
+        separately and grouped by task to avoid multiplying candidate rows.
+        """
+
+        with self.connect() as connection:
+            candidate_rows = connection.execute(
+                """
+                SELECT
+                    tc.task_candidate_id,
+                    tc.repository_id,
+                    r.full_name AS repository,
+                    r.primary_language,
+                    COALESCE(r.is_archived, 0) AS is_archived,
+                    COALESCE(r.is_disabled, 0) AS is_disabled,
+                    tc.issue_number,
+                    tc.github_issue_id,
+                    tc.html_url,
+                    tc.title,
+                    tc.body_text,
+                    tc.labels_json,
+                    tc.state,
+                    tc.assignment_state,
+                    tc.is_locked,
+                    tc.has_linked_open_pr,
+                    tc.comment_count,
+                    tc.last_activity_at,
+                    tc.github_verified_at,
+                    tc.candidate_eligibility,
+                    tc.newcomer_label_signal,
+                    tc.has_reproduction_steps,
+                    tc.has_acceptance_criteria,
+                    tc.has_expected_behavior,
+                    tc.has_affected_module_hint,
+                    tc.task_types_json,
+                    tc.text_clarity_score,
+                    tc.estimated_code_difficulty,
+                    tc.estimated_setup_difficulty,
+                    tc.estimated_project_context_difficulty,
+                    tc.estimated_collaboration_difficulty,
+                    tc.estimated_effort_bucket,
+                    tc.novice_fit_probability,
+                    tc.newcomer_score,
+                    tc.growth_value_score,
+                    tc.feature_evidence_json,
+                    tc.feature_extracted_at,
+                    tc.task_feature_version
+                FROM task_candidate AS tc
+                JOIN repository AS r USING (repository_id)
+                ORDER BY tc.task_candidate_id
+                """
+            ).fetchall()
+
+            requirement_rows = connection.execute(
+                """
+                SELECT
+                    task_candidate_id,
+                    skill_name,
+                    minimum_level,
+                    importance,
+                    requirement_source,
+                    feature_version
+                FROM task_skill_requirement
+                ORDER BY task_candidate_id, skill_name COLLATE NOCASE
+                """
+            ).fetchall()
+
+        requirements_by_task: dict[int, list[dict[str, Any]]] = {}
+        for row in requirement_rows:
+            task_candidate_id = int(row["task_candidate_id"])
+            requirements_by_task.setdefault(
+                task_candidate_id,
+                [],
+            ).append(dict(row))
+
+        records: list[dict[str, Any]] = []
+        for row in candidate_rows:
+            record = dict(row)
+            task_candidate_id = int(record["task_candidate_id"])
+            requirements = requirements_by_task.get(task_candidate_id, [])
+
+            record["is_archived"] = bool(record["is_archived"])
+            record["is_disabled"] = bool(record["is_disabled"])
+            record["is_locked"] = bool(record["is_locked"])
+
+            if record["has_linked_open_pr"] is not None:
+                record["has_linked_open_pr"] = bool(
+                    record["has_linked_open_pr"]
+                )
+
+            record["newcomer_label_signal"] = bool(
+                record["newcomer_label_signal"]
+            )
+            record["requirements"] = requirements
+            record["skill_requirement_count"] = len(requirements)
+            records.append(record)
+
+        return records
 
     def replace_skill_requirements(
         self,
