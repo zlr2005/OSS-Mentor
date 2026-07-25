@@ -75,6 +75,34 @@ class FakeStore:
             "changed": changed,
         }
 
+    def feedback_summary(self):
+        current = {
+            "total": len(self.feedback),
+            "interested": 0,
+            "not_suitable": 0,
+            "started": 0,
+            "completed": 0,
+        }
+        for state in self.feedback.values():
+            current[state] += 1
+        return {
+            "current": current,
+            "by_track": {
+                "newcomer": current,
+                "growth": {
+                    "total": 0,
+                    "interested": 0,
+                    "not_suitable": 0,
+                    "started": 0,
+                    "completed": 0,
+                },
+            },
+            "transitions": {
+                "interested_to_started": 0,
+                "started_to_completed": 0,
+            },
+        }
+
 
 class ApiTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -175,6 +203,21 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(saved.body["feedback"]["changed"])
         self.assertEqual("interested", recommendations.body["items"][0]["feedback_state"])
         self.assertEqual("preset:demo", recommendations.body["feedback_context"])
+
+    def test_feedback_summary_route_returns_current_counts(self) -> None:
+        self.api.handle(
+            "POST",
+            "/api/v1/feedback",
+            body={
+                "task_candidate_id": 1,
+                "feedback_context": "preset:demo",
+                "feedback_state": "interested",
+            },
+        )
+        response = self.api.handle("GET", "/api/v1/feedback/summary")
+        self.assertEqual(200, response.status)
+        self.assertEqual(1, response.body["summary"]["current"]["total"])
+        self.assertEqual(1, response.body["summary"]["current"]["interested"])
 
     def test_custom_profile_can_receive_anonymous_feedback_context(self) -> None:
         response = self.api.handle(

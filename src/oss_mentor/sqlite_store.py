@@ -891,6 +891,63 @@ class SQLiteCandidateStore:
             "updated_at": now,
         }
 
+    def feedback_summary(self) -> dict[str, Any]:
+        """Return current feedback-state counts and common conversion paths."""
+
+        self.initialize()
+        states = ("interested", "not_suitable", "started", "completed")
+        tracks = ("newcomer", "growth")
+        current = {state: 0 for state in states}
+        by_track = {
+            track: {state: 0 for state in states}
+            for track in tracks
+        }
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT service_track, feedback_state, COUNT(*) AS count
+                FROM recommendation_feedback
+                GROUP BY service_track, feedback_state
+                """
+            ).fetchall()
+            for row in rows:
+                state = str(row["feedback_state"])
+                track = str(row["service_track"])
+                count = int(row["count"])
+                if state in current:
+                    current[state] += count
+                if track in by_track and state in by_track[track]:
+                    by_track[track][state] += count
+
+            transition_rows = connection.execute(
+                """
+                SELECT
+                    previous_state,
+                    feedback_state,
+                    COUNT(*) AS count
+                FROM recommendation_feedback_event
+                WHERE previous_state IS NOT NULL
+                GROUP BY previous_state, feedback_state
+                """
+            ).fetchall()
+
+        transitions = {
+            "interested_to_started": 0,
+            "started_to_completed": 0,
+        }
+        for row in transition_rows:
+            key = f"{row['previous_state']}_to_{row['feedback_state']}"
+            if key in transitions:
+                transitions[key] = int(row["count"])
+        return {
+            "current": {"total": sum(current.values()), **current},
+            "by_track": {
+                track: {"total": sum(counts.values()), **counts}
+                for track, counts in by_track.items()
+            },
+            "transitions": transitions,
+        }
+
     def update_features(
         self,
         connection: sqlite3.Connection,

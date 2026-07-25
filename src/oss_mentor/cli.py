@@ -41,6 +41,12 @@ from oss_mentor.data_quality import (
 )
 from oss_mentor.developer_profiles import load_profiles
 from oss_mentor.matching import rank_for_profile
+from oss_mentor.ranking_evaluation import (
+    MATCH_VERSION_V2,
+    build_ranking_evaluation_report,
+    load_task_fit_annotations,
+    render_ranking_evaluation_markdown,
+)
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 from oss_mentor.task_features import extract_task_features, infer_skill_requirements
 
@@ -758,6 +764,94 @@ def command_match_candidates(settings: Settings, args: argparse.Namespace) -> in
     return 0
 
 
+def _profile_for_track(
+    store: SQLiteCandidateStore,
+    *,
+    track: str,
+    profile_key: str | None,
+) -> dict[str, object]:
+    if profile_key:
+        profile = store.profile_for_matching(profile_key)
+        service_track = "newcomer" if profile["service_track"] == "newcomer" else "growth"
+        if service_track != track:
+            raise ConfigError(
+                f"profile {profile_key} is for {service_track}, not requested track {track}"
+            )
+        return profile
+
+    for profile_summary in store.list_profiles_public():
+        service_track = str(profile_summary["service_track"])
+        if service_track == track or service_track == "hybrid":
+            return store.profile_for_matching(str(profile_summary["profile_key"]))
+    raise ConfigError(f"no developer profile found for track: {track}")
+
+
+def command_evaluate_ranking(settings: Settings, args: argparse.Namespace) -> int:
+    store = _sqlite_store(settings, args.database)
+    if not store.database_path.is_file():
+        raise ConfigError(f"SQLite database does not exist: {store.database_path}")
+    try:
+        annotations = load_task_fit_annotations(
+            Path(args.annotations).expanduser().resolve()
+        )
+        profile = _profile_for_track(
+            store,
+            track=args.track,
+            profile_key=args.profile,
+        )
+        report = build_ranking_evaluation_report(
+            track=args.track,
+            profile=profile,
+            candidates=store.matchable_candidates(),
+            annotations=annotations,
+            limit=args.limit,
+            selected_match_version=args.match_version,
+        )
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
+
+    json_output = (
+        args.output
+        if args.output
+        else str(settings.repo_root / "data" / "reports" / "ranking_evaluation_v0.2.json")
+    )
+    markdown_output = (
+        Path(args.markdown_output).expanduser().resolve()
+        if args.markdown_output
+        else settings.repo_root / "docs" / "ranking_evaluation_v0.2.md"
+    )
+    _write_json(json_output, report)
+    markdown_output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output.write_text(
+        render_ranking_evaluation_markdown(report),
+        encoding="utf-8",
+    )
+    selected_metrics = report["metrics_by_version"][args.match_version]
+    _json_dump(
+        {
+            "event": "ranking_evaluation_generated",
+            "database_path": str(store.database_path),
+            "track": args.track,
+            "profile_key": report["profile_key"],
+            "match_version": args.match_version,
+            "json_output": str(Path(json_output).expanduser().resolve()),
+            "markdown_output": str(markdown_output),
+            "precision_at_5": selected_metrics["precision_at_5"],
+            "precision_at_10": selected_metrics["precision_at_10"],
+            "warning_count": len(report["warnings"]),
+        }
+    )
+    return 0
+
+
+def command_feedback_summary(settings: Settings, args: argparse.Namespace) -> int:
+    store = _sqlite_store(settings, args.database)
+    if not store.database_path.is_file():
+        raise ConfigError(f"SQLite database does not exist: {store.database_path}")
+    _json_dump(store.feedback_summary())
+    return 0
+
+
 def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
     store = _sqlite_store(settings, args.database)
     if not store.database_path.is_file():
@@ -967,6 +1061,38 @@ def build_parser() -> argparse.ArgumentParser:
     match_command.add_argument("--database", help="SQLite database path.")
     match_command.add_argument("--limit", type=int, default=20, choices=range(1, 501))
     match_command.set_defaults(handler=command_match_candidates)
+
+    evaluate_command = subparsers.add_parser(
+        "evaluate-ranking",
+        help="Evaluate recommendation ranking against a manual task-fit annotation CSV.",
+    )
+    evaluate_command.add_argument("--database", help="SQLite database path.")
+    evaluate_command.add_argument("--track", required=True, choices=("newcomer", "growth"))
+    evaluate_command.add_argument(
+        "--annotations",
+        required=True,
+        help="CSV file with task-fit annotations.",
+    )
+    evaluate_command.add_argument(
+        "--profile",
+        help="Developer profile key. Defaults to the first local profile for the track.",
+    )
+    evaluate_command.add_argument(
+        "--match-version",
+        default=MATCH_VERSION_V2,
+        choices=("developer-task-match-v0.1", "developer-task-match-v0.2"),
+    )
+    evaluate_command.add_argument("--limit", type=int, default=50, choices=range(1, 501))
+    evaluate_command.add_argument("--output", help="Optional JSON report path.")
+    evaluate_command.add_argument("--markdown-output", help="Optional Markdown report path.")
+    evaluate_command.set_defaults(handler=command_evaluate_ranking)
+
+    feedback_summary_command = subparsers.add_parser(
+        "feedback-summary",
+        help="Print current recommendation feedback counts and transitions.",
+    )
+    feedback_summary_command.add_argument("--database", help="SQLite database path.")
+    feedback_summary_command.set_defaults(handler=command_feedback_summary)
 
     serve_command = subparsers.add_parser(
         "serve-api", help="Serve the local read-only recommendation API."

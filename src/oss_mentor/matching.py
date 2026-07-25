@@ -6,7 +6,10 @@ from dataclasses import dataclass
 from typing import Any
 
 
-MATCH_VERSION = "developer-task-match-v0.1"
+MATCH_VERSION_V1 = "developer-task-match-v0.1"
+MATCH_VERSION_V2 = "developer-task-match-v0.2"
+MATCH_VERSION = MATCH_VERSION_V1
+SUPPORTED_MATCH_VERSIONS = (MATCH_VERSION_V1, MATCH_VERSION_V2)
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,7 +35,14 @@ def _platform_level(profile: dict[str, Any], skill_name: str) -> int | None:
     return 1 if platform in set(profile["operating_systems"]) else 0
 
 
-def match_candidate(profile: dict[str, Any], task: dict[str, Any]) -> MatchResult | None:
+def match_candidate(
+    profile: dict[str, Any],
+    task: dict[str, Any],
+    *,
+    match_version: str = MATCH_VERSION,
+) -> MatchResult | None:
+    if match_version not in SUPPORTED_MATCH_VERSIONS:
+        raise ValueError(f"unsupported match version: {match_version}")
     effective_track = "newcomer" if profile["service_track"] == "newcomer" else "growth"
     if effective_track == "newcomer" and not bool(task["newcomer_label_signal"]):
         return None
@@ -78,7 +88,13 @@ def match_candidate(profile: dict[str, Any], task: dict[str, Any]) -> MatchResul
             }
         )
         if importance >= 1.0 and gap > 0:
-            if platform_level is not None or effective_track == "newcomer" or gap > 1:
+            is_primary_language = name.casefold() in preferred_languages
+            if (
+                platform_level is not None
+                or effective_track == "newcomer"
+                or gap > 1
+                or (match_version == MATCH_VERSION_V2 and is_primary_language)
+            ):
                 critical_mismatch = True
     if critical_mismatch:
         return None
@@ -96,14 +112,30 @@ def match_candidate(profile: dict[str, Any], task: dict[str, Any]) -> MatchResul
 
     if effective_track == "newcomer":
         base = float(task["newcomer_score"] or 0)
-        score = base * 0.60 + coverage * 30 + preference_score
+        if match_version == MATCH_VERSION_V2:
+            clarity = float(task.get("text_clarity_score") or 0)
+            score = base * 0.52 + coverage * 34 + preference_score * 1.2 + clarity * 0.08
+        else:
+            score = base * 0.60 + coverage * 30 + preference_score
         reasons.append("newcomer_label_required")
     else:
         base = float(task["growth_value_score"] or 0)
         desired = int(profile["desired_skill_stretch"])
         stretch_score = max(0.0, 1.0 - abs(maximum_gap - desired) / 2.0) * 20
-        score = base * 0.50 + coverage * 20 + stretch_score + preference_score
+        if match_version == MATCH_VERSION_V2:
+            clarity = float(task.get("text_clarity_score") or 0)
+            score = (
+                base * 0.42
+                + coverage * 26
+                + stretch_score
+                + preference_score * 1.2
+                + clarity * 0.06
+            )
+        else:
+            score = base * 0.50 + coverage * 20 + stretch_score + preference_score
         reasons.append(f"stretch_target={desired}")
+    if match_version == MATCH_VERSION_V2:
+        reasons.append("v0.2_weighting")
     return MatchResult(
         task_candidate_id=int(task["task_candidate_id"]),
         repository=str(task["repository"]),
@@ -116,16 +148,47 @@ def match_candidate(profile: dict[str, Any], task: dict[str, Any]) -> MatchResul
         maximum_skill_gap=maximum_gap,
         skill_gaps=tuple(gaps),
         reasons=tuple(reasons),
+        match_version=match_version,
     )
 
 
 def rank_for_profile(
-    profile: dict[str, Any], tasks: list[dict[str, Any]], *, limit: int = 20
+    profile: dict[str, Any],
+    tasks: list[dict[str, Any]],
+    *,
+    limit: int = 20,
+    match_version: str = MATCH_VERSION,
 ) -> list[MatchResult]:
-    results = [result for task in tasks if (result := match_candidate(profile, task))]
-    return sorted(results, key=lambda item: (-item.match_score, item.repository, item.issue_number))[
-        :limit
+    results = [
+        result
+        for task in tasks
+        if (result := match_candidate(profile, task, match_version=match_version))
     ]
+    ranked = sorted(
+        results, key=lambda item: (-item.match_score, item.repository, item.issue_number)
+    )
+    if match_version == MATCH_VERSION_V1:
+        return ranked[:limit]
+
+    selected: list[MatchResult] = []
+    repository_counts: dict[str, int] = {}
+    pool = list(ranked)
+    while pool and len(selected) < limit:
+        best_index = min(
+            range(len(pool)),
+            key=lambda index: (
+                repository_counts.get(pool[index].repository, 0),
+                -pool[index].match_score,
+                pool[index].repository,
+                pool[index].issue_number,
+            ),
+        )
+        chosen = pool.pop(best_index)
+        selected.append(chosen)
+        repository_counts[chosen.repository] = (
+            repository_counts.get(chosen.repository, 0) + 1
+        )
+    return selected
 
 
 def recommendation_availability(

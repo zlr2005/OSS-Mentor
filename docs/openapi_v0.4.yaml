@@ -103,6 +103,31 @@ paths:
         "404": {description: Candidate task not found}
         "413": {description: Request body exceeds 32 KiB}
         "415": {description: Content-Type is not application/json}
+  /api/v1/feedback/summary:
+    get:
+      summary: Summarize current recommendation feedback states and common transitions
+      responses:
+        "200":
+          description: Current state counts, per-track counts, and conversion transitions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [summary, api_version]
+                properties:
+                  api_version: {type: string, enum: [v0.4]}
+                  summary:
+                    type: object
+                    required: [current, by_track, transitions]
+                    properties:
+                      current: {type: object}
+                      by_track: {type: object}
+                      transitions:
+                        type: object
+                        required: [interested_to_started, started_to_completed]
+                        properties:
+                          interested_to_started: {type: integer, minimum: 0}
+                          started_to_completed: {type: integer, minimum: 0}
 components:
   schemas:
     CustomProfile:
