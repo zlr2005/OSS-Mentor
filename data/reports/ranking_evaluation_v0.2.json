@@ -1,0 +1,353 @@
+{
+  "annotation_summary": {
+    "agreement": {
+      "double_annotated_task_count": 0,
+      "large_disagreement_count": 0,
+      "large_disagreement_rate": 0.0
+    },
+    "annotator_count": 1,
+    "row_count": 33,
+    "task_count": 33
+  },
+  "candidate_count": 48,
+  "limitations": [
+    "The report uses manually annotated samples and does not train a model.",
+    "Small annotation sets can make diversity and precision metrics unstable.",
+    "Feedback events are summarized separately and are not used for automatic reranking."
+  ],
+  "metrics_by_version": {
+    "developer-task-match-v0.1": {
+      "basic_skill_coverage_rate": 0.806,
+      "critical_skill_mismatch_rate": 0.125,
+      "empty_recommendation_rate": 0.0,
+      "platform_mismatch_rate": 0.0,
+      "precision_at_10": 1.0,
+      "precision_at_5": 1.0,
+      "recommendation_count": 8,
+      "repository_diversity": 3,
+      "task_type_diversity": 5
+    },
+    "developer-task-match-v0.2": {
+      "basic_skill_coverage_rate": 0.839,
+      "critical_skill_mismatch_rate": 0.0,
+      "empty_recommendation_rate": 0.0,
+      "platform_mismatch_rate": 0.0,
+      "precision_at_10": 1.0,
+      "precision_at_5": 1.0,
+      "recommendation_count": 7,
+      "repository_diversity": 3,
+      "task_type_diversity": 3
+    }
+  },
+  "profile_key": "growth_python_crossplatform",
+  "schema_version": "ranking_evaluation_v0.2",
+  "selected_match_version": "developer-task-match-v0.2",
+  "selected_top10": [
+    {
+      "annotation_fit": 2,
+      "html_url": "https://github.com/vercel/next.js/issues/38863",
+      "issue_number": 38863,
+      "match_score": 68.55,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "stretch_target=1",
+        "v0.2_weighting"
+      ],
+      "repository": "vercel/next.js",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "bug_fix"
+        },
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "JavaScript"
+        }
+      ],
+      "task_candidate_id": 483,
+      "title": "POST request succeeds for pages with next dev",
+      "track": "growth"
+    },
+    {
+      "annotation_fit": 2,
+      "html_url": "https://github.com/scikit-learn/scikit-learn/issues/22827",
+      "issue_number": 22827,
+      "match_score": 61.8,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 0,
+      "reasons": [
+        "skill_coverage=1.00",
+        "preferred_language",
+        "preferred_task_type",
+        "stretch_target=1",
+        "v0.2_weighting"
+      ],
+      "repository": "scikit-learn/scikit-learn",
+      "skill_coverage": 1.0,
+      "skill_gaps": [
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "Python"
+        },
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "testing"
+        }
+      ],
+      "task_candidate_id": 42,
+      "title": "Improve tests by using global_random_seed fixture to make them less seed-sensitive",
+      "track": "growth"
+    },
+    {
+      "annotation_fit": 3,
+      "html_url": "https://github.com/nodejs/undici/issues/4143",
+      "issue_number": 4143,
+      "match_score": 60.2,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 2,
+      "reasons": [
+        "skill_coverage=0.75",
+        "preferred_language",
+        "preferred_task_type",
+        "stretch_target=1",
+        "v0.2_weighting"
+      ],
+      "repository": "nodejs/undici",
+      "skill_coverage": 0.75,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 2,
+          "importance": 0.6,
+          "required_level": 2,
+          "skill": "feature"
+        },
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 2,
+          "skill": "JavaScript"
+        }
+      ],
+      "task_candidate_id": 1182,
+      "title": "Default pipelining to maxConcurrentStreams with allowH2",
+      "track": "growth"
+    },
+    {
+      "annotation_fit": 2,
+      "html_url": "https://github.com/vercel/next.js/issues/41281",
+      "issue_number": 41281,
+      "match_score": 68.55,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "stretch_target=1",
+        "v0.2_weighting"
+      ],
+      "repository": "vercel/next.js",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "bug_fix"
+        },
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "JavaScript"
+        }
+      ],
+      "task_candidate_id": 485,
+      "title": "Inconsistent Error Messaging / Handling in getStaticPaths",
+      "track": "growth"
+    },
+    {
+      "annotation_fit": 3,
+      "html_url": "https://github.com/nodejs/undici/issues/4144",
+      "issue_number": 4144,
+      "match_score": 60.2,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 2,
+      "reasons": [
+        "skill_coverage=0.75",
+        "preferred_language",
+        "preferred_task_type",
+        "stretch_target=1",
+        "v0.2_weighting"
+      ],
+      "repository": "nodejs/undici",
+      "skill_coverage": 0.75,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 2,
+          "importance": 0.6,
+          "required_level": 2,
+          "skill": "feature"
+        },
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 2,
+          "skill": "JavaScript"
+        }
+      ],
+      "task_candidate_id": 1180,
+      "title": "Send raw headers, without validation/modification",
+      "track": "growth"
+    },
+    {
+      "annotation_fit": 2,
+      "html_url": "https://github.com/vercel/next.js/issues/42846",
+      "issue_number": 42846,
+      "match_score": 68.55,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "stretch_target=1",
+        "v0.2_weighting"
+      ],
+      "repository": "vercel/next.js",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "bug_fix"
+        },
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "JavaScript"
+        }
+      ],
+      "task_candidate_id": 491,
+      "title": "Parameter on `AppType` is used incorrectly",
+      "track": "growth"
+    },
+    {
+      "annotation_fit": 3,
+      "html_url": "https://github.com/nodejs/undici/issues/4287",
+      "issue_number": 4287,
+      "match_score": 60.2,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 2,
+      "reasons": [
+        "skill_coverage=0.75",
+        "preferred_language",
+        "preferred_task_type",
+        "stretch_target=1",
+        "v0.2_weighting"
+      ],
+      "repository": "nodejs/undici",
+      "skill_coverage": 0.75,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 2,
+          "importance": 0.6,
+          "required_level": 2,
+          "skill": "feature"
+        },
+        {
+          "developer_level": 2,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 2,
+          "skill": "JavaScript"
+        }
+      ],
+      "task_candidate_id": 1151,
+      "title": "feature: Add low-level API for capturing and managing sessions/clients in Agent",
+      "track": "growth"
+    }
+  ],
+  "top10_changes": {
+    "added": [],
+    "moved": [
+      {
+        "from_rank": 5,
+        "issue_number": 4143,
+        "repository": "nodejs/undici",
+        "to_rank": 3
+      },
+      {
+        "from_rank": 6,
+        "issue_number": 4144,
+        "repository": "nodejs/undici",
+        "to_rank": 5
+      },
+      {
+        "from_rank": 8,
+        "issue_number": 22827,
+        "repository": "scikit-learn/scikit-learn",
+        "to_rank": 2
+      },
+      {
+        "from_rank": 2,
+        "issue_number": 38863,
+        "repository": "vercel/next.js",
+        "to_rank": 1
+      },
+      {
+        "from_rank": 3,
+        "issue_number": 41281,
+        "repository": "vercel/next.js",
+        "to_rank": 4
+      },
+      {
+        "from_rank": 4,
+        "issue_number": 42846,
+        "repository": "vercel/next.js",
+        "to_rank": 6
+      }
+    ],
+    "removed": [
+      {
+        "issue_number": 95745,
+        "repository": "vercel/next.js"
+      }
+    ]
+  },
+  "track": "growth",
+  "warnings": [],
+  "weight_change_rationale": [
+    "v0.2 raises the skill-coverage contribution to reduce critical skill misses.",
+    "v0.2 keeps explicit platform requirements as hard filters.",
+    "v0.2 applies repository-balanced top-k selection to reduce concentration."
+  ]
+}
