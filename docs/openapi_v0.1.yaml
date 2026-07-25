@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: OSS-Mentor Local Recommendation API
+  version: 0.1.0
+  description: Read-only local MVP API. It does not expose issue bodies or raw skill evidence.
+servers:
+  - url: http://127.0.0.1:8765
+paths:
+  /health:
+    get:
+      summary: Check local API availability
+      responses:
+        "200":
+          description: API is available
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, api_version, database_ready]
+                properties:
+                  status: {type: string, enum: [ok]}
+                  api_version: {type: string}
+                  database_ready: {type: boolean}
+  /api/v1/profiles:
+    get:
+      summary: List public-safe local profile summaries
+      responses:
+        "200":
+          description: Profile summaries without detailed skills or identity fields
+  /api/v1/recommendations:
+    get:
+      summary: Get explainable recommendations for a local profile
+      parameters:
+        - name: profile_key
+          in: query
+          required: true
+          schema: {type: string}
+        - name: limit
+          in: query
+          required: false
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200":
+          description: Ranked recommendations and skill-gap explanations
+        "400":
+          description: Invalid query parameter
+        "404":
+          description: Profile not found

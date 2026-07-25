@@ -1,0 +1,75 @@
+{
+  "schema_version": "developer-profiles-v0.1",
+  "profiles": [
+    {
+      "profile_key": "newcomer_python_macos",
+      "display_name": "匿名 Python 新手（macOS）",
+      "service_track": "newcomer",
+      "preferred_languages": ["Python"],
+      "operating_systems": ["macos"],
+      "preferred_task_types": ["bug_fix", "testing", "documentation"],
+      "max_code_difficulty": 1,
+      "max_setup_difficulty": 2,
+      "desired_skill_stretch": 0,
+      "profile_source": "demo",
+      "skills": {
+        "Python": 1,
+        "testing": 1,
+        "git": 1
+      }
+    },
+    {
+      "profile_key": "newcomer_python_windows",
+      "display_name": "匿名 Python 新手（Windows）",
+      "service_track": "newcomer",
+      "preferred_languages": ["Python"],
+      "operating_systems": ["windows"],
+      "preferred_task_types": ["bug_fix", "testing", "documentation"],
+      "max_code_difficulty": 1,
+      "max_setup_difficulty": 2,
+      "desired_skill_stretch": 0,
+      "profile_source": "demo",
+      "skills": {
+        "Python": 1,
+        "testing": 1,
+        "git": 1
+      }
+    },
+    {
+      "profile_key": "newcomer_python_linux",
+      "display_name": "匿名 Python 新手（Linux）",
+      "service_track": "newcomer",
+      "preferred_languages": ["Python"],
+      "operating_systems": ["linux"],
+      "preferred_task_types": ["bug_fix", "testing", "documentation"],
+      "max_code_difficulty": 1,
+      "max_setup_difficulty": 2,
+      "desired_skill_stretch": 0,
+      "profile_source": "demo",
+      "skills": {
+        "Python": 1,
+        "testing": 1,
+        "git": 1
+      }
+    },
+    {
+      "profile_key": "growth_python_crossplatform",
+      "display_name": "匿名 Python 进阶开发者",
+      "service_track": "growth",
+      "preferred_languages": ["Python", "JavaScript"],
+      "operating_systems": ["macos", "linux", "windows"],
+      "preferred_task_types": ["bug_fix", "testing", "build_tooling", "feature"],
+      "max_code_difficulty": 3,
+      "max_setup_difficulty": 3,
+      "desired_skill_stretch": 1,
+      "profile_source": "demo",
+      "skills": {
+        "Python": 2,
+        "JavaScript": 2,
+        "testing": 2,
+        "build_tooling": 1,
+        "git": 3
+      }
+    }
+  ]
+}

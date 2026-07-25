@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: OSS-Mentor Local Recommendation API
+  version: 0.3.0
+  description: Local recommendations, transient custom profiles, and local feedback state.
+servers:
+  - url: http://127.0.0.1:8765
+paths:
+  /health:
+    get:
+      summary: Check local API availability
+      responses:
+        "200": {description: API is available}
+  /api/v1/profiles:
+    get:
+      summary: List public-safe local profile templates
+      responses:
+        "200": {description: Profile template summaries}
+  /api/v1/recommendations:
+    get:
+      summary: Recommend tasks for a stored profile and restore feedback states
+      parameters:
+        - name: profile_key
+          in: query
+          required: true
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200": {description: Ranked recommendations with feedback context and states}
+        "400": {description: Invalid query}
+        "404": {description: Profile not found}
+  /api/v1/recommendations/custom:
+    post:
+      summary: Recommend tasks for a transient custom profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profile]
+              properties:
+                limit: {type: integer, minimum: 1, maximum: 100, default: 10}
+                feedback_client_id: {type: string, format: uuid}
+                profile: {type: object}
+      responses:
+        "200": {description: Recommendations; profile_persisted is false}
+        "400": {description: Invalid custom profile, limit, or client ID}
+  /api/v1/feedback:
+    post:
+      summary: Save the current feedback state and append a change event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [task_candidate_id, feedback_context, feedback_state]
+              properties:
+                task_candidate_id: {type: integer, minimum: 1}
+                feedback_context: {type: string, maxLength: 140}
+                feedback_state:
+                  type: string
+                  enum: [interested, not_suitable, started, completed]
+      responses:
+        "200": {description: Current feedback and whether a new event was appended}
+        "400": {description: Invalid feedback payload}
+        "404": {description: Candidate task not found}
+        "413": {description: Request body exceeds 32 KiB}
+        "415": {description: Content-Type is not application/json}

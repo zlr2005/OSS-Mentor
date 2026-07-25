@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="OSS-Mentor 开源任务个性化推荐原型">
+    <title>OSS-Mentor · 找到下一次贡献</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="OSS-Mentor 首页">
+        <span class="brand-mark" aria-hidden="true">OM</span>
+        <span>OSS-Mentor</span>
+      </a>
+      <span class="status-pill" id="api-status">正在连接本地服务</span>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">从合适的任务开始，留下真实的开源足迹</p>
+          <h1 id="hero-title">找到既做得了，<br><span>又能让你成长</span>的任务。</h1>
+          <p class="hero-description">
+            OSS-Mentor 根据你的技能、环境和成长目标，从仍可领取的开源任务中给出可解释推荐。
+          </p>
+        </div>
+
+        <form class="profile-panel" id="recommendation-form">
+          <div class="step-label"><span>01</span> 告诉我们你的情况</div>
+          <div class="mode-switch" aria-label="画像填写方式">
+            <button type="button" id="preset-mode" class="mode-button active" aria-pressed="true">快速模板</button>
+            <button type="button" id="custom-mode" class="mode-button" aria-pressed="false">自定义画像</button>
+          </div>
+
+          <div id="preset-fields">
+            <div class="field-group">
+              <label for="profile-select">贡献阶段</label>
+              <div class="select-wrap">
+                <select id="profile-select" name="profile" disabled>
+                  <option>正在加载模板…</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="quick-language">偏好语言</label>
+              <div class="select-wrap">
+                <select id="quick-language" disabled>
+                  <option value="Python">Python</option>
+                  <option value="JavaScript">JavaScript</option>
+                  <option value="TypeScript">TypeScript</option>
+                  <option value="Java">Java</option>
+                  <option value="Go">Go</option>
+                  <option value="Rust">Rust</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="quick-os">使用的操作系统</label>
+              <div class="select-wrap">
+                <select id="quick-os" disabled>
+                  <option value="windows">Windows</option>
+                  <option value="macos">macOS</option>
+                  <option value="linux">Linux</option>
+                </select>
+              </div>
+            </div>
+            <div class="profile-summary" id="profile-summary" aria-live="polite"></div>
+          </div>
+
+          <div id="custom-fields" hidden>
+            <div class="field-group">
+              <label for="custom-track">贡献阶段</label>
+              <select id="custom-track">
+                <option value="newcomer">零贡献 / 首次贡献者</option>
+                <option value="growth">进阶开发者</option>
+              </select>
+            </div>
+
+            <fieldset>
+              <legend>偏好语言（可多选）</legend>
+              <div class="choice-grid" id="language-choices">
+                <label><input type="checkbox" value="Python" checked> Python</label>
+                <label><input type="checkbox" value="JavaScript"> JavaScript</label>
+                <label><input type="checkbox" value="TypeScript"> TypeScript</label>
+                <label><input type="checkbox" value="Java"> Java</label>
+                <label><input type="checkbox" value="Go"> Go</label>
+                <label><input type="checkbox" value="Rust"> Rust</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>可用操作系统（可多选）</legend>
+              <div class="choice-grid" id="os-choices">
+                <label><input type="checkbox" value="windows" checked> Windows</label>
+                <label><input type="checkbox" value="macos"> macOS</label>
+                <label><input type="checkbox" value="linux"> Linux</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>希望尝试的任务</legend>
+              <div class="choice-grid" id="task-choices">
+                <label><input type="checkbox" value="bug_fix" checked> Bug 修复</label>
+                <label><input type="checkbox" value="testing" checked> 测试</label>
+                <label><input type="checkbox" value="documentation"> 文档</label>
+                <label><input type="checkbox" value="feature"> 功能开发</label>
+                <label><input type="checkbox" value="refactor"> 重构</label>
+                <label><input type="checkbox" value="build_tooling"> 构建工具</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>技能水平：0 未接触 · 4 熟练</legend>
+              <div class="skill-input-grid">
+                <label>Python <select data-skill="python"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>JavaScript <select data-skill="javascript"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>TypeScript <select data-skill="typescript"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>Java <select data-skill="java"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>Go <select data-skill="go"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>Rust <select data-skill="rust"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>测试 <select data-skill="testing"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>Git <select data-skill="git"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>构建工具 <select data-skill="build_tooling"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+                <label>文档 <select data-skill="documentation"><option selected>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+              </div>
+            </fieldset>
+
+            <details class="advanced-fields">
+              <summary>调整难度与成长空间</summary>
+              <div class="advanced-grid">
+                <label>代码难度上限<select id="code-difficulty"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select></label>
+                <label>环境难度上限<select id="setup-difficulty"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
+                <label>期望技能跨度<select id="skill-stretch"><option value="0" selected>0</option><option value="1">1</option><option value="2">2</option></select></label>
+              </div>
+            </details>
+            <p class="inventory-status" id="inventory-status" role="status">正在计算当前选择的可用任务…</p>
+            <p class="form-error" id="profile-error" role="alert" hidden></p>
+          </div>
+
+          <button class="primary-button" type="submit" disabled id="recommend-button">
+            <span id="recommend-button-label">查看我的推荐</span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <p class="privacy-note" id="privacy-note">快速画像不写入数据库；推荐反馈仅保存在本地 SQLite 中。</p>
+        </form>
+      </section>
+
+      <section class="results-section" aria-labelledby="results-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">个性化推荐</p>
+            <h2 id="results-title">适合你的下一步</h2>
+          </div>
+          <p id="result-count" class="result-count">选择画像后生成推荐</p>
+        </div>
+
+        <div id="message" class="message-card" role="status">
+          <div class="message-icon" aria-hidden="true">↗</div>
+          <div>
+            <h3>先选择一个画像</h3>
+            <p>我们会展示任务、匹配分、推荐理由以及需要补齐的技能。</p>
+          </div>
+        </div>
+
+        <div id="recommendation-list" class="recommendation-list" aria-live="polite"></div>
+      </section>
+
+      <section class="method-section" aria-labelledby="method-title">
+        <div>
+          <p class="eyebrow">推荐逻辑</p>
+          <h2 id="method-title">每一个分数，都可以解释。</h2>
+        </div>
+        <div class="method-grid">
+          <article><span>01</span><h3>确认仍可领取</h3><p>排除已分配、已关闭或已有开放 PR 的任务。</p></article>
+          <article><span>02</span><h3>检查能力与环境</h3><p>匹配语言、操作系统、任务类型和难度上限。</p></article>
+          <article><span>03</span><h3>保留成长空间</h3><p>新手避免关键能力缺口，进阶用户获得受控的技能跨度。</p></article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>OSS-Mentor MVP</span>
+      <span>本地运行 · 数据可追溯 · 推荐可解释</span>
+    </footer>
+  </body>
+</html>
