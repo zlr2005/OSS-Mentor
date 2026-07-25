@@ -108,6 +108,12 @@ class SQLiteStoreTests(unittest.TestCase):
             self.assertTrue(changed["changed"])
             self.assertEqual("started", states[int(row["task_candidate_id"])])
             self.assertEqual(2, event_count)
+            summary = store.feedback_summary()
+            self.assertEqual(1, summary["current"]["total"])
+            self.assertEqual(1, summary["current"]["started"])
+            self.assertEqual(1, summary["by_track"]["newcomer"]["started"])
+            self.assertEqual(1, summary["transitions"]["interested_to_started"])
+            self.assertEqual(0, summary["transitions"]["started_to_completed"])
     def test_data_quality_records_group_requirements_without_duplicate_tasks(
         self,
     ) -> None:
