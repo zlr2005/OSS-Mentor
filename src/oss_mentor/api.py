@@ -159,6 +159,14 @@ class RecommendationApi:
                     "api_version": API_VERSION,
                 },
             )
+        if method == "GET" and path == "/api/v1/feedback/summary":
+            return ApiResponse(
+                200,
+                {
+                    "summary": self.store.feedback_summary(),
+                    "api_version": API_VERSION,
+                },
+            )
         if method == "GET" and path == "/api/v1/recommendations":
             profile_key = (query.get("profile_key") or [""])[0].strip()
             if not profile_key:
@@ -281,6 +289,7 @@ class RecommendationApi:
             "/api/v1/recommendations/custom",
             "/api/v1/recommendation-options",
             "/api/v1/feedback",
+            "/api/v1/feedback/summary",
         }:
             return self._error(405, "method_not_allowed", "method is not supported for this route")
         return self._error(404, "not_found", "route was not found")
