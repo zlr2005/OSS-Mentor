@@ -281,9 +281,10 @@ class ApiTests(unittest.TestCase):
         )
         response = self.api.handle("GET", "/api/v1/feedback/summary")
         self.assertEqual(200, response.status)
-        self.assertEqual(1, response.body["current"]["total"])
-        self.assertEqual(1, response.body["current"]["interested"])
-        self.assertIn("transitions", response.body)
+        summary = response.body["summary"]
+        self.assertEqual(1, summary["current"]["total"])
+        self.assertEqual(1, summary["current"]["interested"])
+        self.assertIn("transitions", summary)
 
     def test_status_endpoint_returns_system_info(self) -> None:
         response = self.api.handle("GET", "/api/v1/status")
