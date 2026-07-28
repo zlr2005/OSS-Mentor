@@ -43,8 +43,10 @@ class StaticAsset:
 _STATIC_ROUTES = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
+    "/status": ("status.html", "text/html; charset=utf-8"),
     "/assets/styles.css": ("assets/styles.css", "text/css; charset=utf-8"),
     "/assets/app.js": ("assets/app.js", "text/javascript; charset=utf-8"),
+    "/assets/status.js": ("assets/status.js", "text/javascript; charset=utf-8"),
 }
 
 
@@ -282,6 +284,22 @@ class RecommendationApi:
             except ValueError:
                 return self._error(404, "task_not_found", "task candidate was not found")
             return ApiResponse(200, {"feedback": feedback, "api_version": API_VERSION})
+        if method == "GET" and path == "/api/v1/status":
+            try:
+                status_data = self.store.system_status()
+            except Exception:
+                status_data = {
+                    "database_ready": False,
+                    "database_path": str(self.store.database_path),
+                }
+            return ApiResponse(
+                200,
+                {
+                    **status_data,
+                    "api_version": API_VERSION,
+                    "match_version": "developer-task-match-v0.1",
+                },
+            )
         if path in {
             "/health",
             "/api/v1/profiles",
@@ -290,6 +308,7 @@ class RecommendationApi:
             "/api/v1/recommendation-options",
             "/api/v1/feedback",
             "/api/v1/feedback/summary",
+            "/api/v1/status",
         }:
             return self._error(405, "method_not_allowed", "method is not supported for this route")
         return self._error(404, "not_found", "route was not found")

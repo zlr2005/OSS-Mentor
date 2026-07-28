@@ -66,6 +66,23 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('data-skill="go"', html)
         self.assertIn('data-skill="rust"', html)
 
+    def test_status_page_is_accessible(self) -> None:
+        asset = load_static_asset(self.root, "/status")
+        self.assertIsNotNone(asset)
+        self.assertEqual("text/html; charset=utf-8", asset.content_type)
+        text = asset.body.decode("utf-8")
+        self.assertIn("status-grid", text)
+        self.assertIn("feedback-grid", text)
+        self.assertIn("/assets/status.js", text)
+
+    def test_status_script_is_external(self) -> None:
+        script = load_static_asset(self.root, "/assets/status.js")
+        self.assertIsNotNone(script)
+        self.assertEqual("text/javascript; charset=utf-8", script.content_type)
+        text = script.body.decode("utf-8")
+        self.assertIn("/api/v1/status", text)
+        self.assertIn("/api/v1/feedback/summary", text)
+
     def test_static_router_is_allowlist_based(self) -> None:
         self.assertIsNone(load_static_asset(self.root, "/../pyproject.toml"))
         self.assertIsNone(load_static_asset(self.root, "/assets/unknown.js"))
