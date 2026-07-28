@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install package
+        run: pip install -e .
+
       - name: Compile-check source and scripts
         run: python -m compileall -q src scripts
 
