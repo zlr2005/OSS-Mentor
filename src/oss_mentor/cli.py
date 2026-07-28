@@ -504,6 +504,197 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
     return 0
 
 
+def command_init_demo(settings: Settings, args: argparse.Namespace) -> int:
+    store = _sqlite_store(settings, args.database)
+    store.initialize()
+    demo_path = settings.repo_root / "config" / "demo_profiles_v0.1.json"
+    if not demo_path.is_file():
+        raise ConfigError(f"demo profiles not found: {demo_path}")
+    profiles = load_profiles(demo_path)
+    for profile in profiles:
+        store.upsert_profile(profile)
+    summary = store.summary()
+    _json_dump(
+        {
+            "event": "demo_initialized",
+            "database_path": str(store.database_path),
+            "profiles_imported": [p.profile_key for p in profiles],
+            "candidate_count": summary["candidate_count"],
+            "newcomer_signal_count": summary["newcomer_signal_count"],
+            "next_command": "python -m oss_mentor serve-api",
+            "hint": "Run 'python -m oss_mentor doctor' to verify the environment.",
+        }
+    )
+    return 0
+
+
+def command_doctor(settings: Settings, args: argparse.Namespace) -> int:
+    import socket as socket_module
+
+    checks: list[dict[str, Any]] = []
+    all_ok = True
+
+    py_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    py_ok = sys.version_info >= (3, 11)
+    checks.append(
+        {
+            "check": "python_version",
+            "status": "ok" if py_ok else "error",
+            "value": py_version,
+            "message": "" if py_ok else "Python 3.11+ is required",
+        }
+    )
+    if not py_ok:
+        all_ok = False
+
+    store = _sqlite_store(settings, args.database)
+    db_exists = store.database_path.is_file()
+    checks.append(
+        {
+            "check": "database_exists",
+            "status": "ok" if db_exists else "warning",
+            "value": str(store.database_path),
+            "message": "" if db_exists else "Run 'python -m oss_mentor init-demo' to initialize",
+        }
+    )
+
+    if db_exists:
+        store.initialize()
+        expected_migrations = sorted(
+            p.name for p in (settings.repo_root / "db" / "sqlite").glob("*.sql")
+        )
+        with store.connect() as conn:
+            applied = conn.execute(
+                "SELECT migration_name FROM schema_migration ORDER BY migration_name"
+            ).fetchall()
+        applied_names = [row[0] for row in applied]
+        migrations_ok = applied_names == expected_migrations
+        checks.append(
+            {
+                "check": "migrations_complete",
+                "status": "ok" if migrations_ok else "error",
+                "value": f"{len(applied_names)}/{len(expected_migrations)} applied",
+                "message": (
+                    ""
+                    if migrations_ok
+                    else f"Missing: {sorted(set(expected_migrations) - set(applied_names))}"
+                ),
+            }
+        )
+        if not migrations_ok:
+            all_ok = False
+
+        try:
+            profiles = store.list_profiles_public()
+            profile_ok = len(profiles) >= 2
+            checks.append(
+                {
+                    "check": "demo_profiles",
+                    "status": "ok" if profile_ok else "warning",
+                    "value": f"{len(profiles)} profile(s)",
+                    "message": (
+                        "" if profile_ok else "Expected at least 2 demo profiles"
+                    ),
+                }
+            )
+        except Exception as exc:
+            checks.append(
+                {
+                    "check": "demo_profiles",
+                    "status": "error",
+                    "value": "unavailable",
+                    "message": str(exc),
+                }
+            )
+            all_ok = False
+
+        summary = store.summary()
+        candidate_count = summary["candidate_count"]
+        eligible = summary["eligibility_counts"].get("eligible", 0)
+        newcomer_count = summary["newcomer_signal_count"]
+
+        checks.append(
+            {
+                "check": "candidate_count",
+                "status": "ok" if candidate_count > 0 else "warning",
+                "value": str(candidate_count),
+                "message": "" if candidate_count > 0 else "No candidates in database; run sync-candidates",
+            }
+        )
+        checks.append(
+            {
+                "check": "matchable_count",
+                "status": "ok" if eligible > 0 else "warning",
+                "value": str(eligible),
+                "message": (
+                    "" if eligible > 0 else "No eligible candidates; run extract-features"
+                ),
+            }
+        )
+        checks.append(
+            {
+                "check": "newcomer_count",
+                "status": "ok" if newcomer_count > 0 else "warning",
+                "value": str(newcomer_count),
+                "message": (
+                    "" if newcomer_count > 0 else "No newcomer-friendly tasks identified"
+                ),
+            }
+        )
+
+    port = args.port
+    try:
+        sock = socket_module.socket(socket_module.AF_INET, socket_module.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(("127.0.0.1", port))
+        sock.close()
+        port_free = result != 0
+        checks.append(
+            {
+                "check": "port_available",
+                "status": "ok" if port_free else "warning",
+                "value": f"port {port}",
+                "message": (
+                    "" if port_free else f"Port {port} is already in use"
+                ),
+            }
+        )
+    except OSError:
+        checks.append(
+            {
+                "check": "port_available",
+                "status": "warning",
+                "value": f"port {port}",
+                "message": "Could not check port availability",
+            }
+        )
+
+    web_root = settings.repo_root / "web"
+    static_ok = (web_root / "index.html").is_file() and (
+        web_root / "assets" / "app.js"
+    ).is_file()
+    checks.append(
+        {
+            "check": "static_resources",
+            "status": "ok" if static_ok else "error",
+            "value": str(web_root),
+            "message": "" if static_ok else "Missing web/ files",
+        }
+    )
+    if not static_ok:
+        all_ok = False
+
+    _json_dump(
+        {
+            "event": "doctor_check_complete",
+            "overall": "ok" if all_ok else "issues_found",
+            "checks": checks,
+        }
+    )
+    return 0 if all_ok else 1
+
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="oss-mentor",
@@ -641,6 +832,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Required to bind outside loopback; do not use without network controls.",
     )
     serve_command.set_defaults(handler=command_serve_api)
+
+    init_demo_command = subparsers.add_parser(
+        "init-demo",
+        help="Initialize SQLite, apply migrations, and import demo profiles.",
+    )
+    init_demo_command.add_argument("--database", help="SQLite database path.")
+    init_demo_command.set_defaults(handler=command_init_demo)
+
+    doctor_command = subparsers.add_parser(
+        "doctor",
+        help="Check environment health: Python, database, migrations, profiles, port, static files.",
+    )
+    doctor_command.add_argument("--database", help="SQLite database path.")
+    doctor_command.add_argument(
+        "--port", type=int, default=8765, choices=range(1, 65536),
+        help="Port to check for availability (default: 8765).",
+    )
+    doctor_command.set_defaults(handler=command_doctor)
+
     return parser
 
 
