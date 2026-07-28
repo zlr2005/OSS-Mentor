@@ -5,6 +5,7 @@
 
 # Collected data and local databases
 data/
+数据/
 *.sqlite
 *.sqlite3
 
