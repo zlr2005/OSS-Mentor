@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OSS-Mentor 系统状态</title>
+  <style>
+    :root {
+      --green: #16a34a;
+      --red: #dc2626;
+      --amber: #d97706;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem 1rem;
+      line-height: 1.6;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.875rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.5rem; }
+    .card .value { font-size: 1.75rem; font-weight: 700; }
+    .card .detail { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; }
+    .ok { color: var(--green); }
+    .warn { color: var(--amber); }
+    .error { color: var(--red); }
+    .section-title { font-size: 1rem; margin: 1.5rem 0 0.75rem; color: var(--text-secondary); }
+    table { width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 0.6rem 1rem; text-align: left; font-size: 0.875rem; }
+    th { background: #f1f5f9; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+    td { border-top: 1px solid var(--border); }
+    .badge {
+      display: inline-block;
+      padding: 0.15em 0.5em;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-ok { background: #dcfce7; color: #166534; }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+    .badge-error { background: #fee2e2; color: #991b1b; }
+    .loading { color: var(--text-secondary); font-style: italic; }
+    .error-msg { color: var(--red); background: #fee2e2; padding: 1rem; border-radius: 8px; }
+    footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>OSS-Mentor 系统状态</h1>
+  <p class="subtitle" id="update-time">正在加载…</p>
+
+  <div id="error" hidden></div>
+
+  <h2 class="section-title">系统概览</h2>
+  <div class="grid" id="status-grid">
+    <div class="card"><h3>数据库</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>仓库</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>候选任务</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>可推荐任务</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>新人友好</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>最后同步</h3><div class="value loading">—</div></div>
+  </div>
+
+  <h2 class="section-title">数据质量</h2>
+  <div class="grid" id="quality-grid">
+    <div class="card"><h3>任务类型识别率</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>技能要求覆盖率</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>已提取特征</h3><div class="value loading">—</div></div>
+  </div>
+
+  <h2 class="section-title">反馈统计</h2>
+  <div class="grid" id="feedback-grid">
+    <div class="card"><h3>反馈总量</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>感兴趣</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>不适合</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>已开始</h3><div class="value loading">—</div></div>
+    <div class="card"><h3>已完成</h3><div class="value loading">—</div></div>
+  </div>
+
+  <h2 class="section-title">状态转化</h2>
+  <table id="transitions-table">
+    <thead><tr><th>转化路径</th><th>次数</th></tr></thead>
+    <tbody><tr><td class="loading" colspan="2">正在加载…</td></tr></tbody>
+  </table>
+
+  <h2 class="section-title">版本信息</h2>
+  <table id="version-table">
+    <thead><tr><th>组件</th><th>版本</th></tr></thead>
+    <tbody><tr><td class="loading" colspan="2">正在加载…</td></tr></tbody>
+  </table>
+
+  <footer>
+    <span>OSS-Mentor &middot; 本地状态页 &middot; 仅用于团队开发和检查</span>
+  </footer>
+</div>
+
+<script src="/assets/status.js"></script>
+</body>
+</html>

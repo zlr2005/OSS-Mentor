@@ -103,6 +103,23 @@ class FakeStore:
             },
         }
 
+    def system_status(self):
+        return {
+            "database_ready": True,
+            "database_path": str(self.database_path),
+            "repository_count": 1,
+            "candidate_count": 1,
+            "eligible_count": 1,
+            "matchable_count": 1,
+            "newcomer_count": 1,
+            "last_sync_at": "2026-07-01T00:00:00+00:00",
+            "features_extracted_count": 1,
+            "type_identified_count": 1,
+            "type_identification_rate": 1.0,
+            "skill_coverage_count": 1,
+            "skill_coverage_rate": 1.0,
+        }
+
 
 class ApiTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -251,6 +268,30 @@ class ApiTests(unittest.TestCase):
         )
         self.assertEqual(400, invalid.status)
         self.assertEqual("invalid_profile", invalid.body["error"]["code"])
+
+    def test_feedback_summary_returns_counts(self) -> None:
+        self.api.handle(
+            "POST",
+            "/api/v1/feedback",
+            body={
+                "task_candidate_id": 1,
+                "feedback_context": "preset:demo",
+                "feedback_state": "interested",
+            },
+        )
+        response = self.api.handle("GET", "/api/v1/feedback/summary")
+        self.assertEqual(200, response.status)
+        self.assertEqual(1, response.body["current"]["total"])
+        self.assertEqual(1, response.body["current"]["interested"])
+        self.assertIn("transitions", response.body)
+
+    def test_status_endpoint_returns_system_info(self) -> None:
+        response = self.api.handle("GET", "/api/v1/status")
+        self.assertEqual(200, response.status)
+        self.assertTrue(response.body["database_ready"])
+        self.assertEqual(1, response.body["repository_count"])
+        self.assertIn("api_version", response.body)
+        self.assertIn("match_version", response.body)
 
     def test_feedback_rejects_invalid_state_and_context(self) -> None:
         invalid_state = self.api.handle(
