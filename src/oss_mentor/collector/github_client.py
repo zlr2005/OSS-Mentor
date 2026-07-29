@@ -107,7 +107,9 @@ class GitHubClient:
         self._sleep = sleep
         self._random = random_source
         self.request_count = 0
+        self.retry_count = 0
         self.rate_limit_remaining: int | None = None
+        self.rate_limit_reset_at: datetime | None = None
         parsed = urllib.parse.urlsplit(self.api_base)
         self._allowed_origin = (parsed.scheme.lower(), parsed.netloc.lower())
 
@@ -176,6 +178,17 @@ class GitHubClient:
         exponential = self.backoff_base_seconds * (2**attempt)
         return min(float(exponential) + self._random(), 60.0)
 
+    def _capture_rate_limit(self, headers: Mapping[str, str]) -> None:
+        remaining = headers.get("x-ratelimit-remaining")
+        if remaining is not None:
+            try:
+                self.rate_limit_remaining = int(remaining)
+            except ValueError:
+                pass
+        reset_at = self._reset_datetime(headers)
+        if reset_at is not None:
+            self.rate_limit_reset_at = reset_at
+
     def get(
         self,
         path_or_url: str,
@@ -196,12 +209,7 @@ class GitHubClient:
             try:
                 with self._opener(request, timeout=self.timeout_seconds) as response:
                     headers = _headers_to_dict(response.headers)
-                    remaining = headers.get("x-ratelimit-remaining")
-                    if remaining is not None:
-                        try:
-                            self.rate_limit_remaining = int(remaining)
-                        except ValueError:
-                            pass
+                    self._capture_rate_limit(headers)
                     payload = self._decode_payload(response.read())
                     return GitHubResponse(
                         url=response.geturl(),
@@ -212,12 +220,7 @@ class GitHubClient:
                     )
             except urllib.error.HTTPError as exc:
                 headers = _headers_to_dict(exc.headers)
-                remaining = headers.get("x-ratelimit-remaining")
-                if remaining is not None:
-                    try:
-                        self.rate_limit_remaining = int(remaining)
-                    except ValueError:
-                        pass
+                self._capture_rate_limit(headers)
                 payload = self._decode_payload(exc.read())
                 if exc.code == 304:
                     return GitHubResponse(
@@ -241,6 +244,7 @@ class GitHubClient:
                     exc.code == 403 and "retry-after" in headers
                 )
                 if retryable and attempt < self.max_retries:
+                    self.retry_count += 1
                     self._sleep(self._retry_delay(attempt, headers))
                     continue
                 raise GitHubApiError(
@@ -251,6 +255,7 @@ class GitHubClient:
                 ) from exc
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
                 if attempt < self.max_retries:
+                    self.retry_count += 1
                     self._sleep(self._retry_delay(attempt, {}))
                     continue
                 raise GitHubApiError(

@@ -249,6 +249,7 @@ class CandidateRefreshReportTests(unittest.TestCase):
                 "004_recommendation_feedback.sql",
                 "005_candidate_refresh.sql",
                 "006_repository_activity.sql",
+                "008_sync_runs.sql",
             },
             migrations,
         )
