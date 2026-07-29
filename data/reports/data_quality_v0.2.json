@@ -1,0 +1,1249 @@
+{
+  "acceptance_summary": {
+    "difficulty_values_passed": true,
+    "overall_passed": true,
+    "scope": "eligible_candidates",
+    "skill_requirement_coverage_passed": true,
+    "task_type_coverage_passed": true
+  },
+  "anomalies": {
+    "body_text_missing_samples": [
+      {
+        "html_url": "https://github.com/excalidraw/excalidraw/issues/1007",
+        "issue_number": 1007,
+        "reason": "body_text_missing",
+        "repository": "excalidraw/excalidraw",
+        "task_candidate_id": 535,
+        "title": "We should have a different hint when drawing multisegments lines on mobile"
+      },
+      {
+        "html_url": "https://github.com/excalidraw/excalidraw/issues/5301",
+        "issue_number": 5301,
+        "reason": "body_text_missing",
+        "repository": "excalidraw/excalidraw",
+        "task_candidate_id": 549,
+        "title": "Feature Request: Import GIF pictures"
+      },
+      {
+        "html_url": "https://github.com/nodejs/undici/issues/3276",
+        "issue_number": 3276,
+        "reason": "body_text_missing",
+        "repository": "nodejs/undici",
+        "task_candidate_id": 1085,
+        "title": "interceptors: move signal handling to interceptor"
+      },
+      {
+        "html_url": "https://github.com/pytorch/ao/issues/2298",
+        "issue_number": 2298,
+        "reason": "body_text_missing",
+        "repository": "pytorch/ao",
+        "task_candidate_id": 981,
+        "title": "Use Int8WeightOnlyConfig  to quant wan2.1 model, and export to onnx file, Why the onnx weights in my disk  are fp32 precision?"
+      }
+    ],
+    "feature_version_mismatch_samples": [],
+    "invalid_difficulty_samples": [],
+    "invalid_platform_requirement_samples": [],
+    "skill_requirement_missing_samples": [],
+    "unrecognized_task_type_samples": [
+      {
+        "html_url": "https://github.com/apache/dubbo/issues/12014",
+        "issue_number": 12014,
+        "reason": "only_other",
+        "repository": "apache/dubbo",
+        "task_candidate_id": 653,
+        "task_types": [
+          "other"
+        ],
+        "title": "当接口调用传参为对象时引发一个序列化白名单的错误，提示让我把类加入白名单，要怎么操作？"
+      },
+      {
+        "html_url": "https://github.com/apache/pinot/issues/10237",
+        "issue_number": 10237,
+        "reason": "only_other",
+        "repository": "apache/pinot",
+        "task_candidate_id": 1428,
+        "task_types": [
+          "other"
+        ],
+        "title": "Disallow consuming segment deletion"
+      },
+      {
+        "html_url": "https://github.com/apache/pinot/issues/17378",
+        "issue_number": 17378,
+        "reason": "only_other",
+        "repository": "apache/pinot",
+        "task_candidate_id": 1447,
+        "task_types": [
+          "other"
+        ],
+        "title": "Deep Stack Trace from Long Min/Max Column Values"
+      },
+      {
+        "html_url": "https://github.com/apache/pinot/issues/5559",
+        "issue_number": 5559,
+        "reason": "only_other",
+        "repository": "apache/pinot",
+        "task_candidate_id": 1436,
+        "task_types": [
+          "other"
+        ],
+        "title": "Table truncate command"
+      },
+      {
+        "html_url": "https://github.com/apache/pinot/issues/7275",
+        "issue_number": 7275,
+        "reason": "only_other",
+        "repository": "apache/pinot",
+        "task_candidate_id": 1421,
+        "task_types": [
+          "other"
+        ],
+        "title": "Tool for migrating from one deep store to another"
+      },
+      {
+        "html_url": "https://github.com/apache/pinot/issues/9016",
+        "issue_number": 9016,
+        "reason": "only_other",
+        "repository": "apache/pinot",
+        "task_candidate_id": 1418,
+        "task_types": [
+          "other"
+        ],
+        "title": "Better UX for data ingestion quick-start"
+      },
+      {
+        "html_url": "https://github.com/excalidraw/excalidraw/issues/10573",
+        "issue_number": 10573,
+        "reason": "only_other",
+        "repository": "excalidraw/excalidraw",
+        "task_candidate_id": 553,
+        "task_types": [
+          "other"
+        ],
+        "title": "iuiu"
+      },
+      {
+        "html_url": "https://github.com/excalidraw/excalidraw/issues/11433",
+        "issue_number": 11433,
+        "reason": "only_other",
+        "repository": "excalidraw/excalidraw",
+        "task_candidate_id": 552,
+        "task_types": [
+          "other"
+        ],
+        "title": "Artifcating of shape when zoomed in at 3000%"
+      },
+      {
+        "html_url": "https://github.com/excalidraw/excalidraw/issues/11464",
+        "issue_number": 11464,
+        "reason": "only_other",
+        "repository": "excalidraw/excalidraw",
+        "task_candidate_id": 554,
+        "task_types": [
+          "other"
+        ],
+        "title": "Excalidraw created files location"
+      },
+      {
+        "html_url": "https://github.com/excalidraw/excalidraw/issues/7177",
+        "issue_number": 7177,
+        "reason": "only_other",
+        "repository": "excalidraw/excalidraw",
+        "task_candidate_id": 541,
+        "task_types": [
+          "other"
+        ],
+        "title": "not visible grouping line on a dark background in a light theme"
+      }
+    ]
+  },
+  "by_language": [
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 36,
+      "invalid_difficulty_count": 0,
+      "language": "Go",
+      "recognized_task_type_count": 34,
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 36,
+      "task_type_coverage_rate": 0.9444
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 153,
+      "invalid_difficulty_count": 0,
+      "language": "Java",
+      "recognized_task_type_count": 139,
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 153,
+      "task_type_coverage_rate": 0.9085
+    },
+    {
+      "body_text_missing_count": 1,
+      "eligible_count": 114,
+      "invalid_difficulty_count": 0,
+      "language": "JavaScript",
+      "recognized_task_type_count": 102,
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 114,
+      "task_type_coverage_rate": 0.8947
+    },
+    {
+      "body_text_missing_count": 1,
+      "eligible_count": 193,
+      "invalid_difficulty_count": 0,
+      "language": "Python",
+      "recognized_task_type_count": 177,
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 193,
+      "task_type_coverage_rate": 0.9171
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 49,
+      "invalid_difficulty_count": 0,
+      "language": "Rust",
+      "recognized_task_type_count": 42,
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 49,
+      "task_type_coverage_rate": 0.8571
+    },
+    {
+      "body_text_missing_count": 2,
+      "eligible_count": 63,
+      "invalid_difficulty_count": 0,
+      "language": "TypeScript",
+      "recognized_task_type_count": 55,
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 63,
+      "task_type_coverage_rate": 0.873
+    }
+  ],
+  "by_repository": [
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 7,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Rust",
+      "recognized_task_type_count": 5,
+      "repository": "facebook/pyrefly",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 7,
+      "task_type_coverage_rate": 0.7143
+    },
+    {
+      "body_text_missing_count": 2,
+      "eligible_count": 29,
+      "invalid_difficulty_count": 0,
+      "primary_language": "TypeScript",
+      "recognized_task_type_count": 21,
+      "repository": "excalidraw/excalidraw",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 29,
+      "task_type_coverage_rate": 0.7241
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 4,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Java",
+      "recognized_task_type_count": 3,
+      "repository": "jenkinsci/jenkins",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 4,
+      "task_type_coverage_rate": 0.75
+    },
+    {
+      "body_text_missing_count": 1,
+      "eligible_count": 35,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Python",
+      "recognized_task_type_count": 27,
+      "repository": "pytorch/ao",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 35,
+      "task_type_coverage_rate": 0.7714
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 20,
+      "invalid_difficulty_count": 0,
+      "primary_language": "JavaScript",
+      "recognized_task_type_count": 16,
+      "repository": "nodejs/node",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 20,
+      "task_type_coverage_rate": 0.8
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 50,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Java",
+      "recognized_task_type_count": 43,
+      "repository": "trinodb/trino",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 50,
+      "task_type_coverage_rate": 0.86
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 23,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Rust",
+      "recognized_task_type_count": 20,
+      "repository": "nushell/nushell",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 23,
+      "task_type_coverage_rate": 0.8696
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 17,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Python",
+      "recognized_task_type_count": 15,
+      "repository": "pytorch/pytorch",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 17,
+      "task_type_coverage_rate": 0.8824
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 19,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Rust",
+      "recognized_task_type_count": 17,
+      "repository": "rust-lang/rust-clippy",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 19,
+      "task_type_coverage_rate": 0.8947
+    },
+    {
+      "body_text_missing_count": 1,
+      "eligible_count": 30,
+      "invalid_difficulty_count": 0,
+      "primary_language": "JavaScript",
+      "recognized_task_type_count": 27,
+      "repository": "nodejs/undici",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 30,
+      "task_type_coverage_rate": 0.9
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 23,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Python",
+      "recognized_task_type_count": 21,
+      "repository": "matplotlib/matplotlib",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 23,
+      "task_type_coverage_rate": 0.913
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 36,
+      "invalid_difficulty_count": 0,
+      "primary_language": "JavaScript",
+      "recognized_task_type_count": 33,
+      "repository": "sveltejs/svelte",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 36,
+      "task_type_coverage_rate": 0.9167
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 25,
+      "invalid_difficulty_count": 0,
+      "primary_language": "JavaScript",
+      "recognized_task_type_count": 23,
+      "repository": "vercel/next.js",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 25,
+      "task_type_coverage_rate": 0.92
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 63,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Java",
+      "recognized_task_type_count": 58,
+      "repository": "apache/pinot",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 63,
+      "task_type_coverage_rate": 0.9206
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 27,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Python",
+      "recognized_task_type_count": 25,
+      "repository": "scikit-learn/scikit-learn",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 27,
+      "task_type_coverage_rate": 0.9259
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 28,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Go",
+      "recognized_task_type_count": 26,
+      "repository": "prometheus/prometheus",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 28,
+      "task_type_coverage_rate": 0.9286
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 31,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Python",
+      "recognized_task_type_count": 29,
+      "repository": "pandas-dev/pandas",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 31,
+      "task_type_coverage_rate": 0.9355
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 16,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Java",
+      "recognized_task_type_count": 15,
+      "repository": "apache/dubbo",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 16,
+      "task_type_coverage_rate": 0.9375
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 33,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Python",
+      "recognized_task_type_count": 33,
+      "repository": "wagtail/wagtail",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 33,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 27,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Python",
+      "recognized_task_type_count": 27,
+      "repository": "pytest-dev/pytest",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 27,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 27,
+      "invalid_difficulty_count": 0,
+      "primary_language": "TypeScript",
+      "recognized_task_type_count": 27,
+      "repository": "vitejs/vite",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 27,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 15,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Java",
+      "recognized_task_type_count": 15,
+      "repository": "quarkusio/quarkus",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 15,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 8,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Go",
+      "recognized_task_type_count": 8,
+      "repository": "kubernetes/kubernetes",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 8,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 6,
+      "invalid_difficulty_count": 0,
+      "primary_language": "TypeScript",
+      "recognized_task_type_count": 6,
+      "repository": "storybookjs/storybook",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 6,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 5,
+      "invalid_difficulty_count": 0,
+      "primary_language": "Java",
+      "recognized_task_type_count": 5,
+      "repository": "elastic/elasticsearch",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 5,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 3,
+      "invalid_difficulty_count": 0,
+      "primary_language": "JavaScript",
+      "recognized_task_type_count": 3,
+      "repository": "eslint/eslint",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 3,
+      "task_type_coverage_rate": 1.0
+    },
+    {
+      "body_text_missing_count": 0,
+      "eligible_count": 1,
+      "invalid_difficulty_count": 0,
+      "primary_language": "TypeScript",
+      "recognized_task_type_count": 1,
+      "repository": "microsoft/vscode",
+      "skill_requirement_coverage_rate": 1.0,
+      "skill_requirement_covered_count": 1,
+      "task_type_coverage_rate": 1.0
+    }
+  ],
+  "distributions": {
+    "effort_buckets": {
+      "half_day": 257,
+      "multi_day": 58,
+      "one_day": 276,
+      "under_2h": 17
+    },
+    "skill_feature_versions": {
+      "task-features-v0.1": 1731
+    },
+    "skill_requirement_sources": {
+      "explicit_platform_signal": 145,
+      "inferred_task_type": 978,
+      "repository_primary_language": 608
+    },
+    "task_feature_versions": {
+      "task-features-v0.1": 608
+    },
+    "task_type_values": {
+      "bug_fix": 218,
+      "build_tooling": 166,
+      "documentation": 170,
+      "feature": 213,
+      "other": 54,
+      "performance": 48,
+      "refactor": 37,
+      "testing": 126
+    },
+    "unsupported_task_type_values": {
+      "other": 54,
+      "performance": 48
+    }
+  },
+  "generated_at": "2026-07-29T08:21:25.003322+00:00",
+  "policy": {
+    "difficulty_range": [
+      0,
+      3
+    ],
+    "primary_scope": "eligible_candidates",
+    "public_task_types": [
+      "bug_fix",
+      "build_tooling",
+      "documentation",
+      "feature",
+      "refactor",
+      "testing"
+    ],
+    "sample_limit": 10,
+    "skill_requirement_coverage_target": 0.9,
+    "task_type_coverage_target": 0.9,
+    "valid_effort_buckets": [
+      "half_day",
+      "multi_day",
+      "one_day",
+      "under_2h"
+    ]
+  },
+  "quality_by_scope": {
+    "active_candidates": {
+      "difficulty_quality": {
+        "by_field": {
+          "estimated_code_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_collaboration_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_effort_bucket": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_project_context_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_setup_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          }
+        },
+        "complete_count": 1464,
+        "complete_rate": 1.0,
+        "invalid_count": 0,
+        "invalid_rate": 0.0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "total_count": 1464,
+        "valid_count": 1464,
+        "valid_rate": 1.0
+      },
+      "feature_quality": {
+        "feature_evidence_missing_count": 0,
+        "feature_evidence_missing_rate": 0.0,
+        "feature_extraction_missing_count": 0,
+        "feature_extraction_missing_rate": 0.0,
+        "feature_score_invalid_count": 0,
+        "feature_score_invalid_rate": 0.0,
+        "score_fields": {
+          "growth_value_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "newcomer_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "novice_fit_probability": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "text_clarity_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          }
+        }
+      },
+      "input_completeness": {
+        "body_text": {
+          "missing_count": 17,
+          "missing_rate": 0.0116,
+          "total_count": 1464
+        },
+        "github_verification": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        },
+        "labels": {
+          "invalid_count": 0,
+          "missing_count": 207,
+          "missing_rate": 0.1414,
+          "total_count": 1464
+        },
+        "last_activity": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        },
+        "linked_pr_verification": {
+          "missing_count": 853,
+          "missing_rate": 0.5827,
+          "total_count": 1464
+        },
+        "primary_language": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        },
+        "title": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        }
+      },
+      "skill_requirement_quality": {
+        "coverage_rate": 1.0,
+        "covered_count": 1464,
+        "feature_version_mismatch_count": 0,
+        "invalid_platform_requirement_count": 0,
+        "invalid_requirement_task_count": 0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "only_repository_language_count": 139,
+        "passed": true,
+        "plain_platform_skill_count": 0,
+        "platform_requirement_task_count": 309,
+        "target": 0.9,
+        "total_count": 1464
+      },
+      "task_type_quality": {
+        "coverage_rate": 0.8818,
+        "field_missing_count": 0,
+        "field_missing_rate": 0.0,
+        "invalid_field_count": 0,
+        "mixed_supported_unsupported_count": 104,
+        "other_only_count": 157,
+        "passed": false,
+        "recognized_count": 1291,
+        "target": 0.9,
+        "total_count": 1464,
+        "unsupported_only_count": 173
+      }
+    },
+    "all_candidates": {
+      "difficulty_quality": {
+        "by_field": {
+          "estimated_code_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_collaboration_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_effort_bucket": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_project_context_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "estimated_setup_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          }
+        },
+        "complete_count": 1464,
+        "complete_rate": 1.0,
+        "invalid_count": 0,
+        "invalid_rate": 0.0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "total_count": 1464,
+        "valid_count": 1464,
+        "valid_rate": 1.0
+      },
+      "feature_quality": {
+        "feature_evidence_missing_count": 0,
+        "feature_evidence_missing_rate": 0.0,
+        "feature_extraction_missing_count": 0,
+        "feature_extraction_missing_rate": 0.0,
+        "feature_score_invalid_count": 0,
+        "feature_score_invalid_rate": 0.0,
+        "score_fields": {
+          "growth_value_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "newcomer_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "novice_fit_probability": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          },
+          "text_clarity_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 1464,
+            "valid_count": 1464
+          }
+        }
+      },
+      "input_completeness": {
+        "body_text": {
+          "missing_count": 17,
+          "missing_rate": 0.0116,
+          "total_count": 1464
+        },
+        "github_verification": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        },
+        "labels": {
+          "invalid_count": 0,
+          "missing_count": 207,
+          "missing_rate": 0.1414,
+          "total_count": 1464
+        },
+        "last_activity": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        },
+        "linked_pr_verification": {
+          "missing_count": 853,
+          "missing_rate": 0.5827,
+          "total_count": 1464
+        },
+        "primary_language": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        },
+        "title": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 1464
+        }
+      },
+      "skill_requirement_quality": {
+        "coverage_rate": 1.0,
+        "covered_count": 1464,
+        "feature_version_mismatch_count": 0,
+        "invalid_platform_requirement_count": 0,
+        "invalid_requirement_task_count": 0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "only_repository_language_count": 139,
+        "passed": true,
+        "plain_platform_skill_count": 0,
+        "platform_requirement_task_count": 309,
+        "target": 0.9,
+        "total_count": 1464
+      },
+      "task_type_quality": {
+        "coverage_rate": 0.8818,
+        "field_missing_count": 0,
+        "field_missing_rate": 0.0,
+        "invalid_field_count": 0,
+        "mixed_supported_unsupported_count": 104,
+        "other_only_count": 157,
+        "passed": false,
+        "recognized_count": 1291,
+        "target": 0.9,
+        "total_count": 1464,
+        "unsupported_only_count": 173
+      }
+    },
+    "eligible_candidates": {
+      "difficulty_quality": {
+        "by_field": {
+          "estimated_code_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          },
+          "estimated_collaboration_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          },
+          "estimated_effort_bucket": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          },
+          "estimated_project_context_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          },
+          "estimated_setup_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          }
+        },
+        "complete_count": 608,
+        "complete_rate": 1.0,
+        "invalid_count": 0,
+        "invalid_rate": 0.0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "total_count": 608,
+        "valid_count": 608,
+        "valid_rate": 1.0
+      },
+      "feature_quality": {
+        "feature_evidence_missing_count": 0,
+        "feature_evidence_missing_rate": 0.0,
+        "feature_extraction_missing_count": 0,
+        "feature_extraction_missing_rate": 0.0,
+        "feature_score_invalid_count": 0,
+        "feature_score_invalid_rate": 0.0,
+        "score_fields": {
+          "growth_value_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          },
+          "newcomer_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          },
+          "novice_fit_probability": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          },
+          "text_clarity_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 608,
+            "valid_count": 608
+          }
+        }
+      },
+      "input_completeness": {
+        "body_text": {
+          "missing_count": 4,
+          "missing_rate": 0.0066,
+          "total_count": 608
+        },
+        "github_verification": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 608
+        },
+        "labels": {
+          "invalid_count": 0,
+          "missing_count": 107,
+          "missing_rate": 0.176,
+          "total_count": 608
+        },
+        "last_activity": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 608
+        },
+        "linked_pr_verification": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 608
+        },
+        "primary_language": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 608
+        },
+        "title": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 608
+        }
+      },
+      "skill_requirement_quality": {
+        "coverage_rate": 1.0,
+        "covered_count": 608,
+        "feature_version_mismatch_count": 0,
+        "invalid_platform_requirement_count": 0,
+        "invalid_requirement_task_count": 0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "only_repository_language_count": 47,
+        "passed": true,
+        "plain_platform_skill_count": 0,
+        "platform_requirement_task_count": 135,
+        "target": 0.9,
+        "total_count": 608
+      },
+      "task_type_quality": {
+        "coverage_rate": 0.903,
+        "field_missing_count": 0,
+        "field_missing_rate": 0.0,
+        "invalid_field_count": 0,
+        "mixed_supported_unsupported_count": 43,
+        "other_only_count": 54,
+        "passed": true,
+        "recognized_count": 549,
+        "target": 0.9,
+        "total_count": 608,
+        "unsupported_only_count": 59
+      }
+    },
+    "newcomer_eligible_candidates": {
+      "difficulty_quality": {
+        "by_field": {
+          "estimated_code_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          },
+          "estimated_collaboration_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          },
+          "estimated_effort_bucket": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          },
+          "estimated_project_context_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          },
+          "estimated_setup_difficulty": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          }
+        },
+        "complete_count": 264,
+        "complete_rate": 1.0,
+        "invalid_count": 0,
+        "invalid_rate": 0.0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "total_count": 264,
+        "valid_count": 264,
+        "valid_rate": 1.0
+      },
+      "feature_quality": {
+        "feature_evidence_missing_count": 0,
+        "feature_evidence_missing_rate": 0.0,
+        "feature_extraction_missing_count": 0,
+        "feature_extraction_missing_rate": 0.0,
+        "feature_score_invalid_count": 0,
+        "feature_score_invalid_rate": 0.0,
+        "score_fields": {
+          "growth_value_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          },
+          "newcomer_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          },
+          "novice_fit_probability": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          },
+          "text_clarity_score": {
+            "invalid_count": 0,
+            "invalid_rate": 0.0,
+            "missing_count": 0,
+            "missing_rate": 0.0,
+            "total_count": 264,
+            "valid_count": 264
+          }
+        }
+      },
+      "input_completeness": {
+        "body_text": {
+          "missing_count": 2,
+          "missing_rate": 0.0076,
+          "total_count": 264
+        },
+        "github_verification": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 264
+        },
+        "labels": {
+          "invalid_count": 0,
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 264
+        },
+        "last_activity": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 264
+        },
+        "linked_pr_verification": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 264
+        },
+        "primary_language": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 264
+        },
+        "title": {
+          "missing_count": 0,
+          "missing_rate": 0.0,
+          "total_count": 264
+        }
+      },
+      "skill_requirement_quality": {
+        "coverage_rate": 1.0,
+        "covered_count": 264,
+        "feature_version_mismatch_count": 0,
+        "invalid_platform_requirement_count": 0,
+        "invalid_requirement_task_count": 0,
+        "missing_count": 0,
+        "missing_rate": 0.0,
+        "only_repository_language_count": 19,
+        "passed": true,
+        "plain_platform_skill_count": 0,
+        "platform_requirement_task_count": 48,
+        "target": 0.9,
+        "total_count": 264
+      },
+      "task_type_quality": {
+        "coverage_rate": 0.9129,
+        "field_missing_count": 0,
+        "field_missing_rate": 0.0,
+        "invalid_field_count": 0,
+        "mixed_supported_unsupported_count": 11,
+        "other_only_count": 23,
+        "passed": true,
+        "recognized_count": 241,
+        "target": 0.9,
+        "total_count": 264,
+        "unsupported_only_count": 23
+      }
+    }
+  },
+  "schema_version": "data_quality_report_v0.2",
+  "scope_summary": {
+    "active_candidates": {
+      "total_count": 1464
+    },
+    "all_candidates": {
+      "total_count": 1464
+    },
+    "eligible_candidates": {
+      "total_count": 608
+    },
+    "newcomer_eligible_candidates": {
+      "total_count": 264
+    }
+  }
+}

@@ -2,8 +2,8 @@
 
 ## 概览
 
-- 通道：`growth`
-- 画像：`growth_python_crossplatform`
+- 通道：`newcomer`
+- 画像：`newcomer_python_linux`
 - 当前评估版本：`developer-task-match-v0.2`
 - 标注行数：33
 - 标注任务数：33
@@ -23,22 +23,23 @@
 
 | 版本 | P@5 | P@10 | 关键技能不匹配率 | 平台不匹配率 | 基础技能覆盖率 | 任务类型多样性 | 仓库多样性 | 空结果率 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `developer-task-match-v0.1` | 1.000 | 1.000 | 0.700 | 0.000 | 0.661 | 7 | 4 | 0.000 |
-| `developer-task-match-v0.2` | 1.000 | 1.000 | 0.000 | 0.000 | 0.904 | 3 | 1 | 0.000 |
+| `developer-task-match-v0.1` | 1.000 | 1.000 | 0.000 | 0.000 | 0.875 | 1 | 2 | 0.000 |
+| `developer-task-match-v0.2` | 1.000 | 1.000 | 0.000 | 0.000 | 0.875 | 1 | 2 | 0.000 |
 
 ## Top 10 变化
 
 - 新增：0
-- 移出：7
-- 排名移动：3
+- 移出：0
+- 排名移动：2
 
 ## 当前 Top 10
 
 | 排名 | 任务 | 分数 | 标注适配 | 主要原因 |
 |---:|---|---:|---:|---|
-| 1 | `vercel/next.js#42846` | 82.34 | 2.00 | skill_coverage=0.89, preferred_language, preferred_task_type, stretch_target=1, v0.2_weighting |
-| 2 | `vercel/next.js#41281` | 81.44 | 2.00 | skill_coverage=0.91, preferred_language, preferred_task_type, stretch_target=1, v0.2_weighting |
-| 3 | `vercel/next.js#38863` | 80.61 | 2.00 | skill_coverage=0.91, preferred_language, preferred_task_type, stretch_target=1, v0.2_weighting |
+| 1 | `matplotlib/matplotlib#8088` | 90.57 | 2.00 | skill_coverage=0.87, preferred_language, preferred_task_type, newcomer_label_required, v0.2_weighting |
+| 2 | `pytorch/ao#3637` | 90.57 | 3.00 | skill_coverage=0.87, preferred_language, preferred_task_type, newcomer_label_required, v0.2_weighting |
+| 3 | `matplotlib/matplotlib#17479` | 90.57 | 3.00 | skill_coverage=0.87, preferred_language, preferred_task_type, newcomer_label_required, v0.2_weighting |
+| 4 | `matplotlib/matplotlib#31935` | 89.52 | 3.00 | skill_coverage=0.87, preferred_language, preferred_task_type, newcomer_label_required, v0.2_weighting |
 
 ## 权重变化依据
 

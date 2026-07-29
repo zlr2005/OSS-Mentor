@@ -34,63 +34,49 @@
   ],
   "metrics_by_version": {
     "developer-task-match-v0.1": {
-      "basic_skill_coverage_rate": 0.661,
-      "critical_skill_mismatch_rate": 0.7,
-      "empty_recommendation_rate": 0.0,
-      "platform_mismatch_rate": 0.0,
-      "precision_at_10": 1.0,
-      "precision_at_5": 1.0,
-      "recommendation_count": 10,
-      "repository_diversity": 4,
-      "task_type_diversity": 7
-    },
-    "developer-task-match-v0.2": {
-      "basic_skill_coverage_rate": 0.904,
+      "basic_skill_coverage_rate": 0.875,
       "critical_skill_mismatch_rate": 0.0,
       "empty_recommendation_rate": 0.0,
       "platform_mismatch_rate": 0.0,
       "precision_at_10": 1.0,
       "precision_at_5": 1.0,
-      "recommendation_count": 3,
-      "repository_diversity": 1,
-      "task_type_diversity": 3
+      "recommendation_count": 4,
+      "repository_diversity": 2,
+      "task_type_diversity": 1
+    },
+    "developer-task-match-v0.2": {
+      "basic_skill_coverage_rate": 0.875,
+      "critical_skill_mismatch_rate": 0.0,
+      "empty_recommendation_rate": 0.0,
+      "platform_mismatch_rate": 0.0,
+      "precision_at_10": 1.0,
+      "precision_at_5": 1.0,
+      "recommendation_count": 4,
+      "repository_diversity": 2,
+      "task_type_diversity": 1
     }
   },
-  "profile_key": "growth_python_crossplatform",
+  "profile_key": "newcomer_python_linux",
   "schema_version": "ranking_evaluation_v0.2",
   "selected_match_version": "developer-task-match-v0.2",
   "selected_top10": [
     {
       "annotation_fit": 2,
-      "html_url": "https://github.com/vercel/next.js/issues/42846",
-      "issue_number": 42846,
-      "match_score": 82.34,
+      "html_url": "https://github.com/matplotlib/matplotlib/issues/8088",
+      "issue_number": 8088,
+      "match_score": 90.57,
       "match_version": "developer-task-match-v0.2",
       "maximum_skill_gap": 1,
       "reasons": [
-        "skill_coverage=0.89",
+        "skill_coverage=0.87",
         "preferred_language",
         "preferred_task_type",
-        "stretch_target=1",
+        "newcomer_label_required",
         "v0.2_weighting"
       ],
-      "repository": "vercel/next.js",
-      "skill_coverage": 0.895,
+      "repository": "matplotlib/matplotlib",
+      "skill_coverage": 0.875,
       "skill_gaps": [
-        {
-          "developer_level": 0,
-          "gap": 1,
-          "importance": 0.6,
-          "required_level": 1,
-          "skill": "bug_fix"
-        },
-        {
-          "developer_level": 1,
-          "gap": 0,
-          "importance": 0.6,
-          "required_level": 1,
-          "skill": "build_tooling"
-        },
         {
           "developer_level": 0,
           "gap": 1,
@@ -99,165 +85,145 @@
           "skill": "documentation"
         },
         {
-          "developer_level": 2,
-          "gap": 0,
-          "importance": 1.0,
-          "required_level": 1,
-          "skill": "JavaScript"
-        },
-        {
           "developer_level": 1,
           "gap": 0,
           "importance": 1.0,
           "required_level": 1,
-          "skill": "platform:linux"
+          "skill": "Python"
         }
       ],
-      "task_candidate_id": 491,
-      "title": "Parameter on `AppType` is used incorrectly",
-      "track": "growth"
+      "task_candidate_id": 15,
+      "title": "rcParams for plt.axis('equal') not working?",
+      "track": "newcomer"
     },
     {
-      "annotation_fit": 2,
-      "html_url": "https://github.com/vercel/next.js/issues/41281",
-      "issue_number": 41281,
-      "match_score": 81.44,
+      "annotation_fit": 3,
+      "html_url": "https://github.com/pytorch/ao/issues/3637",
+      "issue_number": 3637,
+      "match_score": 90.57,
       "match_version": "developer-task-match-v0.2",
       "maximum_skill_gap": 1,
       "reasons": [
-        "skill_coverage=0.91",
+        "skill_coverage=0.87",
         "preferred_language",
         "preferred_task_type",
-        "stretch_target=1",
+        "newcomer_label_required",
         "v0.2_weighting"
       ],
-      "repository": "vercel/next.js",
-      "skill_coverage": 0.909,
+      "repository": "pytorch/ao",
+      "skill_coverage": 0.875,
       "skill_gaps": [
         {
           "developer_level": 0,
           "gap": 1,
           "importance": 0.6,
           "required_level": 1,
-          "skill": "bug_fix"
+          "skill": "documentation"
         },
         {
           "developer_level": 1,
           "gap": 0,
-          "importance": 0.6,
-          "required_level": 1,
-          "skill": "build_tooling"
-        },
-        {
-          "developer_level": 2,
-          "gap": 0,
           "importance": 1.0,
           "required_level": 1,
-          "skill": "JavaScript"
+          "skill": "Python"
         }
       ],
-      "task_candidate_id": 485,
-      "title": "Inconsistent Error Messaging / Handling in getStaticPaths",
-      "track": "growth"
+      "task_candidate_id": 887,
+      "title": "Update documents addressing AQT workflow",
+      "track": "newcomer"
     },
     {
-      "annotation_fit": 2,
-      "html_url": "https://github.com/vercel/next.js/issues/38863",
-      "issue_number": 38863,
-      "match_score": 80.61,
+      "annotation_fit": 3,
+      "html_url": "https://github.com/matplotlib/matplotlib/issues/17479",
+      "issue_number": 17479,
+      "match_score": 90.57,
       "match_version": "developer-task-match-v0.2",
       "maximum_skill_gap": 1,
       "reasons": [
-        "skill_coverage=0.91",
+        "skill_coverage=0.87",
         "preferred_language",
         "preferred_task_type",
-        "stretch_target=1",
+        "newcomer_label_required",
         "v0.2_weighting"
       ],
-      "repository": "vercel/next.js",
-      "skill_coverage": 0.909,
+      "repository": "matplotlib/matplotlib",
+      "skill_coverage": 0.875,
       "skill_gaps": [
         {
           "developer_level": 0,
           "gap": 1,
           "importance": 0.6,
           "required_level": 1,
-          "skill": "bug_fix"
+          "skill": "documentation"
         },
         {
           "developer_level": 1,
           "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "Python"
+        }
+      ],
+      "task_candidate_id": 14,
+      "title": "Add thumbnails for tutorials/gallery where missing",
+      "track": "newcomer"
+    },
+    {
+      "annotation_fit": 3,
+      "html_url": "https://github.com/matplotlib/matplotlib/issues/31935",
+      "issue_number": 31935,
+      "match_score": 89.52,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "newcomer_label_required",
+        "v0.2_weighting"
+      ],
+      "repository": "matplotlib/matplotlib",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
           "importance": 0.6,
           "required_level": 1,
-          "skill": "build_tooling"
+          "skill": "documentation"
         },
         {
-          "developer_level": 2,
+          "developer_level": 1,
           "gap": 0,
           "importance": 1.0,
           "required_level": 1,
-          "skill": "JavaScript"
+          "skill": "Python"
         }
       ],
-      "task_candidate_id": 483,
-      "title": "POST request succeeds for pages with next dev",
-      "track": "growth"
+      "task_candidate_id": 10,
+      "title": "[Doc]: examples/api directory?",
+      "track": "newcomer"
     }
   ],
   "top10_changes": {
     "added": [],
     "moved": [
       {
-        "from_rank": 10,
-        "issue_number": 38863,
-        "repository": "vercel/next.js",
+        "from_rank": 2,
+        "issue_number": 17479,
+        "repository": "matplotlib/matplotlib",
         "to_rank": 3
       },
       {
-        "from_rank": 9,
-        "issue_number": 41281,
-        "repository": "vercel/next.js",
+        "from_rank": 3,
+        "issue_number": 3637,
+        "repository": "pytorch/ao",
         "to_rank": 2
-      },
-      {
-        "from_rank": 7,
-        "issue_number": 42846,
-        "repository": "vercel/next.js",
-        "to_rank": 1
       }
     ],
-    "removed": [
-      {
-        "issue_number": 95745,
-        "repository": "vercel/next.js"
-      },
-      {
-        "issue_number": 4143,
-        "repository": "nodejs/undici"
-      },
-      {
-        "issue_number": 22827,
-        "repository": "scikit-learn/scikit-learn"
-      },
-      {
-        "issue_number": 66263,
-        "repository": "pandas-dev/pandas"
-      },
-      {
-        "issue_number": 66268,
-        "repository": "pandas-dev/pandas"
-      },
-      {
-        "issue_number": 4287,
-        "repository": "nodejs/undici"
-      },
-      {
-        "issue_number": 4144,
-        "repository": "nodejs/undici"
-      }
-    ]
+    "removed": []
   },
-  "track": "growth",
+  "track": "newcomer",
   "warnings": [],
   "weight_change_rationale": [
     "v0.2 raises the skill-coverage contribution to reduce critical skill misses.",

@@ -1,15 +1,15 @@
 # OSS-Mentor 数据质量报告 v0.2
 
-- 生成时间：2026-07-23T09:00:34.167602+00:00
+- 生成时间：2026-07-29T08:21:25.003322+00:00
 - 主要统计范围：`eligible_candidates`
 - 报告结构版本：`data_quality_report_v0.2`
 
 ## 1. 执行摘要
 
-- 任务类型覆盖率：73.85%（未通过 90% 目标）
+- 任务类型覆盖率：90.30%（通过 90% 目标）
 - 技能要求覆盖率：100.00%（通过 90% 目标）
 - 难度合法率：100.00%
-- 总体验收：未通过
+- 总体验收：通过
 
 ## 2. 数据范围
 
@@ -27,36 +27,36 @@
 | 正文 | 4 | 608 | 0.66% |
 | 主要语言 | 0 | 608 | 0.00% |
 | GitHub 验证 | 0 | 608 | 0.00% |
-| 有效任务类型 | 159 | 608 | 26.15% |
+| 有效任务类型 | 59 | 608 | 9.70% |
 | 技能要求 | 0 | 608 | 0.00% |
 
 ## 4. 任务类型质量
 
 公共任务类型：`bug_fix`, `build_tooling`, `documentation`, `feature`, `refactor`, `testing`。
 
-- 有效识别：449 / 608（73.85%）
-- 仅 `other`：150
-- 仅非公共类型：159
-- 公共与非公共类型混合：38
+- 有效识别：549 / 608（90.30%）
+- 仅 `other`：54
+- 仅非公共类型：59
+- 公共与非公共类型混合：43
 - 字段缺失或不可解析：0
 
 ### 类型分布
 
 | 类型 | 任务数 |
 |---|---:|
-| `bug_fix` | 143 |
-| `build_tooling` | 178 |
-| `documentation` | 169 |
-| `feature` | 92 |
-| `other` | 150 |
-| `performance` | 47 |
-| `refactor` | 21 |
-| `testing` | 132 |
+| `bug_fix` | 218 |
+| `build_tooling` | 166 |
+| `documentation` | 170 |
+| `feature` | 213 |
+| `other` | 54 |
+| `performance` | 48 |
+| `refactor` | 37 |
+| `testing` | 126 |
 
 ## 5. 技能要求质量
 
 - 覆盖任务：608 / 608（100.00%）
-- 只有仓库主要语言要求：139
+- 只有仓库主要语言要求：47
 - 含平台要求的任务：135
 - 非法平台要求任务：0
 - 使用普通平台技能名的任务：0
@@ -67,7 +67,7 @@
 | 来源 | 记录数 |
 |---|---:|
 | `explicit_platform_signal` | 145 |
-| `inferred_task_type` | 782 |
+| `inferred_task_type` | 978 |
 | `repository_primary_language` | 608 |
 
 ## 6. 难度质量
@@ -89,27 +89,27 @@
 
 | 仓库 | 语言 | 可推荐任务 | 类型覆盖率 | 技能覆盖率 | 正文缺失 | 难度异常 |
 |---|---|---:|---:|---:|---:|---:|
-| microsoft/vscode | TypeScript | 1 | 0.00% | 100.00% | 0 | 0 |
-| rust-lang/rust-clippy | Rust | 19 | 42.11% | 100.00% | 0 | 0 |
-| facebook/pyrefly | Rust | 7 | 42.86% | 100.00% | 0 | 0 |
-| pytorch/ao | Python | 35 | 51.43% | 100.00% | 1 | 0 |
-| trinodb/trino | Java | 50 | 54.00% | 100.00% | 0 | 0 |
-| matplotlib/matplotlib | Python | 23 | 56.52% | 100.00% | 0 | 0 |
-| excalidraw/excalidraw | TypeScript | 29 | 58.62% | 100.00% | 2 | 0 |
-| apache/pinot | Java | 63 | 58.73% | 100.00% | 0 | 0 |
-| kubernetes/kubernetes | Go | 8 | 62.50% | 100.00% | 0 | 0 |
-| pytorch/pytorch | Python | 17 | 70.59% | 100.00% | 0 | 0 |
+| facebook/pyrefly | Rust | 7 | 71.43% | 100.00% | 0 | 0 |
+| excalidraw/excalidraw | TypeScript | 29 | 72.41% | 100.00% | 2 | 0 |
+| jenkinsci/jenkins | Java | 4 | 75.00% | 100.00% | 0 | 0 |
+| pytorch/ao | Python | 35 | 77.14% | 100.00% | 1 | 0 |
+| nodejs/node | JavaScript | 20 | 80.00% | 100.00% | 0 | 0 |
+| trinodb/trino | Java | 50 | 86.00% | 100.00% | 0 | 0 |
+| nushell/nushell | Rust | 23 | 86.96% | 100.00% | 0 | 0 |
+| pytorch/pytorch | Python | 17 | 88.24% | 100.00% | 0 | 0 |
+| rust-lang/rust-clippy | Rust | 19 | 89.47% | 100.00% | 0 | 0 |
+| nodejs/undici | JavaScript | 30 | 90.00% | 100.00% | 1 | 0 |
 
 ## 8. 按语言分析
 
 | 语言 | 可推荐任务 | 类型覆盖率 | 技能覆盖率 | 正文缺失 | 难度异常 |
 |---|---:|---:|---:|---:|---:|
-| Go | 36 | 72.22% | 100.00% | 0 | 0 |
-| Java | 153 | 65.36% | 100.00% | 0 | 0 |
-| JavaScript | 114 | 80.70% | 100.00% | 1 | 0 |
-| Python | 193 | 76.68% | 100.00% | 1 | 0 |
-| Rust | 49 | 67.35% | 100.00% | 0 | 0 |
-| TypeScript | 63 | 79.37% | 100.00% | 2 | 0 |
+| Go | 36 | 94.44% | 100.00% | 0 | 0 |
+| Java | 153 | 90.85% | 100.00% | 0 | 0 |
+| JavaScript | 114 | 89.47% | 100.00% | 1 | 0 |
+| Python | 193 | 91.71% | 100.00% | 1 | 0 |
+| Rust | 49 | 85.71% | 100.00% | 0 | 0 |
+| TypeScript | 63 | 87.30% | 100.00% | 2 | 0 |
 
 ## 9. 异常任务样例
 
@@ -126,16 +126,16 @@
 
 | 仓库 | Issue | 标题 | 原因 |
 |---|---:|---|---|
-| apache/dubbo | [#12977](https://github.com/apache/dubbo/issues/12977) | WireProtocol Wrappable | only_other |
-| apache/dubbo | [#1923](https://github.com/apache/dubbo/issues/1923) | A new Cluster policy highlights short-circuit. | only_other |
+| apache/dubbo | [#12014](https://github.com/apache/dubbo/issues/12014) | 当接口调用传参为对象时引发一个序列化白名单的错误，提示让我把类加入白名单，要怎么操作？ | only_other |
 | apache/pinot | [#10237](https://github.com/apache/pinot/issues/10237) | Disallow consuming segment deletion | only_other |
-| apache/pinot | [#12021](https://github.com/apache/pinot/issues/12021) | Supports the access of third-party trace | only_other |
-| apache/pinot | [#12055](https://github.com/apache/pinot/issues/12055) |  Introduce reason codes in server http requests to controller | only_other |
-| apache/pinot | [#12809](https://github.com/apache/pinot/issues/12809) | Use Foreign Memory API, introduced in Java 22 | only_other |
-| apache/pinot | [#13975](https://github.com/apache/pinot/issues/13975) | Upgrade UI related libraries to address vulnerabilities | only_other |
-| apache/pinot | [#15897](https://github.com/apache/pinot/issues/15897) | Automatically repair a problematic consuming segment | only_other |
 | apache/pinot | [#17378](https://github.com/apache/pinot/issues/17378) | Deep Stack Trace from Long Min/Max Column Values | only_other |
 | apache/pinot | [#5559](https://github.com/apache/pinot/issues/5559) | Table truncate command | only_other |
+| apache/pinot | [#7275](https://github.com/apache/pinot/issues/7275) | Tool for migrating from one deep store to another | only_other |
+| apache/pinot | [#9016](https://github.com/apache/pinot/issues/9016) | Better UX for data ingestion quick-start | only_other |
+| excalidraw/excalidraw | [#10573](https://github.com/excalidraw/excalidraw/issues/10573) | iuiu | only_other |
+| excalidraw/excalidraw | [#11433](https://github.com/excalidraw/excalidraw/issues/11433) | Artifcating of shape when zoomed in at 3000% | only_other |
+| excalidraw/excalidraw | [#11464](https://github.com/excalidraw/excalidraw/issues/11464) | Excalidraw created files location | only_other |
+| excalidraw/excalidraw | [#7177](https://github.com/excalidraw/excalidraw/issues/7177) | not visible grouping line on a dark background in a light theme | only_other |
 
 ### 无有效技能要求
 

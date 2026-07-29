@@ -47,6 +47,13 @@ def _contains(text: str, patterns: tuple[str, ...]) -> bool:
     return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in patterns)
 
 
+def _matching_pattern(text: str, patterns: tuple[str, ...]) -> str | None:
+    for pattern in patterns:
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            return pattern
+    return None
+
+
 def _clamp(value: float, lower: float = 0.0, upper: float = 1.0) -> float:
     return min(max(value, lower), upper)
 
@@ -95,22 +102,172 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
     clarity += 5 if has_code_block else 0
 
     task_types: set[str] = set()
-    if "bug" in label_text or _contains(title, (r"\bbug\b", r"error", r"incorrect")):
-        task_types.add("bug_fix")
-    if "doc" in label_text or _contains(text, (r"documentation", r"\bdocs?\b", r"readme")):
-        task_types.add("documentation")
-    if "test" in label_text or _contains(text, (r"\btests?\b", r"coverage", r"regression")):
-        task_types.add("testing")
-    if "refactor" in label_text or _contains(text, (r"refactor", r"cleanup", r"simplif")):
-        task_types.add("refactor")
-    if "performance" in label_text or _contains(text, (r"performance", r"optim(?:ize|ise|ization)")):
-        task_types.add("performance")
-    if _contains(text, (r"\bci\b", r"build", r"packag", r"dependency")):
-        task_types.add("build_tooling")
-    if "enhancement" in label_text or _contains(title, (r"feature", r"change request")):
-        task_types.add("feature")
+    task_type_evidence: dict[str, list[dict[str, str]]] = {}
+
+    def add_type(task_type: str, source: str, signal: str) -> None:
+        task_types.add(task_type)
+        evidence_items = task_type_evidence.setdefault(task_type, [])
+        item = {"source": source, "signal": signal}
+        if item not in evidence_items:
+            evidence_items.append(item)
+
+    def add_label_type(
+        task_type: str,
+        patterns: tuple[str, ...],
+    ) -> None:
+        for label in labels:
+            pattern = _matching_pattern(label, patterns)
+            if pattern:
+                add_type(task_type, "label", f"{label} ({pattern})")
+                return
+
+    def add_text_type(
+        task_type: str,
+        source: str,
+        value: str,
+        patterns: tuple[str, ...],
+    ) -> None:
+        pattern = _matching_pattern(value, patterns)
+        if pattern:
+            add_type(task_type, source, pattern)
+
+    add_label_type("bug_fix", (r"\bbug\b", r"defect", r"regression", r"security"))
+    add_text_type(
+        "bug_fix",
+        "title",
+        title,
+        (
+            r"\bbug\b",
+            r"\berror\b",
+            r"incorrect",
+            r"inconsistent",
+            r"\b(?:fail|fails|failed|failure|broken|crash|hang|vulnerable)\b",
+            r"\bdoes(?:n't| not)\b",
+            r"\b(?:isn't|aren't|can't|cannot)\b",
+            r"\bnot (?:accepted|show|shows|render|work|working|update|preserve|clear|release|respect|notify|used|cached)\b",
+            r"\bmissing\b",
+            r"\bwrong\b",
+            r"\b(?:ignore|ignores|swallow|swallows|drop|drops|break|breaks)\b",
+            r"\b(?:lost|leakage|corruption|exception|false positive|silently)\b",
+            r"\b(?:hangs|freezes|crashing|failing)\b",
+        ),
+    )
+
+    add_label_type("documentation", (r"\bdoc(?:s|umentation)?\b", r"readme"))
+    add_text_type(
+        "documentation",
+        "title",
+        title,
+        (r"documentation", r"\bdocs?\b", r"readme", r"guide", r"tutorial"),
+    )
+    add_text_type(
+        "documentation",
+        "body",
+        body,
+        (r"documentation", r"\bdocs?\b", r"readme"),
+    )
+
+    add_label_type("testing", (r"\btest(?:s|ing)?\b", r"coverage", r"ci-failure"))
+    add_text_type(
+        "testing",
+        "title",
+        title,
+        (r"\btests?\b", r"\btesting\b", r"coverage", r"regression test", r"typecheck fail"),
+    )
+    add_text_type(
+        "testing",
+        "body",
+        body,
+        (r"\btests?\b", r"coverage", r"regression test"),
+    )
+
+    add_label_type(
+        "refactor",
+        (r"refactor", r"cleanup", r"maintenance", r"deprecat", r"kind/cleanup"),
+    )
+    add_text_type(
+        "refactor",
+        "title",
+        title,
+        (r"refactor", r"cleanup", r"simplif", r"\bdepr:", r"deprecat", r"consolidat"),
+    )
+    add_text_type("refactor", "body", body, (r"refactor", r"cleanup", r"simplif"))
+
+    add_label_type("performance", (r"performance", r"\bperf\b"))
+    add_text_type(
+        "performance",
+        "title",
+        title,
+        (r"performance", r"optim(?:ize|ise|ization)", r"\bmemory usage\b", r"\blag\b"),
+    )
+    add_text_type(
+        "performance",
+        "body",
+        body,
+        (r"performance", r"optim(?:ize|ise|ization)"),
+    )
+
+    add_label_type(
+        "build_tooling",
+        (r"\bbuild\b", r"\bci\b", r"dependenc", r"packag", r"tooling"),
+    )
+    add_text_type(
+        "build_tooling",
+        "title",
+        title,
+        (
+            r"\bci\b",
+            r"\bbuild\b",
+            r"packag",
+            r"dependenc",
+            r"github actions?",
+            r"\btoolchain\b",
+        ),
+    )
+    add_text_type(
+        "build_tooling",
+        "body",
+        body,
+        (r"\bci\b", r"\bbuild\b", r"packag", r"dependenc", r"\btoolchain\b"),
+    )
+
+    add_label_type(
+        "feature",
+        (
+            r"enhancement",
+            r"feature(?: request)?",
+            r"new feature",
+            r"kind/feature",
+            r"type/proposal",
+            r"\ba-lint\b",
+        ),
+    )
+    add_text_type(
+        "feature",
+        "title",
+        title,
+        (
+            r"\bfeature\b",
+            r"change request",
+            r"\benh:",
+            r"^\s*(?:add|allow|provide|enable|introduce|implement|expose|support|expand|improve|render|disable|suggest|differentiate|classify|generate|handle|increase)\b",
+            r"^\s*(?:update|document|move|migrate|use|default to|tell if|issue .*warnings?)\b",
+            r"^\s*(?:automatically repair|adding validation|authentication to)\b",
+            r"\bnew lint\b",
+            r"\blint (?:for|against)\b",
+        ),
+    )
+    add_text_type(
+        "feature",
+        "body",
+        body,
+        (r"\bfeature request\b", r"\bnew feature\b"),
+    )
     if not task_types:
         task_types.add("other")
+        task_type_evidence["other"] = [
+            {"source": "fallback", "signal": "no_supported_rule_matched"}
+        ]
 
     code_difficulty = 1
     if "documentation" in task_types and len(task_types) == 1:
@@ -189,6 +346,7 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
         "has_code_block": has_code_block,
         "newcomer_label_signal": has_newcomer_label(labels),
         "comment_count": comments,
+        "task_type_evidence": task_type_evidence,
         "formula_version": TASK_FEATURE_VERSION,
     }
     return TaskFeatures(

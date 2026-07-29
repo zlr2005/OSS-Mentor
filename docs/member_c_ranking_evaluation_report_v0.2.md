@@ -257,7 +257,7 @@ D 可以据此接系统状态页或反馈统计页面。
 
 - 当前标注集为规则辅助伪人工标注，尚未完成真实人工复核。
 - 双人复标数量为 0，因此还不能计算真实标注一致性。
-- 当前评估只展示了 `growth` 通道，后续应补充 `newcomer` 通道评估。
+- `growth` 与 `newcomer` 两个通道均已生成独立评估报告，但正式标注验收仍未通过。
 - 标注样本数量为 33 条，适合阶段演示，但仍属于小样本。
 - 用户反馈统计目前没有真实交互数据，因此不能用于自动调参或训练。
 
@@ -266,7 +266,7 @@ D 可以据此接系统状态页或反馈统计页面。
 建议后续按以下顺序推进：
 
 1. 由团队成员抽样复核当前 33 条标注，至少完成 10 条双人复标。
-2. 补充 `newcomer` 通道的离线评估报告。
+2. 复跑 `growth` 与 `newcomer` 两份报告，确认 `annotation_acceptance.passed = true`。
 3. 让成员 D 在系统状态页展示评估摘要和反馈统计。
 4. 如果后续有真实用户反馈，再比较人工标注、推荐结果和用户反馈之间的一致性。
 
@@ -319,7 +319,7 @@ v0.3 的定位是：
 
 - 在 `ranking_evaluation.py` 中扩展指标计算函数。
 - 在 `ranking_evaluation_v0.2.json` 的后续版本中增加 `ranking_quality`、`diversity_quality` 和 `blocker_quality` 三类指标。
-- 同时生成 `newcomer` 和 `growth` 两个通道的评估报告。
+- 持续同时生成 `newcomer` 和 `growth` 两个通道的评估报告。
 
 ### 8.3 标注集正式化
 
@@ -459,7 +459,7 @@ completed
 
 1. 正式化标注集：团队复核 33 条样本，并完成至少 10 条双人复标。
 2. 扩展评估指标：新增 nDCG@K、MRR、Coverage 和多样性指标。
-3. 补充 newcomer 通道评估：形成与 growth 通道对照的完整报告。
+3. 持续维护 newcomer 与 growth 通道的对照评估报告。
 4. 实现 `developer-task-match-v0.3`：加入可行动性评分、多目标排序和去集中惩罚。
 5. 增强画像字段：支持 `learning_goals`、`avoid_task_types` 和 `avoid_domains`。
 6. 扩展反馈统计报告：按仓库、任务类型和通道输出转化情况。

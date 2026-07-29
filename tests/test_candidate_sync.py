@@ -6,12 +6,31 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
-from oss_mentor.candidate_sync import CandidateSynchronizer
+from oss_mentor.candidate_sync import (
+    CandidateSynchronizer,
+    repository_maintenance_status,
+)
 from oss_mentor.collector.github_client import GitHubApiError
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
 class CandidateSyncTests(unittest.TestCase):
+    def test_repository_maintenance_status_detects_long_inactivity(self) -> None:
+        checked_at = datetime(2026, 7, 29, tzinfo=timezone.utc)
+        self.assertEqual(
+            ("active", None),
+            repository_maintenance_status(
+                "2026-07-01T00:00:00Z",
+                checked_at=checked_at,
+            ),
+        )
+        status, reason = repository_maintenance_status(
+            "2025-01-01T00:00:00Z",
+            checked_at=checked_at,
+        )
+        self.assertEqual("inactive", status)
+        self.assertIn("180_days", reason)
+
     def test_transferred_issue_is_treated_as_unavailable(self) -> None:
         fetched_at = datetime(2026, 7, 16, tzinfo=timezone.utc)
 

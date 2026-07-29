@@ -128,6 +128,33 @@ paths:
                         properties:
                           interested_to_started: {type: integer, minimum: 0}
                           started_to_completed: {type: integer, minimum: 0}
+  /api/v1/status:
+    get:
+      summary: Report the local database, candidate inventory, data quality, and component versions
+      responses:
+        "200":
+          description: Current local system status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [database_ready, database_path, repository_count, candidate_count, eligible_count, matchable_count, newcomer_count, features_extracted_count, type_identified_count, type_identification_rate, skill_coverage_count, skill_coverage_rate, api_version, match_version]
+                properties:
+                  database_ready: {type: boolean}
+                  database_path: {type: string}
+                  repository_count: {type: integer, minimum: 0}
+                  candidate_count: {type: integer, minimum: 0}
+                  eligible_count: {type: integer, minimum: 0}
+                  matchable_count: {type: integer, minimum: 0}
+                  newcomer_count: {type: integer, minimum: 0}
+                  last_sync_at: {type: string, format: date-time, nullable: true}
+                  features_extracted_count: {type: integer, minimum: 0}
+                  type_identified_count: {type: integer, minimum: 0}
+                  type_identification_rate: {type: number, minimum: 0, maximum: 1}
+                  skill_coverage_count: {type: integer, minimum: 0}
+                  skill_coverage_rate: {type: number, minimum: 0, maximum: 1}
+                  api_version: {type: string, enum: [v0.4]}
+                  match_version: {type: string, enum: [developer-task-match-v0.2]}
 components:
   schemas:
     CustomProfile:

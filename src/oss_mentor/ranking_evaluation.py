@@ -31,6 +31,10 @@ ANNOTATION_FIELDS = (
 )
 RANKING_EVALUATION_SCHEMA_VERSION = "ranking_evaluation_v0.2"
 FIT_THRESHOLD = 2.0
+MIN_ANNOTATED_TASKS = 30
+MIN_ANNOTATORS = 2
+MIN_DOUBLE_ANNOTATED_TASKS = 10
+PROVISIONAL_ANNOTATOR_MARKERS = ("pseudo", "synthetic", "generated", "codex")
 
 
 @dataclass(frozen=True, slots=True)
@@ -320,6 +324,41 @@ def _agreement_summary(
     }
 
 
+def _annotation_acceptance(
+    annotations: list[TaskFitAnnotation],
+    grouped_annotations: dict[tuple[str, int], list[TaskFitAnnotation]],
+    agreement: dict[str, Any],
+) -> dict[str, Any]:
+    annotators = sorted({item.annotator for item in annotations})
+    provisional_annotators = [
+        annotator
+        for annotator in annotators
+        if any(
+            marker in annotator.casefold()
+            for marker in PROVISIONAL_ANNOTATOR_MARKERS
+        )
+    ]
+    checks = {
+        "minimum_task_count": len(grouped_annotations) >= MIN_ANNOTATED_TASKS,
+        "minimum_annotator_count": len(annotators) >= MIN_ANNOTATORS,
+        "minimum_double_annotated_task_count": (
+            agreement["double_annotated_task_count"]
+            >= MIN_DOUBLE_ANNOTATED_TASKS
+        ),
+        "no_provisional_annotators": not provisional_annotators,
+    }
+    return {
+        "requirements": {
+            "minimum_task_count": MIN_ANNOTATED_TASKS,
+            "minimum_annotator_count": MIN_ANNOTATORS,
+            "minimum_double_annotated_task_count": MIN_DOUBLE_ANNOTATED_TASKS,
+        },
+        "checks": checks,
+        "provisional_annotators": provisional_annotators,
+        "passed": all(checks.values()),
+    }
+
+
 def build_ranking_evaluation_report(
     *,
     track: str,
@@ -376,6 +415,7 @@ def build_ranking_evaluation_report(
         for version, ranking in rankings.items()
     }
     selected_ranking = rankings[selected_match_version]
+    agreement = _agreement_summary(grouped_annotations, track)
     return {
         "schema_version": RANKING_EVALUATION_SCHEMA_VERSION,
         "track": track,
@@ -385,8 +425,13 @@ def build_ranking_evaluation_report(
             "row_count": len(annotations),
             "task_count": len(grouped_annotations),
             "annotator_count": len({item.annotator for item in annotations}),
-            "agreement": _agreement_summary(grouped_annotations, track),
+            "agreement": agreement,
         },
+        "annotation_acceptance": _annotation_acceptance(
+            annotations,
+            grouped_annotations,
+            agreement,
+        ),
         "candidate_count": len(candidates),
         "metrics_by_version": metrics,
         "top10_changes": _top10_changes(
@@ -426,7 +471,17 @@ def render_ranking_evaluation_markdown(report: dict[str, Any]) -> str:
         f"- 当前评估版本：`{report['selected_match_version']}`",
         f"- 标注行数：{report['annotation_summary']['row_count']}",
         f"- 标注任务数：{report['annotation_summary']['task_count']}",
+        f"- 标注员数：{report['annotation_summary']['annotator_count']}",
+        f"- 双人复标任务数：{report['annotation_summary']['agreement']['double_annotated_task_count']}",
         f"- 候选任务数：{report['candidate_count']}",
+        "",
+        "## 标注验收",
+        "",
+        f"- 至少 30 个任务：{'通过' if report['annotation_acceptance']['checks']['minimum_task_count'] else '未通过'}",
+        f"- 至少 2 名标注员：{'通过' if report['annotation_acceptance']['checks']['minimum_annotator_count'] else '未通过'}",
+        f"- 至少 10 个双人复标任务：{'通过' if report['annotation_acceptance']['checks']['minimum_double_annotated_task_count'] else '未通过'}",
+        f"- 无开发期伪标注员：{'通过' if report['annotation_acceptance']['checks']['no_provisional_annotators'] else '未通过'}",
+        f"- 标注总体验收：{'通过' if report['annotation_acceptance']['passed'] else '未通过'}",
         "",
         "## 指标对比",
         "",

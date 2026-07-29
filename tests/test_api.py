@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
 from pathlib import Path
 
 from oss_mentor.api import RecommendationApi
+from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
 class FakeStore:
@@ -293,6 +295,21 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(1, response.body["repository_count"])
         self.assertIn("api_version", response.body)
         self.assertIn("match_version", response.body)
+
+    def test_status_endpoint_uses_real_sqlite_store(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temporary:
+            store = SQLiteCandidateStore(
+                Path(temporary) / "status.sqlite3",
+                root / "db" / "sqlite" / "001_mvp.sql",
+            )
+            response = RecommendationApi(store).handle("GET", "/api/v1/status")
+
+        self.assertEqual(200, response.status)
+        self.assertTrue(response.body["database_ready"])
+        self.assertEqual(0, response.body["repository_count"])
+        self.assertEqual(0, response.body["candidate_count"])
+        self.assertEqual("developer-task-match-v0.2", response.body["match_version"])
 
     def test_feedback_rejects_invalid_state_and_context(self) -> None:
         invalid_state = self.api.handle(
