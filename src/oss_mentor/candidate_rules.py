@@ -3,11 +3,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
 
 FEATURE_VERSION = "candidate-eligibility-v0.1"
+AVAILABILITY_VERSION = "candidate-availability-v0.5"
+CANDIDATE_AVAILABILITY_VALUES = frozenset(
+    {
+        "available",
+        "closed",
+        "assigned",
+        "linked_open_pr",
+        "locked",
+        "repository_inactive",
+        "temporarily_unverified",
+    }
+)
 NEWCOMER_LABELS = frozenset(
     {
         "good first issue",
@@ -50,9 +62,84 @@ class EligibilityResult:
     feature_definition_version: str = FEATURE_VERSION
 
 
+@dataclass(frozen=True, slots=True)
+class AvailabilityResult:
+    availability: str
+    reasons: tuple[str, ...]
+    verified_at: str | None
+    version: str = AVAILABILITY_VERSION
+
+
 def has_newcomer_label(labels: Iterable[str]) -> bool:
     normalized = {label.strip().casefold() for label in labels}
     return bool(normalized.intersection(NEWCOMER_LABELS))
+
+
+def _parse_time(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def evaluate_availability(
+    record: dict[str, Any],
+    *,
+    repository: dict[str, Any] | None = None,
+    now: datetime | None = None,
+    maximum_age_hours: int = 24,
+) -> AvailabilityResult:
+    """Map current GitHub evidence to the fixed v0.5 availability contract."""
+
+    repository = repository or {}
+    verified_at = record.get("github_verified_at")
+    if (
+        repository.get("is_archived")
+        or repository.get("is_disabled")
+        or repository.get("maintenance_status") == "inactive"
+    ):
+        return AvailabilityResult(
+            "repository_inactive",
+            ("repository_inactive",),
+            verified_at,
+        )
+    if record.get("is_pull_request") or record.get("state") != "open":
+        return AvailabilityResult("closed", ("issue_closed",), verified_at)
+    if record.get("assignment_state") == "assigned":
+        return AvailabilityResult("assigned", ("issue_assigned",), verified_at)
+    if record.get("has_linked_open_pr") is True:
+        return AvailabilityResult(
+            "linked_open_pr",
+            ("linked_open_pr",),
+            verified_at,
+        )
+    if record.get("is_locked"):
+        return AvailabilityResult("locked", ("issue_locked",), verified_at)
+
+    parsed = _parse_time(verified_at)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    if (
+        record.get("source_system") != "github_rest"
+        or not record.get("github_issue_id")
+        or parsed is None
+    ):
+        return AvailabilityResult(
+            "temporarily_unverified",
+            ("requires_github_verification",),
+            verified_at,
+        )
+    if current - parsed > timedelta(hours=maximum_age_hours):
+        return AvailabilityResult(
+            "temporarily_unverified",
+            ("verification_older_than_limit",),
+            verified_at,
+        )
+    return AvailabilityResult("available", (), verified_at)
 
 
 def evaluate_candidate(record: dict[str, Any]) -> EligibilityResult:
