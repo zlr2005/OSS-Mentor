@@ -26,8 +26,45 @@ class TaskFeatureTests(unittest.TestCase):
         self.assertTrue(features.has_acceptance_criteria)
         self.assertTrue(features.has_affected_module_hint)
         self.assertIn("bug_fix", features.task_types)
+        self.assertEqual(
+            "label",
+            features.feature_evidence["task_type_evidence"]["bug_fix"][0]["source"],
+        )
         self.assertGreaterEqual(features.text_clarity_score, 80)
         self.assertGreater(features.newcomer_score, 70)
+
+    def test_real_world_feature_and_bug_phrases_are_classified_with_evidence(
+        self,
+    ) -> None:
+        feature = extract_task_features(
+            {
+                "title": "Allow batch based metrics calculation",
+                "body_text": "",
+                "labels": ["kind/feature", "help wanted"],
+                "comment_count": 0,
+                "candidate_eligibility": "eligible",
+            }
+        )
+        bug = extract_task_features(
+            {
+                "title": "Export dialog doesn't respect iOS safe area",
+                "body_text": "",
+                "labels": ["good first issue"],
+                "comment_count": 0,
+                "candidate_eligibility": "eligible",
+            }
+        )
+
+        self.assertIn("feature", feature.task_types)
+        self.assertIn("bug_fix", bug.task_types)
+        self.assertEqual(
+            "label",
+            feature.feature_evidence["task_type_evidence"]["feature"][0]["source"],
+        )
+        self.assertEqual(
+            "title",
+            bug.feature_evidence["task_type_evidence"]["bug_fix"][0]["source"],
+        )
 
     def test_ineligible_candidate_gets_zero_track_scores(self) -> None:
         features = extract_task_features(

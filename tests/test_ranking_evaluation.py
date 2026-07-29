@@ -166,6 +166,12 @@ class RankingEvaluationTests(unittest.TestCase):
         self.assertGreaterEqual(metrics["repository_diversity"], 2)
         self.assertGreaterEqual(metrics["task_type_diversity"], 2)
         self.assertGreater(metrics["critical_skill_mismatch_rate"], 0)
+        self.assertFalse(report["annotation_acceptance"]["passed"])
+        self.assertFalse(
+            report["annotation_acceptance"]["checks"][
+                "minimum_double_annotated_task_count"
+            ]
+        )
 
         empty = build_ranking_evaluation_report(
             track="newcomer",
@@ -348,6 +354,7 @@ class RankingEvaluationCliTests(unittest.TestCase):
             self.assertEqual("ranking_evaluation_generated", summary["event"])
             report = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual("ranking_evaluation_v0.2", report["schema_version"])
+            self.assertFalse(report["annotation_acceptance"]["passed"])
             self.assertIn("推荐算法离线评估", markdown_path.read_text(encoding="utf-8"))
 
 

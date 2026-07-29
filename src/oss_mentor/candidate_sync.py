@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from oss_mentor.candidate_rules import EligibilityResult, evaluate_candidate
@@ -14,6 +14,32 @@ from oss_mentor.collector.source_comparison import (
     normalize_github_issue,
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
+
+
+REPOSITORY_INACTIVITY_DAYS = 180
+
+
+def repository_maintenance_status(
+    pushed_at: str | None,
+    *,
+    checked_at: datetime,
+) -> tuple[str, str | None]:
+    """Classify repository maintenance using the latest repository push."""
+
+    if not pushed_at:
+        return ("unknown", "missing_pushed_at")
+    try:
+        parsed = datetime.fromisoformat(pushed_at.replace("Z", "+00:00"))
+    except ValueError:
+        return ("unknown", "invalid_pushed_at")
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    if checked_at - parsed > timedelta(days=REPOSITORY_INACTIVITY_DAYS):
+        return (
+            "inactive",
+            f"no_repository_push_within_{REPOSITORY_INACTIVITY_DAYS}_days",
+        )
+    return ("active", None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,13 +142,21 @@ class CandidateSynchronizer:
         response = self.github_client.get(f"/repos/{full_name}")
         if not isinstance(response.payload, dict):
             raise ValueError(f"GitHub repository response was not an object: {full_name}")
+        pushed_at = response.payload.get("pushed_at")
+        maintenance_status, maintenance_reason = repository_maintenance_status(
+            pushed_at,
+            checked_at=response.fetched_at,
+        )
         return {
             "github_repository_id": response.payload.get("id"),
             "html_url": response.payload.get("html_url") or f"https://github.com/{full_name}",
             "github_verified_at": response.fetched_at.isoformat(),
             "is_archived": bool(response.payload.get("archived")),
             "is_disabled": bool(response.payload.get("disabled")),
-            "pushed_at": response.payload.get("pushed_at"),
+            "pushed_at": pushed_at,
+            "maintenance_status": maintenance_status,
+            "maintenance_reason": maintenance_reason,
+            "activity_checked_at": response.fetched_at.isoformat(),
         }
 
     def sync(
@@ -137,7 +171,11 @@ class CandidateSynchronizer:
     ) -> CandidateSyncResult:
         self.store.initialize()
         repository_health = self.fetch_repository_health(full_name)
-        if repository_health["is_archived"] or repository_health["is_disabled"]:
+        if (
+            repository_health["is_archived"]
+            or repository_health["is_disabled"]
+            or repository_health["maintenance_status"] == "inactive"
+        ):
             with self.store.connect() as connection:
                 self.store.upsert_repository(
                     connection,

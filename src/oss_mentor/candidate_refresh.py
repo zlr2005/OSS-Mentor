@@ -70,7 +70,11 @@ class CandidateRefresher:
                     **health,
                 )
             checked_names.append(repository.full_name)
-            if not health["is_archived"] and not health["is_disabled"]:
+            if (
+                not health["is_archived"]
+                and not health["is_disabled"]
+                and health.get("maintenance_status", "active") != "inactive"
+            ):
                 active_names.append(repository.full_name)
 
         candidates = self.store.stale_candidates(

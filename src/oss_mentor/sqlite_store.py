@@ -79,6 +79,9 @@ class SQLiteCandidateStore:
         is_archived: bool = False,
         is_disabled: bool = False,
         pushed_at: str | None = None,
+        maintenance_status: str | None = None,
+        maintenance_reason: str | None = None,
+        activity_checked_at: str | None = None,
         mark_synced: bool = False,
     ) -> int:
         now = self._now()
@@ -142,6 +145,24 @@ class SQLiteCandidateStore:
                     int(mark_synced),
                     now,
                     now,
+                    full_name,
+                ),
+            )
+        if "maintenance_status" in columns:
+            connection.execute(
+                """
+                UPDATE repository SET
+                    maintenance_status = COALESCE(?, maintenance_status),
+                    maintenance_reason = CASE WHEN ? IS NOT NULL
+                        THEN ? ELSE maintenance_reason END,
+                    activity_checked_at = COALESCE(?, activity_checked_at)
+                WHERE full_name = ?
+                """,
+                (
+                    maintenance_status,
+                    maintenance_status,
+                    maintenance_reason,
+                    activity_checked_at,
                     full_name,
                 ),
             )
@@ -281,6 +302,7 @@ class SQLiteCandidateStore:
                   AND tc.candidate_eligibility = 'eligible'
                   AND COALESCE(r.is_archived, 0) = 0
                   AND COALESCE(r.is_disabled, 0) = 0
+                  AND COALESCE(r.maintenance_status, 'active') != 'inactive'
                 """
             ).fetchone()[0]
             total = connection.execute("SELECT COUNT(*) FROM task_candidate").fetchone()[0]
@@ -292,6 +314,121 @@ class SQLiteCandidateStore:
             "eligibility_counts": {
                 str(row["candidate_eligibility"]): int(row["count"]) for row in rows
             },
+        }
+
+    def system_status(self) -> dict[str, Any]:
+        """Return the real database, inventory, and feature-quality status."""
+
+        self.initialize()
+        public_task_types = {
+            "bug_fix",
+            "testing",
+            "documentation",
+            "feature",
+            "refactor",
+            "build_tooling",
+        }
+        with self.connect() as connection:
+            repository_count = int(
+                connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM repository
+                    WHERE COALESCE(is_archived, 0) = 0
+                      AND COALESCE(is_disabled, 0) = 0
+                      AND COALESCE(maintenance_status, 'active') != 'inactive'
+                    """
+                ).fetchone()[0]
+            )
+            candidate_count = int(
+                connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM task_candidate AS tc
+                    JOIN repository AS r USING (repository_id)
+                    WHERE COALESCE(r.is_archived, 0) = 0
+                      AND COALESCE(r.is_disabled, 0) = 0
+                      AND COALESCE(r.maintenance_status, 'active') != 'inactive'
+                    """
+                ).fetchone()[0]
+            )
+            eligible_rows = connection.execute(
+                """
+                SELECT
+                    tc.task_candidate_id,
+                    tc.newcomer_label_signal,
+                    tc.task_types_json,
+                    tc.feature_extracted_at
+                FROM task_candidate AS tc
+                JOIN repository AS r USING (repository_id)
+                WHERE tc.candidate_eligibility = 'eligible'
+                  AND COALESCE(r.is_archived, 0) = 0
+                  AND COALESCE(r.is_disabled, 0) = 0
+                  AND COALESCE(r.maintenance_status, 'active') != 'inactive'
+                """
+            ).fetchall()
+            skill_coverage_count = int(
+                connection.execute(
+                    """
+                    SELECT COUNT(DISTINCT tc.task_candidate_id)
+                    FROM task_candidate AS tc
+                    JOIN repository AS r USING (repository_id)
+                    JOIN task_skill_requirement AS tsr
+                      USING (task_candidate_id)
+                    WHERE tc.candidate_eligibility = 'eligible'
+                      AND COALESCE(r.is_archived, 0) = 0
+                      AND COALESCE(r.is_disabled, 0) = 0
+                      AND COALESCE(r.maintenance_status, 'active') != 'inactive'
+                    """
+                ).fetchone()[0]
+            )
+            last_sync_at = connection.execute(
+                """
+                SELECT MAX(value)
+                FROM (
+                    SELECT last_candidate_sync_at AS value FROM repository
+                    UNION ALL
+                    SELECT last_candidate_refresh_at AS value FROM repository
+                )
+                """
+            ).fetchone()[0]
+
+        eligible_count = len(eligible_rows)
+        features_extracted_count = sum(
+            row["feature_extracted_at"] is not None for row in eligible_rows
+        )
+        newcomer_count = sum(
+            bool(row["newcomer_label_signal"]) for row in eligible_rows
+        )
+        type_identified_count = 0
+        for row in eligible_rows:
+            try:
+                task_types = json.loads(row["task_types_json"] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                task_types = []
+            if isinstance(task_types, list) and public_task_types.intersection(
+                str(value) for value in task_types
+            ):
+                type_identified_count += 1
+
+        return {
+            "database_ready": True,
+            "database_path": str(self.database_path),
+            "repository_count": repository_count,
+            "candidate_count": candidate_count,
+            "eligible_count": eligible_count,
+            "matchable_count": features_extracted_count,
+            "newcomer_count": newcomer_count,
+            "last_sync_at": last_sync_at,
+            "features_extracted_count": features_extracted_count,
+            "type_identified_count": type_identified_count,
+            "type_identification_rate": (
+                type_identified_count / eligible_count if eligible_count else 0.0
+            ),
+            "skill_coverage_count": skill_coverage_count,
+            "skill_coverage_rate": (
+                skill_coverage_count / eligible_count if eligible_count else 0.0
+            ),
         }
 
     def stale_candidates(
@@ -379,7 +516,8 @@ class SQLiteCandidateStore:
             repositories = connection.execute(
                 """
                 SELECT repository_id, full_name, primary_language, is_archived,
-                       is_disabled, github_verified_at, last_candidate_sync_at,
+                       is_disabled, maintenance_status, maintenance_reason,
+                       activity_checked_at, github_verified_at, last_candidate_sync_at,
                        last_candidate_refresh_at
                 FROM repository ORDER BY full_name
                 """
@@ -393,7 +531,7 @@ class SQLiteCandidateStore:
                        tc.warnings_json, tc.newcomer_label_signal,
                        tc.github_verified_at, tc.task_types_json,
                        r.full_name AS repository, r.primary_language,
-                       r.is_archived, r.is_disabled
+                       r.is_archived, r.is_disabled, r.maintenance_status
                 FROM task_candidate AS tc
                 JOIN repository AS r USING (repository_id)
                 ORDER BY tc.task_candidate_id
@@ -509,6 +647,7 @@ class SQLiteCandidateStore:
                     r.primary_language,
                     COALESCE(r.is_archived, 0) AS is_archived,
                     COALESCE(r.is_disabled, 0) AS is_disabled,
+                    COALESCE(r.maintenance_status, 'active') AS maintenance_status,
                     tc.issue_number,
                     tc.github_issue_id,
                     tc.html_url,
@@ -760,6 +899,7 @@ class SQLiteCandidateStore:
                   AND tc.task_feature_version IS NOT NULL
                   AND COALESCE(r.is_archived, 0) = 0
                   AND COALESCE(r.is_disabled, 0) = 0
+                  AND COALESCE(r.maintenance_status, 'active') != 'inactive'
                 """
             ).fetchall()
             requirements = connection.execute(

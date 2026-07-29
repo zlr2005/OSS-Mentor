@@ -18,7 +18,11 @@ from oss_mentor.developer_profiles import (
     CUSTOM_PROFILE_VERSION,
     custom_profile_for_matching,
 )
-from oss_mentor.matching import rank_for_profile, recommendation_availability
+from oss_mentor.matching import (
+    MATCH_VERSION_V2,
+    rank_for_profile,
+    recommendation_availability,
+)
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
@@ -297,7 +301,7 @@ class RecommendationApi:
                 {
                     **status_data,
                     "api_version": API_VERSION,
-                    "match_version": "developer-task-match-v0.1",
+                    "match_version": MATCH_VERSION_V2,
                 },
             )
         if path in {

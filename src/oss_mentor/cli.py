@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import sys
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -564,7 +565,27 @@ def command_refresh_candidates(settings: Settings, args: argparse.Namespace) -> 
 
 def command_candidate_report(settings: Settings, args: argparse.Namespace) -> int:
     store = _candidate_store(settings, args)
-    report = build_candidate_report(store)
+    operation_reports: dict[str, dict[str, object]] = {}
+    for name, raw_path in (
+        ("sync", args.sync_report),
+        ("refresh", args.refresh_report),
+    ):
+        if not raw_path:
+            continue
+        path = Path(raw_path).expanduser().resolve()
+        if not path.is_file():
+            raise ConfigError(f"{name} report does not exist: {path}")
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ConfigError(f"invalid {name} report: {path}") from exc
+        if not isinstance(value, dict):
+            raise ConfigError(f"{name} report must contain a JSON object: {path}")
+        operation_reports[name] = value
+    report = build_candidate_report(
+        store,
+        operation_reports=operation_reports,
+    )
     _write_json(args.output, report)
     markdown_path = (
         Path(args.markdown_output).expanduser().resolve()
@@ -838,6 +859,7 @@ def command_evaluate_ranking(settings: Settings, args: argparse.Namespace) -> in
             "markdown_output": str(markdown_output),
             "precision_at_5": selected_metrics["precision_at_5"],
             "precision_at_10": selected_metrics["precision_at_10"],
+            "annotation_acceptance_passed": report["annotation_acceptance"]["passed"],
             "warning_count": len(report["warnings"]),
         }
     )
@@ -883,6 +905,25 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
 
 def command_init_demo(settings: Settings, args: argparse.Namespace) -> int:
     store = _sqlite_store(settings, args.database)
+    fixture_path = (
+        Path(args.fixture).expanduser().resolve()
+        if args.fixture
+        else settings.repo_root / "fixtures" / "oss_mentor_demo.sqlite3"
+    )
+    seeded_from_fixture = False
+    if not store.database_path.is_file():
+        if not fixture_path.is_file():
+            raise ConfigError(f"demo fixture not found: {fixture_path}")
+        store.database_path.parent.mkdir(parents=True, exist_ok=True)
+        source_uri = fixture_path.as_uri() + "?mode=ro"
+        source = sqlite3.connect(source_uri, uri=True)
+        destination = sqlite3.connect(store.database_path)
+        try:
+            source.backup(destination)
+        finally:
+            destination.close()
+            source.close()
+        seeded_from_fixture = True
     store.initialize()
     demo_path = settings.repo_root / "config" / "demo_profiles_v0.1.json"
     if not demo_path.is_file():
@@ -895,6 +936,8 @@ def command_init_demo(settings: Settings, args: argparse.Namespace) -> int:
         {
             "event": "demo_initialized",
             "database_path": str(store.database_path),
+            "fixture_path": str(fixture_path),
+            "seeded_from_fixture": seeded_from_fixture,
             "profiles_imported": [p.profile_key for p in profiles],
             "candidate_count": summary["candidate_count"],
             "newcomer_signal_count": summary["newcomer_signal_count"],
@@ -929,11 +972,13 @@ def command_doctor(settings: Settings, args: argparse.Namespace) -> int:
     checks.append(
         {
             "check": "database_exists",
-            "status": "ok" if db_exists else "warning",
+            "status": "ok" if db_exists else "error",
             "value": str(store.database_path),
             "message": "" if db_exists else "Run 'python -m oss_mentor init-demo' to initialize",
         }
     )
+    if not db_exists:
+        all_ok = False
 
     if db_exists:
         store.initialize()
@@ -967,13 +1012,15 @@ def command_doctor(settings: Settings, args: argparse.Namespace) -> int:
             checks.append(
                 {
                     "check": "demo_profiles",
-                    "status": "ok" if profile_ok else "warning",
+                    "status": "ok" if profile_ok else "error",
                     "value": f"{len(profiles)} profile(s)",
                     "message": (
                         "" if profile_ok else "Expected at least 2 demo profiles"
                     ),
                 }
             )
+            if not profile_ok:
+                all_ok = False
         except Exception as exc:
             checks.append(
                 {
@@ -993,31 +1040,37 @@ def command_doctor(settings: Settings, args: argparse.Namespace) -> int:
         checks.append(
             {
                 "check": "candidate_count",
-                "status": "ok" if candidate_count > 0 else "warning",
+                "status": "ok" if candidate_count > 0 else "error",
                 "value": str(candidate_count),
                 "message": "" if candidate_count > 0 else "No candidates in database; run sync-candidates",
             }
         )
+        if candidate_count <= 0:
+            all_ok = False
         checks.append(
             {
                 "check": "matchable_count",
-                "status": "ok" if eligible > 0 else "warning",
+                "status": "ok" if eligible > 0 else "error",
                 "value": str(eligible),
                 "message": (
                     "" if eligible > 0 else "No eligible candidates; run extract-features"
                 ),
             }
         )
+        if eligible <= 0:
+            all_ok = False
         checks.append(
             {
                 "check": "newcomer_count",
-                "status": "ok" if newcomer_count > 0 else "warning",
+                "status": "ok" if newcomer_count > 0 else "error",
                 "value": str(newcomer_count),
                 "message": (
                     "" if newcomer_count > 0 else "No newcomer-friendly tasks identified"
                 ),
             }
         )
+        if newcomer_count <= 0:
+            all_ok = False
 
     port = args.port
     try:
@@ -1304,9 +1357,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     init_demo_command = subparsers.add_parser(
         "init-demo",
-        help="Initialize SQLite, apply migrations, and import demo profiles.",
+        help="Seed a new SQLite database from the sanitized fixture and apply migrations.",
+    )
+    report_command.add_argument(
+        "--sync-report",
+        help="Optional sync-candidates JSON report used for request cost and failures.",
+    )
+    report_command.add_argument(
+        "--refresh-report",
+        help="Optional refresh-candidates JSON report used for request cost and failures.",
     )
     init_demo_command.add_argument("--database", help="SQLite database path.")
+    init_demo_command.add_argument(
+        "--fixture",
+        help="Optional sanitized SQLite fixture path.",
+    )
     init_demo_command.set_defaults(handler=command_init_demo)
 
     doctor_command = subparsers.add_parser(

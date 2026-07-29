@@ -1,5 +1,26 @@
 # 候选任务采集与刷新 v0.2
 
+## 仓库活跃度
+
+每次同步或刷新仓库元数据时，系统会记录 `pushed_at` 并计算
+`maintenance_status`：
+
+- 最近 180 天有仓库推送：`active`；
+- 超过 180 天无仓库推送：`inactive`，候选任务退出匹配池；
+- GitHub 未返回或返回非法 `pushed_at`：`unknown`，保留供人工复核。
+
+该状态与 `is_archived`、`is_disabled` 分开保存，避免把长期停更误报为归档。
+再次检测到近期推送后，仓库可恢复为 `active`。
+
+候选池报告可以合并同步和刷新运行报告，展示 API 请求成本以及失败原因：
+
+```powershell
+python -m oss_mentor candidate-report `
+  --sync-report data/reports/all_enabled_sync.json `
+  --refresh-report data/reports/candidate_refresh_run.json `
+  --output data/reports/candidate_pool_v0.3.json
+```
+
 本版本面向成员 A，使用现有 10 个启用仓库维护本地 SQLite 候选池。同步和刷新均串行执行；网络请求在事务外完成，每个仓库单独写入，单仓库失败不会回滚其他仓库。
 
 ## 安全约束

@@ -5,6 +5,17 @@
 
 # Collected data and local databases
 data/
+!data/
+data/*
+!data/annotations/
+data/annotations/*
+!data/annotations/task_fit_v0.1.csv
+!data/reports/
+data/reports/*
+!data/reports/ranking_evaluation_v0.2.json
+!data/reports/data_quality_v0.2.json
+!data/reports/candidate_pool_v0.3.json
+!data/reports/ranking_evaluation_newcomer_v0.2.json
 数据/
 *.sqlite
 *.sqlite3
