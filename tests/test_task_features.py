@@ -5,6 +5,7 @@ import unittest
 
 from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
 from oss_mentor.task_features import (
+    DIFFICULTY_FORMULA_VERSION,
     TASK_FEATURE_VERSION,
     extract_task_features,
     infer_skill_requirements,
@@ -30,6 +31,10 @@ class TaskFeatureTests(unittest.TestCase):
             "candidate_eligibility": candidate_eligibility,
             "primary_language": primary_language,
         }
+
+    @staticmethod
+    def _difficulty(features: object) -> dict[str, object]:
+        return features.feature_evidence["difficulty_assessment"]
 
     def test_clear_first_contribution_bug_scores_for_newcomer(self) -> None:
         features = extract_task_features(
@@ -706,6 +711,573 @@ class TaskFeatureTests(unittest.TestCase):
         self.assertIn("feature", names)
         self.assertNotIn("performance", names)
 
+
+    def test_newcomer_label_does_not_change_difficulty_dimensions(self) -> None:
+        record = self._record(
+            title="Bug: parser state machine returns the wrong token",
+            body_text=(
+                "## Steps to reproduce\nRun the parser with nested input.\n"
+                "## Expected behavior\nThe parser should preserve the token order."
+            ),
+            labels=["bug"],
+        )
+        regular = extract_task_features(record)
+        newcomer = extract_task_features({**record, "labels": ["bug", "good first issue"]})
+        self.assertEqual(
+            (
+                regular.estimated_code_difficulty,
+                regular.estimated_setup_difficulty,
+                regular.estimated_project_context_difficulty,
+                regular.estimated_collaboration_difficulty,
+            ),
+            (
+                newcomer.estimated_code_difficulty,
+                newcomer.estimated_setup_difficulty,
+                newcomer.estimated_project_context_difficulty,
+                newcomer.estimated_collaboration_difficulty,
+            ),
+        )
+
+    def test_newcomer_label_still_increases_newcomer_score(self) -> None:
+        record = self._record(
+            title="Bug: parser returns the wrong token",
+            body_text="Expected behavior: return the normalized token.",
+            labels=["bug"],
+        )
+        regular = extract_task_features(record)
+        newcomer = extract_task_features({**record, "labels": ["bug", "good first issue"]})
+        self.assertGreater(newcomer.newcomer_score, regular.newcomer_score)
+
+    def test_performance_signal_alone_does_not_force_code_three(self) -> None:
+        features = extract_task_features(
+            self._record(title="PERF: Reduce temporary array allocations")
+        )
+        self.assertLess(features.estimated_code_difficulty, 3)
+
+    def test_performance_signal_alone_does_not_force_context_three(self) -> None:
+        features = extract_task_features(
+            self._record(title="PERF: Reduce temporary array allocations")
+        )
+        self.assertLess(features.estimated_project_context_difficulty, 3)
+
+    def test_performance_with_strong_distributed_evidence_can_be_high_difficulty(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="PERF: Optimize distributed all-gather across multiple nodes",
+                body_text=(
+                    "Implement tensor parallelism with collective communication. "
+                    "The change must preserve distributed state across workers."
+                ),
+            )
+        )
+        self.assertEqual(3, features.estimated_code_difficulty)
+        self.assertEqual(3, features.estimated_project_context_difficulty)
+
+    def test_performance_tracker_is_non_actionable_and_low_confidence(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Performance roadmap tracker",
+                labels=["performance", "tracker"],
+                body_text="Track multiple optimization milestones and child tasks.",
+            )
+        )
+        quality = self._difficulty(features)["information_quality"]
+        self.assertEqual("non_actionable", quality["actionability"])
+        self.assertEqual("low", quality["confidence"])
+
+    def test_reported_operating_system_does_not_raise_setup(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Bug: parser returns an incorrect value",
+                body_text=(
+                    "## Environment\nOperating System: Windows 11\n"
+                    "## Expected behavior\nThe parser should return the normalized value."
+                ),
+            )
+        )
+        self.assertEqual(1, features.estimated_setup_difficulty)
+
+    def test_platform_required_by_reproduction_raises_setup(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Bug in the macOS rendering backend",
+                body_text=(
+                    "## Steps to reproduce\nThis issue is only reproducible on macOS "
+                    "using the platform-specific backend."
+                ),
+            )
+        )
+        self.assertEqual(2, features.estimated_setup_difficulty)
+
+    def test_container_or_single_cluster_requirement_is_setup_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Bug: readiness probe consumes excessive CPU",
+                body_text=(
+                    "## Steps to reproduce\nCreate a Kubernetes cluster and deploy "
+                    "the service before measuring the probe."
+                ),
+            )
+        )
+        self.assertEqual(2, features.estimated_setup_difficulty)
+
+    def test_gpu_or_multinode_requirement_is_setup_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Run quantization tests on ROCm GPU",
+                body_text="The test must run on ROCm GPU workers.",
+            )
+        )
+        self.assertEqual(3, features.estimated_setup_difficulty)
+
+    def test_documentation_reference_to_linux_keeps_setup_zero(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Update documentation for installation",
+                body_text="Update the Linux section and correct the wording.",
+                labels=["documentation"],
+            )
+        )
+        self.assertEqual(("documentation",), features.task_types)
+        self.assertEqual(0, features.estimated_setup_difficulty)
+
+    def test_local_refactor_keeps_context_one(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Refactor local parser helper",
+                body_text="Move the local helper without changing the public behavior.",
+            )
+        )
+        self.assertEqual(1, features.estimated_project_context_difficulty)
+
+    def test_cross_module_refactor_has_context_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Refactor shared cache across multiple modules",
+                body_text="Move shared cache handling across multiple modules.",
+            )
+        )
+        self.assertEqual(2, features.estimated_project_context_difficulty)
+
+    def test_core_architecture_change_has_context_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Refactor the core architecture",
+                body_text="Preserve the global invariant while changing the architectural core.",
+            )
+        )
+        self.assertEqual(3, features.estimated_project_context_difficulty)
+
+    def test_public_api_contract_has_context_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Align the public API contract with runtime validation",
+                body_text="The public type and runtime validator must preserve compatibility.",
+            )
+        )
+        self.assertEqual(2, features.estimated_project_context_difficulty)
+
+    def test_performance_signal_does_not_set_context_level(self) -> None:
+        plain = extract_task_features(self._record(title="Reduce temporary allocations"))
+        performance = extract_task_features(
+            self._record(title="PERF: Reduce temporary allocations")
+        )
+        self.assertEqual(
+            plain.estimated_project_context_difficulty,
+            performance.estimated_project_context_difficulty,
+        )
+
+    def test_comment_count_alone_cannot_raise_collaboration_above_one(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Fix local parser typo",
+                body_text="Expected behavior: use the corrected parser message.",
+                comment_count=40,
+            )
+        )
+        self.assertEqual(1, features.estimated_collaboration_difficulty)
+
+    def test_needs_discussion_has_collaboration_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Choose the cache invalidation policy",
+                body_text="Several approaches need discussion before implementation.",
+                labels=["Needs Discussion"],
+            )
+        )
+        self.assertEqual(2, features.estimated_collaboration_difficulty)
+
+    def test_rfc_api_design_has_collaboration_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="RFC: Define the public API contract",
+                body_text="This proposal defines a public API and remains open for review.",
+                labels=["API Design"],
+            )
+        )
+        self.assertEqual(2, features.estimated_collaboration_difficulty)
+
+    def test_cross_team_breaking_decision_has_collaboration_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Coordinate a cross-team breaking change",
+                body_text="Multiple teams must agree on a backward incompatible API decision.",
+            )
+        )
+        self.assertEqual(3, features.estimated_collaboration_difficulty)
+
+    def test_low_comment_count_does_not_block_design_evidence(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="RFC: Select an API design",
+                body_text="The proposal contains several alternative approaches.",
+                comment_count=0,
+            )
+        )
+        self.assertEqual(2, features.estimated_collaboration_difficulty)
+
+    def test_documentation_only_can_remain_code_zero(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Update documentation wording",
+                body_text="Correct a typo in the README.",
+                labels=["documentation"],
+            )
+        )
+        self.assertEqual(("documentation",), features.task_types)
+        self.assertEqual(0, features.estimated_code_difficulty)
+
+    def test_documentation_with_runtime_validation_can_have_code_one(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Update documentation for parser usage",
+                body_text=(
+                    "Run the application and validate the runtime output before "
+                    "updating the documentation text."
+                ),
+                labels=["documentation"],
+            )
+        )
+        self.assertEqual(("documentation",), features.task_types)
+        self.assertEqual(1, features.estimated_code_difficulty)
+
+    def test_testing_local_assertion_can_be_code_one(self) -> None:
+        features = extract_task_features(
+            self._record(title="Add a unit test assertion for parser output")
+        )
+        self.assertEqual(("testing",), features.task_types)
+        self.assertEqual(1, features.estimated_code_difficulty)
+
+    def test_flaky_integration_test_can_have_code_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Flaky integration test for periodic task relocation",
+                body_text="The integration test has timing-dependent shared state.",
+            )
+        )
+        self.assertIn("testing", features.task_types)
+        self.assertEqual(2, features.estimated_code_difficulty)
+
+    def test_build_tooling_config_change_can_be_code_one(self) -> None:
+        features = extract_task_features(
+            self._record(title="Update CI configuration value")
+        )
+        self.assertEqual(("build_tooling",), features.task_types)
+        self.assertEqual(1, features.estimated_code_difficulty)
+
+    def test_native_toolchain_change_can_have_higher_setup_and_code(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Update native compiler toolchain configuration",
+                body_text="Build and test using the native compiler toolchain.",
+            )
+        )
+        self.assertEqual(("build_tooling",), features.task_types)
+        self.assertGreaterEqual(features.estimated_code_difficulty, 2)
+        self.assertEqual(3, features.estimated_setup_difficulty)
+
+    def test_refactor_task_type_is_only_a_prior(self) -> None:
+        features = extract_task_features(
+            self._record(title="Refactor local parser helper")
+        )
+        self.assertEqual(("refactor",), features.task_types)
+        self.assertEqual(1, features.estimated_code_difficulty)
+        self.assertEqual(1, features.estimated_project_context_difficulty)
+
+    def test_missing_body_has_low_information_confidence(self) -> None:
+        features = extract_task_features(
+            self._record(title="Feature Request: Import animated images")
+        )
+        quality = self._difficulty(features)["information_quality"]
+        self.assertTrue(quality["body_missing"])
+        self.assertEqual("low", quality["confidence"])
+
+    def test_support_question_has_unclear_actionability(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="How should the cache be configured?",
+                body_text="I am asking how to configure this option.",
+            )
+        )
+        quality = self._difficulty(features)["information_quality"]
+        self.assertEqual("unclear", quality["actionability"])
+
+    def test_roadmap_tracker_is_non_actionable(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Low precision training roadmap tracker",
+                body_text="Track several milestones and child pull requests.",
+                labels=["tracker"],
+            )
+        )
+        quality = self._difficulty(features)["information_quality"]
+        self.assertEqual("non_actionable", quality["actionability"])
+
+    def test_design_proposal_is_design_pending(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="RFC: Introduce a query result cache",
+                body_text="This proposal presents several alternative designs.",
+            )
+        )
+        quality = self._difficulty(features)["information_quality"]
+        self.assertEqual("design_pending", quality["actionability"])
+
+    def test_missing_body_does_not_infer_multi_day_from_task_type(self) -> None:
+        features = extract_task_features(
+            self._record(title="Feature Request: Import animated images")
+        )
+        effort = self._difficulty(features)["effort"]
+        self.assertEqual("unclear", effort["scope"])
+        self.assertEqual("half_day", features.estimated_effort_bucket)
+        self.assertTrue(effort["provisional"])
+
+    def test_effort_is_not_legacy_four_dimension_sum(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Bug in the macOS rendering backend",
+                body_text=(
+                    "## Steps to reproduce\nThis issue is only reproducible on macOS.\n"
+                    "## Expected behavior\nThe local renderer should preserve the value."
+                ),
+                comment_count=20,
+            )
+        )
+        total = sum(
+            (
+                features.estimated_code_difficulty,
+                features.estimated_setup_difficulty,
+                features.estimated_project_context_difficulty,
+                features.estimated_collaboration_difficulty,
+            )
+        )
+        legacy = "under_2h" if total <= 2 else "half_day" if total <= 4 else "one_day" if total <= 6 else "multi_day"
+        self.assertNotEqual(legacy, features.estimated_effort_bucket)
+
+    def test_same_difficulty_sum_can_have_different_effort_scope(self) -> None:
+        local = extract_task_features(
+            self._record(
+                title="Bug: update a local parser value",
+                body_text="Expected behavior: use the corrected local value.",
+                comment_count=20,
+            )
+        )
+        module = extract_task_features(
+            self._record(
+                title="Implement non-trivial logic in the parser state machine",
+                body_text="Expected behavior: preserve state transitions in one module.",
+            )
+        )
+        local_sum = sum(
+            (
+                local.estimated_code_difficulty,
+                local.estimated_setup_difficulty,
+                local.estimated_project_context_difficulty,
+                local.estimated_collaboration_difficulty,
+            )
+        )
+        module_sum = sum(
+            (
+                module.estimated_code_difficulty,
+                module.estimated_setup_difficulty,
+                module.estimated_project_context_difficulty,
+                module.estimated_collaboration_difficulty,
+            )
+        )
+        self.assertEqual(local_sum, module_sum)
+        self.assertNotEqual(local.estimated_effort_bucket, module.estimated_effort_bucket)
+
+    def test_collaboration_alone_does_not_force_multi_day(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="RFC: Choose naming for a local option",
+                body_text="The proposal presents several alternative names.",
+            )
+        )
+        self.assertEqual(2, features.estimated_collaboration_difficulty)
+        self.assertNotEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_setup_alone_does_not_force_multi_day(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Fix a local test on ROCm GPU",
+                body_text="The test must run on a ROCm GPU worker.",
+            )
+        )
+        self.assertEqual(3, features.estimated_setup_difficulty)
+        self.assertNotEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_cross_module_scope_can_be_multi_day(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Refactor cache invalidation across multiple modules",
+                body_text="Move shared cache invalidation across multiple modules.",
+            )
+        )
+        effort = self._difficulty(features)["effort"]
+        self.assertEqual("cross_module", effort["scope"])
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_non_actionable_effort_is_marked_not_applicable(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Dependency Dashboard",
+                body_text="Track pending dependency update pull requests.",
+            )
+        )
+        effort = self._difficulty(features)["effort"]
+        self.assertFalse(effort["applicable"])
+        self.assertTrue(effort["provisional"])
+        self.assertEqual("low", effort["confidence"])
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_effort_evidence_bucket_matches_output_field(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Implement non-trivial parser state logic",
+                body_text="Expected behavior: preserve all state transitions.",
+            )
+        )
+        effort = self._difficulty(features)["effort"]
+        self.assertEqual(features.estimated_effort_bucket, effort["bucket"])
+
+    def test_difficulty_evidence_is_stable_deduplicated_and_json_serializable(self) -> None:
+        record = self._record(
+            title="Refactor cache invalidation across multiple modules",
+            body_text="Move shared cache invalidation across multiple modules.",
+            comment_count=12,
+        )
+        first = extract_task_features(record)
+        second = extract_task_features(record)
+        first_assessment = self._difficulty(first)
+        self.assertEqual(first_assessment, self._difficulty(second))
+        json.dumps(first_assessment, sort_keys=True)
+        for dimension in first_assessment["dimensions"].values():
+            keys = [
+                (
+                    item["dimension"],
+                    item["source"],
+                    item["rule_id"],
+                    item["matched_value"],
+                    item["strength"],
+                    item["suggested_level"],
+                    item["reason"],
+                )
+                for item in dimension["evidence"]
+            ]
+            self.assertEqual(len(keys), len(set(keys)))
+
+    def test_difficulty_evidence_contains_all_four_dimensions(self) -> None:
+        features = extract_task_features(
+            self._record(title="Bug: parser returns an incorrect value")
+        )
+        assessment = self._difficulty(features)
+        self.assertEqual(DIFFICULTY_FORMULA_VERSION, assessment["formula_version"])
+        self.assertEqual(
+            {"code", "setup", "project_context", "collaboration"},
+            set(assessment["dimensions"]),
+        )
+
+    def test_difficulty_level_three_requires_strong_evidence(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Refactor the core architecture for distributed state",
+                body_text="Preserve the global invariant across distributed state.",
+            )
+        )
+        assessment = self._difficulty(features)
+        for dimension in assessment["dimensions"].values():
+            if dimension["level"] == 3:
+                self.assertTrue(
+                    any(
+                        item["strength"] == "strong"
+                        and item["suggested_level"] == 3
+                        for item in dimension["evidence"]
+                    )
+                )
+
+    def test_conflicting_evidence_reduces_confidence(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Update documentation for core architecture compiler semantics",
+                body_text="Only update wording; no code changes are required.",
+                labels=["documentation"],
+            )
+        )
+        code = self._difficulty(features)["dimensions"]["code"]
+        self.assertTrue(code["conflicts"])
+        self.assertEqual("low", code["confidence"])
+
+    def test_task_type_evidence_is_unchanged_by_difficulty_assessment(self) -> None:
+        base = self._record(
+            title="Bug: parser crashes; add regression tests",
+            body_text="Please add regression tests for the failure.",
+            labels=["type/bug"],
+        )
+        first = extract_task_features({**base, "comment_count": 0})
+        second = extract_task_features({**base, "comment_count": 30})
+        self.assertEqual(
+            first.feature_evidence["task_type_evidence"],
+            second.feature_evidence["task_type_evidence"],
+        )
+        self.assertEqual(
+            first.feature_evidence["task_type_scores"],
+            second.feature_evidence["task_type_scores"],
+        )
+
+    def test_repeated_extraction_produces_identical_difficulty_evidence(self) -> None:
+        record = self._record(
+            title="RFC: Define a public API contract",
+            body_text="This proposal presents several alternative designs.",
+            labels=["API Design"],
+        )
+        self.assertEqual(
+            self._difficulty(extract_task_features(record)),
+            self._difficulty(extract_task_features(record)),
+        )
+
+    def test_infer_skill_requirements_uses_new_code_level_without_logic_change(self) -> None:
+        record = self._record(
+            title="Implement distributed all-gather protocol semantics",
+            body_text="Preserve distributed state across multiple workers.",
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        language = next(item for item in requirements if item.skill_name == "Java")
+        self.assertEqual(features.estimated_code_difficulty, language.minimum_level)
+        self.assertEqual(3, language.minimum_level)
+
+    def test_ineligible_candidate_still_gets_zero_track_scores(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Refactor core architecture",
+                body_text="Preserve the global invariant.",
+                candidate_eligibility="temporarily_ineligible",
+            )
+        )
+        self.assertEqual(0.0, features.newcomer_score)
+        self.assertEqual(0.0, features.growth_value_score)
 
 if __name__ == "__main__":
     unittest.main()

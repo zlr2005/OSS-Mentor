@@ -10,10 +10,29 @@ from oss_mentor.candidate_rules import has_newcomer_label
 from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
 
 
-TASK_FEATURE_VERSION = "task-features-v0.2"
+TASK_FEATURE_VERSION = "task-features-v0.3"
+DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2"
 PUBLIC_TASK_TYPES = frozenset(ALLOWED_TASK_TYPES)
 _TASK_TYPE_ACCEPTANCE_SCORE = 3.0
 _SOURCE_ORDER = {"label": 0, "title": 1, "body": 2, "derived": 3}
+_DIFFICULTY_SOURCE_ORDER = {"label": 0, "title": 1, "body": 2, "derived": 3}
+_DIFFICULTY_STRENGTH_ORDER = {"weak": 0, "medium": 1, "strong": 2}
+_DIFFICULTY_DIMENSIONS = frozenset(
+    {"code", "setup", "project_context", "collaboration"}
+)
+_ACTIONABILITY_VALUES = frozenset(
+    {"actionable", "design_pending", "unclear", "non_actionable"}
+)
+_EFFORT_SCOPE_ORDER = {
+    "micro": 0,
+    "local": 1,
+    "module": 2,
+    "cross_module": 3,
+    "system": 4,
+    "unclear": 5,
+    "non_actionable": 6,
+}
+_NON_ACTIONABLE_EFFORT_PLACEHOLDER = "multi_day"
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +72,22 @@ class _TextRule:
     rule_id: str
     pattern: str
     weight: float
+
+
+@dataclass(frozen=True, slots=True)
+class _DifficultyContext:
+    title: str
+    body: str
+    semantic_body: str
+    labels: tuple[str, ...]
+    normalized_labels: tuple[str, ...]
+    task_types: tuple[str, ...]
+    performance_signal: bool
+    comment_count: int
+    has_reproduction_steps: bool
+    has_acceptance_criteria: bool
+    has_expected_behavior: bool
+    has_affected_module_hint: bool
 
 
 _LABEL_ALIASES: dict[str, tuple[str, float]] = {
@@ -780,6 +815,76 @@ def _add_evidence(
         bucket.append(item)
 
 
+def _difficulty_evidence_key(item: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        str(item.get("dimension") or ""),
+        _DIFFICULTY_SOURCE_ORDER.get(str(item.get("source") or ""), 99),
+        str(item.get("rule_id") or ""),
+        str(item.get("matched_value") or ""),
+        _DIFFICULTY_STRENGTH_ORDER.get(str(item.get("strength") or ""), 99),
+        int(item.get("suggested_level") or 0),
+        str(item.get("reason") or ""),
+    )
+
+
+def _add_difficulty_evidence(
+    bucket: list[dict[str, Any]],
+    *,
+    dimension: str,
+    source: str,
+    rule_id: str,
+    matched_value: str,
+    strength: str,
+    suggested_level: int,
+    reason: str,
+) -> None:
+    if dimension not in _DIFFICULTY_DIMENSIONS:
+        raise ValueError(f"unsupported difficulty dimension: {dimension}")
+    if source not in _DIFFICULTY_SOURCE_ORDER:
+        raise ValueError(f"unsupported difficulty evidence source: {source}")
+    if strength not in _DIFFICULTY_STRENGTH_ORDER:
+        raise ValueError(f"unsupported difficulty evidence strength: {strength}")
+    if not 0 <= suggested_level <= 3:
+        raise ValueError(f"invalid suggested difficulty level: {suggested_level}")
+
+    item = {
+        "dimension": dimension,
+        "source": source,
+        "rule_id": rule_id,
+        "matched_value": re.sub(r"\s+", " ", str(matched_value)).strip()[:160],
+        "strength": strength,
+        "suggested_level": int(suggested_level),
+        "reason": reason,
+    }
+    key = _difficulty_evidence_key(item)
+    if key not in {_difficulty_evidence_key(existing) for existing in bucket}:
+        bucket.append(item)
+
+
+def _collect_difficulty_regex_evidence(
+    text: str,
+    *,
+    source: str,
+    dimension: str,
+    rules: Iterable[tuple[str, str, str, int, str]],
+    bucket: list[dict[str, Any]],
+) -> None:
+    for rule_id, pattern, strength, suggested_level, reason in rules:
+        match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
+        if match is None:
+            continue
+        _add_difficulty_evidence(
+            bucket,
+            dimension=dimension,
+            source=source,
+            rule_id=rule_id,
+            matched_value=_matched_value(match),
+            strength=strength,
+            suggested_level=suggested_level,
+            reason=reason,
+        )
+
+
 def _collect_regex_evidence(
     text: str,
     *,
@@ -1351,12 +1456,1070 @@ def _classify_task_types(
     return task_types, classification_evidence, bool(performance_evidence)
 
 
+def _build_difficulty_context(
+    *,
+    title: str,
+    body: str,
+    labels: list[str],
+    task_types: tuple[str, ...],
+    performance_signal: bool,
+    comment_count: int,
+    has_reproduction_steps: bool,
+    has_acceptance_criteria: bool,
+    has_expected_behavior: bool,
+    has_affected_module_hint: bool,
+) -> _DifficultyContext:
+    raw_labels = tuple(sorted({str(value).strip() for value in labels if str(value).strip()}, key=lambda value: (value.casefold(), value)))
+    normalized_labels = tuple(sorted({_normalize_label(value) for value in raw_labels if _normalize_label(value)}))
+    return _DifficultyContext(
+        title=title,
+        body=body,
+        semantic_body=_semantic_body(body),
+        labels=raw_labels,
+        normalized_labels=normalized_labels,
+        task_types=tuple(task_types),
+        performance_signal=bool(performance_signal),
+        comment_count=max(int(comment_count), 0),
+        has_reproduction_steps=bool(has_reproduction_steps),
+        has_acceptance_criteria=bool(has_acceptance_criteria),
+        has_expected_behavior=bool(has_expected_behavior),
+        has_affected_module_hint=bool(has_affected_module_hint),
+    )
+
+
+def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
+    title = context.title.strip()
+    semantic_body = context.semantic_body.strip()
+    normalized_labels = set(context.normalized_labels)
+    combined = f"{title}\n{semantic_body}".strip()
+    reasons: list[str] = []
+
+    non_actionable = bool(
+        normalized_labels.intersection({"roadmap", "tracker", "tracking"})
+        or re.search(
+            r"\b(?:roadmap|tracking issue|umbrella issue|umbrella milestone|"
+            r"milestone tracker|dependency dashboard)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+        or (
+            re.search(r"\btracker\b", title, flags=re.IGNORECASE)
+            and not _TRACKER_ACTION_TITLE_PATTERN.search(title)
+        )
+    )
+    if non_actionable:
+        reasons.append("non_actionable_tracker_or_dashboard")
+
+    design_pending = bool(
+        any(
+            marker in normalized_labels
+            for marker in (
+                "needs discussion",
+                "discussion",
+                "api design",
+                "proposal",
+                "rfc",
+                "pep request",
+            )
+        )
+        or re.search(
+            r"(?:^|\b)(?:rfc|proposal|api design|needs discussion|design discussion)\b|"
+            r"\b(?:multiple|several|alternative)\s+(?:options|approaches|designs)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+    )
+    if design_pending:
+        reasons.append("design_or_discussion_pending")
+
+    body_missing = not context.body.strip()
+    if body_missing:
+        reasons.append("body_missing")
+
+    support_question = bool(
+        re.search(
+            r"^\s*(?:how\s+(?:do|does|can|should|to)|why\s+(?:do|does|is|are|the)|"
+            r"what\s+(?:do|does|should|is|are)|question\s+about|help\s*:)\b",
+            title,
+            flags=re.IGNORECASE,
+        )
+        or re.search(
+            r"\b(?:what do i miss|i am asking how|can someone explain|"
+            r"is this expected behavior|why is this happening)\b",
+            semantic_body,
+            flags=re.IGNORECASE,
+        )
+    )
+    if support_question:
+        reasons.append("support_question")
+
+    has_actionable_signal = bool(
+        context.has_reproduction_steps
+        or context.has_acceptance_criteria
+        or context.has_expected_behavior
+        or re.search(
+            r"^\s*(?:add|allow|enable|introduce|support|provide|implement|expose|"
+            r"create|generate|render|expand|fix|refactor|deprecate|update|upgrade|"
+            r"write|remove|rename|move|reduce|optimi[sz]e|share|avoid)\b",
+            title,
+            flags=re.IGNORECASE,
+        )
+        or re.search(
+            r"\b(?:expected behavior|proposed (?:fix|improvement|solution)|"
+            r"acceptance criteria|steps to reproduce|suggested fix|need to|"
+            r"should return|should support|must preserve)\b",
+            semantic_body,
+            flags=re.IGNORECASE,
+        )
+    )
+
+    if non_actionable:
+        actionability = "non_actionable"
+    elif design_pending:
+        actionability = "design_pending"
+    elif body_missing or support_question or not has_actionable_signal:
+        actionability = "unclear"
+        if not body_missing and not support_question:
+            reasons.append("actionable_scope_not_explicit")
+    else:
+        actionability = "actionable"
+
+    if actionability in {"non_actionable", "unclear"}:
+        confidence = "low"
+    elif actionability == "design_pending":
+        confidence = "medium"
+    else:
+        clarity_signals = sum(
+            (
+                context.has_reproduction_steps,
+                context.has_acceptance_criteria,
+                context.has_expected_behavior,
+                context.has_affected_module_hint,
+            )
+        )
+        confidence = "high" if len(semantic_body) >= 200 and clarity_signals >= 2 else "medium"
+
+    return {
+        "body_missing": body_missing,
+        "actionability": actionability,
+        "confidence": confidence,
+        "reasons": sorted(set(reasons)),
+    }
+
+
+def _difficulty_priors(
+    task_types: tuple[str, ...],
+    information_quality: dict[str, Any],
+) -> dict[str, int]:
+    del information_quality
+    documentation_only = set(task_types) == {"documentation"}
+    return {
+        "code": 0 if documentation_only else 1,
+        "setup": 0 if documentation_only else 1,
+        "project_context": 0 if documentation_only else 1,
+        "collaboration": 0,
+    }
+
+
+def _collect_code_difficulty_evidence(
+    context: _DifficultyContext,
+    information_quality: dict[str, Any],
+) -> list[dict[str, Any]]:
+    del information_quality
+    evidence: list[dict[str, Any]] = []
+    combined = f"{context.title}\n{context.semantic_body}"
+    task_type_set = set(context.task_types)
+    documentation_only = task_type_set == {"documentation"}
+    runtime_validation = bool(
+        re.search(
+            r"\b(?:run|execute|reproduce|validate|verify|test)\b.{0,80}"
+            r"\b(?:runtime|application|behavior|output|result|example)\b|"
+            r"\b(?:runtime|application)\b.{0,80}\b(?:validate|verify|test)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+    )
+
+    if documentation_only and not runtime_validation:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="code",
+            source="derived",
+            rule_id="difficulty.code.no_code.documentation",
+            matched_value="documentation-only task",
+            strength="strong",
+            suggested_level=0,
+            reason="documentation_without_code_change",
+        )
+    elif documentation_only and runtime_validation:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="code",
+            source="body",
+            rule_id="difficulty.code.documentation_runtime_validation",
+            matched_value="runtime validation required",
+            strength="medium",
+            suggested_level=1,
+            reason="documentation_requires_runtime_validation",
+        )
+
+    _collect_difficulty_regex_evidence(
+        combined,
+        source="title",
+        dimension="code",
+        bucket=evidence,
+        rules=(
+            (
+                "difficulty.code.local_change",
+                r"\b(?:typo|wording|readme|rename|single (?:file|function|assertion)|"
+                r"one assertion|local change|configuration key|config value)\b",
+                "medium",
+                1,
+                "localized_low_risk_change",
+            ),
+            (
+                "difficulty.code.nontrivial_logic",
+                r"\b(?:non[- ]trivial logic|state machine|query planner|cache invalidation|"
+                r"index traversal|serialization logic|runtime validator|parser state|"
+                r"multiple functions|across several files|finite state)\b",
+                "medium",
+                2,
+                "nontrivial_implementation_logic",
+            ),
+            (
+                "difficulty.code.cross_module",
+                r"\b(?:cross[- ]module|across (?:multiple|all) modules|shared framework|"
+                r"multiple subsystems)\b",
+                "medium",
+                2,
+                "cross_module_implementation",
+            ),
+            (
+                "difficulty.code.core_architecture",
+                r"\b(?:core architecture|architectural core|global invariant|"
+                r"system[- ]wide invariant)\b",
+                "strong",
+                3,
+                "core_architecture_change",
+            ),
+            (
+                "difficulty.code.concurrent_or_distributed",
+                r"\b(?:deadlock|race condition|distributed (?:state|consensus|transaction)|"
+                r"multi[- ]node coordination|all[- ]gather|collective communication|"
+                r"fsdp|tensor parallel(?:ism)?)\b",
+                "strong",
+                3,
+                "concurrent_or_distributed_core_logic",
+            ),
+            (
+                "difficulty.code.compiler_or_protocol",
+                r"\b(?:compiler semantics|compiler backend|code generation|"
+                r"core protocol|protocol semantics|wire protocol|query execution engine|"
+                r"storage engine|segment reader)\b",
+                "strong",
+                3,
+                "compiler_protocol_or_core_engine",
+            ),
+        ),
+    )
+    _collect_difficulty_regex_evidence(
+        context.semantic_body,
+        source="body",
+        dimension="code",
+        bucket=evidence,
+        rules=(
+            (
+                "difficulty.code.nontrivial_logic",
+                r"\b(?:non[- ]trivial logic|state machine|query planner|cache invalidation|"
+                r"index traversal|serialization logic|runtime validator|parser state|"
+                r"multiple functions|across several files|finite state)\b",
+                "medium",
+                2,
+                "nontrivial_implementation_logic",
+            ),
+            (
+                "difficulty.code.cross_module",
+                r"\b(?:cross[- ]module|across (?:multiple|all) modules|shared framework|"
+                r"multiple subsystems)\b",
+                "medium",
+                2,
+                "cross_module_implementation",
+            ),
+            (
+                "difficulty.code.core_architecture",
+                r"\b(?:core architecture|architectural core|global invariant|"
+                r"system[- ]wide invariant)\b",
+                "strong",
+                3,
+                "core_architecture_change",
+            ),
+            (
+                "difficulty.code.concurrent_or_distributed",
+                r"\b(?:deadlock|race condition|distributed (?:state|consensus|transaction)|"
+                r"multi[- ]node coordination|all[- ]gather|collective communication|"
+                r"fsdp|tensor parallel(?:ism)?)\b",
+                "strong",
+                3,
+                "concurrent_or_distributed_core_logic",
+            ),
+            (
+                "difficulty.code.compiler_or_protocol",
+                r"\b(?:compiler semantics|compiler backend|code generation|"
+                r"core protocol|protocol semantics|wire protocol|query execution engine|"
+                r"storage engine|segment reader)\b",
+                "strong",
+                3,
+                "compiler_protocol_or_core_engine",
+            ),
+        ),
+    )
+
+    if "testing" in task_type_set:
+        match = re.search(
+            r"\b(?:flaky|integration|end[- ]to[- ]end|e2e|shared state|timing|"
+            r"race condition|periodic task)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+        if match is not None:
+            _add_difficulty_evidence(
+                evidence,
+                dimension="code",
+                source="derived",
+                rule_id="difficulty.code.integration_test_state",
+                matched_value=_matched_value(match),
+                strength="medium",
+                suggested_level=2,
+                reason="integration_or_flaky_test_state",
+            )
+
+    if "build_tooling" in task_type_set:
+        match = re.search(
+            r"\b(?:native toolchain|compiler toolchain|cross[- ]compil|linker|"
+            r"build graph|package resolver)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+        if match is not None:
+            _add_difficulty_evidence(
+                evidence,
+                dimension="code",
+                source="derived",
+                rule_id="difficulty.code.complex_build_tooling",
+                matched_value=_matched_value(match),
+                strength="medium",
+                suggested_level=2,
+                reason="nontrivial_build_tooling_logic",
+            )
+
+    if context.performance_signal:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="code",
+            source="derived",
+            rule_id="difficulty.code.performance_auxiliary",
+            matched_value="performance auxiliary signal",
+            strength="weak",
+            suggested_level=2,
+            reason="performance_signal_requires_supporting_scope_evidence",
+        )
+
+    return sorted(evidence, key=_difficulty_evidence_key)
+
+
+def _collect_setup_difficulty_evidence(
+    context: _DifficultyContext,
+    information_quality: dict[str, Any],
+) -> list[dict[str, Any]]:
+    del information_quality
+    evidence: list[dict[str, Any]] = []
+    combined = f"{context.title}\n{context.semantic_body}"
+    documentation_only = set(context.task_types) == {"documentation"}
+    runtime_required = bool(
+        re.search(
+            r"\b(?:run|execute|reproduce|validate|verify|test)\b.{0,80}"
+            r"\b(?:runtime|application|service|cluster|backend|platform)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+    )
+
+    if documentation_only and not runtime_required:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="setup",
+            source="derived",
+            rule_id="difficulty.setup.no_runtime.documentation",
+            matched_value="documentation-only task",
+            strength="strong",
+            suggested_level=0,
+            reason="documentation_without_runtime_environment",
+        )
+        return sorted(evidence, key=_difficulty_evidence_key)
+
+    reported_environment = re.search(
+        r"\b(?:environment|operating system|os|versions?)\s*:?\s*"
+        r"(?:mac\s?os|macos|windows|linux|docker|kubernetes|k8s|podman)\b|"
+        r"\b(?:mac\s?os|macos|windows|linux|docker|kubernetes|k8s|podman)\s+version\b",
+        combined,
+        flags=re.IGNORECASE,
+    )
+    if reported_environment is not None:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="setup",
+            source="body",
+            rule_id="difficulty.setup.reported_environment_only",
+            matched_value=_matched_value(reported_environment),
+            strength="weak",
+            suggested_level=1,
+            reason="reported_environment_is_not_requirement",
+        )
+
+    _collect_difficulty_regex_evidence(
+        context.title,
+        source="title",
+        dimension="setup",
+        bucket=evidence,
+        rules=(
+            (
+                "difficulty.setup.platform_required",
+                r"\b(?:mac\s?os|macos|windows|linux)\b.{0,60}"
+                r"\b(?:backend|specific|only|exclusive|native)\b|"
+                r"\b(?:backend|specific|only|exclusive|native)\b.{0,60}"
+                r"\b(?:mac\s?os|macos|windows|linux)\b",
+                "medium",
+                2,
+                "platform_specific_reproduction_or_implementation",
+            ),
+            (
+                "difficulty.setup.gpu_required",
+                r"\b(?:cuda|rocm|gpu)\b",
+                "strong",
+                3,
+                "gpu_environment_required",
+            ),
+            (
+                "difficulty.setup.multinode_required",
+                r"\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b",
+                "strong",
+                3,
+                "multinode_environment_required",
+            ),
+            (
+                "difficulty.setup.native_toolchain_required",
+                r"\b(?:native toolchain|compiler toolchain|cross[- ]compil)\b",
+                "strong",
+                3,
+                "native_toolchain_required",
+            ),
+        ),
+    )
+    _collect_difficulty_regex_evidence(
+        context.semantic_body,
+        source="body",
+        dimension="setup",
+        bucket=evidence,
+        rules=(
+            (
+                "difficulty.setup.platform_required",
+                r"\b(?:requires?|must use|only reproducible on|only occurs? on|"
+                r"reproduce on|run on|test on)\b.{0,80}"
+                r"\b(?:mac\s?os|macos|windows|linux)\b|"
+                r"\b(?:mac\s?os|macos|windows|linux)\b.{0,80}"
+                r"\b(?:is required|must be used|only reproduces|specific backend)\b",
+                "medium",
+                2,
+                "platform_specific_reproduction_or_implementation",
+            ),
+            (
+                "difficulty.setup.service_required",
+                r"\b(?:requires?|start|run|deploy|connect to)\b.{0,80}"
+                r"\b(?:database|server|service|broker|controller|external service)\b",
+                "medium",
+                2,
+                "specific_service_required",
+            ),
+            (
+                "difficulty.setup.container_or_cluster_required",
+                r"\b(?:create|deploy|run|requires?|reproduce)\b.{0,100}"
+                r"\b(?:docker|podman|kubernetes|k8s|single[- ]node cluster|cluster)\b",
+                "medium",
+                2,
+                "container_or_cluster_required",
+            ),
+            (
+                "difficulty.setup.gpu_required",
+                r"\b(?:requires?|run|test|reproduce|build|using|on)\b.{0,80}"
+                r"\b(?:cuda|rocm|gpu)\b|"
+                r"\b(?:cuda|rocm|gpu)\b.{0,80}\b(?:required|tests?|build|run)\b",
+                "strong",
+                3,
+                "gpu_environment_required",
+            ),
+            (
+                "difficulty.setup.multinode_required",
+                r"\b(?:requires?|deploy|run|test|reproduce)\b.{0,80}"
+                r"\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b|"
+                r"\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b.{0,80}"
+                r"\b(?:required|deployment|test|run)\b",
+                "strong",
+                3,
+                "multinode_environment_required",
+            ),
+            (
+                "difficulty.setup.native_toolchain_required",
+                r"\b(?:requires?|build|compile|test|using)\b.{0,80}"
+                r"\b(?:native toolchain|compiler toolchain|cross[- ]compil)\b",
+                "strong",
+                3,
+                "native_toolchain_required",
+            ),
+        ),
+    )
+    return sorted(evidence, key=_difficulty_evidence_key)
+
+
+def _collect_context_difficulty_evidence(
+    context: _DifficultyContext,
+    information_quality: dict[str, Any],
+) -> list[dict[str, Any]]:
+    del information_quality
+    evidence: list[dict[str, Any]] = []
+    combined = f"{context.title}\n{context.semantic_body}"
+    documentation_only = set(context.task_types) == {"documentation"}
+    scope_signal = re.search(
+        r"\b(?:public api|api contract|backward compatibility|cross[- ]module|"
+        r"across (?:multiple|all) modules|shared framework|core architecture|"
+        r"protocol semantics|compiler semantics|distributed state)\b",
+        combined,
+        flags=re.IGNORECASE,
+    )
+    if documentation_only and scope_signal is None:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="project_context",
+            source="derived",
+            rule_id="difficulty.context.no_project_context",
+            matched_value="documentation-only task",
+            strength="strong",
+            suggested_level=0,
+            reason="content_only_change",
+        )
+
+    _collect_difficulty_regex_evidence(
+        context.title,
+        source="title",
+        dimension="project_context",
+        bucket=evidence,
+        rules=(
+            (
+                "difficulty.context.local_module",
+                r"\b(?:single module|local module|specific class|specific method|"
+                r"one component|local component)\b",
+                "medium",
+                1,
+                "localized_project_context",
+            ),
+            (
+                "difficulty.context.cross_module",
+                r"\b(?:cross[- ]module|across (?:multiple|all) modules|"
+                r"multiple subsystems)\b",
+                "medium",
+                2,
+                "cross_module_context",
+            ),
+            (
+                "difficulty.context.public_api",
+                r"\b(?:public api|api contract|public type|public interface|"
+                r"backward compatibility|compatibility contract)\b",
+                "medium",
+                2,
+                "public_api_or_compatibility_context",
+            ),
+            (
+                "difficulty.context.shared_framework",
+                r"\b(?:shared test framework|test framework module|shared framework|"
+                r"common infrastructure)\b",
+                "medium",
+                2,
+                "shared_framework_context",
+            ),
+            (
+                "difficulty.context.lifecycle_or_compatibility",
+                r"\b(?:lifecycle|invalidation|versioning|migration compatibility|"
+                r"serialization compatibility)\b",
+                "medium",
+                2,
+                "lifecycle_or_compatibility_context",
+            ),
+            (
+                "difficulty.context.core_architecture",
+                r"\b(?:core architecture|architectural core|global invariant|"
+                r"system[- ]wide invariant)\b",
+                "strong",
+                3,
+                "core_architecture_context",
+            ),
+            (
+                "difficulty.context.protocol_semantics",
+                r"\b(?:protocol semantics|wire protocol|core protocol)\b",
+                "strong",
+                3,
+                "protocol_semantics_context",
+            ),
+            (
+                "difficulty.context.distributed_state",
+                r"\b(?:distributed state|distributed consensus|multi[- ]node coordination|"
+                r"fsdp|tensor parallel(?:ism)?|collective communication)\b",
+                "strong",
+                3,
+                "distributed_state_context",
+            ),
+            (
+                "difficulty.context.compiler_semantics",
+                r"\b(?:compiler semantics|compiler backend|code generation|"
+                r"dynamic shapes|query execution engine)\b",
+                "strong",
+                3,
+                "compiler_or_execution_semantics_context",
+            ),
+        ),
+    )
+    _collect_difficulty_regex_evidence(
+        context.semantic_body,
+        source="body",
+        dimension="project_context",
+        bucket=evidence,
+        rules=(
+            (
+                "difficulty.context.cross_module",
+                r"\b(?:cross[- ]module|across (?:multiple|all) modules|"
+                r"multiple subsystems)\b",
+                "medium",
+                2,
+                "cross_module_context",
+            ),
+            (
+                "difficulty.context.public_api",
+                r"\b(?:public api|api contract|public type|public interface|"
+                r"backward compatibility|compatibility contract)\b",
+                "medium",
+                2,
+                "public_api_or_compatibility_context",
+            ),
+            (
+                "difficulty.context.shared_framework",
+                r"\b(?:shared test framework|test framework module|shared framework|"
+                r"common infrastructure)\b",
+                "medium",
+                2,
+                "shared_framework_context",
+            ),
+            (
+                "difficulty.context.lifecycle_or_compatibility",
+                r"\b(?:lifecycle|invalidation|versioning|migration compatibility|"
+                r"serialization compatibility)\b",
+                "medium",
+                2,
+                "lifecycle_or_compatibility_context",
+            ),
+            (
+                "difficulty.context.core_architecture",
+                r"\b(?:core architecture|architectural core|global invariant|"
+                r"system[- ]wide invariant)\b",
+                "strong",
+                3,
+                "core_architecture_context",
+            ),
+            (
+                "difficulty.context.protocol_semantics",
+                r"\b(?:protocol semantics|wire protocol|core protocol)\b",
+                "strong",
+                3,
+                "protocol_semantics_context",
+            ),
+            (
+                "difficulty.context.distributed_state",
+                r"\b(?:distributed state|distributed consensus|multi[- ]node coordination|"
+                r"fsdp|tensor parallel(?:ism)?|collective communication)\b",
+                "strong",
+                3,
+                "distributed_state_context",
+            ),
+            (
+                "difficulty.context.compiler_semantics",
+                r"\b(?:compiler semantics|compiler backend|code generation|"
+                r"dynamic shapes|query execution engine)\b",
+                "strong",
+                3,
+                "compiler_or_execution_semantics_context",
+            ),
+        ),
+    )
+    if context.performance_signal:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="project_context",
+            source="derived",
+            rule_id="difficulty.context.performance_auxiliary",
+            matched_value="performance auxiliary signal",
+            strength="weak",
+            suggested_level=2,
+            reason="performance_signal_requires_supporting_scope_evidence",
+        )
+    return sorted(evidence, key=_difficulty_evidence_key)
+
+
+def _collect_collaboration_difficulty_evidence(
+    context: _DifficultyContext,
+    information_quality: dict[str, Any],
+) -> list[dict[str, Any]]:
+    evidence: list[dict[str, Any]] = []
+    combined = f"{context.title}\n{context.semantic_body}"
+    labels = "\n".join(context.normalized_labels)
+
+    if context.comment_count >= 3:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="collaboration",
+            source="derived",
+            rule_id="difficulty.collaboration.comment_volume",
+            matched_value=str(context.comment_count),
+            strength="weak",
+            suggested_level=1,
+            reason="comment_volume_is_weak_coordination_signal",
+        )
+
+    _collect_difficulty_regex_evidence(
+        f"{labels}\n{combined}",
+        source="derived",
+        dimension="collaboration",
+        bucket=evidence,
+        rules=(
+            (
+                "difficulty.collaboration.needs_discussion",
+                r"\b(?:needs discussion|discussion needed|design discussion)\b",
+                "medium",
+                2,
+                "unresolved_design_discussion",
+            ),
+            (
+                "difficulty.collaboration.api_design",
+                r"\bapi design\b",
+                "medium",
+                2,
+                "public_api_design_coordination",
+            ),
+            (
+                "difficulty.collaboration.rfc_or_proposal",
+                r"(?:^|\b)(?:rfc|proposal|pep request)\b",
+                "medium",
+                2,
+                "rfc_or_proposal_coordination",
+            ),
+            (
+                "difficulty.collaboration.multiple_options",
+                r"\b(?:multiple|several|alternative)\s+(?:options|approaches|designs)\b|"
+                r"\beither\b.{0,100}\bor\b",
+                "medium",
+                2,
+                "multiple_unresolved_options",
+            ),
+            (
+                "difficulty.collaboration.cross_team",
+                r"\b(?:cross[- ]team|multiple teams|several teams|team owners|"
+                r"coordinate with .* team)\b",
+                "strong",
+                3,
+                "cross_team_decision",
+            ),
+            (
+                "difficulty.collaboration.breaking_change_decision",
+                r"\b(?:breaking change|backward incompatible|compatibility decision|"
+                r"deprecation policy)\b",
+                "strong",
+                3,
+                "breaking_compatibility_decision",
+            ),
+            (
+                "difficulty.collaboration.long_running_dispute",
+                r"\b(?:controversial|long[- ]running dispute|unresolved for years|"
+                r"maintainer disagreement)\b",
+                "strong",
+                3,
+                "long_running_design_dispute",
+            ),
+        ),
+    )
+
+    if information_quality["actionability"] == "actionable" and not evidence:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="collaboration",
+            source="derived",
+            rule_id="difficulty.collaboration.ordinary_review",
+            matched_value="ordinary review",
+            strength="weak",
+            suggested_level=0,
+            reason="scope_is_explicit_without_coordination_signal",
+        )
+    return sorted(evidence, key=_difficulty_evidence_key)
+
+
+def _difficulty_conflict_key(item: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        str(item.get("lower_rule_id") or ""),
+        str(item.get("higher_rule_id") or ""),
+        str(item.get("reason") or ""),
+    )
+
+
+def _aggregate_difficulty_dimension(
+    *,
+    dimension: str,
+    prior: int,
+    evidence: list[dict[str, Any]],
+    information_quality: dict[str, Any],
+) -> dict[str, Any]:
+    if dimension not in _DIFFICULTY_DIMENSIONS:
+        raise ValueError(f"unsupported difficulty dimension: {dimension}")
+    ordered = sorted(
+        {_difficulty_evidence_key(item): item for item in evidence}.values(),
+        key=_difficulty_evidence_key,
+    )
+    strong = [item for item in ordered if item["strength"] == "strong"]
+    medium = [item for item in ordered if item["strength"] == "medium"]
+    weak = [item for item in ordered if item["strength"] == "weak"]
+
+    if strong:
+        level = max(int(item["suggested_level"]) for item in strong)
+    elif medium:
+        level = max(int(item["suggested_level"]) for item in medium)
+        if level == 3:
+            level = 2
+    elif dimension == "collaboration" and weak:
+        level = max(prior, min(1, max(int(item["suggested_level"]) for item in weak)))
+    else:
+        level = prior
+
+    level = max(0, min(int(level), 3))
+    conflicts: list[dict[str, Any]] = []
+    material = strong + medium
+    for index, lower in enumerate(material):
+        for higher in material[index + 1 :]:
+            lower_level = int(lower["suggested_level"])
+            higher_level = int(higher["suggested_level"])
+            if abs(lower_level - higher_level) < 2:
+                continue
+            low_item, high_item = (
+                (lower, higher) if lower_level < higher_level else (higher, lower)
+            )
+            conflicts.append(
+                {
+                    "lower_rule_id": low_item["rule_id"],
+                    "higher_rule_id": high_item["rule_id"],
+                    "reason": "material_evidence_level_conflict",
+                }
+            )
+    conflicts = sorted(
+        {_difficulty_conflict_key(item): item for item in conflicts}.values(),
+        key=_difficulty_conflict_key,
+    )
+
+    information_confidence = str(information_quality["confidence"])
+    if information_confidence == "low" or conflicts:
+        confidence = "low"
+    elif strong and information_confidence == "high":
+        confidence = "high"
+    elif strong or medium:
+        confidence = "medium"
+    else:
+        confidence = "medium" if information_confidence != "low" else "low"
+
+    return {
+        "prior": int(prior),
+        "level": level,
+        "confidence": confidence,
+        "evidence": ordered,
+        "conflicts": conflicts,
+    }
+
+
+def _infer_effort_scope(
+    *,
+    context: _DifficultyContext,
+    information_quality: dict[str, Any],
+    dimensions: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    actionability = str(information_quality["actionability"])
+    combined = f"{context.title}\n{context.semantic_body}"
+    if actionability == "non_actionable":
+        return {"scope": "non_actionable", "reason": "task_is_not_single_actionable_work_item"}
+    if actionability == "unclear":
+        return {"scope": "unclear", "reason": "task_scope_cannot_be_inferred_reliably"}
+
+    code = int(dimensions["code"]["level"])
+    project_context = int(dimensions["project_context"]["level"])
+    documentation_only = set(context.task_types) == {"documentation"}
+    if documentation_only and code == 0:
+        return {"scope": "micro", "reason": "content_only_change"}
+    if re.search(
+        r"\b(?:typo|wording|single assertion|one assertion|single config|"
+        r"configuration key|rename local|one-line|readme text)\b",
+        combined,
+        flags=re.IGNORECASE,
+    ):
+        return {"scope": "micro", "reason": "explicit_micro_scope"}
+    if re.search(
+        r"\b(?:cross[- ]module|across (?:multiple|all) modules|"
+        r"multiple subsystems|shared test framework|system[- ]wide)\b",
+        combined,
+        flags=re.IGNORECASE,
+    ):
+        return {"scope": "cross_module", "reason": "explicit_cross_module_scope"}
+    if code == 3 and project_context == 3:
+        return {"scope": "system", "reason": "high_code_and_system_context"}
+    if code >= 2 or project_context >= 2:
+        return {"scope": "module", "reason": "nontrivial_module_scope"}
+    return {"scope": "local", "reason": "localized_actionable_scope"}
+
+
+def _estimate_effort(
+    *,
+    context: _DifficultyContext,
+    information_quality: dict[str, Any],
+    dimensions: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    scope_result = _infer_effort_scope(
+        context=context,
+        information_quality=information_quality,
+        dimensions=dimensions,
+    )
+    scope = str(scope_result["scope"])
+    base_buckets = {
+        "micro": "under_2h",
+        "local": "half_day",
+        "module": "one_day",
+        "cross_module": "multi_day",
+        "system": "multi_day",
+        "unclear": "half_day",
+        "non_actionable": _NON_ACTIONABLE_EFFORT_PLACEHOLDER,
+    }
+    bucket = base_buckets[scope]
+    applicable = scope != "non_actionable"
+    provisional = scope in {"unclear", "non_actionable"}
+    confidence = "low" if provisional else str(information_quality["confidence"])
+
+    code = int(dimensions["code"]["level"])
+    setup = int(dimensions["setup"]["level"])
+    project_context = int(dimensions["project_context"]["level"])
+    if applicable and scope in {"local", "module"} and setup == 3:
+        bucket = "one_day" if scope == "local" else "multi_day"
+    if applicable and code == 3 and bucket in {"under_2h", "half_day"}:
+        bucket = "one_day"
+    if applicable and project_context == 3 and scope in {"cross_module", "system"}:
+        bucket = "multi_day"
+
+    evidence = [
+        {
+            "source": "derived",
+            "rule_id": f"effort.scope.{scope}",
+            "matched_value": scope,
+            "reason": str(scope_result["reason"]),
+        },
+        {
+            "source": "derived",
+            "rule_id": "effort.bucket.decision_table",
+            "matched_value": bucket,
+            "reason": "scope_actionability_complexity_decision",
+        },
+    ]
+    if setup == 3 and applicable and scope in {"local", "module"}:
+        evidence.append(
+            {
+                "source": "derived",
+                "rule_id": "effort.adjustment.setup_three",
+                "matched_value": "setup=3",
+                "reason": "high_environment_burden_adjustment",
+            }
+        )
+    if code == 3 and applicable:
+        evidence.append(
+            {
+                "source": "derived",
+                "rule_id": "effort.minimum.code_three",
+                "matched_value": "code=3",
+                "reason": "high_code_complexity_minimum_one_day",
+            }
+        )
+    evidence = sorted(
+        evidence,
+        key=lambda item: (
+            str(item["source"]),
+            str(item["rule_id"]),
+            str(item["matched_value"]),
+            str(item["reason"]),
+        ),
+    )
+    return {
+        "bucket": bucket,
+        "scope": scope,
+        "applicable": applicable,
+        "provisional": provisional,
+        "confidence": confidence,
+        "evidence": evidence,
+    }
+
+
+def _assess_difficulty(
+    context: _DifficultyContext,
+) -> tuple[int, int, int, int, str, dict[str, Any]]:
+    information_quality = _assess_information_quality(context)
+    if information_quality["actionability"] not in _ACTIONABILITY_VALUES:
+        raise ValueError("invalid actionability")
+    priors = _difficulty_priors(context.task_types, information_quality)
+    collectors = {
+        "code": _collect_code_difficulty_evidence,
+        "setup": _collect_setup_difficulty_evidence,
+        "project_context": _collect_context_difficulty_evidence,
+        "collaboration": _collect_collaboration_difficulty_evidence,
+    }
+    dimensions = {
+        dimension: _aggregate_difficulty_dimension(
+            dimension=dimension,
+            prior=priors[dimension],
+            evidence=collector(context, information_quality),
+            information_quality=information_quality,
+        )
+        for dimension, collector in collectors.items()
+    }
+    effort = _estimate_effort(
+        context=context,
+        information_quality=information_quality,
+        dimensions=dimensions,
+    )
+    assessment = {
+        "formula_version": DIFFICULTY_FORMULA_VERSION,
+        "information_quality": information_quality,
+        "dimensions": dimensions,
+        "effort": effort,
+    }
+    return (
+        int(dimensions["code"]["level"]),
+        int(dimensions["setup"]["level"]),
+        int(dimensions["project_context"]["level"]),
+        int(dimensions["collaboration"]["level"]),
+        str(effort["bucket"]),
+        assessment,
+    )
+
+
 def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
     title = str(record.get("title") or "")
     body = str(record.get("body_text") or "")
     text = f"{title}\n{body}"
     labels = [str(label) for label in (record.get("labels") or [])]
-    label_text = " ".join(labels).casefold()
 
     reproduction = _contains(
         text,
@@ -1399,62 +2562,27 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
         body=body,
         labels=labels,
     )
-    task_type_set = set(task_types)
-
-    # Preserve the v0.1 difficulty behavior while performance becomes an
-    # auxiliary signal rather than a seventh public task type.
-    code_difficulty = 1
-    if "documentation" in task_type_set and len(task_type_set) == 1:
-        code_difficulty = 0
-    if "feature" in task_type_set or "refactor" in task_type_set:
-        code_difficulty = max(code_difficulty, 2)
-    if has_performance_signal or any(
-        signal in label_text for signal in ("core", "architecture", "api change")
-    ):
-        code_difficulty = 3
-    if has_newcomer_label(labels):
-        code_difficulty = min(code_difficulty, 1)
-
-    setup_difficulty = 1
-    if "documentation" in task_type_set and len(task_type_set) == 1:
-        setup_difficulty = 0
-    if _contains(
-        text,
-        (
-            r"compile",
-            r"native",
-            r"toolchain",
-            r"backend",
-            r"macos|windows|linux",
-            r"docker|kubernetes",
-        ),
-    ):
-        setup_difficulty = 2
-
-    context_difficulty = 1
-    if any(signal in label_text for signal in ("core", "architecture", "api")):
-        context_difficulty = 2
-    if "refactor" in task_type_set or has_performance_signal:
-        context_difficulty = 3
-    if has_newcomer_label(labels):
-        context_difficulty = min(context_difficulty, 1)
-
     comments = int(record.get("comment_count") or 0)
-    collaboration_difficulty = 0 if comments < 3 else 1 if comments < 10 else 2
-    if _contains(label_text, (r"discussion", r"design")):
-        collaboration_difficulty = max(collaboration_difficulty, 2)
-
-    difficulty_sum = (
-        code_difficulty + setup_difficulty + context_difficulty + collaboration_difficulty
+    difficulty_context = _build_difficulty_context(
+        title=title,
+        body=body,
+        labels=labels,
+        task_types=task_types,
+        performance_signal=has_performance_signal,
+        comment_count=comments,
+        has_reproduction_steps=reproduction,
+        has_acceptance_criteria=acceptance,
+        has_expected_behavior=expected,
+        has_affected_module_hint=affected,
     )
-    if difficulty_sum <= 2:
-        effort = "under_2h"
-    elif difficulty_sum <= 4:
-        effort = "half_day"
-    elif difficulty_sum <= 6:
-        effort = "one_day"
-    else:
-        effort = "multi_day"
+    (
+        code_difficulty,
+        setup_difficulty,
+        context_difficulty,
+        collaboration_difficulty,
+        effort,
+        difficulty_assessment,
+    ) = _assess_difficulty(difficulty_context)
 
     eligible = record.get("candidate_eligibility") == "eligible"
     novice = (
@@ -1481,6 +2609,7 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
         "newcomer_label_signal": has_newcomer_label(labels),
         "comment_count": comments,
         "formula_version": TASK_FEATURE_VERSION,
+        "difficulty_assessment": difficulty_assessment,
         **classification_evidence,
     }
     return TaskFeatures(
