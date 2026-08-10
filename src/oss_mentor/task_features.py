@@ -11,7 +11,7 @@ from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
 
 
 TASK_FEATURE_VERSION = "task-features-v0.3"
-DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2"
+DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2.1"
 PUBLIC_TASK_TYPES = frozenset(ALLOWED_TASK_TYPES)
 _TASK_TYPE_ACCEPTANCE_SCORE = 3.0
 _SOURCE_ORDER = {"label": 0, "title": 1, "body": 2, "derived": 3}
@@ -1510,7 +1510,7 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
     if non_actionable:
         reasons.append("non_actionable_tracker_or_dashboard")
 
-    design_pending = bool(
+    explicit_design_signal = bool(
         any(
             marker in normalized_labels
             for marker in (
@@ -1529,8 +1529,32 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
             flags=re.IGNORECASE,
         )
     )
+
+    unresolved_design_choice = bool(
+        re.search(
+            r"^\s*(?:should\s+(?:we\s+)?(?:use|adopt|switch|choose|hash|store|move|replace)|"
+            r"should\s+[^?]{1,120}\?)",
+            title,
+            flags=re.IGNORECASE,
+        )
+        and re.search(
+            r"\b(?:risk|trade[- ]?off|collision|clash|compatib|migration|alternative|"
+            r"option|approach|advantage|disadvantage|pros?\b|cons?\b)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+        and not re.search(
+            r"\b(?:should return|should preserve|should support|should produce|"
+            r"expected behavior|expected result)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+    )
+    design_pending = explicit_design_signal or unresolved_design_choice
     if design_pending:
-        reasons.append("design_or_discussion_pending")
+        reasons.append(
+            "unresolved_design_choice" if unresolved_design_choice else "design_or_discussion_pending"
+        )
 
     body_missing = not context.body.strip()
     if body_missing:
@@ -1538,8 +1562,8 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
 
     support_question = bool(
         re.search(
-            r"^\s*(?:how\s+(?:do|does|can|should|to)|why\s+(?:do|does|is|are|the)|"
-            r"what\s+(?:do|does|should|is|are)|question\s+about|help\s*:)\b",
+            r"^\s*(?:how\s+(?:do|does|can|to)|why\s+(?:do|does|is|are|the)|"
+            r"what\s+(?:do|does|is|are)|question\s+about|help\s*:)\b",
             title,
             flags=re.IGNORECASE,
         )
@@ -1553,22 +1577,36 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
     if support_question:
         reasons.append("support_question")
 
+    issue_template_action = bool(
+        re.search(
+            r"\b(?:describe the solution you(?:'|’)d like|what did you do\??|"
+            r"what did you expect to see\??|what did you see instead\??|"
+            r"minified repro|steps? to reproduce|how to reproduce|"
+            r"expected behavior|actual results?|expected results?)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+    )
+    explicit_implementation_steps = bool(
+        re.search(
+            r"\b(?:implement|add support|change|move|refactor|fix|remove|deprecate|"
+            r"introduce|integrate|prevent|avoid|return\s+404|do not retry|"
+            r"must preserve|must support|should return|should preserve)\b",
+            combined,
+            flags=re.IGNORECASE,
+        )
+    )
     has_actionable_signal = bool(
         context.has_reproduction_steps
         or context.has_acceptance_criteria
         or context.has_expected_behavior
+        or issue_template_action
+        or explicit_implementation_steps
         or re.search(
             r"^\s*(?:add|allow|enable|introduce|support|provide|implement|expose|"
             r"create|generate|render|expand|fix|refactor|deprecate|update|upgrade|"
             r"write|remove|rename|move|reduce|optimi[sz]e|share|avoid)\b",
             title,
-            flags=re.IGNORECASE,
-        )
-        or re.search(
-            r"\b(?:expected behavior|proposed (?:fix|improvement|solution)|"
-            r"acceptance criteria|steps to reproduce|suggested fix|need to|"
-            r"should return|should support|must preserve)\b",
-            semantic_body,
             flags=re.IGNORECASE,
         )
     )
@@ -1595,6 +1633,7 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
                 context.has_acceptance_criteria,
                 context.has_expected_behavior,
                 context.has_affected_module_hint,
+                issue_template_action,
             )
         )
         confidence = "high" if len(semantic_body) >= 200 and clarity_signals >= 2 else "medium"
@@ -1605,7 +1644,6 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
         "confidence": confidence,
         "reasons": sorted(set(reasons)),
     }
-
 
 def _difficulty_priors(
     task_types: tuple[str, ...],
@@ -1627,20 +1665,31 @@ def _collect_code_difficulty_evidence(
 ) -> list[dict[str, Any]]:
     del information_quality
     evidence: list[dict[str, Any]] = []
-    combined = f"{context.title}\n{context.semantic_body}"
+    title = context.title
+    body = context.semantic_body
+    combined = f"{title}\n{body}"
+    labels = "\n".join(context.normalized_labels)
     task_type_set = set(context.task_types)
     documentation_only = task_type_set == {"documentation"}
     runtime_validation = bool(
         re.search(
-            r"\b(?:run|execute|reproduce|validate|verify|test)\b.{0,80}"
-            r"\b(?:runtime|application|behavior|output|result|example)\b|"
-            r"\b(?:runtime|application)\b.{0,80}\b(?:validate|verify|test)\b",
+            r"\b(?:run|execute|reproduce|validate|verify|test|compare)\b.{0,100}"
+            r"\b(?:runtime|application|behavior|output|result|example|method|implementation)\b|"
+            r"\b(?:expected|actual)\s+(?:behavior|results?)\b",
+            combined,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+    )
+
+    documentation_semantic_validation = documentation_only and bool(
+        re.search(
+            r"\b(?:expected results?|actual results?|different answers?|conditional|interventional|"
+            r"semantic|method\s*=|behavior differs?)\b",
             combined,
             flags=re.IGNORECASE,
         )
     )
-
-    if documentation_only and not runtime_validation:
+    if documentation_only and (not runtime_validation or documentation_semantic_validation):
         _add_difficulty_evidence(
             evidence,
             dimension="code",
@@ -1649,13 +1698,17 @@ def _collect_code_difficulty_evidence(
             matched_value="documentation-only task",
             strength="strong",
             suggested_level=0,
-            reason="documentation_without_code_change",
+            reason=(
+                "documentation_semantic_verification_without_code_change"
+                if documentation_semantic_validation
+                else "documentation_without_code_change"
+            ),
         )
     elif documentation_only and runtime_validation:
         _add_difficulty_evidence(
             evidence,
             dimension="code",
-            source="body",
+            source="derived",
             rule_id="difficulty.code.documentation_runtime_validation",
             matched_value="runtime validation required",
             strength="medium",
@@ -1663,116 +1716,152 @@ def _collect_code_difficulty_evidence(
             reason="documentation_requires_runtime_validation",
         )
 
-    _collect_difficulty_regex_evidence(
-        combined,
-        source="title",
-        dimension="code",
-        bucket=evidence,
-        rules=(
-            (
-                "difficulty.code.local_change",
-                r"\b(?:typo|wording|readme|rename|single (?:file|function|assertion)|"
-                r"one assertion|local change|configuration key|config value)\b",
-                "medium",
-                1,
-                "localized_low_risk_change",
+    # Keep source attribution precise: title rules only inspect title; body rules only inspect body.
+    for source, source_text in (("title", title), ("body", body)):
+        _collect_difficulty_regex_evidence(
+            source_text,
+            source=source,
+            dimension="code",
+            bucket=evidence,
+            rules=(
+                (
+                    "difficulty.code.local_change",
+                    r"\b(?:typo|wording|readme|rename|single (?:file|function|assertion)|"
+                    r"one assertion|local change|configuration key|config value)\b",
+                    "medium",
+                    1,
+                    "localized_low_risk_change",
+                ),
+                (
+                    "difficulty.code.nontrivial_logic",
+                    r"\b(?:non[- ]trivial logic|state machine|query planner|cache invalidation|"
+                    r"index traversal|serialization logic|runtime validator|parser state|"
+                    r"multiple functions|across several files|finite state)\b",
+                    "medium",
+                    2,
+                    "nontrivial_implementation_logic",
+                ),
+                (
+                    "difficulty.code.cross_module",
+                    r"\b(?:cross[- ]module|across (?:multiple|all) modules|shared framework|"
+                    r"multiple subsystems)\b",
+                    "medium",
+                    2,
+                    "cross_module_implementation",
+                ),
+                (
+                    "difficulty.code.core_architecture",
+                    r"\b(?:core architecture|architectural core|global invariant|"
+                    r"system[- ]wide invariant)\b",
+                    "strong",
+                    3,
+                    "core_architecture_change",
+                ),
+                (
+                    "difficulty.code.concurrent_or_distributed",
+                    r"\b(?:deadlock|race condition|distributed (?:state|consensus|transaction)|"
+                    r"multi[- ]node coordination)\b",
+                    "strong",
+                    3,
+                    "concurrent_or_distributed_core_logic",
+                ),
+                (
+                    "difficulty.code.compiler_or_protocol",
+                    r"\b(?:compiler semantics|compiler backend|code generation|"
+                    r"core protocol|protocol semantics|wire protocol|query execution engine|"
+                    r"storage engine|segment reader)\b",
+                    "strong",
+                    3,
+                    "compiler_protocol_or_core_engine",
+                ),
             ),
-            (
-                "difficulty.code.nontrivial_logic",
-                r"\b(?:non[- ]trivial logic|state machine|query planner|cache invalidation|"
-                r"index traversal|serialization logic|runtime validator|parser state|"
-                r"multiple functions|across several files|finite state)\b",
-                "medium",
-                2,
-                "nontrivial_implementation_logic",
-            ),
-            (
-                "difficulty.code.cross_module",
-                r"\b(?:cross[- ]module|across (?:multiple|all) modules|shared framework|"
-                r"multiple subsystems)\b",
-                "medium",
-                2,
-                "cross_module_implementation",
-            ),
-            (
-                "difficulty.code.core_architecture",
-                r"\b(?:core architecture|architectural core|global invariant|"
-                r"system[- ]wide invariant)\b",
-                "strong",
-                3,
-                "core_architecture_change",
-            ),
-            (
-                "difficulty.code.concurrent_or_distributed",
-                r"\b(?:deadlock|race condition|distributed (?:state|consensus|transaction)|"
-                r"multi[- ]node coordination|all[- ]gather|collective communication|"
-                r"fsdp|tensor parallel(?:ism)?)\b",
-                "strong",
-                3,
-                "concurrent_or_distributed_core_logic",
-            ),
-            (
-                "difficulty.code.compiler_or_protocol",
-                r"\b(?:compiler semantics|compiler backend|code generation|"
-                r"core protocol|protocol semantics|wire protocol|query execution engine|"
-                r"storage engine|segment reader)\b",
-                "strong",
-                3,
-                "compiler_protocol_or_core_engine",
-            ),
-        ),
-    )
-    _collect_difficulty_regex_evidence(
-        context.semantic_body,
-        source="body",
-        dimension="code",
-        bucket=evidence,
-        rules=(
-            (
-                "difficulty.code.nontrivial_logic",
-                r"\b(?:non[- ]trivial logic|state machine|query planner|cache invalidation|"
-                r"index traversal|serialization logic|runtime validator|parser state|"
-                r"multiple functions|across several files|finite state)\b",
-                "medium",
-                2,
-                "nontrivial_implementation_logic",
-            ),
-            (
-                "difficulty.code.cross_module",
-                r"\b(?:cross[- ]module|across (?:multiple|all) modules|shared framework|"
-                r"multiple subsystems)\b",
-                "medium",
-                2,
-                "cross_module_implementation",
-            ),
-            (
-                "difficulty.code.core_architecture",
-                r"\b(?:core architecture|architectural core|global invariant|"
-                r"system[- ]wide invariant)\b",
-                "strong",
-                3,
-                "core_architecture_change",
-            ),
-            (
-                "difficulty.code.concurrent_or_distributed",
-                r"\b(?:deadlock|race condition|distributed (?:state|consensus|transaction)|"
-                r"multi[- ]node coordination|all[- ]gather|collective communication|"
-                r"fsdp|tensor parallel(?:ism)?)\b",
-                "strong",
-                3,
-                "concurrent_or_distributed_core_logic",
-            ),
-            (
-                "difficulty.code.compiler_or_protocol",
-                r"\b(?:compiler semantics|compiler backend|code generation|"
-                r"core protocol|protocol semantics|wire protocol|query execution engine|"
-                r"storage engine|segment reader)\b",
-                "strong",
-                3,
-                "compiler_protocol_or_core_engine",
-            ),
-        ),
-    )
+        )
+
+    def add_composite(rule_id: str, matched_value: str, strength: str, level: int, reason: str) -> None:
+        _add_difficulty_evidence(
+            evidence,
+            dimension="code",
+            source="derived",
+            rule_id=rule_id,
+            matched_value=matched_value,
+            strength=strength,
+            suggested_level=level,
+            reason=reason,
+        )
+
+    # C2-A: execution/storage traversal + concrete change + measurable behavior.
+    traversal_domain = re.search(r"\b(?:query|scan|reader|segment|storage|index|rows? scanned|docs? scanned)\b", combined, re.I)
+    traversal_change = re.search(r"\b(?:read(?:ing)? from (?:the )?bottom|reverse (?:read|scan|traversal)|avoid (?:a )?full scan|scan strategy|reading whole segment|full segment scan)\b", combined, re.I)
+    traversal_validation = re.search(r"\b(?:latency|benchmark|correctness|rows? scanned|docs? scanned|time taken|timetaken)\b", combined, re.I)
+    if traversal_domain and traversal_change and traversal_validation:
+        add_composite("difficulty.code.composite.execution_traversal", _matched_value(traversal_change), "medium", 2, "execution_or_storage_traversal_change_with_validation")
+
+    # C2-B: profiled memory/CPU subsystem.
+    profiler = re.search(r"\b(?:pprof|profiler|profiling|heap profile|flame ?graph)\b", combined, re.I)
+    resource = re.search(r"\b(?:heap|memory|allocation|allocations|cpu|system load)\b", combined, re.I)
+    named_subsystem = re.search(r"\b(?:[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*|subsystem|agent mode|remote write|classloader|runtime)\b", combined)
+    if profiler and resource and named_subsystem:
+        add_composite("difficulty.code.composite.profiled_subsystem", _matched_value(profiler), "medium", 2, "profiled_resource_bottleneck_in_named_subsystem")
+
+    # C2-C: real-time geometry / interaction state.
+    interaction = re.search(r"\b(?:drag|dragging|move|moving|position|positioning)\b", combined, re.I)
+    geometry = re.search(r"\b(?:alignment|guide lines?|spacing|snap(?:ping)?|geometry|evenly distributed)\b", combined, re.I)
+    realtime = re.search(r"\b(?:real[- ]time|temporary guide|visual feedback|while (?:moving|dragging)|when (?:moving|positioning))\b", combined, re.I)
+    if interaction and geometry and realtime:
+        add_composite("difficulty.code.composite.interactive_geometry", _matched_value(geometry), "medium", 2, "realtime_geometry_and_interaction_state")
+
+    # Scaled interactive performance is non-trivial but not automatically architecture-level.
+    scale = re.search(r"\b(?:\d{3,}[\s–-]*(?:elements|objects|characters)|thousands? of (?:elements|objects)|large canvas)\b", combined, re.I)
+    lag = re.search(r"\b(?:lag|lagging|slow|jank|scroll|render|latency)\b", combined, re.I)
+    if scale and lag and context.performance_signal:
+        add_composite("difficulty.code.composite.scaled_interactive_performance", _matched_value(scale), "medium", 2, "interactive_performance_degrades_at_explicit_scale")
+
+    # C2-D: exception + retry + outward mapping.
+    exception_signal = re.search(r"\b(?:FileNotFound(?:Exception)?|[A-Za-z]+Exception|exception|error)\b", combined, re.I)
+    retry_signal = re.search(r"\b(?:retry|retries|attempts? exceeded|do not retry|without retry)\b", combined, re.I)
+    outward_mapping = re.search(r"\b(?:http|status|404|500|wrap(?:ped|ping)?|rest|api response)\b", combined, re.I)
+    if exception_signal and retry_signal and outward_mapping:
+        add_composite("difficulty.code.composite.exception_retry_path", _matched_value(retry_signal), "medium", 2, "exception_retry_and_api_mapping_span_multiple_layers")
+
+    # C2-E: lifecycle + framework integration.
+    lifecycle = re.search(r"\b(?:classloader|lifecycle|reload(?:ing)?|memory leak|leak(?:ing)?)\b", combined, re.I)
+    framework = re.search(r"\b(?:test(?:ing)? framework|shared framework|framework integration|integrat(?:e|ion).{0,60}framework)\b", combined, re.I | re.S)
+    regression = re.search(r"\b(?:regression|prevent future|defen[cs]e|ensure|flaky ci|test utility)\b", combined, re.I)
+    if lifecycle and framework and regression:
+        add_composite("difficulty.code.composite.lifecycle_framework", _matched_value(lifecycle), "medium", 2, "lifecycle_behavior_integrated_into_shared_framework")
+
+    # C3-A: compiler multi-path/shared behavior.
+    compiler_domain = re.search(r"\b(?:torch\.compile|compiler|graph|guard|dynamic shapes?|tracing|decomposition)\b", f"{labels}\n{combined}", re.I)
+    compiler_behavior = re.search(r"\b(?:recompil(?:e|ation|ations)|graph cache|guard behavior|codegen|code generation)\b", combined, re.I)
+    multi_path = re.search(r"\b(?:multiple|several|following)\b.{0,80}\b(?:ops?|operators?|paths?|variants?)\b|\b(?:bmm|topk|cholesky|linalg\.norm|max)\b.{0,180}\b(?:bmm|topk|cholesky|linalg\.norm|max)\b", combined, re.I | re.S)
+    if compiler_domain and compiler_behavior and multi_path:
+        add_composite("difficulty.code.composite.compiler_multi_path", _matched_value(compiler_behavior), "strong", 3, "compiler_behavior_affects_multiple_operations_or_paths")
+
+    # C3-B: distributed implementation must include an implementation/validation action.
+    distributed = re.search(r"\b(?:fsdp2?|tensor parallel(?:ism)?|all[- ]gather|collective communication|distributed state|multi[- ]node)\b", combined, re.I)
+    distributed_action = re.search(r"\b(?:implement|support|add|change|run|test|benchmark|validate|verify|fix)\b", combined, re.I)
+    if distributed and distributed_action:
+        add_composite("difficulty.code.composite.distributed_implementation", _matched_value(distributed), "strong", 3, "distributed_implementation_or_validation_is_core_task_work")
+
+    # C3-C: explicit algorithm implementation/replacement + benchmark/correctness.
+    algorithm_change = re.search(r"\b(?:implement|missing|add|replace|port)\b.{0,80}\b(?:algorithm|bor[uů]vka|solver|indexing algorithm)\b|\b(?:algorithm|bor[uů]vka)\b.{0,80}\b(?:not implemented|missing|implement|replace)\b", combined, re.I)
+    algorithm_validation = re.search(r"\b(?:benchmark|performance|faster|slower|correctness|speedup|\d+(?:\.\d+)?\s*(?:x|times))\b", combined, re.I)
+    if algorithm_change and algorithm_validation:
+        add_composite("difficulty.code.composite.algorithm_implementation", _matched_value(algorithm_change), "strong", 3, "algorithm_implementation_requires_performance_or_correctness_validation")
+
+    # C3-D: API semantic ambiguity + multiple behavior paths + compatibility/design constraints.
+    semantic_ambiguity = re.search(r"\b(?:ambiguous|ambiguity|multiple interpretations?|two interpretations?|same syntax|same api)\b", combined, re.I)
+    behavior_paths = re.search(r"\b(?:getitem|setitem|read|write|existing|missing|scalar|slice|multiple paths?|different contexts?)\b", combined, re.I)
+    compatibility = re.search(r"\b(?:backward compatibility|existing user code|historical behavior|heuristic|design alternative|api design)\b", f"{labels}\n{combined}", re.I)
+    if semantic_ambiguity and behavior_paths and compatibility:
+        add_composite("difficulty.code.composite.api_semantic_ambiguity", _matched_value(semantic_ambiguity), "strong", 3, "api_semantics_are_ambiguous_across_multiple_behavior_paths")
+
+    # C3-E: multiple layers + lifecycle/correctness concerns + broad surface.
+    layers = re.search(r"\b(?:broker.{0,80}server|client.{0,80}server|multiple (?:layers|subsystems)|two[- ]level|multi[- ]layer)\b", combined, re.I | re.S)
+    lifecycle_correctness = re.search(r"\b(?:invalidation|version(?:ed|ing)|lifecycle|correctness|consistency|cache key)\b", combined, re.I)
+    broad_surface = re.search(r"\b(?:configuration|metrics|tracing|observability|pluggable|both (?:broker|client).{0,80}(?:server|backend)|server segment result cache)\b", combined, re.I | re.S)
+    if layers and lifecycle_correctness and broad_surface:
+        add_composite("difficulty.code.composite.multi_layer_architecture", _matched_value(layers), "strong", 3, "multi_layer_architecture_with_correctness_and_operational_surface")
 
     if "testing" in task_type_set:
         match = re.search(
@@ -1782,50 +1871,23 @@ def _collect_code_difficulty_evidence(
             flags=re.IGNORECASE,
         )
         if match is not None:
-            _add_difficulty_evidence(
-                evidence,
-                dimension="code",
-                source="derived",
-                rule_id="difficulty.code.integration_test_state",
-                matched_value=_matched_value(match),
-                strength="medium",
-                suggested_level=2,
-                reason="integration_or_flaky_test_state",
-            )
+            add_composite("difficulty.code.integration_test_state", _matched_value(match), "medium", 2, "integration_or_flaky_test_state")
+
+    if "testing" in task_type_set:
+        property_test = re.search(r"\b(?:property[- ]based|property testing|schema[- ]driven)\b", combined, re.I)
+        fixture_scope = re.search(r"\b(?:fixtures?|api fixtures?|endpoints?|schema)\b", combined, re.I)
+        if property_test and fixture_scope:
+            add_composite("difficulty.code.composite.property_testing", _matched_value(property_test), "medium", 2, "schema_or_property_testing_requires_nontrivial_test_logic")
 
     if "build_tooling" in task_type_set:
-        match = re.search(
-            r"\b(?:native toolchain|compiler toolchain|cross[- ]compil|linker|"
-            r"build graph|package resolver)\b",
-            combined,
-            flags=re.IGNORECASE,
-        )
+        match = re.search(r"\b(?:native toolchain|compiler toolchain|cross[- ]compil|linker|build graph|package resolver)\b", combined, re.I)
         if match is not None:
-            _add_difficulty_evidence(
-                evidence,
-                dimension="code",
-                source="derived",
-                rule_id="difficulty.code.complex_build_tooling",
-                matched_value=_matched_value(match),
-                strength="medium",
-                suggested_level=2,
-                reason="nontrivial_build_tooling_logic",
-            )
+            add_composite("difficulty.code.complex_build_tooling", _matched_value(match), "medium", 2, "nontrivial_build_tooling_logic")
 
     if context.performance_signal:
-        _add_difficulty_evidence(
-            evidence,
-            dimension="code",
-            source="derived",
-            rule_id="difficulty.code.performance_auxiliary",
-            matched_value="performance auxiliary signal",
-            strength="weak",
-            suggested_level=2,
-            reason="performance_signal_requires_supporting_scope_evidence",
-        )
+        add_composite("difficulty.code.performance_auxiliary", "performance auxiliary signal", "weak", 2, "performance_signal_requires_supporting_scope_evidence")
 
     return sorted(evidence, key=_difficulty_evidence_key)
-
 
 def _collect_setup_difficulty_evidence(
     context: _DifficultyContext,
@@ -1837,14 +1899,17 @@ def _collect_setup_difficulty_evidence(
     documentation_only = set(context.task_types) == {"documentation"}
     runtime_required = bool(
         re.search(
-            r"\b(?:run|execute|reproduce|validate|verify|test)\b.{0,80}"
-            r"\b(?:runtime|application|service|cluster|backend|platform)\b",
+            r"\b(?:run|execute|reproduce|validate|verify|test|benchmark|profile)\b.{0,100}"
+            r"\b(?:runtime|application|service|cluster|backend|platform|filesystem|volume|deployment)\b",
             combined,
-            flags=re.IGNORECASE,
+            flags=re.IGNORECASE | re.DOTALL,
         )
     )
 
-    if documentation_only and not runtime_required:
+    semantic_validation = documentation_only and bool(
+        re.search(r"\b(?:steps? to reproduce|expected results?|actual results?|compare|method\s*=|behavior differs?)\b", combined, re.I)
+    )
+    if documentation_only and not runtime_required and not semantic_validation:
         _add_difficulty_evidence(
             evidence,
             dimension="setup",
@@ -1884,35 +1949,13 @@ def _collect_setup_difficulty_evidence(
         rules=(
             (
                 "difficulty.setup.platform_required",
-                r"\b(?:mac\s?os|macos|windows|linux)\b.{0,60}"
-                r"\b(?:backend|specific|only|exclusive|native)\b|"
-                r"\b(?:backend|specific|only|exclusive|native)\b.{0,60}"
-                r"\b(?:mac\s?os|macos|windows|linux)\b",
-                "medium",
-                2,
-                "platform_specific_reproduction_or_implementation",
+                r"\b(?:mac\s?os|macos|windows|linux)\b.{0,60}\b(?:backend|specific|only|exclusive|native)\b|"
+                r"\b(?:backend|specific|only|exclusive|native)\b.{0,60}\b(?:mac\s?os|macos|windows|linux)\b",
+                "medium", 2, "platform_specific_reproduction_or_implementation",
             ),
-            (
-                "difficulty.setup.gpu_required",
-                r"\b(?:cuda|rocm|gpu)\b",
-                "strong",
-                3,
-                "gpu_environment_required",
-            ),
-            (
-                "difficulty.setup.multinode_required",
-                r"\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b",
-                "strong",
-                3,
-                "multinode_environment_required",
-            ),
-            (
-                "difficulty.setup.native_toolchain_required",
-                r"\b(?:native toolchain|compiler toolchain|cross[- ]compil)\b",
-                "strong",
-                3,
-                "native_toolchain_required",
-            ),
+            ("difficulty.setup.gpu_required", r"\b(?:cuda|rocm|gpu)\b", "strong", 3, "gpu_environment_required"),
+            ("difficulty.setup.multinode_required", r"\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b", "strong", 3, "multinode_environment_required"),
+            ("difficulty.setup.native_toolchain_required", r"\b(?:native toolchain|compiler toolchain|cross[- ]compil)\b", "strong", 3, "native_toolchain_required"),
         ),
     )
     _collect_difficulty_regex_evidence(
@@ -1923,62 +1966,66 @@ def _collect_setup_difficulty_evidence(
         rules=(
             (
                 "difficulty.setup.platform_required",
-                r"\b(?:requires?|must use|only reproducible on|only occurs? on|"
-                r"reproduce on|run on|test on)\b.{0,80}"
-                r"\b(?:mac\s?os|macos|windows|linux)\b|"
-                r"\b(?:mac\s?os|macos|windows|linux)\b.{0,80}"
-                r"\b(?:is required|must be used|only reproduces|specific backend)\b",
-                "medium",
-                2,
-                "platform_specific_reproduction_or_implementation",
+                r"\b(?:requires?|must use|only reproducible on|only occurs? on|reproduce on|run on|test on)\b.{0,80}\b(?:mac\s?os|macos|windows|linux)\b|"
+                r"\b(?:mac\s?os|macos|windows|linux)\b.{0,80}\b(?:is required|must be used|only reproduces|specific backend)\b",
+                "medium", 2, "platform_specific_reproduction_or_implementation",
             ),
             (
                 "difficulty.setup.service_required",
-                r"\b(?:requires?|start|run|deploy|connect to)\b.{0,80}"
-                r"\b(?:database|server|service|broker|controller|external service)\b",
-                "medium",
-                2,
-                "specific_service_required",
+                r"\b(?:requires?|start|run|deploy|connect to)\b.{0,80}\b(?:database|server|service|broker|controller|external service)\b",
+                "medium", 2, "specific_service_required",
             ),
             (
                 "difficulty.setup.container_or_cluster_required",
-                r"\b(?:create|deploy|run|requires?|reproduce)\b.{0,100}"
-                r"\b(?:docker|podman|kubernetes|k8s|single[- ]node cluster|cluster)\b",
-                "medium",
-                2,
-                "container_or_cluster_required",
+                r"\b(?:create|deploy|run|requires?|reproduce)\b.{0,100}\b(?:docker|podman|kubernetes|k8s|single[- ]node cluster|cluster)\b",
+                "medium", 2, "container_or_cluster_required",
             ),
             (
                 "difficulty.setup.gpu_required",
-                r"\b(?:requires?|run|test|reproduce|build|using|on)\b.{0,80}"
-                r"\b(?:cuda|rocm|gpu)\b|"
-                r"\b(?:cuda|rocm|gpu)\b.{0,80}\b(?:required|tests?|build|run)\b",
-                "strong",
-                3,
-                "gpu_environment_required",
+                r"\b(?:requires?|run|test|reproduce|build|using|on)\b.{0,80}\b(?:cuda|rocm|gpu)\b|\b(?:cuda|rocm|gpu)\b.{0,80}\b(?:required|tests?|build|run)\b",
+                "strong", 3, "gpu_environment_required",
             ),
             (
                 "difficulty.setup.multinode_required",
-                r"\b(?:requires?|deploy|run|test|reproduce)\b.{0,80}"
-                r"\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b|"
-                r"\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b.{0,80}"
-                r"\b(?:required|deployment|test|run)\b",
-                "strong",
-                3,
-                "multinode_environment_required",
+                r"\b(?:requires?|deploy|run|test|reproduce|benchmark|validate)\b.{0,100}\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b|\b(?:multi[- ]node|multiple nodes?|distributed cluster)\b.{0,100}\b(?:required|deployment|test|run|benchmark|validation)\b",
+                "strong", 3, "multinode_environment_required",
             ),
             (
                 "difficulty.setup.native_toolchain_required",
-                r"\b(?:requires?|build|compile|test|using)\b.{0,80}"
-                r"\b(?:native toolchain|compiler toolchain|cross[- ]compil)\b",
-                "strong",
-                3,
-                "native_toolchain_required",
+                r"\b(?:requires?|build|compile|test|using)\b.{0,80}\b(?:native toolchain|compiler toolchain|cross[- ]compil)\b",
+                "strong", 3, "native_toolchain_required",
             ),
         ),
     )
-    return sorted(evidence, key=_difficulty_evidence_key)
 
+    def add_setup(rule_id: str, match: re.Match[str], strength: str, level: int, reason: str) -> None:
+        _add_difficulty_evidence(evidence, dimension="setup", source="derived", rule_id=rule_id, matched_value=_matched_value(match), strength=strength, suggested_level=level, reason=reason)
+
+    # Filesystem/container must be part of the reproduction, not just an environment template.
+    fs = re.search(r"\b(?:btrfs|zfs|filesystem|file system|storage volume|volume)\b", combined, re.I)
+    container = re.search(r"\b(?:podman|docker|container)\b", combined, re.I)
+    reproduce = re.search(r"\b(?:reproduce|ran|run|using|mount|volume|storage)\b", combined, re.I)
+    if fs and container and reproduce:
+        add_setup("difficulty.setup.filesystem_container_reproduction", fs, "medium", 2, "filesystem_and_container_are_required_for_reproduction")
+
+    # Deployed profiling requirement.
+    deployment = re.search(r"\b(?:kubernetes|k8s|cluster|deployment|deployed service)\b", combined, re.I)
+    profiler = re.search(r"\b(?:pprof|profiling|profiler|heap profile)\b", combined, re.I)
+    compare = re.search(r"\b(?:compare|same environment|agent mode|regular mode|benchmark|measure)\b", combined, re.I)
+    if deployment and profiler and compare:
+        add_setup("difficulty.setup.deployed_profiling", deployment, "medium", 2, "deployment_environment_required_for_profiling_comparison")
+
+    # Distributed validation only becomes level 3 when execution/validation is explicitly required.
+    distributed = re.search(r"\b(?:fsdp2?|tensor parallel(?:ism)?|all[- ]gather|collective communication|distributed test|multi[- ]gpu|multiple gpus?)\b", combined, re.I)
+    validation = re.search(r"\b(?:run|test|benchmark|validate|verify|measure|speedup)\b", combined, re.I)
+    if distributed and validation:
+        add_setup("difficulty.setup.distributed_validation", distributed, "strong", 3, "distributed_or_multi_device_validation_required")
+
+    # Documentation semantic verification can require an ordinary local environment but not a special one.
+    if semantic_validation and not any(item["suggested_level"] >= 2 for item in evidence):
+        _add_difficulty_evidence(evidence, dimension="setup", source="derived", rule_id="difficulty.setup.documentation_semantic_validation", matched_value="local semantic verification", strength="medium", suggested_level=1, reason="documentation_requires_local_behavior_verification")
+
+    return sorted(evidence, key=_difficulty_evidence_key)
 
 def _collect_context_difficulty_evidence(
     context: _DifficultyContext,
@@ -1986,190 +2033,130 @@ def _collect_context_difficulty_evidence(
 ) -> list[dict[str, Any]]:
     del information_quality
     evidence: list[dict[str, Any]] = []
-    combined = f"{context.title}\n{context.semantic_body}"
+    title = context.title
+    body = context.semantic_body
+    combined = f"{title}\n{body}"
+    labels = "\n".join(context.normalized_labels)
     documentation_only = set(context.task_types) == {"documentation"}
+
+    semantic_doc_validation = documentation_only and bool(
+        re.search(r"\b(?:expected results?|actual results?|steps? to reproduce|method\s*=|conditional|interventional|behavior differs?|different answers?)\b", combined, re.I)
+        and re.search(r"\b(?:behavior|results?|semantic|method|algorithm|statistic|partial dependence|protocol)\b", combined, re.I)
+    )
     scope_signal = re.search(
         r"\b(?:public api|api contract|backward compatibility|cross[- ]module|"
         r"across (?:multiple|all) modules|shared framework|core architecture|"
-        r"protocol semantics|compiler semantics|distributed state)\b",
+        r"protocol semantics|compiler semantics|distributed state|lifecycle|"
+        r"query execution|storage|retry policy|test framework)\b",
         combined,
         flags=re.IGNORECASE,
     )
-    if documentation_only and scope_signal is None:
-        _add_difficulty_evidence(
-            evidence,
+    if documentation_only and scope_signal is None and not semantic_doc_validation:
+        _add_difficulty_evidence(evidence, dimension="project_context", source="derived", rule_id="difficulty.context.no_project_context", matched_value="documentation-only task", strength="strong", suggested_level=0, reason="content_only_change")
+
+    for source, source_text in (("title", title), ("body", body)):
+        _collect_difficulty_regex_evidence(
+            source_text,
+            source=source,
             dimension="project_context",
-            source="derived",
-            rule_id="difficulty.context.no_project_context",
-            matched_value="documentation-only task",
-            strength="strong",
-            suggested_level=0,
-            reason="content_only_change",
+            bucket=evidence,
+            rules=(
+                ("difficulty.context.local_module", r"\b(?:single module|local module|specific class|specific method|one component|local component)\b", "medium", 1, "localized_project_context"),
+                ("difficulty.context.cross_module", r"\b(?:cross[- ]module|across (?:multiple|all) modules|multiple subsystems)\b", "medium", 2, "cross_module_context"),
+                ("difficulty.context.public_api", r"\b(?:public api|api contract|public type|public interface|backward compatibility|compatibility contract)\b", "medium", 2, "public_api_or_compatibility_context"),
+                ("difficulty.context.shared_framework", r"\b(?:shared test framework|test framework module|shared framework|common infrastructure)\b", "medium", 2, "shared_framework_context"),
+                ("difficulty.context.lifecycle_or_compatibility", r"\b(?:lifecycle|invalidation|versioning|migration compatibility|serialization compatibility)\b", "medium", 2, "lifecycle_or_compatibility_context"),
+                ("difficulty.context.core_architecture", r"\b(?:core architecture|architectural core|global invariant|system[- ]wide invariant)\b", "strong", 3, "core_architecture_context"),
+                ("difficulty.context.protocol_semantics", r"\b(?:protocol semantics|wire protocol|core protocol)\b", "strong", 3, "protocol_semantics_context"),
+                ("difficulty.context.distributed_state", r"\b(?:distributed state|distributed consensus|multi[- ]node coordination)\b", "strong", 3, "distributed_state_context"),
+                ("difficulty.context.compiler_semantics", r"\b(?:compiler semantics|compiler backend|code generation|query execution engine)\b", "strong", 3, "compiler_or_execution_semantics_context"),
+            ),
         )
 
-    _collect_difficulty_regex_evidence(
-        context.title,
-        source="title",
-        dimension="project_context",
-        bucket=evidence,
-        rules=(
-            (
-                "difficulty.context.local_module",
-                r"\b(?:single module|local module|specific class|specific method|"
-                r"one component|local component)\b",
-                "medium",
-                1,
-                "localized_project_context",
-            ),
-            (
-                "difficulty.context.cross_module",
-                r"\b(?:cross[- ]module|across (?:multiple|all) modules|"
-                r"multiple subsystems)\b",
-                "medium",
-                2,
-                "cross_module_context",
-            ),
-            (
-                "difficulty.context.public_api",
-                r"\b(?:public api|api contract|public type|public interface|"
-                r"backward compatibility|compatibility contract)\b",
-                "medium",
-                2,
-                "public_api_or_compatibility_context",
-            ),
-            (
-                "difficulty.context.shared_framework",
-                r"\b(?:shared test framework|test framework module|shared framework|"
-                r"common infrastructure)\b",
-                "medium",
-                2,
-                "shared_framework_context",
-            ),
-            (
-                "difficulty.context.lifecycle_or_compatibility",
-                r"\b(?:lifecycle|invalidation|versioning|migration compatibility|"
-                r"serialization compatibility)\b",
-                "medium",
-                2,
-                "lifecycle_or_compatibility_context",
-            ),
-            (
-                "difficulty.context.core_architecture",
-                r"\b(?:core architecture|architectural core|global invariant|"
-                r"system[- ]wide invariant)\b",
-                "strong",
-                3,
-                "core_architecture_context",
-            ),
-            (
-                "difficulty.context.protocol_semantics",
-                r"\b(?:protocol semantics|wire protocol|core protocol)\b",
-                "strong",
-                3,
-                "protocol_semantics_context",
-            ),
-            (
-                "difficulty.context.distributed_state",
-                r"\b(?:distributed state|distributed consensus|multi[- ]node coordination|"
-                r"fsdp|tensor parallel(?:ism)?|collective communication)\b",
-                "strong",
-                3,
-                "distributed_state_context",
-            ),
-            (
-                "difficulty.context.compiler_semantics",
-                r"\b(?:compiler semantics|compiler backend|code generation|"
-                r"dynamic shapes|query execution engine)\b",
-                "strong",
-                3,
-                "compiler_or_execution_semantics_context",
-            ),
-        ),
-    )
-    _collect_difficulty_regex_evidence(
-        context.semantic_body,
-        source="body",
-        dimension="project_context",
-        bucket=evidence,
-        rules=(
-            (
-                "difficulty.context.cross_module",
-                r"\b(?:cross[- ]module|across (?:multiple|all) modules|"
-                r"multiple subsystems)\b",
-                "medium",
-                2,
-                "cross_module_context",
-            ),
-            (
-                "difficulty.context.public_api",
-                r"\b(?:public api|api contract|public type|public interface|"
-                r"backward compatibility|compatibility contract)\b",
-                "medium",
-                2,
-                "public_api_or_compatibility_context",
-            ),
-            (
-                "difficulty.context.shared_framework",
-                r"\b(?:shared test framework|test framework module|shared framework|"
-                r"common infrastructure)\b",
-                "medium",
-                2,
-                "shared_framework_context",
-            ),
-            (
-                "difficulty.context.lifecycle_or_compatibility",
-                r"\b(?:lifecycle|invalidation|versioning|migration compatibility|"
-                r"serialization compatibility)\b",
-                "medium",
-                2,
-                "lifecycle_or_compatibility_context",
-            ),
-            (
-                "difficulty.context.core_architecture",
-                r"\b(?:core architecture|architectural core|global invariant|"
-                r"system[- ]wide invariant)\b",
-                "strong",
-                3,
-                "core_architecture_context",
-            ),
-            (
-                "difficulty.context.protocol_semantics",
-                r"\b(?:protocol semantics|wire protocol|core protocol)\b",
-                "strong",
-                3,
-                "protocol_semantics_context",
-            ),
-            (
-                "difficulty.context.distributed_state",
-                r"\b(?:distributed state|distributed consensus|multi[- ]node coordination|"
-                r"fsdp|tensor parallel(?:ism)?|collective communication)\b",
-                "strong",
-                3,
-                "distributed_state_context",
-            ),
-            (
-                "difficulty.context.compiler_semantics",
-                r"\b(?:compiler semantics|compiler backend|code generation|"
-                r"dynamic shapes|query execution engine)\b",
-                "strong",
-                3,
-                "compiler_or_execution_semantics_context",
-            ),
-        ),
-    )
+    def add_context(rule_id: str, matched_value: str, strength: str, level: int, reason: str) -> None:
+        _add_difficulty_evidence(evidence, dimension="project_context", source="derived", rule_id=rule_id, matched_value=matched_value, strength=strength, suggested_level=level, reason=reason)
+
+    # X2-A: named subsystem execution/storage/retry/memory semantics.
+    subsystem = re.search(r"\b(?:query execution|segment scan|segment reader|storage allocation|filesystem|file system|heap|memory|remote write|retry policy|exception propagation|test framework)\b", combined, re.I)
+    behavior = re.search(r"\b(?:behavior|semantics|scan|allocate|allocation|retry|wrap|status|lifecycle|validate|profile|benchmark)\b", combined, re.I)
+    if subsystem and behavior:
+        add_context("difficulty.context.composite.subsystem_execution", _matched_value(subsystem), "medium", 2, "subsystem_behavior_requires_nonlocal_project_context")
+
+    if semantic_doc_validation:
+        add_context("difficulty.context.documentation_semantic_validation", "documentation semantic verification", "medium", 2, "documentation_requires_domain_behavior_semantics")
+
+    traversal = re.search(r"\b(?:query|segment|scan|reader|storage|index)\b", combined, re.I)
+    traversal_behavior = re.search(r"\b(?:read(?:ing)? from (?:the )?bottom|full scan|reading whole segment|scan strategy|rows? scanned|docs? scanned)\b", combined, re.I)
+    if traversal and traversal_behavior:
+        add_context("difficulty.context.composite.execution_traversal", _matched_value(traversal_behavior), "medium", 2, "execution_or_storage_traversal_requires_subsystem_context")
+
+    exception_signal = re.search(r"\b(?:FileNotFound(?:Exception)?|[A-Za-z]+Exception|exception)\b", combined, re.I)
+    retry_signal = re.search(r"\b(?:retry|retries|attempts? exceeded|do not retry)\b", combined, re.I)
+    outward_mapping = re.search(r"\b(?:http|404|500|status|wrap(?:ped|ping)?|rest)\b", combined, re.I)
+    if exception_signal and retry_signal and outward_mapping:
+        add_context("difficulty.context.composite.exception_retry_path", _matched_value(retry_signal), "medium", 2, "exception_retry_and_http_mapping_require_multiple_layer_context")
+
+    property_test = re.search(r"\b(?:property[- ]based|property testing|schema[- ]driven)\b", combined, re.I)
+    fixture_scope = re.search(r"\b(?:api fixtures?|fixtures?|endpoints?|schema)\b", combined, re.I)
+    if property_test and fixture_scope:
+        add_context("difficulty.context.composite.cross_cutting_qa", _matched_value(property_test), "medium", 2, "schema_driven_testing_requires_api_and_fixture_context")
+
+    # X3-A: public API deprecation/compatibility policy.
+    api_target = re.search(r"\b(?:public api|public (?:keyword|parameter|method|function|interface)|api keywords?|api parameter)\b", combined, re.I)
+    deprecation = re.search(r"\b(?:deprecat(?:e|ed|ion)|backward compatibility|compatibility cycle|migration path)\b", f"{labels}\n{combined}", re.I)
+    policy = re.search(r"\b(?:needs discussion|discussion|should we|users? actually want|policy|replacement|alternative)\b", f"{labels}\n{combined}", re.I)
+    if api_target and deprecation and policy:
+        add_context("difficulty.context.composite.public_api_policy", _matched_value(api_target), "strong", 3, "public_api_policy_requires_compatibility_and_deprecation_decision")
+
+    # X3-B: API semantic ambiguity.
+    ambiguity = re.search(r"\b(?:ambiguous|ambiguity|multiple interpretations?|two interpretations?|same syntax|same api)\b", combined, re.I)
+    paths = re.search(r"\b(?:getitem|setitem|read|write|existing|missing|scalar|slice|different contexts?|multiple paths?)\b", combined, re.I)
+    compat = re.search(r"\b(?:backward compatibility|existing user code|historical behavior|heuristic|api design)\b", f"{labels}\n{combined}", re.I)
+    if ambiguity and paths and compat:
+        add_context("difficulty.context.composite.api_semantic_ambiguity", _matched_value(ambiguity), "strong", 3, "api_semantic_ambiguity_spans_multiple_behavior_paths")
+
+    # X3-C: compiler internals with concrete behavior and shared/multiple paths.
+    compiler = re.search(r"\b(?:torch\.compile|compiler|graph|guard|dynamic shapes?|tracing|decomposition)\b", f"{labels}\n{combined}", re.I)
+    compiler_behavior = re.search(r"\b(?:recompil(?:e|ation|ations)|graph cache|guard behavior|codegen|code generation)\b", combined, re.I)
+    multi = re.search(r"\b(?:multiple|several|following)\b.{0,100}\b(?:ops?|operators?|paths?|variants?)\b|\b(?:bmm|topk|cholesky|linalg\.norm|max)\b.{0,180}\b(?:bmm|topk|cholesky|linalg\.norm|max)\b", combined, re.I | re.S)
+    if compiler and compiler_behavior and multi:
+        add_context("difficulty.context.composite.compiler_internals", _matched_value(compiler_behavior), "strong", 3, "compiler_internal_behavior_spans_multiple_operations_or_paths")
+
+    # X3-D: distributed implementation semantics.
+    distributed = re.search(r"\b(?:fsdp2?|tensor parallel(?:ism)?|all[- ]gather|collective communication|distributed state)\b", combined, re.I)
+    distributed_core = re.search(r"\b(?:implement|support|change|composability|communication|dequantize|quantize|backward)\b", combined, re.I)
+    if distributed and distributed_core:
+        add_context("difficulty.context.composite.distributed_semantics", _matched_value(distributed), "strong", 3, "distributed_semantics_are_core_to_task_implementation")
+
+    # X3-E: lifecycle + shared framework + broad rollout.
+    lifecycle = re.search(r"\b(?:classloader|lifecycle|reload(?:ing)?|memory leak|leak(?:ing)?)\b", combined, re.I)
+    framework = re.search(r"\b(?:testing framework|test framework|shared framework|all extensions|extension maintainers)\b", combined, re.I)
+    rollout = re.search(r"\b(?:opt[- ]in|opt[- ]out|globally|all extensions|rollout|extension owners?|eventually)\b", combined, re.I)
+    if lifecycle and framework and rollout:
+        add_context("difficulty.context.composite.framework_lifecycle", _matched_value(lifecycle), "strong", 3, "shared_framework_lifecycle_change_has_system_wide_rollout")
+
+    # X3-F: multi-layer RFC architecture.
+    rfc = re.search(r"\b(?:rfc|proposal)\b", f"{labels}\n{combined}", re.I)
+    layers = re.search(r"\b(?:broker.{0,80}server|multiple (?:layers|subsystems)|two[- ]level|multi[- ]layer)\b", combined, re.I | re.S)
+    correctness = re.search(r"\b(?:invalidation|version(?:ed|ing)|lifecycle|correctness|consistency|cache key)\b", combined, re.I)
+    if rfc and layers and correctness:
+        add_context("difficulty.context.composite.multi_layer_rfc", _matched_value(layers), "strong", 3, "rfc_spans_multiple_layers_and_correctness_lifecycle_concerns")
+
+    # X3-G: multi-family mathematical/API aggregation semantics.
+    metric_family = re.search(r"\b(?:multiple|different|various)\b.{0,100}\b(?:metrics?|scores?)\b|\b(?:f1|jaccard|precision|recall)\b.{0,160}\b(?:f1|jaccard|precision|recall)\b", combined, re.I | re.S)
+    aggregation = re.search(r"\b(?:batch|aggregate|aggregation|weighted average|average|equivalent|equivalence|parallel)\b", combined, re.I)
+    correctness_math = re.search(r"\b(?:correctness|mathematically|not equivalent|cannot simply|same result|semantics)\b", combined, re.I)
+    if metric_family and aggregation and correctness_math:
+        add_context("difficulty.context.composite.multi_family_semantics", _matched_value(metric_family), "strong", 3, "multiple_metric_families_require_aggregation_semantics_and_correctness")
+
+    # Algorithm implementation often requires non-local algorithmic context, but is not always architecture-level.
+    algorithm_change = re.search(r"\b(?:implement|missing|add|replace|port)\b.{0,80}\b(?:algorithm|bor[uů]vka)\b|\b(?:algorithm|bor[uů]vka)\b.{0,80}\b(?:not implemented|missing|implement|replace)\b", combined, re.I)
+    if algorithm_change:
+        add_context("difficulty.context.algorithm_implementation", _matched_value(algorithm_change), "medium", 2, "algorithm_implementation_requires_domain_context")
+
     if context.performance_signal:
-        _add_difficulty_evidence(
-            evidence,
-            dimension="project_context",
-            source="derived",
-            rule_id="difficulty.context.performance_auxiliary",
-            matched_value="performance auxiliary signal",
-            strength="weak",
-            suggested_level=2,
-            reason="performance_signal_requires_supporting_scope_evidence",
-        )
+        add_context("difficulty.context.performance_auxiliary", "performance auxiliary signal", "weak", 2, "performance_signal_requires_supporting_scope_evidence")
     return sorted(evidence, key=_difficulty_evidence_key)
-
 
 def _collect_collaboration_difficulty_evidence(
     context: _DifficultyContext,
@@ -2178,94 +2165,57 @@ def _collect_collaboration_difficulty_evidence(
     evidence: list[dict[str, Any]] = []
     combined = f"{context.title}\n{context.semantic_body}"
     labels = "\n".join(context.normalized_labels)
+    label_and_text = f"{labels}\n{combined}"
 
     if context.comment_count >= 3:
-        _add_difficulty_evidence(
-            evidence,
-            dimension="collaboration",
-            source="derived",
-            rule_id="difficulty.collaboration.comment_volume",
-            matched_value=str(context.comment_count),
-            strength="weak",
-            suggested_level=1,
-            reason="comment_volume_is_weak_coordination_signal",
-        )
+        _add_difficulty_evidence(evidence, dimension="collaboration", source="derived", rule_id="difficulty.collaboration.comment_volume", matched_value=str(context.comment_count), strength="weak", suggested_level=1, reason="comment_volume_is_weak_coordination_signal")
 
     _collect_difficulty_regex_evidence(
-        f"{labels}\n{combined}",
+        label_and_text,
         source="derived",
         dimension="collaboration",
         bucket=evidence,
         rules=(
-            (
-                "difficulty.collaboration.needs_discussion",
-                r"\b(?:needs discussion|discussion needed|design discussion)\b",
-                "medium",
-                2,
-                "unresolved_design_discussion",
-            ),
-            (
-                "difficulty.collaboration.api_design",
-                r"\bapi design\b",
-                "medium",
-                2,
-                "public_api_design_coordination",
-            ),
-            (
-                "difficulty.collaboration.rfc_or_proposal",
-                r"(?:^|\b)(?:rfc|proposal|pep request)\b",
-                "medium",
-                2,
-                "rfc_or_proposal_coordination",
-            ),
+            ("difficulty.collaboration.needs_discussion", r"\b(?:needs discussion|discussion needed|design discussion)\b", "medium", 2, "unresolved_design_discussion"),
+            ("difficulty.collaboration.api_design", r"\bapi design\b", "medium", 2, "public_api_design_coordination"),
+            ("difficulty.collaboration.rfc_or_proposal", r"(?:^|\b)(?:rfc|proposal|pep request)\b", "medium", 2, "rfc_or_proposal_coordination"),
             (
                 "difficulty.collaboration.multiple_options",
                 r"\b(?:multiple|several|alternative)\s+(?:options|approaches|designs)\b|"
-                r"\beither\b.{0,100}\bor\b",
-                "medium",
-                2,
-                "multiple_unresolved_options",
+                r"\beither\b.{0,80}\b(?:approach|design|strategy|option|implementation|behavior)\b.{0,100}\bor\b|"
+                r"\beither\b.{0,100}\bor\b.{0,80}\b(?:approach|design|strategy|option|implementation|behavior)\b",
+                "medium", 2, "multiple_unresolved_options",
             ),
-            (
-                "difficulty.collaboration.cross_team",
-                r"\b(?:cross[- ]team|multiple teams|several teams|team owners|"
-                r"coordinate with .* team)\b",
-                "strong",
-                3,
-                "cross_team_decision",
-            ),
-            (
-                "difficulty.collaboration.breaking_change_decision",
-                r"\b(?:breaking change|backward incompatible|compatibility decision|"
-                r"deprecation policy)\b",
-                "strong",
-                3,
-                "breaking_compatibility_decision",
-            ),
-            (
-                "difficulty.collaboration.long_running_dispute",
-                r"\b(?:controversial|long[- ]running dispute|unresolved for years|"
-                r"maintainer disagreement)\b",
-                "strong",
-                3,
-                "long_running_design_dispute",
-            ),
+            ("difficulty.collaboration.cross_team", r"\b(?:cross[- ]team|multiple teams|several teams|team owners|coordinate with .* team)\b", "strong", 3, "cross_team_decision"),
+            ("difficulty.collaboration.breaking_change_decision", r"\b(?:breaking change|backward incompatible|compatibility decision|deprecation policy)\b", "strong", 3, "breaking_compatibility_decision"),
+            ("difficulty.collaboration.long_running_dispute", r"\b(?:controversial|long[- ]running dispute|unresolved for years|maintainer disagreement)\b", "strong", 3, "long_running_design_dispute"),
         ),
     )
 
-    if information_quality["actionability"] == "actionable" and not evidence:
-        _add_difficulty_evidence(
-            evidence,
-            dimension="collaboration",
-            source="derived",
-            rule_id="difficulty.collaboration.ordinary_review",
-            matched_value="ordinary review",
-            strength="weak",
-            suggested_level=0,
-            reason="scope_is_explicit_without_coordination_signal",
-        )
-    return sorted(evidence, key=_difficulty_evidence_key)
+    def add_collab(rule_id: str, matched_value: str, strength: str, level: int, reason: str) -> None:
+        _add_difficulty_evidence(evidence, dimension="collaboration", source="derived", rule_id=rule_id, matched_value=matched_value, strength=strength, suggested_level=level, reason=reason)
 
+    rollout = re.search(r"\b(?:opt[- ]in|opt[- ]out|phased rollout|rollout strategy|extension owners?|adoption strategy)\b", combined, re.I)
+    if rollout:
+        add_collab("difficulty.collaboration.rollout_strategy", _matched_value(rollout), "medium", 2, "phased_rollout_or_adoption_policy_requires_coordination")
+
+    # API semantic decisions reach level 3 only with compatibility + real alternatives/ambiguity.
+    api_design = re.search(r"\bapi design\b", label_and_text, re.I)
+    compat = re.search(r"\b(?:backward compatibility|existing user code|breaking|compatibility)\b", combined, re.I)
+    alternatives = re.search(r"\b(?:ambiguous|ambiguity|multiple interpretations?|alternative approaches?|heuristics?|several options)\b", combined, re.I)
+    if api_design and compat and alternatives:
+        add_collab("difficulty.collaboration.api_semantic_decision", _matched_value(api_design), "strong", 3, "api_semantic_compatibility_requires_design_decision")
+
+    # Multi-layer RFC architecture review.
+    rfc = re.search(r"\b(?:rfc|proposal)\b", label_and_text, re.I)
+    layers = re.search(r"\b(?:broker.{0,80}server|multiple (?:layers|subsystems)|two[- ]level|multi[- ]layer)\b", combined, re.I | re.S)
+    policy = re.search(r"\b(?:invalidation|versioning|correctness|consistency|trade[- ]?off|alternative|review|policy)\b", combined, re.I)
+    if rfc and layers and policy:
+        add_collab("difficulty.collaboration.multi_layer_rfc_review", _matched_value(rfc), "strong", 3, "multi_layer_rfc_requires_architecture_and_correctness_review")
+
+    if information_quality["actionability"] == "actionable" and not evidence:
+        add_collab("difficulty.collaboration.ordinary_review", "ordinary review", "weak", 0, "scope_is_explicit_without_coordination_signal")
+    return sorted(evidence, key=_difficulty_evidence_key)
 
 def _difficulty_conflict_key(item: dict[str, Any]) -> tuple[str, str, str]:
     return (
@@ -2362,21 +2312,11 @@ def _infer_effort_scope(
     code = int(dimensions["code"]["level"])
     project_context = int(dimensions["project_context"]["level"])
     documentation_only = set(context.task_types) == {"documentation"}
-    if documentation_only and code == 0:
+    if documentation_only and code == 0 and project_context == 0:
         return {"scope": "micro", "reason": "content_only_change"}
-    if re.search(
-        r"\b(?:typo|wording|single assertion|one assertion|single config|"
-        r"configuration key|rename local|one-line|readme text)\b",
-        combined,
-        flags=re.IGNORECASE,
-    ):
+    if re.search(r"\b(?:typo|wording|single assertion|one assertion|single config|configuration key|rename local|one-line|readme text)\b", combined, re.I):
         return {"scope": "micro", "reason": "explicit_micro_scope"}
-    if re.search(
-        r"\b(?:cross[- ]module|across (?:multiple|all) modules|"
-        r"multiple subsystems|shared test framework|system[- ]wide)\b",
-        combined,
-        flags=re.IGNORECASE,
-    ):
+    if re.search(r"\b(?:cross[- ]module|across (?:multiple|all) modules|multiple subsystems|shared test framework|system[- ]wide|all extensions)\b", combined, re.I):
         return {"scope": "cross_module", "reason": "explicit_cross_module_scope"}
     if code == 3 and project_context == 3:
         return {"scope": "system", "reason": "high_code_and_system_context"}
@@ -2384,6 +2324,32 @@ def _infer_effort_scope(
         return {"scope": "module", "reason": "nontrivial_module_scope"}
     return {"scope": "local", "reason": "localized_actionable_scope"}
 
+def _infer_validation_burden(
+    *,
+    context: _DifficultyContext,
+    dimensions: dict[str, dict[str, Any]],
+) -> dict[str, str]:
+    combined = f"{context.title}\n{context.semantic_body}"
+
+    # Heavy validation requires a concrete verification burden; performance wording alone is insufficient.
+    heavy_patterns = (
+        ("profiling_and_benchmark", r"\b(?:pprof|profiler|profiling|heap profile)\b.{0,220}\b(?:benchmark|compare|before|after|same environment|heap|cpu|memory)\b|\b(?:benchmark|compare)\b.{0,220}\b(?:pprof|profiler|profiling|heap profile)\b"),
+        ("large_scale_performance", r"\b(?:benchmark|measure|profil(?:e|ing)|latency|throughput|time taken|timetaken)\b.{0,220}(?:\d{4,}[,\d]*\s+(?:rows?|docs?|elements?)|\b(?:millions?|thousands?|replicas?|large dataset|large canvas|rows? scanned|docs? scanned)\b)|(?:\d{4,}[,\d]*\s+(?:rows?|docs?|elements?)|\b(?:millions?|thousands?|replicas?|large dataset|large canvas|rows? scanned|docs? scanned)\b).{0,220}\b(?:benchmark|measure|profil(?:e|ing)|latency|throughput|time taken|timetaken)\b"),
+        ("browser_or_device_matrix", r"\b(?:firefox|chrome|browser)\b.{0,160}\b(?:mobile|tablet|phone|desktop|device)\b|\b(?:mobile|tablet|phone|desktop|device)\b.{0,160}\b(?:firefox|chrome|browser)\b"),
+        ("distributed_validation", r"\b(?:fsdp2?|tensor parallel(?:ism)?|all[- ]gather|collective communication|multi[- ]node|multi[- ]gpu)\b.{0,180}\b(?:test|benchmark|validate|verify|speedup|run)\b|\b(?:test|benchmark|validate|verify|speedup|run)\b.{0,180}\b(?:fsdp2?|tensor parallel(?:ism)?|all[- ]gather|collective communication|multi[- ]node|multi[- ]gpu)\b"),
+        ("compatibility_regression", r"\b(?:backward compatibility|existing user code|api semantic|multiple interpretations?|getitem|setitem)\b.{0,220}\b(?:test|regression|behavior|compatibility|cases?)\b"),
+        ("algorithm_correctness", r"\b(?:algorithm|bor[uů]vka|multiple metrics?|aggregation)\b.{0,220}\b(?:benchmark|correctness|equivalence|same result|validation)\b"),
+        ("cross_framework_regression", r"\b(?:all extensions|extension maintainers|shared test framework|testing framework)\b.{0,180}\b(?:regression|leak|ci|rollout|test)\b"),
+        ("system_scaling", r"\b(?:scales? linearly|replica size|system load|cpu utilization)\b.{0,160}\b(?:replica|pod|probe|benchmark|measure)\b"),
+    )
+    for reason, pattern in heavy_patterns:
+        if re.search(pattern, combined, re.I | re.S):
+            return {"level": "heavy", "reason": reason}
+
+    light = re.search(r"\b(?:unit test|regression test|test case|steps? to reproduce|reproduce|verify|validate|expected behavior)\b", combined, re.I)
+    if light:
+        return {"level": "light", "reason": "bounded_local_validation"}
+    return {"level": "none", "reason": "no_explicit_runtime_validation_burden"}
 
 def _estimate_effort(
     *,
@@ -2391,12 +2357,23 @@ def _estimate_effort(
     information_quality: dict[str, Any],
     dimensions: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    scope_result = _infer_effort_scope(
-        context=context,
-        information_quality=information_quality,
-        dimensions=dimensions,
-    )
+    scope_result = _infer_effort_scope(context=context, information_quality=information_quality, dimensions=dimensions)
     scope = str(scope_result["scope"])
+    code = int(dimensions["code"]["level"])
+    setup = int(dimensions["setup"]["level"])
+    project_context = int(dimensions["project_context"]["level"])
+    validation = _infer_validation_burden(context=context, dimensions=dimensions)
+    validation_level = validation["level"]
+
+    technical_complexity = "strong" if (code == 3 or project_context == 3) else "medium" if (code == 2 or project_context == 2) else "low"
+    reasons = set(information_quality.get("reasons") or [])
+    actionability = str(information_quality["actionability"])
+    unbounded_information = bool(
+        information_quality.get("body_missing")
+        or "support_question" in reasons
+        or ("unresolved_design_choice" in reasons and not context.has_acceptance_criteria)
+    )
+
     base_buckets = {
         "micro": "under_2h",
         "local": "half_day",
@@ -2407,70 +2384,63 @@ def _estimate_effort(
         "non_actionable": _NON_ACTIONABLE_EFFORT_PLACEHOLDER,
     }
     bucket = base_buckets[scope]
-    applicable = scope != "non_actionable"
-    provisional = scope in {"unclear", "non_actionable"}
-    confidence = "low" if provisional else str(information_quality["confidence"])
 
-    code = int(dimensions["code"]["level"])
-    setup = int(dimensions["setup"]["level"])
-    project_context = int(dimensions["project_context"]["level"])
-    if applicable and scope in {"local", "module"} and setup == 3:
-        bucket = "one_day" if scope == "local" else "multi_day"
-    if applicable and code == 3 and bucket in {"under_2h", "half_day"}:
-        bucket = "one_day"
-    if applicable and project_context == 3 and scope in {"cross_module", "system"}:
-        bucket = "multi_day"
+    applicable = scope != "non_actionable"
+    if scope == "unclear" and unbounded_information:
+        applicable = False
+    if actionability == "design_pending" and "unresolved_design_choice" in reasons and not context.has_acceptance_criteria:
+        applicable = False
+
+    provisional = (not applicable) or scope in {"unclear", "non_actionable"} or actionability == "design_pending"
+    confidence = "low" if not applicable or scope in {"unclear", "non_actionable"} else str(information_quality["confidence"])
+
+    if applicable:
+        documentation_only = set(context.task_types) == {"documentation"}
+        if documentation_only and code == 0 and project_context == 0:
+            bucket = "under_2h"
+        elif documentation_only and code == 0 and project_context >= 2:
+            bucket = "one_day"
+        elif scope in {"cross_module", "system"}:
+            bucket = "multi_day"
+        elif scope == "module":
+            if validation_level == "heavy" or technical_complexity == "strong":
+                bucket = "multi_day"
+            else:
+                bucket = "one_day"
+        elif scope == "local":
+            if technical_complexity == "strong" and validation_level == "heavy":
+                bucket = "multi_day"
+            elif technical_complexity in {"medium", "strong"}:
+                bucket = "one_day"
+            else:
+                bucket = "half_day"
+        elif scope == "micro":
+            bucket = "under_2h"
+
+        # Heavy validation makes non-trivial module/system work multi-day, but does not inflate a truly local low-risk task by itself.
+        if validation_level == "heavy" and (scope in {"module", "cross_module", "system"} or technical_complexity in {"medium", "strong"}):
+            bucket = "multi_day"
 
     evidence = [
-        {
-            "source": "derived",
-            "rule_id": f"effort.scope.{scope}",
-            "matched_value": scope,
-            "reason": str(scope_result["reason"]),
-        },
-        {
-            "source": "derived",
-            "rule_id": "effort.bucket.decision_table",
-            "matched_value": bucket,
-            "reason": "scope_actionability_complexity_decision",
-        },
+        {"source": "derived", "rule_id": f"effort.scope.{scope}", "matched_value": scope, "reason": str(scope_result["reason"])},
+        {"source": "derived", "rule_id": f"effort.technical_complexity.{technical_complexity}", "matched_value": technical_complexity, "reason": "code_and_context_material_evidence"},
+        {"source": "derived", "rule_id": f"effort.validation.{validation_level}", "matched_value": validation_level, "reason": validation["reason"]},
+        {"source": "derived", "rule_id": "effort.bucket.decision_table.v0.2.1", "matched_value": bucket, "reason": "scope_actionability_technical_complexity_validation_decision"},
     ]
-    if setup == 3 and applicable and scope in {"local", "module"}:
-        evidence.append(
-            {
-                "source": "derived",
-                "rule_id": "effort.adjustment.setup_three",
-                "matched_value": "setup=3",
-                "reason": "high_environment_burden_adjustment",
-            }
-        )
-    if code == 3 and applicable:
-        evidence.append(
-            {
-                "source": "derived",
-                "rule_id": "effort.minimum.code_three",
-                "matched_value": "code=3",
-                "reason": "high_code_complexity_minimum_one_day",
-            }
-        )
-    evidence = sorted(
-        evidence,
-        key=lambda item: (
-            str(item["source"]),
-            str(item["rule_id"]),
-            str(item["matched_value"]),
-            str(item["reason"]),
-        ),
-    )
+    if not applicable:
+        evidence.append({"source": "derived", "rule_id": "effort.applicability.not_reliable", "matched_value": actionability, "reason": "unbounded_or_non_actionable_scope_uses_compatibility_bucket_only"})
+
+    evidence = sorted(evidence, key=lambda item: (str(item["source"]), str(item["rule_id"]), str(item["matched_value"]), str(item["reason"])))
     return {
         "bucket": bucket,
         "scope": scope,
         "applicable": applicable,
         "provisional": provisional,
         "confidence": confidence,
+        "technical_complexity": technical_complexity,
+        "validation_burden": validation_level,
         "evidence": evidence,
     }
-
 
 def _assess_difficulty(
     context: _DifficultyContext,

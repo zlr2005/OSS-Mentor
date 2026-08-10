@@ -1279,5 +1279,339 @@ class TaskFeatureTests(unittest.TestCase):
         self.assertEqual(0.0, features.newcomer_score)
         self.assertEqual(0.0, features.growth_value_score)
 
+
+    # B3-E3 difficulty-rules-v0.2.1 targeted regression tests.
+
+    def test_v021_query_traversal_with_measurement_is_code_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Optimize query scan direction for sorted segments",
+                body_text=(
+                    "Steps to reproduce: ORDER BY TIME DESC reads the whole segment and scans "
+                    "5,700,000 rows while ASC scans 318 rows. Read from the bottom to avoid a "
+                    "full scan and reduce latency."
+                ),
+                labels=["performance"],
+            )
+        )
+        self.assertEqual(2, features.estimated_code_difficulty)
+        self.assertEqual(2, features.estimated_project_context_difficulty)
+
+    def test_v021_performance_only_local_optimization_still_not_code_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="PERF: Reduce temporary allocations in local helper",
+                body_text="Expected behavior: the local helper allocates one fewer temporary list.",
+            )
+        )
+        self.assertLess(features.estimated_code_difficulty, 3)
+        self.assertLess(features.estimated_project_context_difficulty, 3)
+
+    def test_v021_compiler_recompilation_multiple_ops_is_code_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="torch.compile out variants cause recompilations",
+                body_text=(
+                    "Minified repro: dynamic shapes trigger extra recompilations for multiple ops "
+                    "including bmm, topk and cholesky. Fix the shared graph guard behavior and add "
+                    "regression tests for the affected operators."
+                ),
+                labels=["module: dynamic shapes", "bug"],
+            )
+        )
+        self.assertEqual(3, features.estimated_code_difficulty)
+        self.assertEqual(3, features.estimated_project_context_difficulty)
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_v021_algorithm_implementation_with_benchmark_is_code_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Implement the missing Boruvka algorithm for clustering",
+                body_text=(
+                    "The current implementation is much slower on a large dataset. Implement the "
+                    "missing algorithm and benchmark correctness and performance against the existing solver."
+                ),
+                labels=["performance", "feature"],
+            )
+        )
+        self.assertEqual(3, features.estimated_code_difficulty)
+        self.assertGreaterEqual(features.estimated_project_context_difficulty, 2)
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_v021_algorithm_name_without_change_does_not_force_code_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Document the Boruvka algorithm",
+                body_text="Correct wording in the README about the Boruvka algorithm.",
+                labels=["documentation"],
+            )
+        )
+        self.assertEqual(0, features.estimated_code_difficulty)
+
+    def test_v021_realtime_alignment_interaction_is_code_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Add alignment guides while moving elements",
+                body_text=(
+                    "Describe the solution you'd like: when moving or positioning elements, show "
+                    "temporary guide lines, equal spacing indicators and snap-to-spacing visual feedback."
+                ),
+            )
+        )
+        self.assertEqual(2, features.estimated_code_difficulty)
+        self.assertGreaterEqual(features.estimated_project_context_difficulty, 1)
+        self.assertNotEqual("half_day", features.estimated_effort_bucket)
+
+    def test_v021_exception_retry_http_mapping_is_code_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Do not retry FileNotFound when downloading a segment",
+                body_text=(
+                    "FileNotFoundException is retried and wrapped as AttemptsExceededException, "
+                    "which returns HTTP 500. Do not retry it and return HTTP status 404 instead."
+                ),
+                labels=["bug"],
+            )
+        )
+        self.assertEqual(2, features.estimated_code_difficulty)
+        self.assertGreaterEqual(features.estimated_project_context_difficulty, 2)
+        self.assertEqual("one_day", features.estimated_effort_bucket)
+
+    def test_v021_public_api_deprecation_policy_is_context_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="DEPR: public API parameter compatibility policy",
+                body_text=(
+                    "Needs discussion: should we deprecate this public API parameter? Define the "
+                    "backward compatibility and migration path before implementation."
+                ),
+                labels=["Deprecate", "Needs Discussion"],
+            )
+        )
+        self.assertEqual(3, features.estimated_project_context_difficulty)
+        self.assertEqual(2, features.estimated_collaboration_difficulty)
+
+    def test_v021_public_api_contract_only_remains_context_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Align the public API contract",
+                body_text="Update one public interface while preserving compatibility.",
+            )
+        )
+        self.assertEqual(2, features.estimated_project_context_difficulty)
+
+    def test_v021_api_semantic_ambiguity_is_code_and_context_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="API Design: same syntax has ambiguous interpretations",
+                body_text=(
+                    "The same API syntax has two interpretations across getitem and setitem. Existing "
+                    "and missing keys follow different paths, backward compatibility affects existing user "
+                    "code, and several heuristics fail."
+                ),
+                labels=["API Design"],
+            )
+        )
+        self.assertEqual(3, features.estimated_code_difficulty)
+        self.assertEqual(3, features.estimated_project_context_difficulty)
+        self.assertEqual(3, features.estimated_collaboration_difficulty)
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_v021_documentation_semantic_verification_keeps_code_zero_context_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Document partial dependence method semantics",
+                body_text=(
+                    "Steps to reproduce show different answers for method=recursion and method=brute. "
+                    "Expected results differ from actual results because conditional and interventional "
+                    "partial dependence have different semantics. Clarify this behavior in documentation."
+                ),
+                labels=["documentation"],
+            )
+        )
+        self.assertEqual(0, features.estimated_code_difficulty)
+        self.assertEqual(2, features.estimated_project_context_difficulty)
+        self.assertEqual(1, features.estimated_setup_difficulty)
+        self.assertEqual("one_day", features.estimated_effort_bucket)
+
+    def test_v021_simple_documentation_typo_remains_zero_context(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Fix README typo",
+                body_text="Correct one wording typo in the README text.",
+                labels=["documentation"],
+            )
+        )
+        self.assertEqual(0, features.estimated_code_difficulty)
+        self.assertEqual(0, features.estimated_project_context_difficulty)
+        self.assertEqual(0, features.estimated_setup_difficulty)
+        self.assertEqual("under_2h", features.estimated_effort_bucket)
+
+    def test_v021_profiled_module_with_benchmark_is_multi_day(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Fix agent memory regression in remote write",
+                body_text=(
+                    "What did you do? Run the service in Kubernetes. pprof shows remote.processExternalLabels "
+                    "using over 50% of heap memory. Compare agent mode and regular mode in the same environment, "
+                    "fix the subsystem and benchmark memory before and after."
+                ),
+                labels=["performance", "bug"],
+            )
+        )
+        self.assertGreaterEqual(features.estimated_code_difficulty, 2)
+        self.assertEqual(2, features.estimated_setup_difficulty)
+        self.assertGreaterEqual(features.estimated_project_context_difficulty, 2)
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+        self.assertEqual("heavy", self._difficulty(features)["effort"]["validation_burden"])
+
+    def test_v021_bounded_code_two_context_two_bug_is_one_day(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Do not retry FileNotFound",
+                body_text=(
+                    "Expected behavior: FileNotFoundException should not retry; preserve the retry policy for "
+                    "other errors and map this exception to HTTP 404. Add one regression test."
+                ),
+            )
+        )
+        self.assertEqual(2, features.estimated_code_difficulty)
+        self.assertEqual(2, features.estimated_project_context_difficulty)
+        self.assertEqual("one_day", features.estimated_effort_bucket)
+
+    def test_v021_simple_local_task_remains_half_day(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Fix local parser value",
+                body_text="Expected behavior: use the corrected local parser value.",
+            )
+        )
+        self.assertEqual("half_day", features.estimated_effort_bucket)
+
+    def test_v021_micro_wording_remains_under_two_hours(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Fix README wording",
+                body_text="Correct one wording sentence.",
+                labels=["documentation"],
+            )
+        )
+        self.assertEqual("under_2h", features.estimated_effort_bucket)
+
+    def test_v021_filesystem_container_reproduction_is_setup_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Investigate storage allocation on Btrfs",
+                body_text=(
+                    "Steps to reproduce: run the service in Podman using a Btrfs storage volume. "
+                    "Measure the filesystem allocation for each chunk file."
+                ),
+            )
+        )
+        self.assertEqual(2, features.estimated_setup_difficulty)
+
+    def test_v021_distributed_validation_is_setup_three(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Support Tensor Parallel all-gather",
+                body_text=(
+                    "Implement tensor parallelism and all-gather support, then run distributed tests and "
+                    "benchmark the speedup across multiple GPUs."
+                ),
+            )
+        )
+        self.assertEqual(3, features.estimated_setup_difficulty)
+        self.assertEqual(3, features.estimated_code_difficulty)
+        self.assertEqual(3, features.estimated_project_context_difficulty)
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_v021_either_or_without_design_vocabulary_does_not_raise_collaboration(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Investigate local storage bug",
+                body_text=(
+                    "Expected behavior: preserve the file. The cause is either a filesystem issue or an "
+                    "application issue."
+                ),
+                comment_count=0,
+            )
+        )
+        self.assertLessEqual(features.estimated_collaboration_difficulty, 1)
+
+    def test_v021_rollout_strategy_is_collaboration_two(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Integrate classloader leak checks into the testing framework",
+                body_text=(
+                    "Prevent future regression by integrating the classloader lifecycle check into the test "
+                    "framework. Start opt-in for extension owners, then use a phased rollout toward opt-out."
+                ),
+            )
+        )
+        self.assertEqual(2, features.estimated_collaboration_difficulty)
+        self.assertEqual(3, features.estimated_project_context_difficulty)
+        self.assertEqual("multi_day", features.estimated_effort_bucket)
+
+    def test_v021_body_missing_effort_is_not_applicable(self) -> None:
+        features = extract_task_features(
+            self._record(title="Feature Request: Import animated images")
+        )
+        effort = self._difficulty(features)["effort"]
+        self.assertEqual("unclear", effort["scope"])
+        self.assertFalse(effort["applicable"])
+        self.assertTrue(effort["provisional"])
+        self.assertEqual("low", effort["confidence"])
+
+    def test_v021_unresolved_should_question_has_non_applicable_effort(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Should cache keys be hashed before storing?",
+                body_text=(
+                    "Hashing may reduce storage size but introduces collision risk and migration compatibility "
+                    "trade-offs. No implementation approach has been selected."
+                ),
+            )
+        )
+        quality = self._difficulty(features)["information_quality"]
+        effort = self._difficulty(features)["effort"]
+        self.assertEqual("design_pending", quality["actionability"])
+        self.assertIn("unresolved_design_choice", quality["reasons"])
+        self.assertFalse(effort["applicable"])
+        self.assertTrue(effort["provisional"])
+
+    def test_v021_expected_should_return_is_not_unresolved_design(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Bug: missing file returns 500",
+                body_text="Expected behavior: FileNotFound should return 404 and should preserve other errors.",
+            )
+        )
+        quality = self._difficulty(features)["information_quality"]
+        self.assertNotIn("unresolved_design_choice", quality["reasons"])
+        self.assertNotEqual("design_pending", quality["actionability"])
+
+    def test_v021_bounded_cross_cutting_qa_protects_one_day(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="Add property testing for API fixtures",
+                body_text=(
+                    "RFC child task: extend API fixtures and add schema-driven property testing. "
+                    "Acceptance criteria: cover the endpoint fixtures and keep CI stable. This is a bounded QA subtask."
+                ),
+                labels=["testing", "RFC"],
+            )
+        )
+        self.assertEqual(2, features.estimated_code_difficulty)
+        self.assertLessEqual(features.estimated_project_context_difficulty, 2)
+        self.assertEqual(2, features.estimated_collaboration_difficulty)
+        self.assertEqual("one_day", features.estimated_effort_bucket)
+
+    def test_v021_formula_version_changes_without_task_feature_version_change(self) -> None:
+        features = extract_task_features(self._record(title="Fix local parser value"))
+        self.assertEqual("task-features-v0.3", TASK_FEATURE_VERSION)
+        self.assertEqual("task-features-v0.3", features.task_feature_version)
+        self.assertEqual("difficulty-rules-v0.2.1", DIFFICULTY_FORMULA_VERSION)
+        self.assertEqual("difficulty-rules-v0.2.1", self._difficulty(features)["formula_version"])
+
 if __name__ == "__main__":
     unittest.main()
