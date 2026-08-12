@@ -12,7 +12,7 @@ from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
 
 TASK_FEATURE_VERSION = "task-features-v0.4"
 DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2.1"
-SKILL_REQUIREMENT_RULES_VERSION = "skill-requirements-v0.2.1"
+SKILL_REQUIREMENT_RULES_VERSION = "skill-requirements-v0.2.2"
 PUBLIC_TASK_TYPES = frozenset(ALLOWED_TASK_TYPES)
 _TASK_TYPE_ACCEPTANCE_SCORE = 3.0
 _SOURCE_ORDER = {"label": 0, "title": 1, "body": 2, "derived": 3}
@@ -2993,9 +2993,32 @@ def _tool_body_usage_context_match(
         rf"\b(?:to|how to)\s+(?:use|consume)\b.{{0,160}}\b{artifact}\b",
         rf"\badd\s+the\s+following\s+repository\b.{{0,140}}\b{artifact}\b",
         rf"\b(?:users?|you)\s+(?:can|may|should)\b.{{0,100}}\b(?:use|consume|add)\b.{{0,100}}\b{artifact}\b",
+        rf"\b(?:either|whether)\b.{{0,40}}\b{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
+        rf"\b(?:one|single|central(?:ized)?)\s+(?:place|location)\b.{{0,100}}\b(?:being\s+(?:it\s+)?)?{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
     )
     for pattern in patterns:
         match = _first_rule_match(window, pattern)
+        if match is not None:
+            return match
+    return None
+
+
+def _tool_body_alternative_storage_context_match(
+    tool_key: str, text: str
+) -> re.Match[str] | None:
+    if tool_key == "maven":
+        artifact = r"(?:maven|mvn|pom\.xml)"
+    elif tool_key == "gradle":
+        artifact = r"(?:gradle|gradle project|build\.gradle|settings\.gradle|gradle\.properties)"
+    else:
+        return None
+
+    patterns = (
+        rf"\b(?:either|whether)\b.{{0,40}}\b{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
+        rf"\b(?:one|single|central(?:ized)?)\s+(?:place|location)\b.{{0,100}}\b(?:being\s+(?:it\s+)?)?{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
+    )
+    for pattern in patterns:
+        match = _first_rule_match(text, pattern)
         if match is not None:
             return match
     return None
@@ -3011,6 +3034,7 @@ def _collect_tool_signals(
     semantic_body = _skill_semantic_body(body)
     for tool_key, canonical_name in _SKILL_CANONICAL_NAMES.items():
         positive_found = False
+        usage_context_recorded = False
         patterns = _tool_positive_patterns(tool_key)
         for source, text in (("title", title), ("body", semantic_body)):
             for index, (pattern, level, importance, role, reason) in enumerate(patterns, 1):
@@ -3029,10 +3053,11 @@ def _collect_tool_signals(
                             rule_id=f"skill.tool.{tool_key}.body.usage_context_guard",
                             matched_value=_matched_value(usage_match),
                             strength="weak",
-                            reason="tool_artifact_is_part_of_usage_instructions_not_direct_task_target",
+                            reason="tool_artifact_is_usage_or_alternative_storage_context_not_direct_task_target",
                             decision="rejected_context_only",
                             matching_facing=False,
                         )
+                        usage_context_recorded = True
                         positive_found = True
                         continue
                 _append_skill_signal(
@@ -3074,6 +3099,25 @@ def _collect_tool_signals(
                 requirement_source="inferred_tool_requirement",
             )
             positive_found = True
+
+        if not usage_context_recorded:
+            alternative_storage_match = _tool_body_alternative_storage_context_match(
+                tool_key, semantic_body
+            )
+            if alternative_storage_match is not None:
+                _append_skill_signal(
+                    signals,
+                    skill_name=canonical_name,
+                    category="tool",
+                    role=None,
+                    source="body",
+                    rule_id=f"skill.tool.{tool_key}.body.usage_context_guard",
+                    matched_value=_matched_value(alternative_storage_match),
+                    strength="weak",
+                    reason="tool_artifact_is_usage_or_alternative_storage_context_not_direct_task_target",
+                    decision="rejected_context_only",
+                    matching_facing=False,
+                )
 
         negative_match = _first_rule_match(semantic_body, _tool_negative_pattern(tool_key))
         if negative_match is not None:

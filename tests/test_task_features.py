@@ -2053,11 +2053,53 @@ class TaskFeatureTests(unittest.TestCase):
         }
         self.assertEqual(0.7, requirements["Maven"].importance)
 
-    def test_skill_v021_rules_version_only_changes_skill_requirement_rules(self) -> None:
+    def test_skill_v022_maven_alternative_storage_location_is_context_only(self) -> None:
+        record = self._record(
+            title="Configure all container image names in one place",
+            body_text=(
+                "Configure all image names in one place, being it pom.xml or a property file."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Maven", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v022_maven_title_target_survives_alternative_storage_context(self) -> None:
+        record = self._record(
+            title="Update Maven project configuration in pom.xml",
+            body_text=(
+                "The related image setting may live either in pom.xml or a property file."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Maven"].importance)
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v022_rules_version_only_changes_skill_requirement_rules(self) -> None:
         features = extract_task_features(self._record(title="Fix local parser value"))
         self.assertEqual("task-features-v0.4", TASK_FEATURE_VERSION)
         self.assertEqual("task-features-v0.4", features.task_feature_version)
-        self.assertEqual("skill-requirements-v0.2.1", SKILL_REQUIREMENT_RULES_VERSION)
+        self.assertEqual("skill-requirements-v0.2.2", SKILL_REQUIREMENT_RULES_VERSION)
         self.assertEqual("difficulty-rules-v0.2.1", DIFFICULTY_FORMULA_VERSION)
         self.assertEqual("difficulty-rules-v0.2.1", self._difficulty(features)["formula_version"])
 
