@@ -1,0 +1,469 @@
+{
+  "by_language": {
+    "Go": {
+      "candidate_count": 80,
+      "eligible_count": 36,
+      "eligible_newcomer_count": 35
+    },
+    "Java": {
+      "candidate_count": 401,
+      "eligible_count": 153,
+      "eligible_newcomer_count": 89
+    },
+    "JavaScript": {
+      "candidate_count": 261,
+      "eligible_count": 114,
+      "eligible_newcomer_count": 32
+    },
+    "Python": {
+      "candidate_count": 401,
+      "eligible_count": 193,
+      "eligible_newcomer_count": 57
+    },
+    "Rust": {
+      "candidate_count": 121,
+      "eligible_count": 49,
+      "eligible_newcomer_count": 24
+    },
+    "TypeScript": {
+      "candidate_count": 200,
+      "eligible_count": 63,
+      "eligible_newcomer_count": 27
+    }
+  },
+  "by_repository": {
+    "apache/dubbo": {
+      "candidate_count": 40,
+      "eligible_count": 16,
+      "eligible_newcomer_count": 13
+    },
+    "apache/pinot": {
+      "candidate_count": 173,
+      "eligible_count": 63,
+      "eligible_newcomer_count": 56
+    },
+    "elastic/elasticsearch": {
+      "candidate_count": 40,
+      "eligible_count": 5,
+      "eligible_newcomer_count": 4
+    },
+    "eslint/eslint": {
+      "candidate_count": 40,
+      "eligible_count": 3
+    },
+    "excalidraw/excalidraw": {
+      "candidate_count": 40,
+      "eligible_count": 29,
+      "eligible_newcomer_count": 16
+    },
+    "facebook/pyrefly": {
+      "candidate_count": 40,
+      "eligible_count": 7,
+      "eligible_newcomer_count": 3
+    },
+    "freeCodeCamp/freeCodeCamp": {
+      "candidate_count": 40
+    },
+    "jenkinsci/jenkins": {
+      "candidate_count": 8,
+      "eligible_count": 4
+    },
+    "kubernetes/kubernetes": {
+      "candidate_count": 40,
+      "eligible_count": 8,
+      "eligible_newcomer_count": 7
+    },
+    "matplotlib/matplotlib": {
+      "candidate_count": 40,
+      "eligible_count": 23,
+      "eligible_newcomer_count": 20
+    },
+    "microsoft/vscode": {
+      "candidate_count": 40,
+      "eligible_count": 1
+    },
+    "nodejs/node": {
+      "candidate_count": 40,
+      "eligible_count": 20,
+      "eligible_newcomer_count": 19
+    },
+    "nodejs/undici": {
+      "candidate_count": 101,
+      "eligible_count": 30,
+      "eligible_newcomer_count": 6
+    },
+    "nushell/nushell": {
+      "candidate_count": 40,
+      "eligible_count": 23,
+      "eligible_newcomer_count": 16
+    },
+    "pandas-dev/pandas": {
+      "candidate_count": 40,
+      "eligible_count": 31
+    },
+    "prometheus/prometheus": {
+      "candidate_count": 40,
+      "eligible_count": 28,
+      "eligible_newcomer_count": 28
+    },
+    "pytest-dev/pytest": {
+      "candidate_count": 40,
+      "eligible_count": 27
+    },
+    "pytorch/ao": {
+      "candidate_count": 101,
+      "eligible_count": 35,
+      "eligible_newcomer_count": 10
+    },
+    "pytorch/pytorch": {
+      "candidate_count": 100,
+      "eligible_count": 17,
+      "eligible_newcomer_count": 4
+    },
+    "quarkusio/quarkus": {
+      "candidate_count": 40,
+      "eligible_count": 15,
+      "eligible_newcomer_count": 9
+    },
+    "rust-lang/rust-clippy": {
+      "candidate_count": 41,
+      "eligible_count": 19,
+      "eligible_newcomer_count": 5
+    },
+    "scikit-learn/scikit-learn": {
+      "candidate_count": 40,
+      "eligible_count": 27,
+      "eligible_newcomer_count": 23
+    },
+    "storybookjs/storybook": {
+      "candidate_count": 40,
+      "eligible_count": 6,
+      "eligible_newcomer_count": 4
+    },
+    "sveltejs/svelte": {
+      "candidate_count": 40,
+      "eligible_count": 36
+    },
+    "trinodb/trino": {
+      "candidate_count": 100,
+      "eligible_count": 50,
+      "eligible_newcomer_count": 7
+    },
+    "vercel/next.js": {
+      "candidate_count": 40,
+      "eligible_count": 25,
+      "eligible_newcomer_count": 7
+    },
+    "vitejs/vite": {
+      "candidate_count": 40,
+      "eligible_count": 27,
+      "eligible_newcomer_count": 7
+    },
+    "wagtail/wagtail": {
+      "candidate_count": 40,
+      "eligible_count": 33
+    }
+  },
+  "by_task_type": {
+    "bug_fix": 393,
+    "build_tooling": 425,
+    "documentation": 387,
+    "feature": 204,
+    "other": 339,
+    "performance": 119,
+    "refactor": 61,
+    "testing": 356
+  },
+  "candidate_summary": {
+    "eligibility_counts": {
+      "eligible": 608,
+      "excluded": 639,
+      "temporarily_ineligible": 217,
+      "unknown": 0
+    },
+    "eligible_newcomer_signal_count": 264,
+    "total_count": 1464,
+    "verified_eligible_count": 608
+  },
+  "condition_counts": {
+    "assigned": 397,
+    "closed": 625,
+    "linked_open_pr": 0,
+    "locked": 90
+  },
+  "coverage_policy": {
+    "maximum_repository_share_target": 0.3,
+    "minimum_language_task_type_inventory": 5,
+    "minimum_option_inventory": 10,
+    "newcomer_buffer_target": 130,
+    "newcomer_floor": 100
+  },
+  "generated_at": "2026-07-29T10:34:45.764064+00:00",
+  "latest_candidate_refresh_at": "2026-07-16T15:48:42.368066+00:00",
+  "latest_candidate_sync_at": "2026-07-16T10:17:47.954335+00:00",
+  "operation_summary": {
+    "refresh": {
+      "ecosystems_request_count": 0,
+      "errors": [],
+      "failed_repository_count": 0,
+      "github_request_count": 31,
+      "rate_limited": false,
+      "repository_count": 28,
+      "skipped_repository_count": 0,
+      "status": "completed",
+      "successful_repository_count": 28
+    },
+    "sync": {
+      "ecosystems_request_count": 42,
+      "errors": [],
+      "failed_repository_count": 0,
+      "github_request_count": 630,
+      "rate_limited": false,
+      "repository_count": 10,
+      "skipped_repository_count": 0,
+      "status": "completed",
+      "successful_repository_count": 10
+    }
+  },
+  "recommendation_coverage": {
+    "growth": {
+      "combinations_below_minimum": [
+        "go:refactor",
+        "go:testing",
+        "python:refactor",
+        "rust:refactor",
+        "typescript:refactor"
+      ],
+      "language_counts": {
+        "go": 36,
+        "java": 153,
+        "javascript": 114,
+        "python": 193,
+        "rust": 49,
+        "typescript": 63
+      },
+      "language_task_type_counts": {
+        "go": {
+          "bug_fix": 11,
+          "build_tooling": 10,
+          "documentation": 9,
+          "feature": 6,
+          "refactor": 1,
+          "testing": 4
+        },
+        "java": {
+          "bug_fix": 18,
+          "build_tooling": 24,
+          "documentation": 33,
+          "feature": 25,
+          "refactor": 6,
+          "testing": 28
+        },
+        "javascript": {
+          "bug_fix": 27,
+          "build_tooling": 48,
+          "documentation": 24,
+          "feature": 14,
+          "refactor": 5,
+          "testing": 33
+        },
+        "python": {
+          "bug_fix": 61,
+          "build_tooling": 52,
+          "documentation": 70,
+          "feature": 23,
+          "refactor": 4,
+          "testing": 51
+        },
+        "rust": {
+          "bug_fix": 7,
+          "build_tooling": 15,
+          "documentation": 5,
+          "feature": 11,
+          "refactor": 3,
+          "testing": 7
+        },
+        "typescript": {
+          "bug_fix": 19,
+          "build_tooling": 29,
+          "documentation": 28,
+          "feature": 13,
+          "refactor": 2,
+          "testing": 9
+        }
+      },
+      "languages_below_minimum": [],
+      "maximum_repository_share": 0.1036,
+      "repository_counts": {
+        "apache/dubbo": 16,
+        "apache/pinot": 63,
+        "elastic/elasticsearch": 5,
+        "eslint/eslint": 3,
+        "excalidraw/excalidraw": 29,
+        "facebook/pyrefly": 7,
+        "jenkinsci/jenkins": 4,
+        "kubernetes/kubernetes": 8,
+        "matplotlib/matplotlib": 23,
+        "microsoft/vscode": 1,
+        "nodejs/node": 20,
+        "nodejs/undici": 30,
+        "nushell/nushell": 23,
+        "pandas-dev/pandas": 31,
+        "prometheus/prometheus": 28,
+        "pytest-dev/pytest": 27,
+        "pytorch/ao": 35,
+        "pytorch/pytorch": 17,
+        "quarkusio/quarkus": 15,
+        "rust-lang/rust-clippy": 19,
+        "scikit-learn/scikit-learn": 27,
+        "storybookjs/storybook": 6,
+        "sveltejs/svelte": 36,
+        "trinodb/trino": 50,
+        "vercel/next.js": 25,
+        "vitejs/vite": 27,
+        "wagtail/wagtail": 33
+      },
+      "repository_with_inventory_count": 27,
+      "task_type_counts": {
+        "bug_fix": 143,
+        "build_tooling": 178,
+        "documentation": 169,
+        "feature": 92,
+        "refactor": 21,
+        "testing": 132
+      },
+      "task_types_below_minimum": [],
+      "total_count": 608,
+      "zero_combinations": []
+    },
+    "newcomer": {
+      "combinations_below_minimum": [
+        "go:refactor",
+        "go:testing",
+        "java:refactor",
+        "javascript:feature",
+        "javascript:refactor",
+        "python:feature",
+        "python:refactor",
+        "rust:bug_fix",
+        "rust:documentation",
+        "rust:refactor",
+        "rust:testing",
+        "typescript:refactor",
+        "typescript:testing"
+      ],
+      "language_counts": {
+        "go": 35,
+        "java": 89,
+        "javascript": 32,
+        "python": 57,
+        "rust": 24,
+        "typescript": 27
+      },
+      "language_task_type_counts": {
+        "go": {
+          "bug_fix": 10,
+          "build_tooling": 9,
+          "documentation": 8,
+          "feature": 6,
+          "refactor": 1,
+          "testing": 4
+        },
+        "java": {
+          "bug_fix": 12,
+          "build_tooling": 10,
+          "documentation": 18,
+          "feature": 16,
+          "refactor": 3,
+          "testing": 18
+        },
+        "javascript": {
+          "bug_fix": 9,
+          "build_tooling": 8,
+          "documentation": 6,
+          "feature": 4,
+          "refactor": 1,
+          "testing": 11
+        },
+        "python": {
+          "bug_fix": 11,
+          "build_tooling": 13,
+          "documentation": 12,
+          "feature": 3,
+          "refactor": 1,
+          "testing": 16
+        },
+        "rust": {
+          "bug_fix": 4,
+          "build_tooling": 6,
+          "documentation": 4,
+          "feature": 8,
+          "refactor": 3,
+          "testing": 3
+        },
+        "typescript": {
+          "bug_fix": 8,
+          "build_tooling": 8,
+          "documentation": 9,
+          "feature": 10,
+          "refactor": 1,
+          "testing": 4
+        }
+      },
+      "languages_below_minimum": [],
+      "maximum_repository_share": 0.2121,
+      "repository_counts": {
+        "apache/dubbo": 13,
+        "apache/pinot": 56,
+        "elastic/elasticsearch": 4,
+        "excalidraw/excalidraw": 16,
+        "facebook/pyrefly": 3,
+        "kubernetes/kubernetes": 7,
+        "matplotlib/matplotlib": 20,
+        "nodejs/node": 19,
+        "nodejs/undici": 6,
+        "nushell/nushell": 16,
+        "prometheus/prometheus": 28,
+        "pytorch/ao": 10,
+        "pytorch/pytorch": 4,
+        "quarkusio/quarkus": 9,
+        "rust-lang/rust-clippy": 5,
+        "scikit-learn/scikit-learn": 23,
+        "storybookjs/storybook": 4,
+        "trinodb/trino": 7,
+        "vercel/next.js": 7,
+        "vitejs/vite": 7
+      },
+      "repository_with_inventory_count": 20,
+      "task_type_counts": {
+        "bug_fix": 54,
+        "build_tooling": 54,
+        "documentation": 57,
+        "feature": 47,
+        "refactor": 10,
+        "testing": 56
+      },
+      "task_types_below_minimum": [],
+      "total_count": 264,
+      "zero_combinations": []
+    }
+  },
+  "repository_summary": {
+    "archived_or_disabled_count": 0,
+    "healthy_count": 28,
+    "maintenance_inactive_count": 0,
+    "total_count": 28
+  },
+  "schema_version": "candidate_pool_report_v0.3",
+  "verification_freshness": {
+    "between_24_and_72_hours": 0,
+    "never_verified": 0,
+    "over_72_hours": 1464,
+    "within_24_hours": 0
+  },
+  "warning_counts": {
+    "eligible_linked_pr_not_checked": 0,
+    "empty_body": 17,
+    "linked_pr_not_checked": 853
+  }
+}

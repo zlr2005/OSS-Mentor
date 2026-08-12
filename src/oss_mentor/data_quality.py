@@ -168,8 +168,10 @@ def _is_valid_number(value: Any, lower: float, upper: float) -> bool:
 
 
 def _is_active(record: Mapping[str, Any]) -> bool:
-    return not _is_truthy_flag(record.get("is_archived")) and not _is_truthy_flag(
-        record.get("is_disabled")
+    return (
+        not _is_truthy_flag(record.get("is_archived"))
+        and not _is_truthy_flag(record.get("is_disabled"))
+        and str(record.get("maintenance_status") or "active") != "inactive"
     )
 
 

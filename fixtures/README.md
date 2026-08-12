@@ -22,12 +22,14 @@ python scripts/export_demo_fixture.py
 
 ## 使用
 
-先把固定快照复制到被 Git 忽略的运行目录，再通过 `--database` 指向副本。这样既不会覆盖本地完整数据库，也不会因网页反馈修改仓库中的固定快照：
+推荐使用初始化命令把固定快照复制到被 Git 忽略的运行目录。这样既不会覆盖本地完整数据库，也不会因网页反馈修改仓库中的固定快照：
 
 ```powershell
-Copy-Item fixtures/oss_mentor_demo.sqlite3 data/oss_mentor_demo.sqlite3
 $env:PYTHONPATH = "src"
+python -m oss_mentor init-demo --database data/oss_mentor_demo.sqlite3
+python -m oss_mentor doctor --database data/oss_mentor_demo.sqlite3
 python -m oss_mentor serve-api --database data/oss_mentor_demo.sqlite3
 ```
 
+如果目标数据库已经存在，`init-demo` 不会覆盖它。
 运行副本中的反馈仅供本地演示，不应作为需要长期保留的数据。

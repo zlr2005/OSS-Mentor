@@ -720,6 +720,13 @@ def _contains(text: str, patterns: tuple[str, ...]) -> bool:
     return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in patterns)
 
 
+def _matching_pattern(text: str, patterns: tuple[str, ...]) -> str | None:
+    for pattern in patterns:
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            return pattern
+    return None
+
+
 def _clamp(value: float, lower: float = 0.0, upper: float = 1.0) -> float:
     return min(max(value, lower), upper)
 

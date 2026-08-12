@@ -1,0 +1,233 @@
+{
+  "annotation_acceptance": {
+    "checks": {
+      "minimum_annotator_count": false,
+      "minimum_double_annotated_task_count": false,
+      "minimum_task_count": true,
+      "no_provisional_annotators": false
+    },
+    "passed": false,
+    "provisional_annotators": [
+      "codex_pseudo"
+    ],
+    "requirements": {
+      "minimum_annotator_count": 2,
+      "minimum_double_annotated_task_count": 10,
+      "minimum_task_count": 30
+    }
+  },
+  "annotation_summary": {
+    "agreement": {
+      "double_annotated_task_count": 0,
+      "large_disagreement_count": 0,
+      "large_disagreement_rate": 0.0
+    },
+    "annotator_count": 1,
+    "row_count": 33,
+    "task_count": 33
+  },
+  "candidate_count": 48,
+  "limitations": [
+    "The report uses manually annotated samples and does not train a model.",
+    "Small annotation sets can make diversity and precision metrics unstable.",
+    "Feedback events are summarized separately and are not used for automatic reranking."
+  ],
+  "metrics_by_version": {
+    "developer-task-match-v0.1": {
+      "basic_skill_coverage_rate": 0.875,
+      "critical_skill_mismatch_rate": 0.0,
+      "empty_recommendation_rate": 0.0,
+      "platform_mismatch_rate": 0.0,
+      "precision_at_10": 1.0,
+      "precision_at_5": 1.0,
+      "recommendation_count": 4,
+      "repository_diversity": 2,
+      "task_type_diversity": 1
+    },
+    "developer-task-match-v0.2": {
+      "basic_skill_coverage_rate": 0.875,
+      "critical_skill_mismatch_rate": 0.0,
+      "empty_recommendation_rate": 0.0,
+      "platform_mismatch_rate": 0.0,
+      "precision_at_10": 1.0,
+      "precision_at_5": 1.0,
+      "recommendation_count": 4,
+      "repository_diversity": 2,
+      "task_type_diversity": 1
+    }
+  },
+  "profile_key": "newcomer_python_linux",
+  "schema_version": "ranking_evaluation_v0.2",
+  "selected_match_version": "developer-task-match-v0.2",
+  "selected_top10": [
+    {
+      "annotation_fit": 2,
+      "html_url": "https://github.com/matplotlib/matplotlib/issues/8088",
+      "issue_number": 8088,
+      "match_score": 90.57,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "newcomer_label_required",
+        "v0.2_weighting"
+      ],
+      "repository": "matplotlib/matplotlib",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "documentation"
+        },
+        {
+          "developer_level": 1,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "Python"
+        }
+      ],
+      "task_candidate_id": 15,
+      "title": "rcParams for plt.axis('equal') not working?",
+      "track": "newcomer"
+    },
+    {
+      "annotation_fit": 3,
+      "html_url": "https://github.com/pytorch/ao/issues/3637",
+      "issue_number": 3637,
+      "match_score": 90.57,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "newcomer_label_required",
+        "v0.2_weighting"
+      ],
+      "repository": "pytorch/ao",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "documentation"
+        },
+        {
+          "developer_level": 1,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "Python"
+        }
+      ],
+      "task_candidate_id": 887,
+      "title": "Update documents addressing AQT workflow",
+      "track": "newcomer"
+    },
+    {
+      "annotation_fit": 3,
+      "html_url": "https://github.com/matplotlib/matplotlib/issues/17479",
+      "issue_number": 17479,
+      "match_score": 90.57,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "newcomer_label_required",
+        "v0.2_weighting"
+      ],
+      "repository": "matplotlib/matplotlib",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "documentation"
+        },
+        {
+          "developer_level": 1,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "Python"
+        }
+      ],
+      "task_candidate_id": 14,
+      "title": "Add thumbnails for tutorials/gallery where missing",
+      "track": "newcomer"
+    },
+    {
+      "annotation_fit": 3,
+      "html_url": "https://github.com/matplotlib/matplotlib/issues/31935",
+      "issue_number": 31935,
+      "match_score": 89.52,
+      "match_version": "developer-task-match-v0.2",
+      "maximum_skill_gap": 1,
+      "reasons": [
+        "skill_coverage=0.87",
+        "preferred_language",
+        "preferred_task_type",
+        "newcomer_label_required",
+        "v0.2_weighting"
+      ],
+      "repository": "matplotlib/matplotlib",
+      "skill_coverage": 0.875,
+      "skill_gaps": [
+        {
+          "developer_level": 0,
+          "gap": 1,
+          "importance": 0.6,
+          "required_level": 1,
+          "skill": "documentation"
+        },
+        {
+          "developer_level": 1,
+          "gap": 0,
+          "importance": 1.0,
+          "required_level": 1,
+          "skill": "Python"
+        }
+      ],
+      "task_candidate_id": 10,
+      "title": "[Doc]: examples/api directory?",
+      "track": "newcomer"
+    }
+  ],
+  "top10_changes": {
+    "added": [],
+    "moved": [
+      {
+        "from_rank": 2,
+        "issue_number": 17479,
+        "repository": "matplotlib/matplotlib",
+        "to_rank": 3
+      },
+      {
+        "from_rank": 3,
+        "issue_number": 3637,
+        "repository": "pytorch/ao",
+        "to_rank": 2
+      }
+    ],
+    "removed": []
+  },
+  "track": "newcomer",
+  "warnings": [],
+  "weight_change_rationale": [
+    "v0.2 raises the skill-coverage contribution to reduce critical skill misses.",
+    "v0.2 keeps explicit platform requirements as hard filters.",
+    "v0.2 applies repository-balanced top-k selection to reduce concentration."
+  ]
+}

@@ -12,9 +12,69 @@ from unittest.mock import patch
 
 from oss_mentor.cli import main
 from oss_mentor.collector.github_client import RateLimitExceeded
+from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
 class CliTests(unittest.TestCase):
+    def test_init_demo_seeds_candidates_and_doctor_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "demo.sqlite3"
+            init_output = io.StringIO()
+            with redirect_stdout(init_output):
+                result = main(["init-demo", "--database", str(database)])
+
+            self.assertEqual(0, result)
+            initialized = json.loads(init_output.getvalue())
+            self.assertTrue(initialized["seeded_from_fixture"])
+            self.assertGreater(initialized["candidate_count"], 0)
+            self.assertGreater(initialized["newcomer_signal_count"], 0)
+
+            doctor_output = io.StringIO()
+            with redirect_stdout(doctor_output):
+                result = main(
+                    [
+                        "doctor",
+                        "--database",
+                        str(database),
+                        "--port",
+                        "54321",
+                    ]
+                )
+            self.assertEqual(0, result)
+            self.assertEqual("ok", json.loads(doctor_output.getvalue())["overall"])
+
+    def test_doctor_fails_for_empty_candidate_database(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "empty.sqlite3"
+            SQLiteCandidateStore(
+                database,
+                root / "db" / "sqlite" / "001_mvp.sql",
+            ).initialize()
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = main(
+                    [
+                        "doctor",
+                        "--database",
+                        str(database),
+                        "--port",
+                        "54321",
+                    ]
+                )
+
+        self.assertEqual(1, result)
+        report = json.loads(output.getvalue())
+        self.assertEqual("issues_found", report["overall"])
+        self.assertEqual(
+            "error",
+            next(
+                item["status"]
+                for item in report["checks"]
+                if item["check"] == "candidate_count"
+            ),
+        )
+
     def test_wave_one_dry_run_has_no_network_requirement(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):
