@@ -1925,11 +1925,139 @@ class TaskFeatureTests(unittest.TestCase):
         self.assertIn("Docker", {item.skill_name for item in positive})
         self.assertNotIn("Docker", {item.skill_name for item in weak})
 
-    def test_skill_v02_bumps_task_feature_version_without_changing_difficulty_formula(self) -> None:
+    def test_skill_v021_jest_reproduction_context_is_not_requirement(self) -> None:
+        record = self._record(
+            title="Build workers ignore memory limits",
+            body_text=(
+                "The reproduction uses jest-worker's memory option, but no configuration "
+                "currently limits the application workers."
+            ),
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Jest", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["skill_name"] == "Jest"
+                and item["decision"] == "rejected_context_only"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_maven_snapshot_usage_is_context_only(self) -> None:
+        record = self._record(
+            title="Snapshot deployment status",
+            body_text=(
+                "To use the snapshots, add the following repository to your pom.xml file."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Maven", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_gradle_snapshot_usage_is_context_only(self) -> None:
+        record = self._record(
+            title="Snapshot deployment status",
+            body_text=(
+                "To use the snapshots, add the following repository to your Gradle project."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Gradle", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.gradle.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_maven_title_target_survives_body_command_context(self) -> None:
+        record = self._record(
+            title="Update Maven multi-module project configuration",
+            body_text="After changing the project, run mvn test to verify it.",
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Maven"].importance)
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_gradle_title_target_survives_body_command_context(self) -> None:
+        record = self._record(
+            title="Fix build.gradle configuration",
+            body_text="After the change, run Gradle build to verify it.",
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Gradle"].importance)
+
+    def test_skill_v021_docker_title_target_survives_reproduction_context(self) -> None:
+        record = self._record(
+            title="Update Docker image build configuration",
+            body_text="The bug was reproduced in Docker before the fix.",
+            labels=["build"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Docker"].importance)
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.docker.body.context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_maven_snapshot_direct_target_is_not_suppressed(self) -> None:
+        record = self._record(
+            title="Fix Maven plugin configuration for snapshot deployment",
+            body_text=(
+                "Update the Maven plugin configuration responsible for publishing snapshots."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Maven"].importance)
+
+    def test_skill_v021_rules_version_only_changes_skill_requirement_rules(self) -> None:
         features = extract_task_features(self._record(title="Fix local parser value"))
         self.assertEqual("task-features-v0.4", TASK_FEATURE_VERSION)
         self.assertEqual("task-features-v0.4", features.task_feature_version)
-        self.assertEqual("skill-requirements-v0.2", SKILL_REQUIREMENT_RULES_VERSION)
+        self.assertEqual("skill-requirements-v0.2.1", SKILL_REQUIREMENT_RULES_VERSION)
         self.assertEqual("difficulty-rules-v0.2.1", DIFFICULTY_FORMULA_VERSION)
         self.assertEqual("difficulty-rules-v0.2.1", self._difficulty(features)["formula_version"])
 

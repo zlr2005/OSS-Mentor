@@ -12,7 +12,7 @@ from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
 
 TASK_FEATURE_VERSION = "task-features-v0.4"
 DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2.1"
-SKILL_REQUIREMENT_RULES_VERSION = "skill-requirements-v0.2"
+SKILL_REQUIREMENT_RULES_VERSION = "skill-requirements-v0.2.1"
 PUBLIC_TASK_TYPES = frozenset(ALLOWED_TASK_TYPES)
 _TASK_TYPE_ACCEPTANCE_SCORE = 3.0
 _SOURCE_ORDER = {"label": 0, "title": 1, "body": 2, "derived": 3}
@@ -2905,8 +2905,10 @@ def _tool_positive_patterns(tool_key: str) -> tuple[tuple[str, int, float, str, 
     if tool_key == "jest":
         return (
             (
-                r"\bjest\b.{0,80}\b(?:open handles?|mock(?:agent|s?)?|fake timers?|runner|transform|watch mode|config(?:uration)?)\b|"
-                r"\b(?:open handles?|mock(?:agent|s?)?|fake timers?|runner|transform)\b.{0,80}\bjest\b",
+                r"\bjest\b.{0,80}\b(?:open handles?|mock(?:agent|s?)?|fake timers?|runner|transform|watch mode)\b|"
+                r"\b(?:open handles?|mock(?:agent|s?)?|fake timers?|runner|transform)\b.{0,80}\bjest\b|"
+                rf"\b{_SKILL_ACTION}\b.{{0,60}}\bjest\b.{{0,60}}\bconfig(?:uration)?\b|"
+                rf"\bjest\b.{{0,40}}\bconfig(?:uration)?\b.{{0,60}}\b{_SKILL_ACTION}\b",
                 1,
                 0.5,
                 "auxiliary",
@@ -2928,7 +2930,7 @@ def _tool_positive_patterns(tool_key: str) -> tuple[tuple[str, int, float, str, 
     if tool_key == "maven":
         return (
             (
-                rf"\b{_SKILL_ACTION}\b.{{0,80}}\b(?:multi-module maven|maven project|maven configuration|maven plugin|pom\.xml|maven getting started)\b|"
+                rf"\b{_SKILL_ACTION}\b.{{0,80}}\b(?:multi-module maven|maven multi-module project|maven project|maven configuration|maven plugin|pom\.xml|maven getting started)\b|"
                 r"\b(?:multi-module maven|maven project|maven configuration|maven plugin|pom\.xml|maven getting started)\b.{0,80}"
                 rf"\b(?:{_SKILL_ACTION}|configuration|setup)\b",
                 1,
@@ -2963,12 +2965,40 @@ def _tool_positive_patterns(tool_key: str) -> tuple[tuple[str, int, float, str, 
 def _tool_negative_pattern(tool_key: str) -> str:
     patterns = {
         "pytest": r"\b(?:run|running|install|installed|tested using)\s+pytest\b|\bpytest\s+--version\b",
-        "jest": r"\b(?:roadmap|dependency|dependencies)\b.{0,80}\bjest\b|\b(?:run|running)\s+jest\b",
+        "jest": (
+            r"\b(?:roadmap|dependency|dependencies|reproduction|reproducer)\b.{0,80}\bjest(?:-worker)?\b|"
+            r"\b(?:run|running)\s+jest\b"
+        ),
         "docker": r"\b(?:reproduced?|tested|running|runs?)\b.{0,70}\b(?:docker|container)\b|\bdocker\s+version\b|\bdocker\s+logs?\b",
         "maven": r"\bmvn\s+(?:test|verify|install)\b|\bmaven\s+version\b|\bsnapshot\b.{0,80}\bmaven\b",
         "gradle": r"\bgradle\s+(?:test|build|--version)\b|\bgradle\s+version\b|\bsnapshot\b.{0,80}\bgradle\b",
     }
     return patterns[tool_key]
+
+
+def _tool_body_usage_context_match(
+    tool_key: str, text: str, positive_match: re.Match[str]
+) -> re.Match[str] | None:
+    if tool_key == "maven":
+        artifact = r"(?:maven|mvn|pom\.xml)"
+    elif tool_key == "gradle":
+        artifact = r"(?:gradle|gradle project|build\.gradle|settings\.gradle|gradle\.properties)"
+    else:
+        return None
+
+    start = max(0, positive_match.start() - 120)
+    end = min(len(text), positive_match.end() + 120)
+    window = text[start:end]
+    patterns = (
+        rf"\b(?:to|how to)\s+(?:use|consume)\b.{{0,160}}\b{artifact}\b",
+        rf"\badd\s+the\s+following\s+repository\b.{{0,140}}\b{artifact}\b",
+        rf"\b(?:users?|you)\s+(?:can|may|should)\b.{{0,100}}\b(?:use|consume|add)\b.{{0,100}}\b{artifact}\b",
+    )
+    for pattern in patterns:
+        match = _first_rule_match(window, pattern)
+        if match is not None:
+            return match
+    return None
 
 
 def _collect_tool_signals(
@@ -2987,6 +3017,24 @@ def _collect_tool_signals(
                 match = _first_rule_match(text, pattern)
                 if match is None:
                     continue
+                if source == "body":
+                    usage_match = _tool_body_usage_context_match(tool_key, text, match)
+                    if usage_match is not None:
+                        _append_skill_signal(
+                            signals,
+                            skill_name=canonical_name,
+                            category="tool",
+                            role=None,
+                            source="body",
+                            rule_id=f"skill.tool.{tool_key}.body.usage_context_guard",
+                            matched_value=_matched_value(usage_match),
+                            strength="weak",
+                            reason="tool_artifact_is_part_of_usage_instructions_not_direct_task_target",
+                            decision="rejected_context_only",
+                            matching_facing=False,
+                        )
+                        positive_found = True
+                        continue
                 _append_skill_signal(
                     signals,
                     skill_name=canonical_name,
