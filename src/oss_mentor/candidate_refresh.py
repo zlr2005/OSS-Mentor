@@ -9,7 +9,7 @@ from oss_mentor.candidate_rules import evaluate_candidate
 from oss_mentor.candidate_sync import CandidateSynchronizer
 from oss_mentor.collector.config import RepositoryConfig
 from oss_mentor.collector.github_client import GitHubApiError, RateLimitExceeded
-from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.storage.candidates import CandidateStorage, as_candidate_storage
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,10 +30,10 @@ class CandidateRefresher:
     def __init__(
         self,
         synchronizer: CandidateSynchronizer,
-        store: SQLiteCandidateStore,
+        store: CandidateStorage,
     ) -> None:
         self.synchronizer = synchronizer
-        self.store = store
+        self.store = as_candidate_storage(store)
 
     def refresh(
         self,
@@ -60,17 +60,21 @@ class CandidateRefresher:
             except (GitHubApiError, OSError, ValueError) as exc:
                 errors.append(self._error("repository", repository.full_name, exc))
                 continue
-            with self.store.connect() as connection:
-                self.store.upsert_repository(
-                    connection,
-                    full_name=repository.full_name,
-                    ecosystems_last_synced_at=None,
-                    ecosystem=repository.ecosystem,
-                    primary_language=repository.primary_language,
+            self.store.save_repository_health(
+                repository={
+                    "full_name": repository.full_name,
+                    "ecosystems_last_synced_at": None,
+                    "ecosystem": repository.ecosystem,
+                    "primary_language": repository.primary_language,
                     **health,
-                )
+                },
+            )
             checked_names.append(repository.full_name)
-            if not health["is_archived"] and not health["is_disabled"]:
+            if (
+                not health["is_archived"]
+                and not health["is_disabled"]
+                and health.get("maintenance_status", "active") != "inactive"
+            ):
                 active_names.append(repository.full_name)
 
         candidates = self.store.stale_candidates(
@@ -114,13 +118,11 @@ class CandidateRefresher:
 
             if record.get("has_linked_open_pr") is not None:
                 timeline_checked_count += 1
-            with self.store.connect() as connection:
-                self.store.upsert_candidate(
-                    connection,
-                    repository_id=int(candidate["repository_id"]),
-                    record=record,
-                    eligibility=evaluate_candidate(record),
-                )
+            self.store.save_candidate(
+                repository_id=int(candidate["repository_id"]),
+                record=record,
+                eligibility=evaluate_candidate(record),
+            )
             refreshed_count += 1
 
         self.store.mark_repositories_refreshed(checked_names)
@@ -137,9 +139,19 @@ class CandidateRefresher:
 
     @staticmethod
     def _error(scope: str, target: str, exc: Exception) -> dict[str, Any]:
+        if isinstance(exc, RateLimitExceeded):
+            error = "GitHub rate limit exhausted"
+        elif isinstance(exc, GitHubApiError):
+            error = (
+                f"GitHub request failed with HTTP {exc.status_code}"
+                if exc.status_code
+                else "GitHub request failed"
+            )
+        else:
+            error = type(exc).__name__
         return {
             "scope": scope,
             "target": target,
             "error_type": type(exc).__name__,
-            "error": str(exc),
+            "error": error,
         }

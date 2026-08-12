@@ -148,6 +148,32 @@ class CandidateRefreshReportTests(unittest.TestCase):
         self.assertEqual(1, report["repository_summary"]["archived_or_disabled_count"])
         self.assertEqual(0, report["warning_counts"]["eligible_linked_pr_not_checked"])
 
+    def test_maintenance_inactive_repository_is_excluded_from_matching(self) -> None:
+        with self.store.connect() as connection:
+            connection.execute(
+                "UPDATE task_candidate SET task_feature_version = 'test'"
+            )
+            connection.execute(
+                """
+                UPDATE repository
+                SET maintenance_status = 'inactive',
+                    maintenance_reason = 'no_repository_push_within_180_days'
+                """
+            )
+
+        self.assertEqual([], self.store.matchable_candidates())
+        report = build_candidate_report(
+            self.store, now=datetime(2026, 7, 29, tzinfo=timezone.utc)
+        )
+        self.assertEqual(
+            1,
+            report["repository_summary"]["maintenance_inactive_count"],
+        )
+        self.assertEqual(
+            0,
+            report["candidate_summary"]["verified_eligible_count"],
+        )
+
     def test_report_exposes_language_and_task_inventory_for_both_tracks(self) -> None:
         with self.store.connect() as connection:
             connection.execute(
@@ -173,6 +199,37 @@ class CandidateRefreshReportTests(unittest.TestCase):
             self.assertNotIn("python:documentation", coverage["zero_combinations"])
         self.assertEqual(0, report["warning_counts"]["eligible_linked_pr_not_checked"])
 
+    def test_report_includes_sync_request_costs_and_failures(self) -> None:
+        report = build_candidate_report(
+            self.store,
+            now=datetime(2026, 7, 14, tzinfo=timezone.utc),
+            operation_reports={
+                "sync": {
+                    "status": "partial",
+                    "repository_count": 2,
+                    "successful_repository_count": 1,
+                    "failed_repository_count": 1,
+                    "github_request_count": 7,
+                    "ecosystems_request_count": 3,
+                    "repositories": [
+                        {"repository": "example/demo", "status": "completed"},
+                        {"repository": "example/fail", "status": "failed"},
+                    ],
+                    "errors": [
+                        {
+                            "repository": "example/fail",
+                            "error_type": "TimeoutError",
+                            "error": "timed out",
+                        }
+                    ],
+                }
+            },
+        )
+        operation = report["operation_summary"]["sync"]
+        self.assertEqual(7, operation["github_request_count"])
+        self.assertEqual(3, operation["ecosystems_request_count"])
+        self.assertEqual("example/fail", operation["errors"][0]["repository"])
+
     def test_empty_database_applies_every_sqlite_migration(self) -> None:
         with self.store.connect() as connection:
             migrations = {
@@ -191,10 +248,13 @@ class CandidateRefreshReportTests(unittest.TestCase):
                 "003_personalized_matching.sql",
                 "004_recommendation_feedback.sql",
                 "005_candidate_refresh.sql",
+                "006_repository_activity.sql",
+                "008_sync_runs.sql",
             },
             migrations,
         )
         self.assertIn("last_candidate_refresh_at", columns)
+        self.assertIn("maintenance_status", columns)
 
 
 if __name__ == "__main__":

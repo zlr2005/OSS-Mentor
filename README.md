@@ -21,6 +21,9 @@ OSS-Mentor 是一个面向开源贡献者的双通道导学系统：
 - [候选池聚合报告 v0.2](docs/candidate_pool_report_v0.2.md)
 - [推荐库存扩充与选项保障 v0.3](docs/recommendation_inventory_expansion_v0.3.md)
 - [候选池聚合报告 v0.3](docs/candidate_pool_report_v0.3.md)
+- [数据质量报告 v0.2](docs/data_quality_report_v0.2.md)
+- [进阶通道离线评估 v0.2](docs/ranking_evaluation_v0.2.md)
+- [新手通道离线评估 v0.2](docs/ranking_evaluation_newcomer_v0.2.md)
 - [任务特征与双通道排序 v0.1](docs/task_features_and_ranking_v0.1.md)
 - [开发者画像与个性化匹配 v0.1](docs/personalized_matching_v0.1.md)
 - [本地推荐 API v0.1](docs/local_api_v0.1.md)
@@ -138,6 +141,19 @@ Ecosyste.ms 用于候选发现和历史元数据，GitHub API 用于补齐数字
 
 ## SQLite 候选池
 
+在新电脑上可以直接从仓库内的脱敏 fixture 初始化可演示数据库，并检查环境：
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m oss_mentor init-demo
+python -m oss_mentor doctor
+python -m oss_mentor serve-api
+```
+
+`init-demo` 只在目标数据库尚不存在时复制 fixture，不会覆盖已有数据库。
+初始化后包含脱敏候选任务和匿名演示画像，无需访问 GitHub。`doctor` 会检查
+Python、迁移、画像、候选库存、端口和静态资源；缺少可推荐任务时返回非零状态。
+
 同步少量候选并通过 GitHub 当前状态复核：
 
 ```powershell
@@ -160,8 +176,13 @@ python -m oss_mentor refresh-candidates `
   --allow-network
 
 python -m oss_mentor candidate-report `
+  --sync-report data/reports/all_enabled_sync.json `
+  --refresh-report data/reports/candidate_refresh_run.json `
   --output data/reports/candidate_pool_v0.3.json
 ```
+
+仓库超过 180 天没有推送时会标记为维护不活跃并退出匹配池；状态与归档、
+禁用分开保存。候选池报告可同时汇总同步/刷新的 GitHub 请求量、失败仓库和原因。
 
 查看当前可推荐候选：
 

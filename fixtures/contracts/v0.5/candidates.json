@@ -1,0 +1,216 @@
+{
+  "schema_version": "candidate_contract_v0.5",
+  "generated_at": "2026-07-29T12:30:00Z",
+  "candidates": [
+    {
+      "task_candidate_id": 101,
+      "repository_full_name": "example/python-tool",
+      "issue_number": 41,
+      "title": "Add tests for configuration parsing",
+      "body_text": "Add table-driven tests for invalid configuration values.",
+      "html_url": "https://github.com/example/python-tool/issues/41",
+      "service_tracks": ["newcomer", "growth"],
+      "primary_language": "Python",
+      "task_types": ["testing"],
+      "difficulty": {"code": 1, "setup": 1},
+      "operating_systems": ["windows", "macos", "linux"],
+      "skill_requirements": [
+        {
+          "skill_name": "pytest",
+          "minimum_level": 1,
+          "importance": 0.9,
+          "requirement_source": "fixture_evidence"
+        }
+      ],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.9},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": true,
+      "availability": "available",
+      "availability_reasons": [],
+      "verified_at": "2026-07-29T12:30:00Z"
+    },
+    {
+      "task_candidate_id": 102,
+      "repository_full_name": "example/docs-site",
+      "issue_number": 18,
+      "title": "Clarify the local setup guide",
+      "body_text": "Document the supported runtime versions and setup command.",
+      "html_url": "https://github.com/example/docs-site/issues/18",
+      "service_tracks": ["newcomer"],
+      "primary_language": "JavaScript",
+      "task_types": ["documentation"],
+      "difficulty": {"code": 1, "setup": 1},
+      "operating_systems": ["windows", "macos", "linux"],
+      "skill_requirements": [
+        {
+          "skill_name": "technical-writing",
+          "minimum_level": 1,
+          "importance": 0.8,
+          "requirement_source": "fixture_evidence"
+        }
+      ],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.9},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": true,
+      "availability": "available",
+      "availability_reasons": [],
+      "verified_at": "2026-07-29T12:25:00Z"
+    },
+    {
+      "task_candidate_id": 103,
+      "repository_full_name": "example/python-tool",
+      "issue_number": 37,
+      "title": "Closed fixture task",
+      "body_text": "This task is intentionally unavailable in the fixture.",
+      "html_url": "https://github.com/example/python-tool/issues/37",
+      "service_tracks": [],
+      "primary_language": "Python",
+      "task_types": ["bug_fix"],
+      "difficulty": {"code": 1, "setup": 1},
+      "operating_systems": ["linux"],
+      "skill_requirements": [],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.8},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": false,
+      "availability": "closed",
+      "availability_reasons": ["issue_closed"],
+      "verified_at": "2026-07-29T12:20:00Z"
+    },
+    {
+      "task_candidate_id": 104,
+      "repository_full_name": "example/go-service",
+      "issue_number": 9,
+      "title": "Assigned fixture task",
+      "body_text": "This task already has an assignee.",
+      "html_url": "https://github.com/example/go-service/issues/9",
+      "service_tracks": [],
+      "primary_language": "Go",
+      "task_types": ["feature"],
+      "difficulty": {"code": 2, "setup": 2},
+      "operating_systems": ["linux", "macos"],
+      "skill_requirements": [
+        {
+          "skill_name": "go",
+          "minimum_level": 2,
+          "importance": 1.0,
+          "requirement_source": "fixture_evidence"
+        }
+      ],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.85},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": false,
+      "availability": "assigned",
+      "availability_reasons": ["issue_assigned"],
+      "verified_at": "2026-07-29T12:15:00Z"
+    },
+    {
+      "task_candidate_id": 105,
+      "repository_full_name": "example/rust-cli",
+      "issue_number": 23,
+      "title": "Fixture task with an open pull request",
+      "body_text": "An open pull request already addresses this task.",
+      "html_url": "https://github.com/example/rust-cli/issues/23",
+      "service_tracks": [],
+      "primary_language": "Rust",
+      "task_types": ["refactor"],
+      "difficulty": {"code": 2, "setup": 2},
+      "operating_systems": ["linux", "macos"],
+      "skill_requirements": [
+        {
+          "skill_name": "rust",
+          "minimum_level": 2,
+          "importance": 1.0,
+          "requirement_source": "fixture_evidence"
+        }
+      ],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.85},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": false,
+      "availability": "linked_open_pr",
+      "availability_reasons": ["linked_open_pr"],
+      "verified_at": "2026-07-29T12:10:00Z"
+    },
+    {
+      "task_candidate_id": 106,
+      "repository_full_name": "example/archived-project",
+      "issue_number": 5,
+      "title": "Task in an inactive repository",
+      "body_text": "The repository is archived in this contract example.",
+      "html_url": "https://github.com/example/archived-project/issues/5",
+      "service_tracks": [],
+      "primary_language": "Java",
+      "task_types": ["build_tooling"],
+      "difficulty": {"code": 2, "setup": 3},
+      "operating_systems": ["linux"],
+      "skill_requirements": [
+        {
+          "skill_name": "gradle",
+          "minimum_level": 2,
+          "importance": 0.9,
+          "requirement_source": "fixture_evidence"
+        }
+      ],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.8},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": true,
+      "availability": "repository_inactive",
+      "availability_reasons": ["repository_inactive"],
+      "verified_at": "2026-07-29T12:05:00Z"
+    },
+    {
+      "task_candidate_id": 107,
+      "repository_full_name": "example/python-tool",
+      "issue_number": 29,
+      "title": "Stale fixture task",
+      "body_text": "This task must be refreshed before recommendation.",
+      "html_url": "https://github.com/example/python-tool/issues/29",
+      "service_tracks": [],
+      "primary_language": "Python",
+      "task_types": ["bug_fix"],
+      "difficulty": {"code": 1, "setup": 1},
+      "operating_systems": ["windows", "macos", "linux"],
+      "skill_requirements": [
+        {
+          "skill_name": "python",
+          "minimum_level": 1,
+          "importance": 1.0,
+          "requirement_source": "fixture_evidence"
+        }
+      ],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.8},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": false,
+      "availability": "temporarily_unverified",
+      "availability_reasons": ["verification_older_than_limit"],
+      "verified_at": "2026-07-27T08:00:00Z"
+    },
+    {
+      "task_candidate_id": 108,
+      "repository_full_name": "example/docs-site",
+      "issue_number": 12,
+      "title": "Locked fixture task",
+      "body_text": "This task is locked and cannot receive new discussion.",
+      "html_url": "https://github.com/example/docs-site/issues/12",
+      "service_tracks": [],
+      "primary_language": "JavaScript",
+      "task_types": ["documentation"],
+      "difficulty": {"code": 1, "setup": 1},
+      "operating_systems": ["windows", "macos", "linux"],
+      "skill_requirements": [],
+      "feature_evidence": {"source": "contract_fixture", "confidence": 0.8},
+      "missing_feature_reasons": [],
+      "task_feature_version": "task-features-v0.3",
+      "newcomer_label_signal": false,
+      "availability": "locked",
+      "availability_reasons": ["issue_locked"],
+      "verified_at": "2026-07-29T12:00:00Z"
+    }
+  ]
+}
