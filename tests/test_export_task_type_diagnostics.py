@@ -55,39 +55,6 @@ class TaskFeatureTests(unittest.TestCase):
         self.assertGreater(features.newcomer_score, 70)
         self.assertEqual(TASK_FEATURE_VERSION, features.task_feature_version)
 
-    def test_real_world_feature_and_bug_phrases_are_classified_with_evidence(
-        self,
-    ) -> None:
-        feature = extract_task_features(
-            {
-                "title": "Allow batch based metrics calculation",
-                "body_text": "",
-                "labels": ["kind/feature", "help wanted"],
-                "comment_count": 0,
-                "candidate_eligibility": "eligible",
-            }
-        )
-        bug = extract_task_features(
-            {
-                "title": "Export dialog doesn't respect iOS safe area",
-                "body_text": "",
-                "labels": ["good first issue"],
-                "comment_count": 0,
-                "candidate_eligibility": "eligible",
-            }
-        )
-
-        self.assertIn("feature", feature.task_types)
-        self.assertIn("bug_fix", bug.task_types)
-        self.assertEqual(
-            "label",
-            feature.feature_evidence["task_type_evidence"]["feature"][0]["source"],
-        )
-        self.assertEqual(
-            "title",
-            bug.feature_evidence["task_type_evidence"]["bug_fix"][0]["source"],
-        )
-
     def test_ineligible_candidate_gets_zero_track_scores(self) -> None:
         features = extract_task_features(
             self._record(
@@ -628,6 +595,276 @@ class TaskFeatureTests(unittest.TestCase):
             )
         )
         self.assertEqual(("other",), features.task_types)
+
+    def test_label_matching_uses_exact_aliases_not_arbitrary_tokens(self) -> None:
+        negative_cases = (
+            ("Bug in feature selection", ["module:feature_selection"], "feature"),
+            ("Neutral test runner task", ["test_runner"], "testing"),
+            ("Neutral test runner task", ["area:test_runner"], "testing"),
+            ("Neutral renderer task", ["component:documentation-renderer"], "documentation"),
+            ("Neutral feature store task", ["feature_store"], "feature"),
+        )
+        for title, labels, forbidden in negative_cases:
+            with self.subTest(labels=labels):
+                features = extract_task_features(
+                    self._record(title=title, labels=labels)
+                )
+                self.assertNotIn(forbidden, features.task_types)
+                self.assertFalse(
+                    any(
+                        item["source"] == "label"
+                        and item["task_type"] == forbidden
+                        for item in features.feature_evidence[
+                            "rejected_task_type_evidence"
+                        ]
+                    )
+                )
+
+        positive_cases = {
+            "kind/feature": "feature",
+            "type/enhancement": "feature",
+            "type/test": "testing",
+            "kind/cleanup": "refactor",
+            "type: docs": "documentation",
+            "type:Cleanup/Optimisation": "refactor",
+            "category:enhancement": "feature",
+            "category:deprecation": "refactor",
+            "bug: upstream": "bug_fix",
+            "feat: css": "feature",
+        }
+        for label, expected in positive_cases.items():
+            with self.subTest(label=label):
+                features = extract_task_features(
+                    self._record(title="Neutral task", labels=[label])
+                )
+                self.assertEqual((expected,), features.task_types)
+                self.assertGreaterEqual(
+                    features.feature_evidence["task_type_scores"][expected], 3.0
+                )
+                self.assertEqual(
+                    "label",
+                    features.feature_evidence["task_type_evidence"][expected][0][
+                        "source"
+                    ],
+                )
+
+    def test_explicit_testing_label_survives_failure_context(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title="E2E tests are broken because route state is lost",
+                labels=["type/test"],
+            )
+        )
+        self.assertEqual(("bug_fix", "testing"), features.task_types)
+        self.assertTrue(
+            any(
+                item["source"] == "label"
+                for item in features.feature_evidence["task_type_evidence"][
+                    "testing"
+                ]
+            )
+        )
+
+    def test_test_context_inside_application_regression_is_not_testing(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title=(
+                    "[cacheComponents] Route preservation causes significant "
+                    "breakage in application logic, UI behavior and E2E tests"
+                )
+            )
+        )
+        self.assertEqual(("bug_fix",), features.task_types)
+        self.assertFalse(features.feature_evidence["auxiliary_signals"]["performance"])
+        self.assertGreaterEqual(
+            features.feature_evidence["task_type_scores"]["bug_fix"], 3.0
+        )
+        self.assertTrue(
+            any(
+                item["task_type"] == "testing"
+                and item["reason"]
+                == "suppressed_test_context_inside_bug_report"
+                for item in features.feature_evidence[
+                    "rejected_task_type_evidence"
+                ]
+            )
+        )
+
+        module_label = extract_task_features(
+            self._record(
+                title=(
+                    "test_runner: do not read from process.argv and process.cwd()"
+                ),
+                labels=["test_runner"],
+            )
+        )
+        self.assertEqual(("bug_fix",), module_label.task_types)
+        self.assertNotIn("testing", module_label.task_types)
+
+        failing_tests = extract_task_features(
+            self._record(title="E2E tests are failing after route state is lost")
+        )
+        self.assertEqual(("bug_fix",), failing_tests.task_types)
+
+    def test_specific_task_intent_suppresses_broad_body_feature_verbs(self) -> None:
+        cases = (
+            (
+                self._record(
+                    title="[mxfp8 training] Add mxfp8 to FSDP and TP tests",
+                    body_text="We need to add mxfp8 coverage for these tests.",
+                ),
+                ("testing",),
+                False,
+            ),
+            (
+                self._record(
+                    title="Iceberg connector produces more splits than expected",
+                    body_text=(
+                        "This is a performance regression. We should enable the "
+                        "old split planning path."
+                    ),
+                ),
+                ("bug_fix",),
+                True,
+            ),
+            (
+                self._record(
+                    title="More details about the classification method",
+                    body_text=(
+                        "It would be nice to have more explanation in the "
+                        "documentation."
+                    ),
+                    labels=["documentation"],
+                ),
+                ("documentation",),
+                False,
+            ),
+            (
+                self._record(
+                    title="Bug: old route behavior is broken",
+                    body_text="We should enable the old behavior again.",
+                ),
+                ("bug_fix",),
+                False,
+            ),
+        )
+        for record, expected, performance_expected in cases:
+            with self.subTest(title=record["title"]):
+                features = extract_task_features(record)
+                self.assertEqual(expected, features.task_types)
+                self.assertEqual(
+                    performance_expected,
+                    bool(
+                        features.feature_evidence["auxiliary_signals"][
+                            "performance"
+                        ]
+                    ),
+                )
+                self.assertNotIn("feature", features.task_types)
+                self.assertTrue(
+                    any(
+                        item["task_type"] == "feature"
+                        and item["reason"]
+                        == "suppressed_by_specific_task_intent"
+                        for item in features.feature_evidence[
+                            "rejected_task_type_evidence"
+                        ]
+                    )
+                    or not any(
+                        item["task_type"] == "feature"
+                        for item in features.feature_evidence[
+                            "rejected_task_type_evidence"
+                        ]
+                    )
+                )
+
+    def test_passive_missing_capability_is_feature_but_regression_is_bug(self) -> None:
+        absent = extract_task_features(
+            self._record(title="Exporting SVD to ONNX is not supported")
+        )
+        no_longer = extract_task_features(
+            self._record(title="SVD export is no longer supported")
+        )
+        previously = extract_task_features(
+            self._record(title="SVD export previously worked")
+        )
+
+        self.assertEqual(("feature",), absent.task_types)
+        self.assertGreaterEqual(
+            absent.feature_evidence["task_type_scores"]["feature"], 3.0
+        )
+        self.assertTrue(
+            any(
+                item["rule_id"] == "feature.title.missing_capability"
+                for item in absent.feature_evidence["task_type_evidence"][
+                    "feature"
+                ]
+            )
+        )
+        self.assertEqual(("bug_fix",), no_longer.task_types)
+        self.assertEqual(("bug_fix",), previously.task_types)
+        self.assertNotIn("feature", no_longer.task_types)
+        self.assertNotIn("feature", previously.task_types)
+
+    def test_build_failure_keeps_bug_build_and_performance_intents(self) -> None:
+        features = extract_task_features(
+            self._record(
+                title=(
+                    "next build workers strip the memory option and the process "
+                    "is killed by OOM"
+                ),
+                labels=["performance"],
+            )
+        )
+        self.assertEqual(("bug_fix", "build_tooling"), features.task_types)
+        self.assertTrue(features.feature_evidence["auxiliary_signals"]["performance"])
+        for task_type in features.task_types:
+            self.assertGreaterEqual(
+                features.feature_evidence["task_type_scores"][task_type], 3.0
+            )
+            self.assertTrue(
+                features.feature_evidence["task_type_evidence"][task_type]
+            )
+        self.assertNotIn("feature", features.task_types)
+        self.assertNotIn("testing", features.task_types)
+
+    def test_low_bit_distributed_capability_is_feature_with_performance(self) -> None:
+        capability = extract_task_features(
+            self._record(
+                title="Low-bit distributed all-gather capability",
+                body_text=(
+                    "Add quantized communication to reduce communication cost "
+                    "and runtime overhead."
+                ),
+            )
+        )
+        roadmap = extract_task_features(
+            self._record(
+                title="Roadmap for low-bit distributed training",
+                body_text="Discuss future quantized communication performance.",
+            )
+        )
+
+        self.assertEqual(("feature",), capability.task_types)
+        self.assertTrue(
+            capability.feature_evidence["auxiliary_signals"]["performance"]
+        )
+        self.assertGreaterEqual(
+            capability.feature_evidence["task_type_scores"]["feature"], 3.0
+        )
+        self.assertTrue(
+            any(
+                item["rule_id"]
+                == "feature.title.distributed_performance_capability"
+                for item in capability.feature_evidence["task_type_evidence"][
+                    "feature"
+                ]
+            )
+        )
+        self.assertEqual(("other",), roadmap.task_types)
+        self.assertFalse(
+            roadmap.feature_evidence["task_type_evidence"].get("feature")
+        )
 
     def test_long_rfc_does_not_overclassify_incidental_sections(self) -> None:
         features = extract_task_features(
