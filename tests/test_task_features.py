@@ -6,6 +6,7 @@ import unittest
 from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
 from oss_mentor.task_features import (
     DIFFICULTY_FORMULA_VERSION,
+    SKILL_REQUIREMENT_RULES_VERSION,
     TASK_FEATURE_VERSION,
     extract_task_features,
     infer_skill_requirements,
@@ -1639,10 +1640,499 @@ class TaskFeatureTests(unittest.TestCase):
         self.assertEqual(2, features.estimated_collaboration_difficulty)
         self.assertEqual("one_day", features.estimated_effort_bucket)
 
-    def test_v021_formula_version_changes_without_task_feature_version_change(self) -> None:
+
+    def test_skill_v02_documentation_only_downgrades_repository_language(self) -> None:
+        record = self._record(
+            title="Update documentation wording",
+            body_text="Correct a typo in the README.",
+            labels=["documentation"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(("documentation",), features.task_types)
+        self.assertEqual(0, features.estimated_code_difficulty)
+        self.assertEqual(1, requirements["Java"].minimum_level)
+        self.assertEqual(0.3, requirements["Java"].importance)
+        self.assertEqual(
+            "repository_primary_language", requirements["Java"].requirement_source
+        )
+
+    def test_skill_v02_mixed_documentation_task_keeps_repository_language_core(self) -> None:
+        record = self._record(
+            title="Update Maven documentation and build notes",
+            body_text="Document the current build configuration.",
+            labels=["documentation", "dependencies"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertIn("documentation", features.task_types)
+        self.assertIn("build_tooling", features.task_types)
+        self.assertEqual(1.0, requirements["Java"].importance)
+
+    def test_skill_v02_reporter_linux_system_info_is_not_platform_requirement(self) -> None:
+        record = self._record(
+            title="Parser returns wrong value",
+            body_text="System Info: Linux\nThe parser returns the wrong value.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn(
+            "platform:linux", {item.skill_name for item in requirements}
+        )
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.platform.body.reporter_environment"
+                and item["skill_name"] == "platform:linux"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v02_reporter_macos_environment_is_not_platform_requirement(self) -> None:
+        record = self._record(
+            title="Unexpected parser output",
+            body_text="OS: macOS\nObserved output differs from expected output.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn(
+            "platform:macos", {item.skill_name for item in requirements}
+        )
+
+    def test_skill_v02_reproduced_on_linux_is_not_platform_requirement(self) -> None:
+        record = self._record(
+            title="Parser crashes for empty input",
+            body_text="I reproduced this on Linux using the minimal example.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn(
+            "platform:linux", {item.skill_name for item in requirements}
+        )
+
+    def test_skill_v02_only_on_windows_is_medium_platform_requirement(self) -> None:
+        record = self._record(
+            title="Crash only on Windows",
+            body_text="Other platforms are not affected.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(1, requirements["platform:windows"].minimum_level)
+        self.assertEqual(0.7, requirements["platform:windows"].importance)
+
+    def test_skill_v02_windows_specific_implementation_is_hard_platform_requirement(self) -> None:
+        record = self._record(
+            title="Fix Windows-specific implementation",
+            body_text="The path handling code needs a platform-specific fix.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(1.0, requirements["platform:windows"].importance)
+
+    def test_skill_v02_must_verify_macos_is_hard_platform_requirement(self) -> None:
+        record = self._record(
+            title="Fix native backend validation",
+            body_text="The fix must verify on macOS before completion.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(1.0, requirements["platform:macos"].importance)
+
+    def test_skill_v02_multi_platform_environment_does_not_stack_requirements(self) -> None:
+        record = self._record(
+            title="Unexpected parser output",
+            body_text="System Info: Linux / Windows / macOS\nThe output is wrong.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertFalse(
+            {item.skill_name for item in requirements}.intersection(
+                {"platform:linux", "platform:windows", "platform:macos"}
+            )
+        )
+
+    def test_skill_v02_pytest_configuration_is_core_tool_requirement(self) -> None:
+        record = self._record(
+            title="Fix pytest fixture collection from pytest.ini",
+            body_text="Update the pytest configuration so fixture collection is stable.",
+            labels=["testing"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(2, requirements["pytest"].minimum_level)
+        self.assertEqual(0.7, requirements["pytest"].importance)
+
+    def test_skill_v02_run_pytest_is_context_only(self) -> None:
+        record = self._record(
+            title="Parser regression after empty input",
+            body_text="Run pytest tests/test_parser.py to reproduce the failure.",
+            labels=["bug", "testing"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("pytest", {item.skill_name for item in requirements})
+
+    def test_skill_v02_jest_specific_behavior_is_auxiliary_requirement(self) -> None:
+        record = self._record(
+            title="Open handles detected in Jest when using MockAgent",
+            body_text="The Jest runner reports an open handle after this test.",
+            labels=["testing"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(1, requirements["Jest"].minimum_level)
+        self.assertEqual(0.5, requirements["Jest"].importance)
+
+    def test_skill_v02_jest_roadmap_mention_is_context_only(self) -> None:
+        record = self._record(
+            title="Testing roadmap",
+            body_text="Roadmap options include Jest among several future test tools.",
+            labels=["testing"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Jest", {item.skill_name for item in requirements})
+
+    def test_skill_v02_docker_image_target_is_core_tool_requirement(self) -> None:
+        record = self._record(
+            title="Add a linter for Docker images missing from docker-builds.yml",
+            body_text="Update the Docker image build configuration and add the lint check.",
+            labels=["build"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(1, requirements["Docker"].minimum_level)
+        self.assertEqual(0.7, requirements["Docker"].importance)
+
+    def test_skill_v02_docker_reproduction_environment_is_context_only(self) -> None:
+        record = self._record(
+            title="Development server runs out of memory",
+            body_text="I reproduced this in Docker. Docker version 27.0.1.",
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Docker", {item.skill_name for item in requirements})
+
+    def test_skill_v02_maven_project_is_core_tool_requirement(self) -> None:
+        record = self._record(
+            title="Document how to create a multi-module Maven project",
+            body_text="Update the getting started guide for the Maven project structure.",
+            labels=["documentation"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Maven"].importance)
+
+    def test_skill_v02_maven_version_is_context_only(self) -> None:
+        record = self._record(
+            title="Unexpected build failure",
+            body_text="Maven version: 3.9.8. The failure occurs after checkout.",
+            labels=["bug"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Maven", {item.skill_name for item in requirements})
+
+    def test_skill_v02_gradle_target_is_core_and_maven_comparison_is_auxiliary(self) -> None:
+        record = self._record(
+            title="Separate Gradle getting started from the Maven one",
+            body_text="Update the Gradle getting started documentation independently.",
+            labels=["documentation"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Gradle"].importance)
+        self.assertEqual(0.5, requirements["Maven"].importance)
+
+    def test_skill_v02_gradle_version_context_is_not_requirement(self) -> None:
+        record = self._record(
+            title="Unexpected dependency resolution failure",
+            body_text="Gradle version: 8.7. The snapshot build fails after checkout.",
+            labels=["bug"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Gradle", {item.skill_name for item in requirements})
+
+    def test_skill_v02_controlled_tool_label_can_add_auxiliary_requirement(self) -> None:
+        record = self._record(
+            title="Improve image validation",
+            body_text="The validation behavior should be updated.",
+            labels=["tool:docker"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.5, requirements["Docker"].importance)
+
+    def test_skill_v02_multi_source_tool_evidence_merges_deterministically(self) -> None:
+        record = self._record(
+            title="Update Docker image build configuration",
+            body_text="Modify the Docker build configuration used by the image linter.",
+            labels=["tool:docker"],
+        )
+        first = extract_task_features(record)
+        second = extract_task_features(record)
+        requirements = infer_skill_requirements(record, first)
+        docker = [item for item in requirements if item.skill_name == "Docker"]
+        self.assertEqual(1, len(docker))
+        self.assertEqual(0.7, docker[0].importance)
+        self.assertEqual(first.feature_evidence, second.feature_evidence)
+        evidence = first.feature_evidence["skill_requirement_evidence"]["skills"]["Docker"]
+        self.assertEqual({"title", "label", "body"}, {item["source"] for item in evidence["evidence"]})
+
+    def test_skill_v02_evidence_contract_and_requirement_are_consistent(self) -> None:
+        record = self._record(
+            title="Fix pytest fixture collection from pytest.ini",
+            body_text="Update pytest configuration for fixture collection.",
+            labels=["testing"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        evidence = features.feature_evidence["skill_requirement_evidence"]
+        self.assertEqual(SKILL_REQUIREMENT_RULES_VERSION, evidence["rules_version"])
+        summary = evidence["skills"]["pytest"]
+        self.assertEqual(requirements["pytest"].minimum_level, summary["minimum_level"])
+        self.assertEqual(requirements["pytest"].importance, summary["importance"])
+        self.assertEqual(
+            requirements["pytest"].requirement_source, summary["requirement_source"]
+        )
+        for item in summary["evidence"]:
+            self.assertTrue(
+                {"source", "rule_id", "matched_value", "normalized_value", "strength", "reason"}
+                <= set(item)
+            )
+
+    def test_skill_v02_missing_body_is_conservative_but_strong_title_still_works(self) -> None:
+        positive_record = self._record(
+            title="Update Docker image build configuration",
+            body_text="",
+            labels=[],
+        )
+        weak_record = self._record(
+            title="Improve validation",
+            body_text="",
+            labels=["docker"],
+        )
+        positive_features = extract_task_features(positive_record)
+        weak_features = extract_task_features(weak_record)
+        positive = infer_skill_requirements(positive_record, positive_features)
+        weak = infer_skill_requirements(weak_record, weak_features)
+        self.assertIn("Docker", {item.skill_name for item in positive})
+        self.assertNotIn("Docker", {item.skill_name for item in weak})
+
+    def test_skill_v021_jest_reproduction_context_is_not_requirement(self) -> None:
+        record = self._record(
+            title="Build workers ignore memory limits",
+            body_text=(
+                "The reproduction uses jest-worker's memory option, but no configuration "
+                "currently limits the application workers."
+            ),
+            labels=["bug"],
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Jest", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["skill_name"] == "Jest"
+                and item["decision"] == "rejected_context_only"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_maven_snapshot_usage_is_context_only(self) -> None:
+        record = self._record(
+            title="Snapshot deployment status",
+            body_text=(
+                "To use the snapshots, add the following repository to your pom.xml file."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Maven", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_gradle_snapshot_usage_is_context_only(self) -> None:
+        record = self._record(
+            title="Snapshot deployment status",
+            body_text=(
+                "To use the snapshots, add the following repository to your Gradle project."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Gradle", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.gradle.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_maven_title_target_survives_body_command_context(self) -> None:
+        record = self._record(
+            title="Update Maven multi-module project configuration",
+            body_text="After changing the project, run mvn test to verify it.",
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Maven"].importance)
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_gradle_title_target_survives_body_command_context(self) -> None:
+        record = self._record(
+            title="Fix build.gradle configuration",
+            body_text="After the change, run Gradle build to verify it.",
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Gradle"].importance)
+
+    def test_skill_v021_docker_title_target_survives_reproduction_context(self) -> None:
+        record = self._record(
+            title="Update Docker image build configuration",
+            body_text="The bug was reproduced in Docker before the fix.",
+            labels=["build"],
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Docker"].importance)
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.docker.body.context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v021_maven_snapshot_direct_target_is_not_suppressed(self) -> None:
+        record = self._record(
+            title="Fix Maven plugin configuration for snapshot deployment",
+            body_text=(
+                "Update the Maven plugin configuration responsible for publishing snapshots."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Maven"].importance)
+
+    def test_skill_v022_maven_alternative_storage_location_is_context_only(self) -> None:
+        record = self._record(
+            title="Configure all container image names in one place",
+            body_text=(
+                "Configure all image names in one place, being it pom.xml or a property file."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = infer_skill_requirements(record, features)
+        self.assertNotIn("Maven", {item.skill_name for item in requirements})
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v022_maven_title_target_survives_alternative_storage_context(self) -> None:
+        record = self._record(
+            title="Update Maven project configuration in pom.xml",
+            body_text=(
+                "The related image setting may live either in pom.xml or a property file."
+            ),
+            labels=["build"],
+            primary_language="Java",
+        )
+        features = extract_task_features(record)
+        requirements = {
+            item.skill_name: item for item in infer_skill_requirements(record, features)
+        }
+        self.assertEqual(0.7, requirements["Maven"].importance)
+        rejected = features.feature_evidence["skill_requirement_evidence"]["rejected"]
+        self.assertTrue(
+            any(
+                item["rule_id"] == "skill.tool.maven.body.usage_context_guard"
+                for item in rejected
+            )
+        )
+
+    def test_skill_v022_rules_version_only_changes_skill_requirement_rules(self) -> None:
         features = extract_task_features(self._record(title="Fix local parser value"))
-        self.assertEqual("task-features-v0.3", TASK_FEATURE_VERSION)
-        self.assertEqual("task-features-v0.3", features.task_feature_version)
+        self.assertEqual("task-features-v0.4", TASK_FEATURE_VERSION)
+        self.assertEqual("task-features-v0.4", features.task_feature_version)
+        self.assertEqual("skill-requirements-v0.2.2", SKILL_REQUIREMENT_RULES_VERSION)
         self.assertEqual("difficulty-rules-v0.2.1", DIFFICULTY_FORMULA_VERSION)
         self.assertEqual("difficulty-rules-v0.2.1", self._difficulty(features)["formula_version"])
 

@@ -56,6 +56,23 @@ class MatchingTests(unittest.TestCase):
         result = match_candidate(profile(operating_systems=["linux"]), task())
         self.assertIsNone(result)
 
+    def test_unknown_auxiliary_tool_does_not_become_critical_mismatch(self) -> None:
+        result = match_candidate(
+            profile(),
+            task(
+                requirements=[
+                    {"skill_name": "Python", "minimum_level": 1, "importance": 1.0},
+                    {"skill_name": "testing", "minimum_level": 1, "importance": 0.6},
+                    {"skill_name": "Docker", "minimum_level": 1, "importance": 0.7},
+                ]
+            ),
+        )
+        self.assertIsNotNone(result)
+        docker_gap = next(item for item in result.skill_gaps if item["skill"] == "Docker")
+        self.assertEqual(0, docker_gap["developer_level"])
+        self.assertEqual(1, docker_gap["gap"])
+        self.assertEqual(0.7, docker_gap["importance"])
+
     def test_growth_track_accepts_one_level_stretch(self) -> None:
         result = match_candidate(
             profile(

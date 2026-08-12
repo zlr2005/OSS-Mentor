@@ -10,8 +10,9 @@ from oss_mentor.candidate_rules import has_newcomer_label
 from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
 
 
-TASK_FEATURE_VERSION = "task-features-v0.3"
+TASK_FEATURE_VERSION = "task-features-v0.4"
 DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2.1"
+SKILL_REQUIREMENT_RULES_VERSION = "skill-requirements-v0.2.2"
 PUBLIC_TASK_TYPES = frozenset(ALLOWED_TASK_TYPES)
 _TASK_TYPE_ACCEPTANCE_SCORE = 3.0
 _SOURCE_ORDER = {"label": 0, "title": 1, "body": 2, "derived": 3}
@@ -64,6 +65,30 @@ class SkillRequirement:
     minimum_level: int
     importance: float
     requirement_source: str
+
+
+@dataclass(frozen=True, slots=True)
+class _SkillSignal:
+    skill_name: str
+    category: str
+    role: str | None
+    source: str
+    rule_id: str
+    matched_value: str
+    normalized_value: str
+    strength: str
+    reason: str
+    decision: str
+    matching_facing: bool
+    minimum_level: int | None = None
+    importance: float | None = None
+    requirement_source: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _SkillInferenceResult:
+    requirements: tuple[SkillRequirement, ...]
+    evidence: dict[str, Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -2492,6 +2517,768 @@ def _assess_difficulty(
     )
 
 
+
+_SKILL_STRENGTH_ORDER = {"weak": 0, "medium": 1, "strong": 2}
+_SKILL_ROLE_ORDER = {"learnable": 0, "auxiliary": 1, "core": 2}
+_SKILL_REQUIREMENT_SOURCE_ORDER = {
+    "inferred_task_type": 0,
+    "inferred_tool_requirement": 1,
+    "repository_primary_language": 2,
+    "explicit_platform_signal": 3,
+}
+_SKILL_CANONICAL_NAMES = {
+    "pytest": "pytest",
+    "jest": "Jest",
+    "docker": "Docker",
+    "maven": "Maven",
+    "gradle": "Gradle",
+}
+_SKILL_IMPORTANCE_CEILINGS = {
+    "pytest": 0.7,
+    "jest": 0.5,
+    "docker": 0.7,
+    "maven": 0.7,
+    "gradle": 0.7,
+}
+_PLATFORM_PATTERNS = {
+    "macos": r"\b(?:macos|os\s*x|osx|macosx)\b",
+    "windows": r"\b(?:windows|win32)\b",
+    "linux": r"\blinux\b",
+}
+_SKILL_ACTION = (
+    r"(?:add|change|configure|create|document|fix|implement|lint|migrate|modify|"
+    r"refactor|remove|separate|support|update|write)"
+)
+_TOOL_LABEL_NAMESPACES = frozenset({"tool", "component", "module"})
+
+
+def _skill_semantic_body(body: str) -> str:
+    """Remove noisy body regions while preserving inline task artifact names."""
+
+    text = re.sub(r"<!--.*?-->", " ", body, flags=re.DOTALL)
+    text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
+    text = re.sub(r"`([^`\n]+)`", r"\1", text)
+    text = re.sub(r"https?://\S+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _normalized_signal_value(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().casefold()
+
+
+def _skill_signal_key(signal: _SkillSignal) -> tuple[Any, ...]:
+    return (
+        signal.skill_name.casefold(),
+        signal.decision,
+        _SOURCE_ORDER.get(signal.source, 99),
+        signal.rule_id,
+        signal.normalized_value,
+        signal.matched_value,
+        _SKILL_STRENGTH_ORDER.get(signal.strength, -1),
+        signal.minimum_level if signal.minimum_level is not None else -1,
+        signal.importance if signal.importance is not None else -1.0,
+    )
+
+
+def _append_skill_signal(
+    signals: list[_SkillSignal],
+    *,
+    skill_name: str,
+    category: str,
+    role: str | None,
+    source: str,
+    rule_id: str,
+    matched_value: str,
+    strength: str,
+    reason: str,
+    decision: str,
+    matching_facing: bool,
+    minimum_level: int | None = None,
+    importance: float | None = None,
+    requirement_source: str | None = None,
+) -> None:
+    signal = _SkillSignal(
+        skill_name=skill_name,
+        category=category,
+        role=role,
+        source=source,
+        rule_id=rule_id,
+        matched_value=matched_value,
+        normalized_value=_normalized_signal_value(matched_value),
+        strength=strength,
+        reason=reason,
+        decision=decision,
+        matching_facing=matching_facing,
+        minimum_level=minimum_level,
+        importance=importance,
+        requirement_source=requirement_source,
+    )
+    if _skill_signal_key(signal) not in {_skill_signal_key(item) for item in signals}:
+        signals.append(signal)
+
+
+def _first_rule_match(text: str, pattern: str) -> re.Match[str] | None:
+    return re.search(pattern, text, flags=re.IGNORECASE)
+
+
+def _controlled_tool_label(raw_label: str, tool_name: str) -> re.Match[str] | None:
+    match = re.match(
+        r"^\s*([a-z][a-z0-9_-]*)\s*[:/\\]\s*(.+?)\s*$",
+        raw_label,
+        flags=re.IGNORECASE,
+    )
+    if match is None:
+        return None
+    namespace = _normalize_label(match.group(1))
+    value = _normalize_label(match.group(2))
+    if namespace not in _TOOL_LABEL_NAMESPACES or value != tool_name.casefold():
+        return None
+    return match
+
+
+def _collect_language_and_task_type_signals(
+    signals: list[_SkillSignal],
+    *,
+    record: dict[str, Any],
+    task_types: tuple[str, ...],
+    estimated_code_difficulty: int,
+) -> None:
+    language = str(record.get("primary_language") or "").strip()
+    documentation_only = (
+        task_types == ("documentation",) and estimated_code_difficulty == 0
+    )
+    if language:
+        _append_skill_signal(
+            signals,
+            skill_name=language,
+            category="programming_language",
+            role="auxiliary" if documentation_only else "core",
+            source="derived",
+            rule_id=(
+                "skill.language.repository_primary.documentation_only"
+                if documentation_only
+                else "skill.language.repository_primary"
+            ),
+            matched_value=language,
+            strength="weak" if documentation_only else "strong",
+            reason=(
+                "repository_language_is_auxiliary_for_documentation_only_task"
+                if documentation_only
+                else "repository_primary_language_is_core_for_code_bearing_task"
+            ),
+            decision="included",
+            matching_facing=True,
+            minimum_level=(
+                1
+                if documentation_only
+                else max(1, min(estimated_code_difficulty, 3))
+            ),
+            importance=0.3 if documentation_only else 1.0,
+            requirement_source="repository_primary_language",
+        )
+
+    for task_type in task_types:
+        if task_type == "other":
+            continue
+        _append_skill_signal(
+            signals,
+            skill_name=task_type,
+            category="task_type",
+            role="auxiliary",
+            source="derived",
+            rule_id="skill.task_type.public_type",
+            matched_value=task_type,
+            strength="medium",
+            reason="public_task_type_implies_general_task_capability",
+            decision="included",
+            matching_facing=True,
+            minimum_level=1 if estimated_code_difficulty <= 1 else 2,
+            importance=0.6,
+            requirement_source="inferred_task_type",
+        )
+
+
+def _platform_rule(
+    platform: str,
+    *,
+    strength: str,
+) -> str:
+    platform_pattern = _PLATFORM_PATTERNS[platform]
+    if strength == "strong":
+        return (
+            rf"(?:\b{platform_pattern[2:-2]}[- ]specific\b.{0,70}"
+            rf"\b(?:backend|implementation|path|filesystem|code|support|integration)\b|"
+            rf"\b(?:implement|fix|modify|update|support|handle)\b.{{0,80}}"
+            rf"{platform_pattern}.{{0,50}}\b(?:backend|implementation|path|filesystem|code|integration)\b|"
+            rf"\b(?:must|required|requires?|need(?:s)?\s+to)\b.{{0,60}}"
+            rf"\b(?:verify|validate|test|reproduce|run)\b.{{0,60}}{platform_pattern}|"
+            rf"\b(?:requires?|needs?)\b.{{0,30}}{platform_pattern}.{{0,40}}"
+            rf"\b(?:to\s+)?(?:verify|validate|test|reproduce|run)\b|"
+            rf"{platform_pattern}.{{0,50}}\b(?:must|required|requires?)\b.{{0,40}}"
+            rf"\b(?:verify|validate|test|reproduce|run)\b)"
+        )
+    return (
+        rf"(?:\bonly\b.{{0,30}}\b(?:fails?|crash(?:es)?|breaks?|errors?|reproducible)\b"
+        rf".{{0,50}}{platform_pattern}|"
+        rf"\b(?:fails?|crash(?:es)?|breaks?|errors?)\b.{{0,30}}\bonly\b.{{0,50}}{platform_pattern}|"
+        rf"\bonly[- ]on[- ]{platform_pattern}.{{0,40}}"
+        rf"\b(?:failure|bug|issue|crash|error|behavior|behaviour)\b|"
+        rf"{platform_pattern}.{{0,15}}[- ]only\b.{{0,40}}"
+        rf"\b(?:failure|bug|issue|crash|error|behavior|behaviour)\b|"
+        rf"\b(?:bug|failure|crash|error|issue)\b.{{0,20}}\bon\b.{{0,10}}{platform_pattern})"
+    )
+
+
+def _collect_platform_signals(
+    signals: list[_SkillSignal],
+    *,
+    title: str,
+    body: str,
+    labels: list[str],
+) -> None:
+    semantic_body = _skill_semantic_body(body)
+    positive_platforms: set[str] = set()
+
+    for platform in sorted(_PLATFORM_PATTERNS):
+        name = f"platform:{platform}"
+        for source, text in (("title", title), ("body", semantic_body)):
+            direct_title_match = (
+                _first_rule_match(
+                    text,
+                    rf"{_PLATFORM_PATTERNS[platform]}.{{0,30}}\b(?:backend|implementation)\b|"
+                    rf"\b(?:backend|implementation)\b.{{0,30}}{_PLATFORM_PATTERNS[platform]}",
+                )
+                if source == "title"
+                else None
+            )
+            strong_match = direct_title_match or _first_rule_match(
+                text, _platform_rule(platform, strength="strong")
+            )
+            if strong_match is not None:
+                _append_skill_signal(
+                    signals,
+                    skill_name=name,
+                    category="platform",
+                    role="core",
+                    source=source,
+                    rule_id=f"skill.platform.{source}.mandatory_or_implementation",
+                    matched_value=_matched_value(strong_match),
+                    strength="strong",
+                    reason="platform_is_required_for_implementation_or_validation",
+                    decision="included",
+                    matching_facing=True,
+                    minimum_level=1,
+                    importance=1.0,
+                    requirement_source="explicit_platform_signal",
+                )
+                positive_platforms.add(platform)
+                continue
+
+            medium_match = _first_rule_match(text, _platform_rule(platform, strength="medium"))
+            if medium_match is not None:
+                _append_skill_signal(
+                    signals,
+                    skill_name=name,
+                    category="platform",
+                    role="auxiliary",
+                    source=source,
+                    rule_id=f"skill.platform.{source}.platform_specific_failure",
+                    matched_value=_matched_value(medium_match),
+                    strength="medium",
+                    reason="failure_is_platform_specific_but_platform_is_not_proven_mandatory",
+                    decision="included",
+                    matching_facing=True,
+                    minimum_level=1,
+                    importance=0.7,
+                    requirement_source="explicit_platform_signal",
+                )
+                positive_platforms.add(platform)
+
+        platform_pattern = _PLATFORM_PATTERNS[platform]
+        environment_match = _first_rule_match(
+            body,
+            rf"(?m)^\s*(?:os|operating system|system info|environment)\s*[:=-].*?{platform_pattern}.*$",
+        )
+        if environment_match is not None:
+            _append_skill_signal(
+                signals,
+                skill_name=name,
+                category="platform",
+                role=None,
+                source="body",
+                rule_id="skill.platform.body.reporter_environment",
+                matched_value=_matched_value(environment_match),
+                strength="weak",
+                reason="reporter_environment_is_not_task_requirement",
+                decision="rejected_context_only",
+                matching_facing=False,
+            )
+
+        reproduction_match = _first_rule_match(
+            semantic_body,
+            rf"\b(?:reproduced?|tested|observed|running|runs?)\b.{{0,70}}{platform_pattern}",
+        )
+        if reproduction_match is not None:
+            _append_skill_signal(
+                signals,
+                skill_name=name,
+                category="platform",
+                role=None,
+                source="body",
+                rule_id="skill.platform.body.reproduction_environment",
+                matched_value=_matched_value(reproduction_match),
+                strength="weak",
+                reason="reproduction_environment_alone_is_not_task_requirement",
+                decision="rejected_context_only",
+                matching_facing=False,
+            )
+
+        if platform not in positive_platforms:
+            mention = _first_rule_match(semantic_body, platform_pattern)
+            if mention is not None and environment_match is None and reproduction_match is None:
+                _append_skill_signal(
+                    signals,
+                    skill_name=name,
+                    category="platform",
+                    role=None,
+                    source="body",
+                    rule_id="skill.platform.body.mention_without_requirement_semantics",
+                    matched_value=_matched_value(mention),
+                    strength="weak",
+                    reason="platform_mention_lacks_required_or_platform_specific_task_semantics",
+                    decision="rejected_context_only",
+                    matching_facing=False,
+                )
+
+    for raw_label in labels:
+        normalized = _normalize_label(raw_label)
+        for platform in sorted(_PLATFORM_PATTERNS):
+            platform_alias = _first_rule_match(normalized, _PLATFORM_PATTERNS[platform])
+            if platform_alias is None:
+                continue
+            name = f"platform:{platform}"
+            if platform in positive_platforms:
+                _append_skill_signal(
+                    signals,
+                    skill_name=name,
+                    category="platform",
+                    role="auxiliary",
+                    source="label",
+                    rule_id="skill.platform.label.corroboration",
+                    matched_value=raw_label,
+                    strength="medium",
+                    reason="platform_label_corroborates_semantic_platform_evidence",
+                    decision="included",
+                    matching_facing=True,
+                    minimum_level=1,
+                    importance=0.7,
+                    requirement_source="explicit_platform_signal",
+                )
+            else:
+                _append_skill_signal(
+                    signals,
+                    skill_name=name,
+                    category="platform",
+                    role=None,
+                    source="label",
+                    rule_id="skill.platform.label.insufficient_alone",
+                    matched_value=raw_label,
+                    strength="weak",
+                    reason="platform_label_without_task_semantics_is_not_hard_requirement",
+                    decision="rejected_insufficient_semantics",
+                    matching_facing=False,
+                )
+
+
+def _tool_positive_patterns(tool_key: str) -> tuple[tuple[str, int, float, str, str], ...]:
+    if tool_key == "pytest":
+        return (
+            (
+                r"\bpytest\b.{0,70}\b(?:config(?:uration)?|collection|collect(?:ion|ing)?|fixture|plugin|hook|conftest|pytest\.ini)\b|"
+                r"\b(?:conftest\.py|pytest\.ini)\b.{0,70}\b(?:pytest|fixture|collection|config(?:uration)?)\b",
+                2,
+                0.7,
+                "core",
+                "pytest_configuration_or_collection_is_direct_task_semantics",
+            ),
+            (
+                rf"\b{_SKILL_ACTION}\b.{{0,60}}\bpytest\b.{{0,60}}\b(?:fixture|test suite|tests?)\b",
+                1,
+                0.5,
+                "auxiliary",
+                "pytest_is_an_explicit_auxiliary_test_tool",
+            ),
+        )
+    if tool_key == "jest":
+        return (
+            (
+                r"\bjest\b.{0,80}\b(?:open handles?|mock(?:agent|s?)?|fake timers?|runner|transform|watch mode)\b|"
+                r"\b(?:open handles?|mock(?:agent|s?)?|fake timers?|runner|transform)\b.{0,80}\bjest\b|"
+                rf"\b{_SKILL_ACTION}\b.{{0,60}}\bjest\b.{{0,60}}\bconfig(?:uration)?\b|"
+                rf"\bjest\b.{{0,40}}\bconfig(?:uration)?\b.{{0,60}}\b{_SKILL_ACTION}\b",
+                1,
+                0.5,
+                "auxiliary",
+                "jest_specific_behavior_is_part_of_task_semantics",
+            ),
+        )
+    if tool_key == "docker":
+        return (
+            (
+                rf"\b{_SKILL_ACTION}\b.{{0,80}}\b(?:docker images?|dockerfile|docker-builds?|docker build|docker compose|container images?)\b|"
+                r"\b(?:docker images?|dockerfile|docker-builds?|docker build|docker compose|container images?)\b.{0,80}"
+                rf"\b(?:{_SKILL_ACTION}|linter|linting|configuration)\b",
+                1,
+                0.7,
+                "core",
+                "docker_artifact_or_build_configuration_is_direct_task_target",
+            ),
+        )
+    if tool_key == "maven":
+        return (
+            (
+                rf"\b{_SKILL_ACTION}\b.{{0,80}}\b(?:multi-module maven|maven multi-module project|maven project|maven configuration|maven plugin|pom\.xml|maven getting started)\b|"
+                r"\b(?:multi-module maven|maven project|maven configuration|maven plugin|pom\.xml|maven getting started)\b.{0,80}"
+                rf"\b(?:{_SKILL_ACTION}|configuration|setup)\b",
+                1,
+                0.7,
+                "core",
+                "maven_project_or_configuration_is_direct_task_target",
+            ),
+            (
+                r"\b(?:compare|separate|distinguish|split)\b.{0,100}\bgradle\b.{0,100}\bmaven\b|"
+                r"\bmaven\b.{0,100}\b(?:comparison|existing|current|reference)\b",
+                1,
+                0.5,
+                "auxiliary",
+                "maven_is_a_comparison_or_reference_tool",
+            ),
+        )
+    if tool_key == "gradle":
+        return (
+            (
+                rf"\b{_SKILL_ACTION}\b.{{0,80}}\b(?:gradle project|gradle configuration|gradle build|gradle plugin|gradle getting started|build\.gradle|settings\.gradle|gradle\.properties)\b|"
+                r"\b(?:gradle project|gradle configuration|gradle build|gradle plugin|gradle getting started|build\.gradle|settings\.gradle|gradle\.properties)\b.{0,80}"
+                rf"\b(?:{_SKILL_ACTION}|configuration|setup)\b",
+                1,
+                0.7,
+                "core",
+                "gradle_project_or_build_configuration_is_direct_task_target",
+            ),
+        )
+    raise ValueError(f"unsupported production tool skill: {tool_key}")
+
+
+def _tool_negative_pattern(tool_key: str) -> str:
+    patterns = {
+        "pytest": r"\b(?:run|running|install|installed|tested using)\s+pytest\b|\bpytest\s+--version\b",
+        "jest": (
+            r"\b(?:roadmap|dependency|dependencies|reproduction|reproducer)\b.{0,80}\bjest(?:-worker)?\b|"
+            r"\b(?:run|running)\s+jest\b"
+        ),
+        "docker": r"\b(?:reproduced?|tested|running|runs?)\b.{0,70}\b(?:docker|container)\b|\bdocker\s+version\b|\bdocker\s+logs?\b",
+        "maven": r"\bmvn\s+(?:test|verify|install)\b|\bmaven\s+version\b|\bsnapshot\b.{0,80}\bmaven\b",
+        "gradle": r"\bgradle\s+(?:test|build|--version)\b|\bgradle\s+version\b|\bsnapshot\b.{0,80}\bgradle\b",
+    }
+    return patterns[tool_key]
+
+
+def _tool_body_usage_context_match(
+    tool_key: str, text: str, positive_match: re.Match[str]
+) -> re.Match[str] | None:
+    if tool_key == "maven":
+        artifact = r"(?:maven|mvn|pom\.xml)"
+    elif tool_key == "gradle":
+        artifact = r"(?:gradle|gradle project|build\.gradle|settings\.gradle|gradle\.properties)"
+    else:
+        return None
+
+    start = max(0, positive_match.start() - 120)
+    end = min(len(text), positive_match.end() + 120)
+    window = text[start:end]
+    patterns = (
+        rf"\b(?:to|how to)\s+(?:use|consume)\b.{{0,160}}\b{artifact}\b",
+        rf"\badd\s+the\s+following\s+repository\b.{{0,140}}\b{artifact}\b",
+        rf"\b(?:users?|you)\s+(?:can|may|should)\b.{{0,100}}\b(?:use|consume|add)\b.{{0,100}}\b{artifact}\b",
+        rf"\b(?:either|whether)\b.{{0,40}}\b{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
+        rf"\b(?:one|single|central(?:ized)?)\s+(?:place|location)\b.{{0,100}}\b(?:being\s+(?:it\s+)?)?{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
+    )
+    for pattern in patterns:
+        match = _first_rule_match(window, pattern)
+        if match is not None:
+            return match
+    return None
+
+
+def _tool_body_alternative_storage_context_match(
+    tool_key: str, text: str
+) -> re.Match[str] | None:
+    if tool_key == "maven":
+        artifact = r"(?:maven|mvn|pom\.xml)"
+    elif tool_key == "gradle":
+        artifact = r"(?:gradle|gradle project|build\.gradle|settings\.gradle|gradle\.properties)"
+    else:
+        return None
+
+    patterns = (
+        rf"\b(?:either|whether)\b.{{0,40}}\b{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
+        rf"\b(?:one|single|central(?:ized)?)\s+(?:place|location)\b.{{0,100}}\b(?:being\s+(?:it\s+)?)?{artifact}\b.{{0,50}}\bor\b.{{0,50}}\b(?:a\s+)?(?:property|config(?:uration)?)\s+file\b",
+    )
+    for pattern in patterns:
+        match = _first_rule_match(text, pattern)
+        if match is not None:
+            return match
+    return None
+
+
+def _collect_tool_signals(
+    signals: list[_SkillSignal],
+    *,
+    title: str,
+    body: str,
+    labels: list[str],
+) -> None:
+    semantic_body = _skill_semantic_body(body)
+    for tool_key, canonical_name in _SKILL_CANONICAL_NAMES.items():
+        positive_found = False
+        usage_context_recorded = False
+        patterns = _tool_positive_patterns(tool_key)
+        for source, text in (("title", title), ("body", semantic_body)):
+            for index, (pattern, level, importance, role, reason) in enumerate(patterns, 1):
+                match = _first_rule_match(text, pattern)
+                if match is None:
+                    continue
+                if source == "body":
+                    usage_match = _tool_body_usage_context_match(tool_key, text, match)
+                    if usage_match is not None:
+                        _append_skill_signal(
+                            signals,
+                            skill_name=canonical_name,
+                            category="tool",
+                            role=None,
+                            source="body",
+                            rule_id=f"skill.tool.{tool_key}.body.usage_context_guard",
+                            matched_value=_matched_value(usage_match),
+                            strength="weak",
+                            reason="tool_artifact_is_usage_or_alternative_storage_context_not_direct_task_target",
+                            decision="rejected_context_only",
+                            matching_facing=False,
+                        )
+                        usage_context_recorded = True
+                        positive_found = True
+                        continue
+                _append_skill_signal(
+                    signals,
+                    skill_name=canonical_name,
+                    category="tool",
+                    role=role,
+                    source=source,
+                    rule_id=f"skill.tool.{tool_key}.{source}.positive_{index}",
+                    matched_value=_matched_value(match),
+                    strength="strong" if importance >= 0.7 else "medium",
+                    reason=reason,
+                    decision="included",
+                    matching_facing=True,
+                    minimum_level=level,
+                    importance=importance,
+                    requirement_source="inferred_tool_requirement",
+                )
+                positive_found = True
+
+        for raw_label in labels:
+            label_match = _controlled_tool_label(raw_label, tool_key)
+            if label_match is None:
+                continue
+            _append_skill_signal(
+                signals,
+                skill_name=canonical_name,
+                category="tool",
+                role="auxiliary",
+                source="label",
+                rule_id=f"skill.tool.{tool_key}.label.controlled_namespace",
+                matched_value=raw_label,
+                strength="medium",
+                reason="controlled_tool_label_is_explicit_tool_scope",
+                decision="included",
+                matching_facing=True,
+                minimum_level=1,
+                importance=0.5,
+                requirement_source="inferred_tool_requirement",
+            )
+            positive_found = True
+
+        if not usage_context_recorded:
+            alternative_storage_match = _tool_body_alternative_storage_context_match(
+                tool_key, semantic_body
+            )
+            if alternative_storage_match is not None:
+                _append_skill_signal(
+                    signals,
+                    skill_name=canonical_name,
+                    category="tool",
+                    role=None,
+                    source="body",
+                    rule_id=f"skill.tool.{tool_key}.body.usage_context_guard",
+                    matched_value=_matched_value(alternative_storage_match),
+                    strength="weak",
+                    reason="tool_artifact_is_usage_or_alternative_storage_context_not_direct_task_target",
+                    decision="rejected_context_only",
+                    matching_facing=False,
+                )
+
+        negative_match = _first_rule_match(semantic_body, _tool_negative_pattern(tool_key))
+        if negative_match is not None:
+            _append_skill_signal(
+                signals,
+                skill_name=canonical_name,
+                category="tool",
+                role=None,
+                source="body",
+                rule_id=f"skill.tool.{tool_key}.body.context_guard",
+                matched_value=_matched_value(negative_match),
+                strength="weak",
+                reason="tool_mention_is_execution_version_reproduction_or_status_context",
+                decision="rejected_context_only",
+                matching_facing=False,
+            )
+
+        if not positive_found:
+            generic_mention = _first_rule_match(
+                f"{title}\n{semantic_body}",
+                rf"\b{re.escape(tool_key)}\b" if tool_key != "docker" else r"\b(?:docker|dockerfile)\b",
+            )
+            if generic_mention is not None and negative_match is None:
+                _append_skill_signal(
+                    signals,
+                    skill_name=canonical_name,
+                    category="tool",
+                    role=None,
+                    source="title" if _first_rule_match(title, generic_mention.group(0)) else "body",
+                    rule_id=f"skill.tool.{tool_key}.mention_without_task_target",
+                    matched_value=_matched_value(generic_mention),
+                    strength="weak",
+                    reason="technology_mention_without_direct_task_target_semantics",
+                    decision="rejected_context_only",
+                    matching_facing=False,
+                )
+
+
+def _winning_skill_signal(signals: list[_SkillSignal]) -> _SkillSignal:
+    return max(
+        signals,
+        key=lambda item: (
+            float(item.importance or 0.0),
+            int(item.minimum_level or 0),
+            _SKILL_STRENGTH_ORDER.get(item.strength, -1),
+            _SKILL_ROLE_ORDER.get(item.role or "", -1),
+            _SKILL_REQUIREMENT_SOURCE_ORDER.get(item.requirement_source or "", -1),
+            -_SOURCE_ORDER.get(item.source, 99),
+            item.rule_id,
+        ),
+    )
+
+
+def _signal_evidence_dict(signal: _SkillSignal) -> dict[str, Any]:
+    return {
+        "source": signal.source,
+        "rule_id": signal.rule_id,
+        "matched_value": signal.matched_value,
+        "normalized_value": signal.normalized_value,
+        "strength": signal.strength,
+        "reason": signal.reason,
+    }
+
+
+def _merge_skill_signals(signals: list[_SkillSignal]) -> _SkillInferenceResult:
+    included_by_key: dict[str, list[_SkillSignal]] = {}
+    rejected: list[_SkillSignal] = []
+    for signal in signals:
+        if signal.decision == "included" and signal.matching_facing:
+            included_by_key.setdefault(signal.skill_name.casefold(), []).append(signal)
+        else:
+            rejected.append(signal)
+
+    requirements: list[SkillRequirement] = []
+    skill_evidence: dict[str, Any] = {}
+    for key in sorted(included_by_key):
+        group = sorted(included_by_key[key], key=_skill_signal_key)
+        winner = _winning_skill_signal(group)
+        minimum_level = max(int(item.minimum_level or 0) for item in group)
+        importance = max(float(item.importance or 0.0) for item in group)
+        importance = min(importance, _SKILL_IMPORTANCE_CEILINGS.get(key, 1.0))
+        source = max(
+            (item.requirement_source or "" for item in group),
+            key=lambda value: _SKILL_REQUIREMENT_SOURCE_ORDER.get(value, -1),
+        )
+        requirement = SkillRequirement(
+            skill_name=winner.skill_name,
+            minimum_level=minimum_level,
+            importance=importance,
+            requirement_source=source,
+        )
+        requirements.append(requirement)
+        skill_evidence[requirement.skill_name] = {
+            "normalized_skill_name": key,
+            "category": winner.category,
+            "role": winner.role,
+            "decision": "included",
+            "matching_facing": True,
+            "minimum_level": minimum_level,
+            "importance": importance,
+            "requirement_source": source,
+            "evidence": [_signal_evidence_dict(item) for item in group],
+        }
+
+    rejected_rows = [
+        {
+            "skill_name": item.skill_name,
+            "category": item.category,
+            "source": item.source,
+            "rule_id": item.rule_id,
+            "matched_value": item.matched_value,
+            "normalized_value": item.normalized_value,
+            "strength": item.strength,
+            "decision": item.decision,
+            "matching_facing": False,
+            "reason": item.reason,
+        }
+        for item in sorted(rejected, key=_skill_signal_key)
+    ]
+    requirements.sort(key=lambda item: (item.skill_name.casefold(), item.skill_name))
+    ordered_skill_evidence = {
+        item.skill_name: skill_evidence[item.skill_name] for item in requirements
+    }
+    return _SkillInferenceResult(
+        requirements=tuple(requirements),
+        evidence={
+            "rules_version": SKILL_REQUIREMENT_RULES_VERSION,
+            "skills": ordered_skill_evidence,
+            "rejected": rejected_rows,
+        },
+    )
+
+
+def _infer_skill_requirements_core(
+    record: dict[str, Any],
+    *,
+    task_types: tuple[str, ...],
+    estimated_code_difficulty: int,
+) -> _SkillInferenceResult:
+    signals: list[_SkillSignal] = []
+    title = str(record.get("title") or "")
+    body = str(record.get("body_text") or "")
+    labels = [str(value) for value in record.get("labels") or []]
+    _collect_language_and_task_type_signals(
+        signals,
+        record=record,
+        task_types=task_types,
+        estimated_code_difficulty=estimated_code_difficulty,
+    )
+    _collect_platform_signals(signals, title=title, body=body, labels=labels)
+    _collect_tool_signals(signals, title=title, body=body, labels=labels)
+    return _merge_skill_signals(signals)
+
+
 def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
     title = str(record.get("title") or "")
     body = str(record.get("body_text") or "")
@@ -2579,6 +3366,11 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
     )
     growth = _clamp(growth / 100.0) * 100 if eligible else 0.0
 
+    skill_inference = _infer_skill_requirements_core(
+        record,
+        task_types=task_types,
+        estimated_code_difficulty=code_difficulty,
+    )
     evidence = {
         "title_length": len(title),
         "body_length": len(body),
@@ -2587,6 +3379,7 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
         "comment_count": comments,
         "formula_version": TASK_FEATURE_VERSION,
         "difficulty_assessment": difficulty_assessment,
+        "skill_requirement_evidence": skill_inference.evidence,
         **classification_evidence,
     }
     return TaskFeatures(
@@ -2611,48 +3404,8 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
 def infer_skill_requirements(
     record: dict[str, Any], features: TaskFeatures
 ) -> tuple[SkillRequirement, ...]:
-    requirements: dict[str, SkillRequirement] = {}
-    language = str(record.get("primary_language") or "").strip()
-    if language:
-        requirements[language.casefold()] = SkillRequirement(
-            language,
-            max(1, min(features.estimated_code_difficulty, 3)),
-            1.0,
-            "repository_primary_language",
-        )
-    for task_type in features.task_types:
-        if task_type == "other":
-            continue
-        requirements[task_type.casefold()] = SkillRequirement(
-            task_type,
-            1 if features.estimated_code_difficulty <= 1 else 2,
-            0.6,
-            "inferred_task_type",
-        )
-
-    title_and_labels = (
-        f"{record.get('title') or ''}\n"
-        + " ".join(str(value) for value in record.get("labels") or [])
-    ).casefold()
-    body = str(record.get("body_text") or "").casefold()
-    platform_patterns = {
-        "macos": ("macos", "osx", "macosx"),
-        "windows": ("windows", "win32"),
-        "linux": ("linux",),
-    }
-    explicit_platforms = {
-        platform
-        for platform, patterns in platform_patterns.items()
-        if any(pattern in title_and_labels for pattern in patterns)
-    }
-    detected_platforms = explicit_platforms or {
-        platform
-        for platform, patterns in platform_patterns.items()
-        if any(pattern in body for pattern in patterns)
-    }
-    for platform in sorted(detected_platforms):
-        name = f"platform:{platform}"
-        requirements[name] = SkillRequirement(
-            name, 1, 1.0, "explicit_platform_signal"
-        )
-    return tuple(sorted(requirements.values(), key=lambda item: item.skill_name.casefold()))
+    return _infer_skill_requirements_core(
+        record,
+        task_types=features.task_types,
+        estimated_code_difficulty=features.estimated_code_difficulty,
+    ).requirements
