@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import io
 import unittest
 import urllib.error
 from email.message import Message
@@ -8,6 +9,7 @@ from email.message import Message
 from oss_mentor.collector.github_client import (
     GitHubApiError,
     GitHubClient,
+    RateLimitExceeded,
     parse_link_header,
 )
 
@@ -63,6 +65,32 @@ class RetryOnceOpener:
         if self.calls == 1:
             raise urllib.error.URLError("temporary")
         return self.response
+
+
+class ExceptionSequenceOpener:
+    def __init__(self, items):
+        self.items = list(items)
+        self.calls = 0
+
+    def __call__(self, request, *, timeout: int):
+        self.calls += 1
+        item = self.items.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+
+def http_error(code: int, *, headers: dict[str, str] | None = None):
+    message = Message()
+    for name, value in (headers or {}).items():
+        message[name] = value
+    return urllib.error.HTTPError(
+        "https://api.github.com/repos/example/demo",
+        code,
+        "fixture",
+        message,
+        io.BytesIO(b'{"message":"fixture"}'),
+    )
 
 
 class GitHubClientTests(unittest.TestCase):
@@ -140,6 +168,90 @@ class GitHubClientTests(unittest.TestCase):
         )
         client.get("/repos/example/demo")
         self.assertEqual(2, client.request_count)
+
+    def test_403_primary_rate_limit_is_not_retried(self) -> None:
+        opener = ExceptionSequenceOpener(
+            [
+                http_error(
+                    403,
+                    headers={
+                        "X-RateLimit-Remaining": "0",
+                        "X-RateLimit-Reset": "1785326400",
+                    },
+                )
+            ]
+        )
+        client = GitHubClient(
+            api_base="https://api.github.com",
+            api_version="2026-03-10",
+            user_agent="OSS-Mentor-test/0",
+            token=None,
+            opener=opener,
+            sleep=lambda _: None,
+        )
+        with self.assertRaises(RateLimitExceeded):
+            client.get("/repos/example/demo")
+        self.assertEqual(1, opener.calls)
+        self.assertEqual(0, client.rate_limit_remaining)
+        self.assertIsNotNone(client.rate_limit_reset_at)
+
+    def test_404_is_not_retried(self) -> None:
+        opener = ExceptionSequenceOpener([http_error(404)])
+        client = GitHubClient(
+            api_base="https://api.github.com",
+            api_version="2026-03-10",
+            user_agent="OSS-Mentor-test/0",
+            token=None,
+            opener=opener,
+            sleep=lambda _: None,
+        )
+        with self.assertRaises(GitHubApiError) as raised:
+            client.get("/repos/example/demo")
+        self.assertEqual(404, raised.exception.status_code)
+        self.assertEqual(1, opener.calls)
+
+    def test_429_is_retried_with_a_bound(self) -> None:
+        opener = ExceptionSequenceOpener([http_error(429), http_error(429)])
+        client = GitHubClient(
+            api_base="https://api.github.com",
+            api_version="2026-03-10",
+            user_agent="OSS-Mentor-test/0",
+            token=None,
+            max_retries=1,
+            backoff_base_seconds=0,
+            opener=opener,
+            sleep=lambda _: None,
+            random_source=lambda: 0,
+        )
+        with self.assertRaises(GitHubApiError) as raised:
+            client.get("/repos/example/demo")
+        self.assertEqual(429, raised.exception.status_code)
+        self.assertEqual(2, opener.calls)
+        self.assertEqual(1, client.retry_count)
+
+    def test_5xx_and_timeout_recover_on_retry(self) -> None:
+        for failure in (http_error(502), TimeoutError("fixture timeout")):
+            with self.subTest(failure=type(failure).__name__):
+                response = FakeResponse(
+                    url="https://api.github.com/repos/example/demo",
+                    payload={"id": 1},
+                )
+                opener = ExceptionSequenceOpener([failure, response])
+                client = GitHubClient(
+                    api_base="https://api.github.com",
+                    api_version="2026-03-10",
+                    user_agent="OSS-Mentor-test/0",
+                    token=None,
+                    max_retries=1,
+                    backoff_base_seconds=0,
+                    opener=opener,
+                    sleep=lambda _: None,
+                    random_source=lambda: 0,
+                )
+                result = client.get("/repos/example/demo")
+                self.assertEqual(1, result.payload["id"])
+                self.assertEqual(2, opener.calls)
+                self.assertEqual(1, client.retry_count)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,34 @@
+repository,issue_number,newcomer_fit,growth_fit,code_difficulty,setup_difficulty,clarity,required_skills,critical_blocker,annotation_reason,annotator
+vitejs/vite,22943,1,1,1,1,1,"JavaScript, debugging",0,"Low estimated difficulty but weak task type and low clarity make it only marginally suitable",codex_pseudo
+vitejs/vite,22918,1,1,1,1,1,"JavaScript, debugging",0,"Segfault report has moderate discussion but pending triage and unclear scope",codex_pseudo
+vitejs/vite,22934,0,3,3,1,1,"JavaScript, build_tooling, performance",0,"Optimizer hang is high code and context difficulty, better for growth users",codex_pseudo
+vercel/next.js,95745,0,3,3,1,2,"JavaScript, build_tooling, performance",0,"Build memory control involves bundler internals and performance diagnosis",codex_pseudo
+scikit-learn/scikit-learn,22827,0,2,1,1,2,"Python, testing",0,"Testing stability task is useful for growth users but meta issue and many comments reduce newcomer fit",codex_pseudo
+pandas-dev/pandas,66268,0,3,3,1,2,"Python, performance",0,"Performance optimization in pandas is high code difficulty and suitable as a growth task",codex_pseudo
+pandas-dev/pandas,66263,0,3,3,1,2,"Python, performance",0,"Performance fast path work likely requires internals knowledge",codex_pseudo
+vitejs/vite,3924,0,2,1,1,1,"JavaScript, CSS",0,"CSS asset order issue has many comments and unclear current scope",codex_pseudo
+pandas-dev/pandas,66207,0,3,3,1,2,"Python, performance",0,"Interchange protocol performance work is too specialized for newcomers",codex_pseudo
+matplotlib/matplotlib,17479,3,1,0,0,2,"Python, documentation",0,"Good first issue documentation task with low code and setup difficulty",codex_pseudo
+jenkinsci/jenkins,26249,1,2,1,1,2,"Java, build_tooling, debugging",0,"Regression investigation is moderate growth material but lacks newcomer signal",codex_pseudo
+facebook/pyrefly,3726,2,2,1,1,2,"Python, typechecking",0,"Help wanted typechecking rule looks approachable but needs domain understanding",codex_pseudo
+matplotlib/matplotlib,31935,3,1,0,0,2,"Python, documentation",0,"First-contribution documentation issue with very low implementation risk",codex_pseudo
+matplotlib/matplotlib,8088,2,2,1,1,2,"Python, documentation, feature",0,"Good first issue but rcParams behavior may need light code understanding",codex_pseudo
+rust-lang/rust-clippy,15836,1,2,1,1,2,"Rust, testing, debugging",0,"Compiler lint issue is likely moderate growth work and less suitable for first contribution",codex_pseudo
+nodejs/node,37648,1,2,1,1,2,"JavaScript, Node.js, modules",0,"Help wanted roadmap item has newcomer signal but high discussion and design context",codex_pseudo
+pytorch/ao,3637,3,1,0,0,2,"Python, documentation",0,"Good first issue documentation task is suitable for newcomer onboarding",codex_pseudo
+excalidraw/excalidraw,9297,2,2,1,1,2,"TypeScript, refactor",0,"Good first issue refactor with clear target type change and moderate discussion",codex_pseudo
+kubernetes/kubernetes,122418,0,2,1,1,2,"Go, bug_fix, scalability",0,"Kubernetes scalability bug has context difficulty and is better for growth users",codex_pseudo
+vercel/next.js,42846,2,2,1,1,2,"TypeScript, bug_fix",0,"Good first issue TypeScript bug with moderate collaboration cost",codex_pseudo
+prometheus/prometheus,12531,2,2,1,1,2,"Go, bug_fix",0,"Help wanted bug in promtool looks approachable with some project context",codex_pseudo
+vercel/next.js,38863,2,2,1,1,2,"JavaScript, bug_fix",0,"Good first issue bug in Next.js dev behavior is suitable for light guidance",codex_pseudo
+vercel/next.js,41281,2,2,1,1,2,"JavaScript, bug_fix",0,"Good first issue error handling task with moderate discussion load",codex_pseudo
+apache/dubbo,15832,0,2,2,1,2,"Java, feature, design",0,"Proposal-level feature support is not newcomer-friendly but has growth value",codex_pseudo
+apache/pinot,11212,3,1,0,0,2,"Java, documentation",0,"Good first issue documentation task with low setup and code difficulty",codex_pseudo
+apache/pinot,16584,0,2,2,1,2,"Java, feature",0,"Feature request requires system understanding and is better for growth users",codex_pseudo
+prometheus/prometheus,12563,2,2,1,1,2,"Go, feature, configuration",0,"Help wanted feature with low estimated difficulty but some config context",codex_pseudo
+prometheus/prometheus,12389,2,2,1,1,2,"Go, feature, API",0,"Help wanted API feature has moderate comments but reasonable difficulty",codex_pseudo
+trinodb/trino,26262,0,2,1,1,1,"Java, debugging, Iceberg",0,"Data inconsistency issue has domain-specific context and low clarity from metadata",codex_pseudo
+vitejs/vite,6714,2,2,1,1,2,"JavaScript, HTML, feature",0,"Contribution welcome HTML serving task has newcomer signal and moderate scope",codex_pseudo
+nodejs/undici,4143,0,3,3,2,2,"JavaScript, Node.js, HTTP2, feature",0,"HTTP/2 pipelining behavior is an advanced runtime feature task",codex_pseudo
+nodejs/undici,4144,0,3,3,2,2,"JavaScript, Node.js, HTTP, feature",0,"Raw header handling changes require protocol-level understanding",codex_pseudo
+nodejs/undici,4287,0,3,3,2,2,"JavaScript, Node.js, API design",0,"Low-level session and client API work is better suited to growth users",codex_pseudo

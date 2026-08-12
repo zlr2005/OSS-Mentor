@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from typing import Any
 
 from oss_mentor.developer_profiles import ALLOWED_LANGUAGES, ALLOWED_TASK_TYPES
-from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.storage.candidates import CandidateStorage
 
 
 ELIGIBILITY_VALUES = (
@@ -36,14 +37,42 @@ def _json_list(value: str | None) -> list[Any]:
     return parsed if isinstance(parsed, list) else []
 
 
+def _safe_error(value: Any) -> str | None:
+    if value is None:
+        return None
+    sanitized = str(value).replace("\r", " ").replace("\n", " ")
+    sanitized = re.sub(
+        r"\b(?:gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+)\b",
+        "[redacted]",
+        sanitized,
+        flags=re.IGNORECASE,
+    )
+    sanitized = re.sub(
+        r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+        "[redacted-email]",
+        sanitized,
+        flags=re.IGNORECASE,
+    )
+    return sanitized[:500]
+
+
 def build_candidate_report(
-    store: SQLiteCandidateStore, *, now: datetime | None = None
+    store: CandidateStorage,
+    *,
+    now: datetime | None = None,
+    operation_reports: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     rows = store.candidate_report_rows()
     repositories = rows["repositories"]
     candidates = rows["candidates"]
     current = now or datetime.now(timezone.utc)
     current = current if current.tzinfo else current.replace(tzinfo=timezone.utc)
+
+    def is_active(row: dict[str, Any]) -> bool:
+        return (
+            not bool(row["is_archived"] or row["is_disabled"])
+            and str(row.get("maintenance_status") or "active") != "inactive"
+        )
 
     eligibility = Counter(str(row["candidate_eligibility"]) for row in candidates)
     per_repository: dict[str, Counter[str]] = defaultdict(Counter)
@@ -55,7 +84,7 @@ def build_candidate_report(
 
     for row in candidates:
         status = str(row["candidate_eligibility"])
-        active = not bool(row["is_archived"] or row["is_disabled"])
+        active = is_active(row)
         eligible = status == "eligible" and active
         repository = str(row["repository"])
         language = str(row["primary_language"] or "unknown")
@@ -85,19 +114,19 @@ def build_candidate_report(
                 freshness["over_72_hours"] += 1
 
     healthy = sum(
-        not bool(row["is_archived"] or row["is_disabled"])
+        is_active(row)
         for row in repositories
     )
     verified_eligible = sum(
         row["candidate_eligibility"] == "eligible"
         and row["github_verified_at"] is not None
-        and not bool(row["is_archived"] or row["is_disabled"])
+        and is_active(row)
         for row in candidates
     )
     newcomer_eligible = sum(
         row["candidate_eligibility"] == "eligible"
         and bool(row["newcomer_label_signal"])
-        and not bool(row["is_archived"] or row["is_disabled"])
+        and is_active(row)
         for row in candidates
     )
 
@@ -105,7 +134,7 @@ def build_candidate_report(
         row
         for row in candidates
         if row["candidate_eligibility"] == "eligible"
-        and not bool(row["is_archived"] or row["is_disabled"])
+        and is_active(row)
     ]
 
     def coverage(track: str) -> dict[str, Any]:
@@ -173,13 +202,67 @@ def build_candidate_report(
             ],
         }
 
+    operations: dict[str, Any] = {}
+    for name, source in (operation_reports or {}).items():
+        repository_rows = source.get("repositories") or []
+        operations[name] = {
+            "status": source.get("status"),
+            "repository_count": int(source.get("repository_count") or 0),
+            "successful_repository_count": int(
+                source.get("successful_repository_count")
+                or len(source.get("repositories_refreshed") or [])
+            ),
+            "failed_repository_count": int(
+                source.get("failed_repository_count")
+                or source.get("failed_count")
+                or 0
+            ),
+            "skipped_repository_count": sum(
+                str(row.get("status") or "").startswith("skipped")
+                for row in repository_rows
+                if isinstance(row, dict)
+            ),
+            "github_request_count": int(source.get("github_request_count") or 0),
+            "ecosystems_request_count": int(
+                source.get("ecosystems_request_count") or 0
+            ),
+            "rate_limited": bool(source.get("rate_limited")),
+            "average_github_requests_per_repository": round(
+                int(source.get("github_request_count") or 0)
+                / max(1, int(source.get("repository_count") or 0)),
+                4,
+            ),
+            "errors": [
+                {
+                    "repository": item.get("repository") or item.get("target"),
+                    "error_type": item.get("error_type"),
+                    "error": _safe_error(item.get("error")),
+                }
+                for item in source.get("errors") or []
+                if isinstance(item, dict)
+            ],
+        }
+
+    v05_status_reader = getattr(store, "candidate_pool_status", None)
+    v05_status = (
+        v05_status_reader(now=current) if callable(v05_status_reader) else None
+    )
+
     return {
-        "schema_version": "candidate_pool_report_v0.3",
+        "schema_version": (
+            "candidate_pool_report_v0.5"
+            if v05_status is not None
+            else "candidate_pool_report_v0.3"
+        ),
         "generated_at": current.isoformat(),
         "repository_summary": {
             "total_count": len(repositories),
             "healthy_count": healthy,
             "archived_or_disabled_count": len(repositories) - healthy,
+            "maintenance_inactive_count": sum(
+                str(row.get("maintenance_status") or "active") == "inactive"
+                for row in repositories
+            ),
         },
         "candidate_summary": {
             "total_count": len(candidates),
@@ -221,7 +304,7 @@ def build_candidate_report(
             "eligible_linked_pr_not_checked": sum(
                 row["has_linked_open_pr"] is None
                 and row["candidate_eligibility"] == "eligible"
-                and not bool(row["is_archived"] or row["is_disabled"])
+                and is_active(row)
                 for row in candidates
             ),
         },
@@ -244,6 +327,8 @@ def build_candidate_report(
             (row["last_candidate_refresh_at"] for row in repositories if row["last_candidate_refresh_at"]),
             default=None,
         ),
+        "operation_summary": operations,
+        "candidate_status_v0.5": v05_status,
     }
 
 
@@ -251,14 +336,19 @@ def render_candidate_report_markdown(report: dict[str, Any]) -> str:
     repositories = report["repository_summary"]
     candidates = report["candidate_summary"]
     eligibility = candidates["eligibility_counts"]
+    report_version = (
+        "v0.5"
+        if report.get("schema_version") == "candidate_pool_report_v0.5"
+        else "v0.3"
+    )
     lines = [
-        "# 候选池报告 v0.3",
+        f"# 候选池报告 {report_version}",
         "",
         f"生成时间：`{report['generated_at']}`",
         "",
         "## 核心指标",
         "",
-        f"- 仓库：{repositories['total_count']}（健康 {repositories['healthy_count']}，归档或禁用 {repositories['archived_or_disabled_count']}）",
+        f"- 仓库：{repositories['total_count']}（健康 {repositories['healthy_count']}，不可用 {repositories['archived_or_disabled_count']}，长期无推送 {repositories.get('maintenance_inactive_count', 0)}）",
         f"- 候选总数：{candidates['total_count']}",
         f"- 已验证可推荐：{candidates['verified_eligible_count']}",
         f"- 可推荐且含新人信号：{candidates['eligible_newcomer_signal_count']}",
@@ -291,6 +381,46 @@ def render_candidate_report_markdown(report: dict[str, Any]) -> str:
             f"- 新人零库存组合：{', '.join(report['recommendation_coverage']['newcomer']['zero_combinations']) or '无'}",
             f"- 进阶零库存组合：{', '.join(report['recommendation_coverage']['growth']['zero_combinations']) or '无'}",
             f"- 新人任务最大单仓库占比：{report['recommendation_coverage']['newcomer']['maximum_repository_share']:.1%}",
+            "",
+            "## 同步与刷新成本",
+            "",
+            "| 操作 | 状态 | 仓库 | 成功 | 失败 | 跳过 | GitHub 请求 | Ecosyste.ms 请求 |",
+            "|---|---|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    if report.get("operation_summary"):
+        for name, operation in report["operation_summary"].items():
+            lines.append(
+                f"| {name} | {operation.get('status') or 'unknown'} | "
+                f"{operation['repository_count']} | "
+                f"{operation['successful_repository_count']} | "
+                f"{operation['failed_repository_count']} | "
+                f"{operation['skipped_repository_count']} | "
+                f"{operation['github_request_count']} | "
+                f"{operation['ecosystems_request_count']} |"
+            )
+            for error in operation["errors"]:
+                lines.append(
+                    f"- {name} 失败：`{error.get('repository') or 'unknown'}` / "
+                    f"`{error.get('error_type') or 'Error'}` / {error.get('error') or ''}"
+                )
+    else:
+        lines.append("| 未提供运行报告 | unknown | 0 | 0 | 0 | 0 | 0 | 0 |")
+    v05_status = report.get("candidate_status_v0.5")
+    if v05_status:
+        lines.extend(
+            [
+                "",
+                "## v0.5 可用性",
+                "",
+                f"- 当前可推荐：{v05_status['recommendable_count']}",
+                f"- 新人任务：{v05_status['newcomer_count']}",
+                f"- 最近失败仓库：{', '.join(v05_status['failed_repositories']) or '无'}",
+                f"- 平均每仓库 GitHub 请求：{v05_status['average_github_requests_per_repository']}",
+            ]
+        )
+    lines.extend(
+        [
             "",
             "> 本报告只包含聚合统计，不包含 Token、Issue 正文或用户身份数据。",
             "",
