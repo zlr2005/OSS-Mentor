@@ -250,6 +250,7 @@ class CandidateRefreshReportTests(unittest.TestCase):
                 "005_candidate_refresh.sql",
                 "006_repository_activity.sql",
                 "008_sync_runs.sql",
+                "009_github_profile_evidence.sql",
             },
             migrations,
         )
