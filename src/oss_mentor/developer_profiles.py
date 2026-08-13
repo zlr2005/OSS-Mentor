@@ -49,6 +49,20 @@ _PROFILE_SKILL_NAMES = (
     "build_tooling",
 )
 
+PROFILE_MERGE_VERSION = "profile-merge-v0.1"
+
+PROFILE_SOURCE_PRIORITY = {
+    "default": 0,
+    GITHUB_PROFILE_SOURCE_WEAK: 1,
+    GITHUB_PROFILE_SOURCE_EXPLICIT: 2,
+    "user_input": 3,
+    "user_confirmed": 4,
+}
+
+PROFILE_SUGGESTION_DECISIONS = {
+    "accept",
+    "reject",
+}
 
 @dataclass(frozen=True, slots=True)
 class DeveloperProfile:
@@ -825,6 +839,615 @@ def build_github_profile_import(
                 *category_skill_suggestions,
             ],
         },
+    }
+def _profile_field_value(
+    profile: dict[str, Any],
+    field: str,
+) -> Any:
+    if field == "preferred_languages":
+        return list(
+            profile.get(
+                "preferred_languages",
+                [],
+            )
+        )
+
+    if field.startswith("skills."):
+        skill_name = field.split(".", 1)[1]
+
+        skills = profile.get("skills", {})
+
+        if not isinstance(skills, dict):
+            raise ValueError(
+                "profile.skills must be an object"
+            )
+
+        return skills.get(skill_name)
+
+    raise ValueError(
+        f"unsupported profile field: {field}"
+    )
+
+
+def _profile_field_metadata(
+    profile: dict[str, Any],
+    field: str,
+) -> dict[str, Any]:
+    metadata = profile.get(
+        "field_metadata",
+        {},
+    )
+
+    if not isinstance(metadata, dict):
+        raise ValueError(
+            "profile.field_metadata "
+            "must be an object"
+        )
+
+    raw = metadata.get(field)
+
+    if raw is None:
+        return {
+            "source": "default",
+            "locked": False,
+            "observed_at": None,
+        }
+
+    if not isinstance(raw, dict):
+        raise ValueError(
+            f"metadata for {field} "
+            "must be an object"
+        )
+
+    source = raw.get(
+        "source",
+        "default",
+    )
+
+    if source not in PROFILE_SOURCE_PRIORITY:
+        raise ValueError(
+            f"unsupported profile source: {source}"
+        )
+
+    locked = raw.get(
+        "locked",
+        False,
+    )
+
+    if not isinstance(locked, bool):
+        raise ValueError(
+            f"locked metadata for {field} "
+            "must be boolean"
+        )
+
+    return {
+        **raw,
+        "source": source,
+        "locked": locked,
+    }
+
+
+def _profile_suggestion_id(
+    *,
+    field: str,
+    source: str,
+    observed_at: str,
+) -> str:
+    safe_field = field.replace(
+        ".",
+        "__",
+    )
+
+    safe_time = (
+        observed_at
+        .replace(":", "")
+        .replace("-", "")
+    )
+
+    return (
+        f"{safe_field}:"
+        f"{source}:"
+        f"{safe_time}"
+    )
+
+
+def _build_profile_suggestion(
+    *,
+    profile: dict[str, Any],
+    field: str,
+    proposed_value: Any,
+    source: str,
+    confidence: float,
+    observed_at: str,
+    evidence: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if source not in PROFILE_SOURCE_PRIORITY:
+        raise ValueError(
+            f"unsupported suggestion source: {source}"
+        )
+
+    if not 0.0 <= confidence <= 1.0:
+        raise ValueError(
+            "suggestion confidence "
+            "must be between 0 and 1"
+        )
+
+    current_value = _profile_field_value(
+        profile,
+        field,
+    )
+
+    metadata = _profile_field_metadata(
+        profile,
+        field,
+    )
+
+    current_source = metadata["source"]
+
+    incoming_priority = (
+        PROFILE_SOURCE_PRIORITY[source]
+    )
+
+    current_priority = (
+        PROFILE_SOURCE_PRIORITY[
+            current_source
+        ]
+    )
+
+    if metadata["locked"]:
+        blocked_reason = "field_locked"
+    elif current_priority > incoming_priority:
+        blocked_reason = (
+            "higher_priority_current_source"
+        )
+    elif current_value == proposed_value:
+        blocked_reason = "no_change"
+    else:
+        blocked_reason = None
+
+    return {
+        "suggestion_id": (
+            _profile_suggestion_id(
+                field=field,
+                source=source,
+                observed_at=observed_at,
+            )
+        ),
+        "field": field,
+        "current_value": current_value,
+        "proposed_value": proposed_value,
+        "source": source,
+        "confidence": round(
+            confidence,
+            2,
+        ),
+        "observed_at": observed_at,
+        "evidence": evidence,
+        "status": "pending",
+        "blocked_reason": blocked_reason,
+        "current_source": current_source,
+        "current_locked": metadata["locked"],
+    }
+
+
+def build_profile_merge_preview(
+    current_profile: Any,
+    github_import: Any,
+) -> dict[str, Any]:
+    """
+    Build a non-destructive preview of GitHub-derived changes.
+
+    GitHub imports never silently overwrite profile fields.
+    Every changed field is represented as an explicit suggestion.
+    """
+
+    if not isinstance(
+        current_profile,
+        dict,
+    ):
+        raise ValueError(
+            "current_profile must be an object"
+        )
+
+    if not isinstance(
+        github_import,
+        dict,
+    ):
+        raise ValueError(
+            "github_import must be an object"
+        )
+
+    if (
+        github_import.get(
+            "schema_version"
+        )
+        != GITHUB_PROFILE_IMPORT_VERSION
+    ):
+        raise ValueError(
+            "unsupported GitHub profile "
+            "import version"
+        )
+
+    suggestions_payload = (
+        github_import.get(
+            "suggestions",
+            {},
+        )
+    )
+
+    if not isinstance(
+        suggestions_payload,
+        dict,
+    ):
+        raise ValueError(
+            "github_import.suggestions "
+            "must be an object"
+        )
+
+    suggestions: list[
+        dict[str, Any]
+    ] = []
+
+    preferred_languages = (
+        suggestions_payload.get(
+            "preferred_languages"
+        )
+    )
+
+    if preferred_languages is not None:
+        if not isinstance(
+            preferred_languages,
+            dict,
+        ):
+            raise ValueError(
+                "preferred_languages "
+                "suggestion must be an object"
+            )
+
+        suggestions.append(
+            _build_profile_suggestion(
+                profile=current_profile,
+                field="preferred_languages",
+                proposed_value=list(
+                    preferred_languages.get(
+                        "value",
+                        [],
+                    )
+                ),
+                source=str(
+                    preferred_languages[
+                        "source"
+                    ]
+                ),
+                confidence=float(
+                    preferred_languages[
+                        "confidence"
+                    ]
+                ),
+                observed_at=str(
+                    preferred_languages[
+                        "observed_at"
+                    ]
+                ),
+                evidence=list(
+                    preferred_languages.get(
+                        "evidence",
+                        [],
+                    )
+                ),
+            )
+        )
+
+    skill_rows = suggestions_payload.get(
+        "skills",
+        [],
+    )
+
+    if not isinstance(
+        skill_rows,
+        list,
+    ):
+        raise ValueError(
+            "skills suggestions "
+            "must be an array"
+        )
+
+    for skill in skill_rows:
+        if not isinstance(
+            skill,
+            dict,
+        ):
+            raise ValueError(
+                "skill suggestion "
+                "must be an object"
+            )
+
+        skill_name = skill.get(
+            "skill_name"
+        )
+
+        if (
+            not isinstance(
+                skill_name,
+                str,
+            )
+            or not skill_name.strip()
+        ):
+            raise ValueError(
+                "skill_name must be "
+                "a non-empty string"
+            )
+
+        suggested_level = skill.get(
+            "suggested_level"
+        )
+
+        if (
+            isinstance(
+                suggested_level,
+                bool,
+            )
+            or not isinstance(
+                suggested_level,
+                int,
+            )
+            or not 0 <= suggested_level <= 4
+        ):
+            raise ValueError(
+                "suggested_level must "
+                "be between 0 and 4"
+            )
+
+        suggestions.append(
+            _build_profile_suggestion(
+                profile=current_profile,
+                field=(
+                    f"skills."
+                    f"{skill_name.strip()}"
+                ),
+                proposed_value=(
+                    suggested_level
+                ),
+                source=str(
+                    skill["source"]
+                ),
+                confidence=float(
+                    skill["confidence"]
+                ),
+                observed_at=str(
+                    skill["observed_at"]
+                ),
+                evidence=list(
+                    skill.get(
+                        "evidence",
+                        [],
+                    )
+                ),
+            )
+        )
+
+    suggestions.sort(
+        key=lambda item: (
+            item["field"].casefold(),
+            -PROFILE_SOURCE_PRIORITY[
+                item["source"]
+            ],
+            item["suggestion_id"],
+        )
+    )
+
+    return {
+        "schema_version": (
+            PROFILE_MERGE_VERSION
+        ),
+        "github_login": (
+            github_import.get(
+                "github_login"
+            )
+        ),
+        "observed_at": (
+            github_import.get(
+                "observed_at"
+            )
+        ),
+        "profile_key": (
+            current_profile.get(
+                "profile_key"
+            )
+        ),
+        "suggestions": suggestions,
+    }
+
+
+def _set_profile_field_value(
+    profile: dict[str, Any],
+    field: str,
+    value: Any,
+) -> None:
+    if field == "preferred_languages":
+        profile[
+            "preferred_languages"
+        ] = list(value)
+        return
+
+    if field.startswith("skills."):
+        skill_name = field.split(
+            ".",
+            1,
+        )[1]
+
+        skills = profile.setdefault(
+            "skills",
+            {},
+        )
+
+        if not isinstance(
+            skills,
+            dict,
+        ):
+            raise ValueError(
+                "profile.skills "
+                "must be an object"
+            )
+
+        skills[skill_name] = value
+        return
+
+    raise ValueError(
+        f"unsupported profile field: {field}"
+    )
+
+
+def apply_profile_suggestion(
+    current_profile: Any,
+    suggestion: Any,
+    *,
+    decision: str,
+) -> dict[str, Any]:
+    """
+    Apply one explicit user decision.
+
+    Accepting a suggestion is recorded as user confirmation while
+    retaining the original GitHub source and evidence.
+    Rejecting a suggestion never mutates the profile.
+    """
+
+    if decision not in (
+        PROFILE_SUGGESTION_DECISIONS
+    ):
+        raise ValueError(
+            "decision must be "
+            "accept or reject"
+        )
+
+    if not isinstance(
+        current_profile,
+        dict,
+    ):
+        raise ValueError(
+            "current_profile "
+            "must be an object"
+        )
+
+    if not isinstance(
+        suggestion,
+        dict,
+    ):
+        raise ValueError(
+            "suggestion must "
+            "be an object"
+        )
+
+    field = suggestion.get(
+        "field"
+    )
+
+    if (
+        not isinstance(
+            field,
+            str,
+        )
+        or not field
+    ):
+        raise ValueError(
+            "suggestion.field "
+            "must be a string"
+        )
+
+    result = json.loads(
+        json.dumps(
+            current_profile,
+            ensure_ascii=False,
+        )
+    )
+
+    resolved = {
+        **suggestion,
+        "status": (
+            "accepted"
+            if decision == "accept"
+            else "rejected"
+        ),
+    }
+
+    if decision == "reject":
+        return {
+            "profile": result,
+            "suggestion": resolved,
+        }
+
+    metadata = _profile_field_metadata(
+        result,
+        field,
+    )
+
+    if metadata["locked"]:
+        raise ValueError(
+            f"profile field is locked: {field}"
+        )
+
+    if (
+        suggestion.get(
+            "blocked_reason"
+        )
+        == "higher_priority_current_source"
+    ):
+        raise ValueError(
+            "cannot overwrite a "
+            "higher-priority profile source"
+        )
+
+    proposed_value = suggestion.get(
+        "proposed_value"
+    )
+
+    _set_profile_field_value(
+        result,
+        field,
+        proposed_value,
+    )
+
+    field_metadata = result.setdefault(
+        "field_metadata",
+        {},
+    )
+
+    if not isinstance(
+        field_metadata,
+        dict,
+    ):
+        raise ValueError(
+            "profile.field_metadata "
+            "must be an object"
+        )
+
+    field_metadata[field] = {
+        "source": "user_confirmed",
+        "locked": False,
+        "observed_at": suggestion.get(
+            "observed_at"
+        ),
+        "accepted_source": (
+            suggestion.get(
+                "source"
+            )
+        ),
+        "confidence": (
+            suggestion.get(
+                "confidence"
+            )
+        ),
+        "evidence": list(
+            suggestion.get(
+                "evidence",
+                [],
+            )
+        ),
+    }
+
+    return {
+        "profile": result,
+        "suggestion": resolved,
     }
 
 def _string_tuple(value: Any, field: str) -> tuple[str, ...]:
