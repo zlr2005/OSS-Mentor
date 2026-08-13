@@ -1,0 +1,99 @@
+{
+  "schema_version": "github-profile-input-v0.1",
+  "observed_at": "2026-07-29T12:30:00Z",
+  "consent_version": "profile-import-consent-v0.1",
+  "user": {
+    "login": "fixture-dev",
+    "name": "Fixture Developer"
+  },
+  "repositories": [
+    {
+      "full_name": "fixture-dev/python-cli",
+      "private": false,
+      "archived": false,
+      "languages": {
+        "Python": 8000,
+        "Shell": 2000
+      },
+      "contributions": {
+        "commits": 12,
+        "pull_requests": 3,
+        "issues": 1,
+        "reviews": 2
+      },
+      "first_contribution_at": "2025-11-10T09:00:00Z",
+      "last_contribution_at": "2026-07-27T10:00:00Z",
+      "contributed_paths": [
+        "src/cli.py",
+        "tests/test_cli.py",
+        "pyproject.toml",
+        ".github/workflows/test.yml",
+        "README.md"
+      ]
+    },
+    {
+      "full_name": "community/web-docs",
+      "private": false,
+      "archived": false,
+      "languages": {
+        "JavaScript": 6000,
+        "CSS": 2000,
+        "HTML": 2000
+      },
+      "contributions": {
+        "commits": 5,
+        "pull_requests": 1,
+        "issues": 2,
+        "reviews": 1
+      },
+      "first_contribution_at": "2026-03-05T08:00:00Z",
+      "last_contribution_at": "2026-07-20T15:00:00Z",
+      "contributed_paths": [
+        "src/app.js",
+        "docs/getting-started.md",
+        "package.json",
+        "README.md"
+      ]
+    },
+    {
+      "full_name": "community/parser",
+      "private": false,
+      "archived": false,
+      "languages": {
+        "Python": 5000
+      },
+      "contributions": {
+        "commits": 2,
+        "pull_requests": 2,
+        "issues": 0,
+        "reviews": 4
+      },
+      "first_contribution_at": "2026-01-15T11:00:00Z",
+      "last_contribution_at": "2026-06-15T11:00:00Z",
+      "contributed_paths": [
+        "tests/test_parser.py",
+        "tox.ini",
+        "docs/api.md"
+      ]
+    },
+    {
+      "full_name": "private-labs/secret",
+      "private": true,
+      "archived": false,
+      "languages": {
+        "Rust": 999999
+      },
+      "contributions": {
+        "commits": 500,
+        "pull_requests": 50,
+        "issues": 30,
+        "reviews": 80
+      },
+      "first_contribution_at": "2025-01-01T00:00:00Z",
+      "last_contribution_at": "2026-07-28T00:00:00Z",
+      "contributed_paths": [
+        "src/private.rs"
+      ]
+    }
+  ]
+}

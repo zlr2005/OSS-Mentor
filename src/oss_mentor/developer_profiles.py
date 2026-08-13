@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-
 
 CUSTOM_PROFILE_VERSION = "custom-profile-v0.2"
 ALLOWED_SERVICE_TRACKS = {"newcomer", "growth"}
@@ -28,6 +29,25 @@ ALLOWED_TASK_TYPES = {
     "refactor",
     "build_tooling",
 }
+GITHUB_PROFILE_INPUT_SCHEMA_VERSION = "github-profile-input-v0.1"
+GITHUB_PROFILE_IMPORT_VERSION = "github-profile-import-v0.1"
+GITHUB_PROFILE_RECENCY_DAYS = 180
+
+GITHUB_PROFILE_SOURCE_EXPLICIT = "github_explicit_evidence"
+GITHUB_PROFILE_SOURCE_WEAK = "github_weak_inference"
+
+_PROFILE_ACTIVITY_FIELDS = (
+    "commits",
+    "pull_requests",
+    "issues",
+    "reviews",
+)
+
+_PROFILE_SKILL_NAMES = (
+    "testing",
+    "documentation",
+    "build_tooling",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +65,767 @@ class DeveloperProfile:
     skills: dict[str, int]
     consent_version: str | None = None
 
+def _parse_profile_datetime(value: Any, field: str) -> datetime:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field} must be a UTC ISO 8601 string")
+
+    raw = value.strip()
+    if raw.endswith("Z"):
+        raw = f"{raw[:-1]}+00:00"
+
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except ValueError as exc:
+        raise ValueError(
+            f"{field} must be a valid ISO 8601 timestamp"
+        ) from exc
+
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field} must include a timezone")
+
+    return parsed.astimezone(timezone.utc)
+
+
+def _profile_iso_z(value: datetime) -> str:
+    return (
+        value.astimezone(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
+def _non_negative_int(value: Any, field: str) -> int:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < 0
+    ):
+        raise ValueError(
+            f"{field} must be a non-negative integer"
+        )
+    return value
+
+
+def _repository_last_contribution_at(
+    repository: dict[str, Any],
+) -> datetime | None:
+    raw = repository.get("last_contribution_at")
+    if raw is None:
+        return None
+
+    return _parse_profile_datetime(
+        raw,
+        "repositories[].last_contribution_at",
+    )
+
+
+def _normalized_path(value: str) -> str:
+    return (
+        value.strip()
+        .replace("\\", "/")
+        .casefold()
+    )
+
+
+def _path_skill_categories(path: str) -> tuple[str, ...]:
+    normalized = _normalized_path(path)
+    basename = normalized.rsplit("/", 1)[-1]
+
+    categories: list[str] = []
+
+    testing_names = {
+        "pytest.ini",
+        "tox.ini",
+        "conftest.py",
+        "jest.config.js",
+        "jest.config.cjs",
+        "jest.config.mjs",
+        "jest.config.ts",
+    }
+
+    if (
+        normalized.startswith("tests/")
+        or "/tests/" in normalized
+        or normalized.startswith("test/")
+        or "/test/" in normalized
+        or basename in testing_names
+        or basename.startswith("test_")
+        or basename.endswith("_test.py")
+        or basename.endswith(".test.js")
+        or basename.endswith(".test.ts")
+        or basename.endswith(".spec.js")
+        or basename.endswith(".spec.ts")
+    ):
+        categories.append("testing")
+
+    if (
+        normalized.startswith("docs/")
+        or "/docs/" in normalized
+        or basename.startswith("readme")
+        or basename.startswith("contributing")
+        or basename in {
+            "mkdocs.yml",
+            "mkdocs.yaml",
+            "conf.py",
+        }
+    ):
+        categories.append("documentation")
+
+    build_names = {
+        "pyproject.toml",
+        "package.json",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "pom.xml",
+        "build.gradle",
+        "build.gradle.kts",
+        "settings.gradle",
+        "settings.gradle.kts",
+        "gradle.properties",
+        "cargo.toml",
+        "makefile",
+        "dockerfile",
+    }
+
+    if (
+        basename in build_names
+        or normalized.startswith(".github/workflows/")
+        or "/.github/workflows/" in normalized
+    ):
+        categories.append("build_tooling")
+
+    return tuple(categories)
+
+
+def _language_profile_confidence(
+    share: float,
+    repository_count: int,
+) -> float:
+    """
+    Confidence means confidence that the language is commonly used.
+
+    It is deliberately not a proficiency score.
+    """
+    score = (
+        0.35
+        + min(0.30, share * 0.30)
+        + min(0.15, repository_count * 0.05)
+    )
+    return round(min(0.80, score), 2)
+
+
+def _skill_profile_confidence(
+    repository_count: int,
+    evidence_count: int,
+) -> float:
+    score = (
+        0.50
+        + min(0.20, repository_count * 0.08)
+        + min(0.20, evidence_count * 0.04)
+    )
+    return round(min(0.90, score), 2)
+
+
+def build_github_profile_import(
+    payload: Any,
+) -> dict[str, Any]:
+    """
+    Build deterministic profile suggestions from sanitized public
+    GitHub evidence.
+
+    This function performs no network requests.
+
+    Contribution volume may affect activity summaries and confidence,
+    but it never directly determines developer proficiency.
+    """
+
+    if not isinstance(payload, dict):
+        raise ValueError(
+            "GitHub profile input must be a JSON object"
+        )
+
+    if (
+        payload.get("schema_version")
+        != GITHUB_PROFILE_INPUT_SCHEMA_VERSION
+    ):
+        raise ValueError(
+            "unsupported GitHub profile input schema_version"
+        )
+
+    observed_at = _parse_profile_datetime(
+        payload.get("observed_at"),
+        "observed_at",
+    )
+    observed_at_text = _profile_iso_z(observed_at)
+
+    consent_version = payload.get("consent_version")
+    if (
+        not isinstance(consent_version, str)
+        or not consent_version.strip()
+    ):
+        raise ValueError(
+            "consent_version must be a non-empty string"
+        )
+
+    user = payload.get("user")
+    if not isinstance(user, dict):
+        raise ValueError("user must be an object")
+
+    github_login = user.get("login")
+    if (
+        not isinstance(github_login, str)
+        or not github_login.strip()
+    ):
+        raise ValueError(
+            "user.login must be a non-empty string"
+        )
+
+    display_name = user.get("name")
+    if (
+        display_name is not None
+        and not isinstance(display_name, str)
+    ):
+        raise ValueError(
+            "user.name must be a string or null"
+        )
+
+    repositories = payload.get("repositories")
+    if not isinstance(repositories, list):
+        raise ValueError(
+            "repositories must be an array"
+        )
+
+    public_rows: list[dict[str, Any]] = []
+    active_rows: list[dict[str, Any]] = []
+    recent_rows: list[dict[str, Any]] = []
+
+    cutoff = observed_at - timedelta(
+        days=GITHUB_PROFILE_RECENCY_DAYS
+    )
+
+    for index, repository in enumerate(repositories):
+        if not isinstance(repository, dict):
+            raise ValueError(
+                f"repositories[{index}] must be an object"
+            )
+
+        # Security boundary:
+        # anything not explicitly public is ignored.
+        if repository.get("private") is not False:
+            continue
+
+        full_name = repository.get("full_name")
+        if (
+            not isinstance(full_name, str)
+            or not full_name.strip()
+        ):
+            raise ValueError(
+                f"repositories[{index}].full_name "
+                "must be a non-empty string"
+            )
+
+        public_rows.append(repository)
+
+        if repository.get("archived") is True:
+            continue
+
+        active_rows.append(repository)
+
+        last_contribution = (
+            _repository_last_contribution_at(repository)
+        )
+
+        if (
+            last_contribution is not None
+            and last_contribution >= cutoff
+        ):
+            recent_rows.append(repository)
+
+    activity_summary = {
+        field: 0
+        for field in _PROFILE_ACTIVITY_FIELDS
+    }
+
+    first_activity: datetime | None = None
+    last_activity: datetime | None = None
+
+    for repository in active_rows:
+        contributions = repository.get(
+            "contributions",
+            {},
+        )
+
+        if not isinstance(contributions, dict):
+            raise ValueError(
+                "repositories[].contributions "
+                "must be an object"
+            )
+
+        for field in _PROFILE_ACTIVITY_FIELDS:
+            activity_summary[field] += (
+                _non_negative_int(
+                    contributions.get(field, 0),
+                    (
+                        "repositories[].contributions."
+                        f"{field}"
+                    ),
+                )
+            )
+
+        first_raw = repository.get(
+            "first_contribution_at"
+        )
+
+        if first_raw is not None:
+            first_value = _parse_profile_datetime(
+                first_raw,
+                (
+                    "repositories[]."
+                    "first_contribution_at"
+                ),
+            )
+
+            first_activity = (
+                first_value
+                if first_activity is None
+                else min(
+                    first_activity,
+                    first_value,
+                )
+            )
+
+        last_raw = repository.get(
+            "last_contribution_at"
+        )
+
+        if last_raw is not None:
+            last_value = _parse_profile_datetime(
+                last_raw,
+                (
+                    "repositories[]."
+                    "last_contribution_at"
+                ),
+            )
+
+            last_activity = (
+                last_value
+                if last_activity is None
+                else max(
+                    last_activity,
+                    last_value,
+                )
+            )
+
+    language_bytes: dict[str, int] = defaultdict(int)
+
+    language_repositories: dict[
+        str,
+        set[str],
+    ] = defaultdict(set)
+
+    language_evidence: dict[
+        str,
+        list[dict[str, Any]],
+    ] = defaultdict(list)
+
+    for repository in recent_rows:
+        full_name = str(
+            repository["full_name"]
+        ).strip()
+
+        languages = repository.get(
+            "languages",
+            {},
+        )
+
+        if not isinstance(languages, dict):
+            raise ValueError(
+                "repositories[].languages "
+                "must be an object"
+            )
+
+        for raw_language, raw_bytes in languages.items():
+            if (
+                not isinstance(raw_language, str)
+                or not raw_language.strip()
+            ):
+                raise ValueError(
+                    "repository language names "
+                    "must be non-empty strings"
+                )
+
+            byte_count = _non_negative_int(
+                raw_bytes,
+                (
+                    "repositories[].languages."
+                    f"{raw_language}"
+                ),
+            )
+
+            if byte_count == 0:
+                continue
+
+            display_language = (
+                LANGUAGE_DISPLAY_NAMES.get(
+                    raw_language.strip().casefold(),
+                    raw_language.strip(),
+                )
+            )
+
+            language_bytes[
+                display_language
+            ] += byte_count
+
+            language_repositories[
+                display_language
+            ].add(full_name)
+
+            language_evidence[
+                display_language
+            ].append(
+                {
+                    "source": (
+                        "public_repository_"
+                        "language_metadata"
+                    ),
+                    "repository": full_name,
+                    "language": display_language,
+                    "bytes": byte_count,
+                }
+            )
+
+    total_language_bytes = sum(
+        language_bytes.values()
+    )
+
+    language_distribution: list[
+        dict[str, Any]
+    ] = []
+
+    for language, byte_count in sorted(
+        language_bytes.items(),
+        key=lambda item: (
+            -item[1],
+            item[0].casefold(),
+        ),
+    ):
+        share = (
+            byte_count / total_language_bytes
+            if total_language_bytes
+            else 0.0
+        )
+
+        language_distribution.append(
+            {
+                "language": language,
+                "bytes": byte_count,
+                "share": round(share, 4),
+                "repository_count": len(
+                    language_repositories[
+                        language
+                    ]
+                ),
+            }
+        )
+
+    supported_language_rows = [
+        row
+        for row in language_distribution
+        if str(
+            row["language"]
+        ).casefold() in ALLOWED_LANGUAGES
+    ][:3]
+
+    language_skill_suggestions: list[
+        dict[str, Any]
+    ] = []
+
+    for row in supported_language_rows:
+        language = str(row["language"])
+
+        confidence = (
+            _language_profile_confidence(
+                float(row["share"]),
+                int(row["repository_count"]),
+            )
+        )
+
+        language_skill_suggestions.append(
+            {
+                "skill_name": language,
+
+                # Conservative default:
+                # repository activity is not
+                # developer proficiency.
+                "suggested_level": 1,
+
+                "source": (
+                    GITHUB_PROFILE_SOURCE_WEAK
+                ),
+                "confidence": confidence,
+                "observed_at": observed_at_text,
+                "evidence": sorted(
+                    language_evidence[language],
+                    key=lambda item: (
+                        item["repository"],
+                        item["language"],
+                    ),
+                ),
+            }
+        )
+
+    skill_evidence: dict[
+        str,
+        list[dict[str, Any]],
+    ] = defaultdict(list)
+
+    skill_repositories: dict[
+        str,
+        set[str],
+    ] = defaultdict(set)
+
+    for repository in recent_rows:
+        full_name = str(
+            repository["full_name"]
+        ).strip()
+
+        contributed_paths = repository.get(
+            "contributed_paths",
+            [],
+        )
+
+        if (
+            not isinstance(contributed_paths, list)
+            or any(
+                not isinstance(path, str)
+                for path in contributed_paths
+            )
+        ):
+            raise ValueError(
+                "repositories[].contributed_paths "
+                "must be an array of strings"
+            )
+
+        for path in contributed_paths:
+            for skill_name in (
+                _path_skill_categories(path)
+            ):
+                skill_repositories[
+                    skill_name
+                ].add(full_name)
+
+                skill_evidence[
+                    skill_name
+                ].append(
+                    {
+                        "source": (
+                            "public_contributed_path"
+                        ),
+                        "repository": full_name,
+                        "path": path,
+                    }
+                )
+
+    category_skill_suggestions: list[
+        dict[str, Any]
+    ] = []
+
+    for skill_name in _PROFILE_SKILL_NAMES:
+        evidence = skill_evidence.get(
+            skill_name,
+            [],
+        )
+
+        if not evidence:
+            continue
+
+        deduplicated = {
+            (
+                item["repository"],
+                item["path"],
+            ): item
+            for item in evidence
+        }
+
+        ordered_evidence = [
+            deduplicated[key]
+            for key in sorted(
+                deduplicated,
+                key=lambda item: (
+                    item[0],
+                    item[1],
+                ),
+            )
+        ]
+
+        category_skill_suggestions.append(
+            {
+                "skill_name": skill_name,
+                "suggested_level": 1,
+                "source": (
+                    GITHUB_PROFILE_SOURCE_EXPLICIT
+                ),
+                "confidence": (
+                    _skill_profile_confidence(
+                        len(
+                            skill_repositories[
+                                skill_name
+                            ]
+                        ),
+                        len(ordered_evidence),
+                    )
+                ),
+                "observed_at": observed_at_text,
+                "evidence": ordered_evidence,
+            }
+        )
+
+    preferred_languages = [
+        str(row["language"])
+        for row in supported_language_rows
+    ]
+
+    if supported_language_rows:
+        preferred_language_confidence = round(
+            sum(
+                _language_profile_confidence(
+                    float(row["share"]),
+                    int(
+                        row["repository_count"]
+                    ),
+                )
+                for row
+                in supported_language_rows
+            )
+            / len(supported_language_rows),
+            2,
+        )
+    else:
+        preferred_language_confidence = 0.0
+
+    recent_active_repositories = []
+
+    for repository in sorted(
+        recent_rows,
+        key=lambda item: str(
+            item["full_name"]
+        ).casefold(),
+    ):
+        last_contribution = (
+            _repository_last_contribution_at(
+                repository
+            )
+        )
+
+        recent_active_repositories.append(
+            {
+                "full_name": str(
+                    repository["full_name"]
+                ).strip(),
+                "last_contribution_at": (
+                    _profile_iso_z(
+                        last_contribution
+                    )
+                    if last_contribution
+                    is not None
+                    else None
+                ),
+            }
+        )
+
+    return {
+        "schema_version": (
+            GITHUB_PROFILE_IMPORT_VERSION
+        ),
+        "github_login": github_login.strip(),
+        "display_name": (
+            display_name.strip()
+            if (
+                isinstance(
+                    display_name,
+                    str,
+                )
+                and display_name.strip()
+            )
+            else github_login.strip()
+        ),
+        "consent_version": (
+            consent_version.strip()
+        ),
+        "observed_at": observed_at_text,
+
+        "public_repository_count": len(
+            public_rows
+        ),
+        "active_public_repository_count": len(
+            active_rows
+        ),
+        "recent_active_repository_count": len(
+            recent_rows
+        ),
+
+        "recent_active_repositories": (
+            recent_active_repositories
+        ),
+
+        "language_distribution_basis": (
+            "recent_public_contributed_repositories"
+        ),
+        "language_distribution": (
+            language_distribution
+        ),
+
+        "activity_summary": activity_summary,
+
+        "activity_range": {
+            "first_contribution_at": (
+                _profile_iso_z(first_activity)
+                if first_activity is not None
+                else None
+            ),
+            "last_contribution_at": (
+                _profile_iso_z(last_activity)
+                if last_activity is not None
+                else None
+            ),
+        },
+
+        "suggestions": {
+            "preferred_languages": {
+                "value": preferred_languages,
+                "source": (
+                    GITHUB_PROFILE_SOURCE_WEAK
+                ),
+                "confidence": (
+                    preferred_language_confidence
+                ),
+                "observed_at": (
+                    observed_at_text
+                ),
+                "evidence": [
+                    {
+                        "language": (
+                            row["language"]
+                        ),
+                        "share": row["share"],
+                        "repository_count": (
+                            row[
+                                "repository_count"
+                            ]
+                        ),
+                    }
+                    for row
+                    in supported_language_rows
+                ],
+            },
+
+            "skills": [
+                *language_skill_suggestions,
+                *category_skill_suggestions,
+            ],
+        },
+    }
 
 def _string_tuple(value: Any, field: str) -> tuple[str, ...]:
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
