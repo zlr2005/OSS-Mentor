@@ -156,8 +156,36 @@ class GitHubProfileImportTests(unittest.TestCase):
     def test_private_repository_never_leaks(
         self,
     ) -> None:
-        result = build_github_profile_import(
+        payload = copy.deepcopy(
             self.payload
+        )
+
+        payload["repositories"].append(
+            {
+                "full_name": "private-labs/secret",
+                "private": True,
+                "archived": False,
+                "languages": {
+                    "Rust": 999999,
+                },
+                "contributions": {
+                    "commits": 500,
+                    "pull_requests": 50,
+                    "issues": 30,
+                    "reviews": 80,
+                },
+                "first_contribution_at":
+                    "2025-01-01T00:00:00Z",
+                "last_contribution_at":
+                    "2026-07-28T00:00:00Z",
+                "contributed_paths": [
+                    "src/private.rs",
+                ],
+            }
+        )
+
+        result = build_github_profile_import(
+            payload
         )
 
         serialized = json.dumps(
@@ -172,6 +200,10 @@ class GitHubProfileImportTests(unittest.TestCase):
         self.assertNotIn(
             '"Rust"',
             serialized,
+        )
+        self.assertEqual(
+            3,
+            result["public_repository_count"],
         )
 
     def test_contribution_volume_does_not_raise_level(
@@ -262,7 +294,10 @@ class GitHubProfileImportTests(unittest.TestCase):
             self.payload
         )
 
-        self.assertEqual(first, second)
+        self.assertEqual(
+            first,
+            second,
+        )
 
 
 if __name__ == "__main__":

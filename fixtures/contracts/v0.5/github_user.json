@@ -75,25 +75,6 @@
         "tox.ini",
         "docs/api.md"
       ]
-    },
-    {
-      "full_name": "private-labs/secret",
-      "private": true,
-      "archived": false,
-      "languages": {
-        "Rust": 999999
-      },
-      "contributions": {
-        "commits": 500,
-        "pull_requests": 50,
-        "issues": 30,
-        "reviews": 80
-      },
-      "first_contribution_at": "2025-01-01T00:00:00Z",
-      "last_contribution_at": "2026-07-28T00:00:00Z",
-      "contributed_paths": [
-        "src/private.rs"
-      ]
     }
   ]
 }
