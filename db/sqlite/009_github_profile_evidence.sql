@@ -15,6 +15,51 @@ CREATE TABLE IF NOT EXISTS profile_user_binding (
     updated_at TEXT NOT NULL
 );
 
+-- Persist per-field provenance and edit protection.
+--
+-- Effective profile values remain in developer_profile / developer_skill.
+-- This table records where a field came from, whether it is locked,
+-- and the evidence retained after a user accepts a GitHub suggestion.
+CREATE TABLE IF NOT EXISTS profile_field_state (
+    developer_profile_id INTEGER NOT NULL
+        REFERENCES developer_profile(developer_profile_id)
+        ON DELETE CASCADE,
+    field_name TEXT NOT NULL,
+    source TEXT NOT NULL CHECK (
+        source IN (
+            'default',
+            'github_weak_inference',
+            'github_explicit_evidence',
+            'user_input',
+            'user_confirmed'
+        )
+    ),
+    locked INTEGER NOT NULL DEFAULT 0 CHECK (
+        locked IN (0, 1)
+    ),
+    observed_at TEXT,
+    accepted_source TEXT CHECK (
+        accepted_source IS NULL
+        OR accepted_source IN (
+            'github_weak_inference',
+            'github_explicit_evidence'
+        )
+    ),
+    confidence REAL CHECK (
+        confidence IS NULL
+        OR (
+            confidence >= 0.0
+            AND confidence <= 1.0
+        )
+    ),
+    evidence_json TEXT NOT NULL DEFAULT '[]',
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (
+        developer_profile_id,
+        field_name
+    )
+);
+
 -- One sanitized public-GitHub import operation.
 --
 -- No OAuth token, cookie, authorization code, state parameter, private
@@ -24,17 +69,25 @@ CREATE TABLE IF NOT EXISTS github_profile_import (
     developer_profile_id INTEGER NOT NULL
         REFERENCES developer_profile(developer_profile_id)
         ON DELETE CASCADE,
-    import_key TEXT NOT NULL UNIQUE,
+    import_key TEXT NOT NULL,
     github_login TEXT NOT NULL COLLATE NOCASE,
     import_version TEXT NOT NULL,
     consent_version TEXT NOT NULL,
     observed_at TEXT NOT NULL,
     imported_at TEXT NOT NULL,
     public_repository_count INTEGER NOT NULL DEFAULT 0
-        CHECK (public_repository_count >= 0),
+        CHECK (
+            public_repository_count >= 0
+        ),
     recent_repository_count INTEGER NOT NULL DEFAULT 0
-        CHECK (recent_repository_count >= 0),
-    summary_json TEXT NOT NULL DEFAULT '{}'
+        CHECK (
+            recent_repository_count >= 0
+        ),
+    summary_json TEXT NOT NULL DEFAULT '{}',
+    UNIQUE (
+        developer_profile_id,
+        import_key
+    )
 );
 
 -- GitHub-derived changes are suggestions only.
@@ -57,7 +110,8 @@ CREATE TABLE IF NOT EXISTS profile_field_suggestion (
         )
     ),
     confidence REAL NOT NULL CHECK (
-        confidence >= 0.0 AND confidence <= 1.0
+        confidence >= 0.0
+        AND confidence <= 1.0
     ),
     evidence_json TEXT NOT NULL DEFAULT '[]',
     observed_at TEXT NOT NULL,
@@ -72,13 +126,16 @@ CREATE TABLE IF NOT EXISTS profile_field_suggestion (
     resolved_at TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    UNIQUE (github_profile_import_id, field_name)
+    UNIQUE (
+        github_profile_import_id,
+        field_name
+    )
 );
 
 -- Explainable GitHub evidence supporting an inferred developer skill.
 --
 -- This is separate from developer_skill:
--- developer_skill is the effective profile value;
+-- developer_skill stores the effective profile value;
 -- developer_skill_evidence records why GitHub suggested that value.
 CREATE TABLE IF NOT EXISTS developer_skill_evidence (
     developer_skill_evidence_id INTEGER PRIMARY KEY,
@@ -96,7 +153,8 @@ CREATE TABLE IF NOT EXISTS developer_skill_evidence (
         )
     ),
     confidence REAL NOT NULL CHECK (
-        confidence >= 0.0 AND confidence <= 1.0
+        confidence >= 0.0
+        AND confidence <= 1.0
     ),
     evidence_json TEXT NOT NULL DEFAULT '[]',
     observed_at TEXT NOT NULL,
@@ -109,7 +167,16 @@ CREATE TABLE IF NOT EXISTS developer_skill_evidence (
 );
 
 CREATE INDEX IF NOT EXISTS profile_user_binding_profile_idx
-    ON profile_user_binding(developer_profile_id);
+    ON profile_user_binding(
+        developer_profile_id
+    );
+
+CREATE INDEX IF NOT EXISTS profile_field_state_profile_source_idx
+    ON profile_field_state(
+        developer_profile_id,
+        source,
+        field_name
+    );
 
 CREATE INDEX IF NOT EXISTS github_profile_import_profile_observed_idx
     ON github_profile_import(

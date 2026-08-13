@@ -164,6 +164,10 @@ class ProfileMigrationV05Tests(unittest.TestCase):
             tables,
         )
         self.assertIn(
+            "profile_field_state",
+            tables,
+        )
+        self.assertIn(
             "github_profile_import",
             tables,
         )
@@ -268,6 +272,10 @@ class ProfileMigrationV05Tests(unittest.TestCase):
             "github_profile_import",
             tables,
         )
+        self.assertIn(
+            "profile_field_state",
+            tables,
+        )
 
     def test_profile_delete_cascades_profile_evidence(
         self,
@@ -292,6 +300,37 @@ class ProfileMigrationV05Tests(unittest.TestCase):
                     "fixture-user-key",
                     profile_id,
                     NOW,
+                    NOW,
+                ),
+            )
+
+            connection.execute(
+                """
+                INSERT INTO profile_field_state (
+                    developer_profile_id,
+                    field_name,
+                    source,
+                    locked,
+                    observed_at,
+                    accepted_source,
+                    confidence,
+                    evidence_json,
+                    updated_at
+                ) VALUES (
+                    ?,
+                    'skills.Python',
+                    'user_confirmed',
+                    1,
+                    ?,
+                    NULL,
+                    NULL,
+                    '[]',
+                    ?
+                )
+                """,
+                (
+                    profile_id,
+                    OBSERVED_AT,
                     NOW,
                 ),
             )
@@ -409,6 +448,7 @@ class ProfileMigrationV05Tests(unittest.TestCase):
                 )
                 for table in (
                     "profile_user_binding",
+                    "profile_field_state",
                     "github_profile_import",
                     "profile_field_suggestion",
                     "developer_skill_evidence",
@@ -419,6 +459,7 @@ class ProfileMigrationV05Tests(unittest.TestCase):
         self.assertEqual(
             {
                 "profile_user_binding": 0,
+                "profile_field_state": 0,
                 "github_profile_import": 0,
                 "profile_field_suggestion": 0,
                 "developer_skill_evidence": 0,
@@ -451,6 +492,50 @@ class ProfileMigrationV05Tests(unittest.TestCase):
                     developer_profile_id=profile_id,
                     import_key="same-import",
                 )
+
+    def test_same_import_key_is_allowed_for_different_profiles(
+        self,
+    ) -> None:
+        self.store.initialize()
+
+        with self.store.connect() as connection:
+            first_profile_id = self._insert_profile(
+                connection,
+                profile_key="first-user",
+            )
+
+            second_profile_id = self._insert_profile(
+                connection,
+                profile_key="second-user",
+            )
+
+            self._insert_import(
+                connection,
+                developer_profile_id=first_profile_id,
+                import_key="shared-snapshot",
+            )
+
+            self._insert_import(
+                connection,
+                developer_profile_id=second_profile_id,
+                import_key="shared-snapshot",
+            )
+
+            count = int(
+                connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM github_profile_import
+                    WHERE import_key = ?
+                    """,
+                    ("shared-snapshot",),
+                ).fetchone()[0]
+            )
+
+        self.assertEqual(
+            2,
+            count,
+        )
 
     def test_suggestion_constraints_are_enforced(
         self,
@@ -514,6 +599,7 @@ class ProfileMigrationV05Tests(unittest.TestCase):
 
         tables = (
             "profile_user_binding",
+            "profile_field_state",
             "github_profile_import",
             "profile_field_suggestion",
             "developer_skill_evidence",
