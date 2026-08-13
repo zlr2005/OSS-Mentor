@@ -2519,6 +2519,24 @@ def _assess_difficulty(
 
 
 _SKILL_STRENGTH_ORDER = {"weak": 0, "medium": 1, "strong": 2}
+def _skill_evidence_confidence(
+    signals: Iterable[_SkillSignal],
+) -> str:
+    """Summarize evidence strength without changing matching requirements."""
+
+    strengths = {
+        signal.strength
+        for signal in signals
+        if signal.decision == "included"
+    }
+
+    if "strong" in strengths:
+        return "high"
+
+    if "medium" in strengths:
+        return "medium"
+
+    return "low"
 _SKILL_ROLE_ORDER = {"learnable": 0, "auxiliary": 1, "core": 2}
 _SKILL_REQUIREMENT_SOURCE_ORDER = {
     "inferred_task_type": 0,
@@ -3226,8 +3244,9 @@ def _merge_skill_signals(signals: list[_SkillSignal]) -> _SkillInferenceResult:
             "minimum_level": minimum_level,
             "importance": importance,
             "requirement_source": source,
+            "confidence": _skill_evidence_confidence(group),
             "evidence": [_signal_evidence_dict(item) for item in group],
-        }
+            }
 
     rejected_rows = [
         {
@@ -3279,6 +3298,54 @@ def _infer_skill_requirements_core(
     return _merge_skill_signals(signals)
 
 
+def _task_feature_missing_fields(
+    record: dict[str, Any],
+) -> list[dict[str, str]]:
+    """Explain unavailable source fields without changing inference behavior."""
+
+    missing: list[dict[str, str]] = []
+
+    title = str(record.get("title") or "").strip()
+    body = str(record.get("body_text") or "").strip()
+    primary_language = str(record.get("primary_language") or "").strip()
+
+    if not title:
+        missing.append(
+            {
+                "field": "title",
+                "reason": "issue_title_missing",
+                "impact": "title_based_evidence_unavailable",
+            }
+        )
+
+    if not body:
+        missing.append(
+            {
+                "field": "body_text",
+                "reason": "issue_body_missing",
+                "impact": "body_based_evidence_unavailable_and_confidence_may_be_lower",
+            }
+        )
+
+    if not primary_language:
+        missing.append(
+            {
+                "field": "primary_language",
+                "reason": "repository_primary_language_missing",
+                "impact": "language_skill_requirement_cannot_be_inferred",
+            }
+        )
+
+    if "labels" not in record or record.get("labels") is None:
+        missing.append(
+            {
+                "field": "labels",
+                "reason": "issue_labels_unavailable",
+                "impact": "label_based_evidence_unavailable",
+            }
+        )
+
+    return missing
 def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
     title = str(record.get("title") or "")
     body = str(record.get("body_text") or "")
@@ -3375,6 +3442,7 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
         "title_length": len(title),
         "body_length": len(body),
         "has_code_block": has_code_block,
+        "missing_fields": _task_feature_missing_fields(record),
         "newcomer_label_signal": has_newcomer_label(labels),
         "comment_count": comments,
         "formula_version": TASK_FEATURE_VERSION,

@@ -1,0 +1,45 @@
+{
+  "schema_version": "developer-profile-v0.5-fixture",
+  "profiles": [
+    {
+      "profile_key": "fixture-user",
+      "display_name": "Fixture Developer",
+      "service_track": "growth",
+      "preferred_languages": [
+        "Python"
+      ],
+      "operating_systems": [
+        "windows"
+      ],
+      "preferred_task_types": [
+        "testing",
+        "feature"
+      ],
+      "max_code_difficulty": 2,
+      "max_setup_difficulty": 2,
+      "desired_skill_stretch": 1,
+      "skills": {
+        "Python": 2,
+        "testing": 2,
+        "git": 2
+      },
+      "field_metadata": {
+        "preferred_languages": {
+          "source": "user_input",
+          "locked": false,
+          "observed_at": "2026-07-28T10:00:00Z"
+        },
+        "skills.Python": {
+          "source": "user_confirmed",
+          "locked": true,
+          "observed_at": "2026-07-28T10:00:00Z"
+        },
+        "skills.testing": {
+          "source": "user_input",
+          "locked": false,
+          "observed_at": "2026-07-28T10:00:00Z"
+        }
+      }
+    }
+  ]
+}
