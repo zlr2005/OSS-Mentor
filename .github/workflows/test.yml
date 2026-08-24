@@ -7,23 +7,107 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  compile-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install package
-        run: pip install -e .
-
       - name: Compile-check source and scripts
         run: python -m compileall -q src scripts
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: pip install -e .
       - name: Run tests
         run: python -m unittest discover -s tests -v
+
+  sqlite-migration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: pip install -e .
+      - name: Apply all SQLite migrations on an empty database
+        run: python scripts/ci_sqlite_migration_check.py
+      - name: Contract fixtures are valid JSON
+        run: python scripts/ci_contract_fixture_check.py
+
+  postgres-migration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: oss_mentor_test
+          POSTGRES_USER: oss_mentor
+          POSTGRES_PASSWORD: oss_mentor_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oss_mentor"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Apply PostgreSQL baseline migration
+        run: |
+          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -f db/postgres/001_initial.sql
+          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -c "SELECT COUNT(*) FROM repository"
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan for common secrets
+        run: |
+          if grep -rE "(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN (RSA |EC )?PRIVATE KEY-----)" --include="*.py" --include="*.sql" --include="*.yaml" --include="*.yml" --include="*.json" --include="*.md" . 2>/dev/null; then
+            echo "::error::Potential secret detected in repository files"
+            exit 1
+          fi
+          echo "secret scan clean"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t oss-mentor:ci-test .
+
+  web-smoke-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: pip install -e .
+      - name: Run web smoke tests (static asset whitelist)
+        run: python -m unittest tests.test_web_ui -v

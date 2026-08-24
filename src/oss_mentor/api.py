@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from oss_mentor.developer_profiles import (
     ALLOWED_LANGUAGES,
@@ -23,10 +23,16 @@ from oss_mentor.matching import (
     rank_for_profile,
     recommendation_availability,
 )
+from oss_mentor.services.auth_service import (
+    AuthService,
+    GitHubAuthError,
+    SESSION_COOKIE_NAME,
+    SESSION_TTL_SECONDS,
+)
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
-API_VERSION = "v0.4"
+API_VERSION = "v0.5"
 MAX_JSON_BODY_BYTES = 32 * 1024
 FEEDBACK_STATES = {"interested", "not_suitable", "started", "completed"}
 PROFILE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
@@ -36,6 +42,7 @@ PROFILE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 class ApiResponse:
     status: int
     body: dict[str, Any]
+    cookies: tuple[tuple[str, str, dict[str, str | None]], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +54,7 @@ class StaticAsset:
 _STATIC_ROUTES = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
+    "/login": ("login.html", "text/html; charset=utf-8"),
     "/status": ("status.html", "text/html; charset=utf-8"),
     "/assets/styles.css": ("assets/styles.css", "text/css; charset=utf-8"),
     "/assets/app.js": ("assets/app.js", "text/javascript; charset=utf-8"),
@@ -68,8 +76,13 @@ def load_static_asset(static_root: Path | None, path: str) -> StaticAsset | None
 class RecommendationApi:
     """Transport-independent API routes, suitable for unit testing."""
 
-    def __init__(self, store: SQLiteCandidateStore) -> None:
+    def __init__(
+        self,
+        store: SQLiteCandidateStore,
+        auth_service: AuthService | None = None,
+    ) -> None:
         self.store = store
+        self.auth_service = auth_service
 
     @staticmethod
     def _error(status: int, code: str, message: str) -> ApiResponse:
@@ -146,8 +159,26 @@ class RecommendationApi:
         path: str,
         query: dict[str, list[str]] | None = None,
         body: Any = None,
+        cookies: dict[str, str] | None = None,
+        request_id: str | None = None,
+    ) -> ApiResponse:
+        request_id = request_id or str(uuid4())
+        response = self._dispatch(method, path, query, body, cookies or {})
+        body_out = {**response.body, "request_id": request_id}
+        if "error" in body_out:
+            body_out["error"]["request_id"] = request_id
+        return ApiResponse(response.status, body_out, response.cookies)
+
+    def _dispatch(
+        self,
+        method: str,
+        path: str,
+        query: dict[str, list[str]] | None = None,
+        body: Any = None,
+        cookies: dict[str, str] | None = None,
     ) -> ApiResponse:
         query = query or {}
+        cookies = cookies or {}
         if method == "GET" and path == "/health":
             return ApiResponse(
                 200,
@@ -304,6 +335,81 @@ class RecommendationApi:
                     "match_version": MATCH_VERSION_V2,
                 },
             )
+        if method == "GET" and path == "/api/v1/auth/github/start":
+            if self.auth_service is None:
+                return self._error(503, "service_not_ready", "auth service is not configured")
+            return_to = (query.get("return_to") or ["/"])[0]
+            try:
+                result = self.auth_service.start_oauth(return_to=return_to)
+            except GitHubAuthError as exc:
+                return self._error(400, "invalid_request", str(exc))
+            if not result["oauth_configured"]:
+                return ApiResponse(
+                    200,
+                    {
+                        "oauth_configured": False,
+                        "message": result["message"],
+                    },
+                )
+            return ApiResponse(
+                200,
+                {
+                    "oauth_configured": True,
+                    "authorize_url": result["authorize_url"],
+                    "state": result["state"],
+                },
+            )
+        if method == "GET" and path == "/api/v1/auth/github/callback":
+            if self.auth_service is None:
+                return self._error(503, "service_not_ready", "auth service is not configured")
+            code = (query.get("code") or [""])[0]
+            state = (query.get("state") or [""])[0]
+            if not code or not state:
+                return self._error(400, "invalid_request", "code and state are required")
+            try:
+                result = self.auth_service.handle_callback(code=code, state=state)
+            except GitHubAuthError as exc:
+                return self._error(401, "authentication_required", str(exc))
+            return ApiResponse(
+                200,
+                {
+                    "user": result["user"],
+                    "return_to": result["return_to"],
+                },
+                cookies=(
+                    (
+                        SESSION_COOKIE_NAME,
+                        result["session_id"],
+                        {
+                            "Path": "/",
+                            "HttpOnly": None,
+                            "SameSite": "Lax",
+                            "Max-Age": str(SESSION_TTL_SECONDS),
+                        },
+                    ),
+                ),
+            )
+        if method == "POST" and path == "/api/v1/auth/logout":
+            if self.auth_service is not None:
+                self.auth_service.logout(cookies.get(SESSION_COOKIE_NAME))
+            return ApiResponse(
+                200,
+                {"status": "ok"},
+                cookies=(
+                    (
+                        SESSION_COOKIE_NAME,
+                        "",
+                        {"Path": "/", "HttpOnly": None, "SameSite": "Lax", "Max-Age": "0"},
+                    ),
+                ),
+            )
+        if method == "GET" and path == "/api/v1/me":
+            if self.auth_service is None:
+                return self._error(503, "service_not_ready", "auth service is not configured")
+            user = self.auth_service.current_user(cookies.get(SESSION_COOKIE_NAME))
+            if user is None:
+                return self._error(401, "authentication_required", "login is required")
+            return ApiResponse(200, {"user": user})
         if path in {
             "/health",
             "/api/v1/profiles",
@@ -313,6 +419,10 @@ class RecommendationApi:
             "/api/v1/feedback",
             "/api/v1/feedback/summary",
             "/api/v1/status",
+            "/api/v1/auth/github/start",
+            "/api/v1/auth/github/callback",
+            "/api/v1/auth/logout",
+            "/api/v1/me",
         }:
             return self._error(405, "method_not_allowed", "method is not supported for this route")
         return self._error(404, "not_found", "route was not found")
@@ -326,6 +436,15 @@ def make_handler(
 ) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         server_version = "OSS-Mentor-MVP/0.4"
+
+        def _parse_cookies(self) -> dict[str, str]:
+            cookies: dict[str, str] = {}
+            raw = self.headers.get("Cookie", "")
+            for part in raw.split(";"):
+                if "=" in part:
+                    name, _, value = part.partition("=")
+                    cookies[name.strip()] = value.strip()
+            return cookies
 
         def _send_json(self, response: ApiResponse, *, allow: str | None = None) -> None:
             encoded = json.dumps(
@@ -341,6 +460,13 @@ def make_handler(
             if cors_origin:
                 self.send_header("Access-Control-Allow-Origin", cors_origin)
                 self.send_header("Vary", "Origin")
+            for name, value, attributes in response.cookies:
+                parts = [f"{name}={value}"]
+                for attribute, attribute_value in attributes.items():
+                    parts.append(
+                        attribute if attribute_value is None else f"{attribute}={attribute_value}"
+                    )
+                self.send_header("Set-Cookie", "; ".join(parts))
             self.end_headers()
             self.wfile.write(encoded)
 
@@ -363,7 +489,13 @@ def make_handler(
                 self.end_headers()
                 self.wfile.write(asset.body)
                 return
-            response = api.handle("GET", parsed.path, parse_qs(parsed.query))
+            response = api.handle(
+                "GET",
+                parsed.path,
+                parse_qs(parsed.query),
+                cookies=self._parse_cookies(),
+                request_id=str(uuid4()),
+            )
             self._send_json(response)
 
         def do_POST(self) -> None:  # noqa: N802 - stdlib handler contract
@@ -389,7 +521,13 @@ def make_handler(
             except (json.JSONDecodeError, UnicodeDecodeError):
                 self._send_json(api._error(400, "invalid_json", "request body contains invalid JSON"))
                 return
-            response = api.handle("POST", path, body=payload)
+            response = api.handle(
+                "POST",
+                path,
+                body=payload,
+                cookies=self._parse_cookies(),
+                request_id=str(uuid4()),
+            )
             self._send_json(response, allow="POST")
 
         def log_message(self, format: str, *args: object) -> None:
@@ -406,8 +544,9 @@ def serve(
     port: int = 8765,
     cors_origin: str | None = None,
     static_root: Path | None = None,
+    auth_service: AuthService | None = None,
 ) -> None:
-    api = RecommendationApi(store)
+    api = RecommendationApi(store, auth_service=auth_service)
     server = ThreadingHTTPServer(
         (host, port),
         make_handler(api, cors_origin=cors_origin, static_root=static_root),

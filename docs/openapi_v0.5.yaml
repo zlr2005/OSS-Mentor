@@ -1,0 +1,178 @@
+openapi: 3.0.3
+info:
+  title: OSS-Mentor API
+  version: 0.5.0
+  description: |
+    OSS-Mentor v0.5 API. GitHub OAuth login, developer profiles,
+    candidate tasks, dual-track recommendations with explainable reasons,
+    feedback, and system status.
+    All responses include a `request_id` field. Errors use the unified
+    `{error: {code, message, details?, request_id}}` shape.
+servers:
+  - url: http://127.0.0.1:8765
+paths:
+  /health:
+    get:
+      summary: Process health and database connectivity
+      responses:
+        "200": {description: API is available}
+  /api/v1/auth/github/start:
+    get:
+      summary: Create an OAuth state and return the GitHub authorization URL
+      parameters:
+        - name: return_to
+          in: query
+          required: false
+          schema: {type: string, default: "/"}
+          description: Local absolute path to return to after login
+      responses:
+        "200": {description: Authorization URL, or oauth_configured=false with a clear message}
+        "400": {description: Invalid return_to}
+        "503": {description: Auth service not configured}
+  /api/v1/auth/github/callback:
+    get:
+      summary: Validate OAuth state, exchange code, and create a session
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: {type: string}
+        - name: state
+          in: query
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Session created; oss_mentor_session cookie is set
+          headers:
+            Set-Cookie:
+              schema: {type: string}
+              description: HttpOnly; SameSite=Lax; local sessions last 7 days
+        "400": {description: Missing code or state}
+        "401": {description: Invalid or expired OAuth state}
+        "502": {description: GitHub upstream error}
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke the current local session
+      responses:
+        "200": {description: Session revoked; cookie cleared}
+  /api/v1/me:
+    get:
+      summary: Return the current logged-in user
+      responses:
+        "200": {description: Current user public information}
+        "401": {description: Login required}
+        "503": {description: Auth service not configured}
+  /api/v1/profiles:
+    get:
+      summary: List public-safe profile templates
+      responses:
+        "200": {description: Profile template summaries}
+  /api/v1/me/profile:
+    get:
+      summary: Return the current user's developer profile (member B)
+      responses:
+        "200": {description: Current user profile}
+        "401": {description: Login required}
+        "404": {description: Profile not found}
+    put:
+      summary: Validate and update the current user's profile (member B)
+      responses:
+        "200": {description: Updated profile}
+        "401": {description: Login required}
+        "422": {description: Profile validation failed}
+  /api/v1/me/profile/import-github:
+    post:
+      summary: Regenerate profile suggestions from the current authorization (member B)
+      responses:
+        "200": {description: Profile suggestions}
+        "401": {description: Login required}
+  /api/v1/tasks/{task_candidate_id}:
+    get:
+      summary: Task detail and current availability (member A)
+      parameters:
+        - name: task_candidate_id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200": {description: Task detail}
+        "404": {description: Task not found}
+  /api/v1/recommendations:
+    get:
+      summary: Recommendations for a stored profile with feedback state restore (member C)
+      parameters:
+        - name: profile_key
+          in: query
+          required: true
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200": {description: Ranked RecommendationItemV3 list}
+        "400": {description: Invalid query}
+        "404": {description: Profile not found}
+  /api/v1/recommendations/custom:
+    post:
+      summary: Transient custom-profile recommendations, kept for anonymous use (member C)
+      responses:
+        "200": {description: Recommendations; profile_persisted is false}
+        "400": {description: Invalid custom profile, limit, or client ID}
+  /api/v1/recommendation-options:
+    post:
+      summary: Live option inventory for the custom profile form (member C)
+      responses:
+        "200": {description: Option inventory}
+        "400": {description: Invalid profile}
+  /api/v1/feedback:
+    post:
+      summary: Save feedback state and append a state-change event (member C)
+      responses:
+        "200": {description: Feedback recorded}
+        "400": {description: Invalid feedback payload}
+        "404": {description: Task not found}
+  /api/v1/feedback/summary:
+    get:
+      summary: Feedback funnel and state-transition statistics (member C)
+      responses:
+        "200": {description: Feedback summary}
+  /api/v1/status:
+    get:
+      summary: System, database, sync, and candidate pool status
+      responses:
+        "200": {description: System status}
+components:
+  schemas:
+    CustomProfile:
+      type: object
+      required: [service_track, preferred_languages, operating_systems, preferred_task_types]
+      properties:
+        display_name: {type: string, maxLength: 60}
+        service_track: {type: string, enum: [newcomer, growth]}
+        preferred_languages: {type: array, items: {type: string}, maxItems: 8}
+        operating_systems: {type: array, items: {type: string, enum: [windows, macos, linux]}, maxItems: 3}
+        preferred_task_types:
+          type: array
+          items: {type: string, enum: [bug_fix, testing, documentation, feature, refactor, build_tooling]}
+          maxItems: 6
+        max_code_difficulty: {type: integer, minimum: 0, maximum: 3}
+        max_setup_difficulty: {type: integer, minimum: 0, maximum: 3}
+        desired_skill_stretch: {type: integer, minimum: 0, maximum: 2}
+        skills:
+          type: object
+          additionalProperties: {type: integer, minimum: 0, maximum: 4}
+          maxProperties: 24
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            details: {type: object}
+            request_id: {type: string, format: uuid}
+        request_id: {type: string, format: uuid}
