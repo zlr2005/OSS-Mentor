@@ -334,5 +334,137 @@ class ApiTests(unittest.TestCase):
         self.assertEqual("invalid_feedback_context", invalid_context.body["error"]["code"])
 
 
+class FakeAuthService:
+    def __init__(self) -> None:
+        self.configured = True
+        self.sessions: dict[str, dict] = {}
+
+    def start_oauth(self, *, return_to):
+        if not self.configured:
+            return {"oauth_configured": False, "message": "未配置"}
+        return {
+            "oauth_configured": True,
+            "authorize_url": "https://github.com/login/oauth/authorize?state=fake",
+            "state": "fake-state",
+        }
+
+    def handle_callback(self, *, code, state):
+        if state != "fake-state":
+            from oss_mentor.services.auth_service import GitHubAuthError
+
+            raise GitHubAuthError("invalid state")
+        self.sessions["session-1"] = {"github_login": "alice"}
+        return {
+            "session_id": "session-1",
+            "expires_at": "2099-01-01T00:00:00Z",
+            "return_to": "/",
+            "user": {"github_login": "alice", "github_user_id": 1},
+        }
+
+    def current_user(self, session_id):
+        if session_id in self.sessions:
+            return {"user_id": 1, "github_login": "alice", "display_name": "Alice"}
+        return None
+
+    def logout(self, session_id):
+        self.sessions.pop(session_id, None)
+
+
+class AuthRouteTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.auth = FakeAuthService()
+        self.api = RecommendationApi(FakeStore(), auth_service=self.auth)
+
+    def test_auth_start_returns_authorize_url(self) -> None:
+        response = self.api.handle(
+            "GET", "/api/v1/auth/github/start", {"return_to": ["/"]}
+        )
+        self.assertEqual(200, response.status)
+        self.assertTrue(response.body["oauth_configured"])
+        self.assertIn("github.com", response.body["authorize_url"])
+
+    def test_auth_start_unconfigured_returns_message(self) -> None:
+        self.auth.configured = False
+        response = self.api.handle(
+            "GET", "/api/v1/auth/github/start", {"return_to": ["/"]}
+        )
+        self.assertEqual(200, response.status)
+        self.assertFalse(response.body["oauth_configured"])
+
+    def test_auth_callback_sets_session_cookie(self) -> None:
+        response = self.api.handle(
+            "GET",
+            "/api/v1/auth/github/callback",
+            {"code": ["c"], "state": ["fake-state"]},
+        )
+        self.assertEqual(200, response.status)
+        self.assertEqual("alice", response.body["user"]["github_login"])
+        self.assertEqual(1, len(response.cookies))
+        name, value, attributes = response.cookies[0]
+        self.assertEqual("oss_mentor_session", name)
+        self.assertEqual("session-1", value)
+        self.assertIn("HttpOnly", attributes)
+        self.assertEqual("Lax", attributes["SameSite"])
+
+    def test_auth_callback_rejects_invalid_state(self) -> None:
+        response = self.api.handle(
+            "GET",
+            "/api/v1/auth/github/callback",
+            {"code": ["c"], "state": ["wrong"]},
+        )
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "authentication_required", response.body["error"]["code"]
+        )
+
+    def test_auth_callback_requires_code_and_state(self) -> None:
+        response = self.api.handle("GET", "/api/v1/auth/github/callback")
+        self.assertEqual(400, response.status)
+        self.assertEqual("invalid_request", response.body["error"]["code"])
+
+    def test_me_returns_user_for_valid_session(self) -> None:
+        self.auth.sessions["session-1"] = {}
+        response = self.api.handle(
+            "GET",
+            "/api/v1/me",
+            cookies={"oss_mentor_session": "session-1"},
+        )
+        self.assertEqual(200, response.status)
+        self.assertEqual("alice", response.body["user"]["github_login"])
+
+    def test_me_requires_login(self) -> None:
+        response = self.api.handle("GET", "/api/v1/me")
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "authentication_required", response.body["error"]["code"]
+        )
+
+    def test_logout_revokes_session(self) -> None:
+        self.auth.sessions["session-1"] = {}
+        response = self.api.handle(
+            "POST",
+            "/api/v1/auth/logout",
+            body={},
+            cookies={"oss_mentor_session": "session-1"},
+        )
+        self.assertEqual(200, response.status)
+        self.assertEqual(0, len(self.auth.sessions))
+        self.assertEqual(1, len(response.cookies))
+        self.assertEqual("0", response.cookies[0][2]["Max-Age"])
+
+    def test_auth_route_requires_service(self) -> None:
+        api_without_auth = RecommendationApi(FakeStore())
+        response = api_without_auth.handle("GET", "/api/v1/me")
+        self.assertEqual(503, response.status)
+        self.assertEqual("service_not_ready", response.body["error"]["code"])
+
+    def test_all_responses_include_request_id(self) -> None:
+        health = self.api.handle("GET", "/health")
+        error = self.api.handle("GET", "/api/v1/me")
+        self.assertIn("request_id", health.body)
+        self.assertIn("request_id", error.body)
+        self.assertIn("request_id", error.body["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

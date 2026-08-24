@@ -884,6 +884,18 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "refusing non-loopback API binding without explicit --allow-remote"
         )
     store.initialize()
+    import os
+
+    from oss_mentor.services.auth_service import AuthService, AuthSettings
+    from oss_mentor.storage.identity import IdentityStore
+
+    auth_settings = AuthSettings(
+        client_id=os.environ.get("GITHUB_OAUTH_CLIENT_ID"),
+        client_secret=os.environ.get("GITHUB_OAUTH_CLIENT_SECRET"),
+        session_secret=os.environ.get("OSS_MENTOR_SESSION_SECRET"),
+        base_url=os.environ.get("OSS_MENTOR_BASE_URL", f"http://{args.host}:{args.port}"),
+    )
+    auth_service = AuthService(IdentityStore(store), auth_settings)
     _json_dump(
         {
             "event": "api_started",
@@ -891,6 +903,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "port": args.port,
             "database_path": str(store.database_path),
             "cors_origin": args.cors_origin,
+            "oauth_configured": auth_settings.oauth_configured,
         }
     )
     serve(
@@ -899,6 +912,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         port=args.port,
         cors_origin=args.cors_origin,
         static_root=settings.repo_root / "web",
+        auth_service=auth_service,
     )
     return 0
 

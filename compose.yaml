@@ -1,0 +1,45 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${OSS_MENTOR_PORT:-8765}:8765"
+    environment:
+      OSS_MENTOR_HOST: 0.0.0.0
+      OSS_MENTOR_PORT: "8765"
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
+      OSS_MENTOR_SESSION_SECRET: ${OSS_MENTOR_SESSION_SECRET:-}
+      OSS_MENTOR_DATABASE_URL: ${OSS_MENTOR_DATABASE_URL:-sqlite:///data/oss_mentor.sqlite3}
+    volumes:
+      - oss_mentor_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-oss_mentor}
+      POSTGRES_USER: ${POSTGRES_USER:-oss_mentor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oss_mentor_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oss_mentor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  oss_mentor_data:
+  postgres_data:

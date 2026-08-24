@@ -1,0 +1,160 @@
+{
+  "schema_version": "errors-v0.5",
+  "request_ids": ["00000000-0000-4000-8000-000000000001"],
+  "errors": [
+    {
+      "http_status": 400,
+      "code": "invalid_request",
+      "message": "参数格式错误",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "invalid_request",
+          "message": "参数格式错误",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 401,
+      "code": "authentication_required",
+      "message": "未登录访问受保护接口",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "authentication_required",
+          "message": "未登录访问受保护接口",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 403,
+      "code": "insufficient_permission",
+      "message": "GitHub 授权范围不足",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "insufficient_permission",
+          "message": "GitHub 授权范围不足",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 404,
+      "code": "not_found",
+      "message": "用户、画像或任务不存在",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "not_found",
+          "message": "用户、画像或任务不存在",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 409,
+      "code": "state_conflict",
+      "message": "OAuth state、反馈状态或同步任务冲突",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "state_conflict",
+          "message": "OAuth state、反馈状态或同步任务冲突",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 413,
+      "code": "payload_too_large",
+      "message": "请求体超限",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "payload_too_large",
+          "message": "请求体超限",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 415,
+      "code": "unsupported_media_type",
+      "message": "非 JSON 请求",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "unsupported_media_type",
+          "message": "非 JSON 请求",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 422,
+      "code": "profile_validation_failed",
+      "message": "画像字段合法但无法通过业务校验",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "profile_validation_failed",
+          "message": "画像字段合法但无法通过业务校验",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 429,
+      "code": "rate_limited",
+      "message": "本地或 GitHub 限流",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "rate_limited",
+          "message": "本地或 GitHub 限流",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 502,
+      "code": "github_upstream_error",
+      "message": "GitHub API 返回不可恢复错误",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "github_upstream_error",
+          "message": "GitHub API 返回不可恢复错误",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "http_status": 503,
+      "code": "service_not_ready",
+      "message": "数据库迁移或后台任务未就绪",
+      "details": null,
+      "example": {
+        "error": {
+          "code": "service_not_ready",
+          "message": "数据库迁移或后台任务未就绪",
+          "request_id": "00000000-0000-4000-8000-000000000001"
+        },
+        "request_id": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  ]
+}

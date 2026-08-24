@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 · OSS-Mentor</title>
+  <style>
+    :root {
+      --green: #16a34a;
+      --red: #dc2626;
+      --amber: #d97706;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+      line-height: 1.6;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+    .brand { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .brand span { color: var(--green); }
+    .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
+    .login-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #24292f;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .login-button:hover { background: #1b1f24; }
+    .login-button svg { width: 20px; height: 20px; }
+    .demo-note {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    .demo-note a { color: var(--green); text-decoration: none; font-weight: 600; }
+    .error-msg {
+      display: none;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 0.8rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .error-msg.show { display: block; }
+    .loading { color: var(--text-secondary); font-style: italic; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">OSS-<span>Mentor</span></div>
+  <p class="subtitle">登录后导入 GitHub 公开数据，生成个性化画像与任务推荐</p>
+
+  <div id="error" class="error-msg" role="alert"></div>
+  <p id="loading" class="loading" hidden>正在跳转到 GitHub…</p>
+
+  <a id="github-login" class="login-button" href="#">
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+    </svg>
+    使用 GitHub 登录
+  </a>
+
+  <div class="demo-note">
+    也可以<a href="/">跳过登录</a>，使用本地演示画像体验推荐功能。
+  </div>
+</div>
+
+<script>
+  var loginLink = document.getElementById("github-login");
+  var errorBox = document.getElementById("error");
+  var loadingEl = document.getElementById("loading");
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.classList.add("show");
+  }
+
+  fetch("/api/v1/auth/github/start" + "?return_to=" + encodeURIComponent("/"))
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+      if (data.oauth_configured === false) {
+        loginLink.style.display = "none";
+        showError(data.message || "GitHub OAuth 未配置");
+        return;
+      }
+      loginLink.href = data.authorize_url;
+      loginLink.addEventListener("click", function () {
+        loadingEl.hidden = false;
+      });
+    })
+    .catch(function () {
+      showError("无法连接本地服务，请确认 OSS-Mentor 已启动。");
+    });
+</script>
+</body>
+</html>
