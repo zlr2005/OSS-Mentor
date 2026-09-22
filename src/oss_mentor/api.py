@@ -1,9 +1,10 @@
-"""Dependency-free read-only HTTP API for the OSS-Mentor MVP."""
+"""Dependency-free HTTP API for OSS-Mentor."""
 
 from __future__ import annotations
 
 import json
 import re
+import sqlite3
 from dataclasses import asdict, dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -30,6 +31,11 @@ from oss_mentor.services.auth_service import (
     SESSION_TTL_SECONDS,
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.services.profile_service import ProfileService
+from oss_mentor.services.github_profile_source import (
+    CONSENT_VERSION, GitHubProfileError, GitHubProfileSource,
+)
+from oss_mentor.storage.profiles import SQLiteProfileStorage
 
 
 API_VERSION = "v0.5"
@@ -56,6 +62,12 @@ _STATIC_ROUTES = {
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/login": ("login.html", "text/html; charset=utf-8"),
     "/status": ("status.html", "text/html; charset=utf-8"),
+    "/profile": ("profile.html", "text/html; charset=utf-8"),
+    "/profile.html": ("profile.html", "text/html; charset=utf-8"),
+    "/assets/profile.js": ("assets/profile.js", "text/javascript; charset=utf-8"),
+    "/assets/profile.css": ("assets/profile.css", "text/css; charset=utf-8"),
+    "/assets/login.js": ("assets/login.js", "text/javascript; charset=utf-8"),
+    "/assets/login.css": ("assets/login.css", "text/css; charset=utf-8"),
     "/assets/styles.css": ("assets/styles.css", "text/css; charset=utf-8"),
     "/assets/app.js": ("assets/app.js", "text/javascript; charset=utf-8"),
     "/assets/status.js": ("assets/status.js", "text/javascript; charset=utf-8"),
@@ -80,9 +92,104 @@ class RecommendationApi:
         self,
         store: SQLiteCandidateStore,
         auth_service: AuthService | None = None,
+        profile_service: ProfileService | None = None,
+        github_profile_source: GitHubProfileSource | None = None,
     ) -> None:
         self.store = store
         self.auth_service = auth_service
+        self.profile_service = profile_service
+        if self.profile_service is None and isinstance(store, SQLiteCandidateStore):
+            self.profile_service = ProfileService(
+                SQLiteProfileStorage(store.database_path, store.migration_path)
+            )
+        self.github_profile_source = github_profile_source or GitHubProfileSource()
+
+    @staticmethod
+    def _profile_body(profile: dict) -> dict:
+        # Internal row/owner identifiers never become a client-selected identity.
+        return {key: value for key, value in profile.items()
+                if key not in {"user_id", "user_key", "developer_profile_id"}}
+
+    def _is_public_profile(self, profile_key: str) -> bool:
+        return any(item["profile_key"] == profile_key for item in self.store.list_profiles_public())
+
+    def _profile_route(self, method, path, query, body, cookies) -> ApiResponse:
+        suggestion = re.fullmatch(
+            r"/api/v1/me/profile/suggestions/([1-9][0-9]{0,18})/(accept|reject)", path
+        )
+        allowed = {"GET", "PUT"} if path == "/api/v1/me/profile" else {"POST"}
+        if method not in allowed:
+            return self._error(405, "method_not_allowed", "method is not supported for this route")
+        if self.auth_service is None:
+            return self._error(503, "service_not_ready", "auth service is not configured")
+        session_id = cookies.get(SESSION_COOKIE_NAME)
+        user = self.auth_service.current_user(session_id)
+        if user is None:
+            return self._error(401, "authentication_required", "login is required")
+        if self.profile_service is None:
+            return self._error(503, "service_not_ready", "profile storage is not configured")
+        if query:
+            return self._error(400, "invalid_request", "profile routes do not accept query parameters")
+        if method != "GET" and not isinstance(body, dict):
+            return self._error(400, "invalid_request", "request body must be a JSON object")
+        service = self.profile_service
+        try:
+            current = service.profile_for_user(user["user_id"])
+            if method == "PUT":
+                profile = service.update_owned_profile(user["user_id"], body)
+                return ApiResponse(200, {"profile": self._profile_body(profile), "api_version": API_VERSION})
+            if current is None:
+                return self._error(404, "not_found", "create a profile before importing or resolving suggestions")
+            if method == "GET":
+                return ApiResponse(200, {
+                    "profile": self._profile_body(current),
+                    "suggestions": service.storage.list_suggestions(profile_key=current["profile_key"]),
+                    "consent_version": CONSENT_VERSION, "api_version": API_VERSION,
+                })
+            if path.endswith("/import-github"):
+                if set(body) != {"consent_version"} or body["consent_version"] != CONSENT_VERSION:
+                    return self._error(422, "profile_validation_failed", "current public-data import consent is required")
+                credential = self.auth_service.github_credential(session_id)
+                if credential is None:
+                    return self._error(503, "service_not_ready", "GitHub credential unavailable; log in again")
+                token, github_user_id = credential
+                payload = self.github_profile_source.collect(
+                    access_token=token, github_user_id=github_user_id, consent_version=CONSENT_VERSION
+                )
+                # Network work runs outside SQLite's write transaction. Recheck the
+                # session afterwards, then bind the import to its current owned profile.
+                if self.auth_service.current_user(session_id) is None:
+                    return self._error(401, "authentication_required", "session expired during import")
+                with service.storage.transaction() as storage:
+                    fresh = storage.profile_for_user(user["user_id"])
+                    if fresh is None:
+                        return self._error(404, "not_found", "profile was not found")
+                    result = ProfileService(storage).import_github_profile(
+                        profile_key=fresh["profile_key"], github_payload=payload
+                    )
+                return ApiResponse(200, {**result, "collection": payload.get("collection", {}),
+                                         "api_version": API_VERSION})
+            if suggestion:
+                if body:
+                    return self._error(400, "invalid_request", "suggestion decisions require an empty JSON object")
+                with service.storage.transaction() as storage:
+                    fresh = storage.profile_for_user(user["user_id"])
+                    if fresh is None:
+                        return self._error(404, "not_found", "profile was not found")
+                    scoped = ProfileService(storage)
+                    resolve = scoped.accept_suggestion if suggestion[2] == "accept" else scoped.reject_suggestion
+                    result = resolve(profile_key=fresh["profile_key"], suggestion_id=int(suggestion[1]))
+                result["profile"] = self._profile_body(result["profile"])
+                return ApiResponse(200, {**result, "api_version": API_VERSION})
+        except GitHubProfileError as exc:
+            return self._error(exc.status, exc.code, str(exc))
+        except KeyError:
+            return self._error(404, "not_found", "profile or suggestion was not found")
+        except ValueError as exc:
+            if str(exc).startswith("state_conflict:"):
+                return self._error(409, "state_conflict", "suggestion is already resolved")
+            return self._error(422, "profile_validation_failed", str(exc))
+        return self._error(404, "not_found", "route was not found")
 
     @staticmethod
     def _error(status: int, code: str, message: str) -> ApiResponse:
@@ -135,6 +242,8 @@ class RecommendationApi:
             profile_key = value.removeprefix("preset:")
             if not PROFILE_KEY_PATTERN.fullmatch(profile_key):
                 raise ValueError("feedback_context is invalid")
+            if not self._is_public_profile(profile_key):
+                raise ValueError("feedback_context profile was not found")
             try:
                 profile = self.store.profile_for_matching(profile_key)
             except ValueError as exc:
@@ -163,7 +272,10 @@ class RecommendationApi:
         request_id: str | None = None,
     ) -> ApiResponse:
         request_id = request_id or str(uuid4())
-        response = self._dispatch(method, path, query, body, cookies or {})
+        try:
+            response = self._dispatch(method, path, query, body, cookies or {})
+        except sqlite3.Error:
+            response = self._error(503, "service_not_ready", "database is unavailable or requires migration")
         body_out = {**response.body, "request_id": request_id}
         if "error" in body_out:
             body_out["error"]["request_id"] = request_id
@@ -179,6 +291,10 @@ class RecommendationApi:
     ) -> ApiResponse:
         query = query or {}
         cookies = cookies or {}
+        if path in {"/api/v1/me/profile", "/api/v1/me/profile/import-github"} or re.fullmatch(
+            r"/api/v1/me/profile/suggestions/[1-9][0-9]{0,18}/(accept|reject)", path
+        ):
+            return self._profile_route(method, path, query, body, cookies)
         if method == "GET" and path == "/health":
             return ApiResponse(
                 200,
@@ -218,6 +334,8 @@ class RecommendationApi:
             if not 1 <= limit <= 100:
                 return self._error(400, "invalid_limit", "limit must be between 1 and 100")
             try:
+                if not self._is_public_profile(profile_key):
+                    raise ValueError("profile is not public")
                 profile = self.store.profile_for_matching(profile_key)
             except ValueError:
                 return self._error(404, "profile_not_found", "developer profile was not found")
@@ -385,6 +503,9 @@ class RecommendationApi:
                             "HttpOnly": None,
                             "SameSite": "Lax",
                             "Max-Age": str(SESSION_TTL_SECONDS),
+                            **({"Secure": None} if getattr(
+                                getattr(self.auth_service, "settings", None), "base_url", ""
+                            ).startswith("https://") else {}),
                         },
                     ),
                 ),
@@ -446,7 +567,11 @@ def make_handler(
                     cookies[name.strip()] = value.strip()
             return cookies
 
-        def _send_json(self, response: ApiResponse, *, allow: str | None = None) -> None:
+        def _send_json(self, response: ApiResponse, *, allow: str | None = None,
+                       location: str | None = None) -> None:
+            request_id = response.body.setdefault("request_id", str(uuid4()))
+            if "error" in response.body:
+                response.body["error"].setdefault("request_id", request_id)
             encoded = json.dumps(
                 response.body, ensure_ascii=False, sort_keys=True
             ).encode("utf-8")
@@ -454,6 +579,9 @@ def make_handler(
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(encoded)))
             self.send_header("Cache-Control", "no-store")
+            self.send_header("Referrer-Policy", "no-referrer")
+            if location:
+                self.send_header("Location", location)
             self.send_header("X-Content-Type-Options", "nosniff")
             if allow:
                 self.send_header("Allow", allow)
@@ -492,20 +620,26 @@ def make_handler(
             response = api.handle(
                 "GET",
                 parsed.path,
-                parse_qs(parsed.query),
+                parse_qs(parsed.query, keep_blank_values=True),
                 cookies=self._parse_cookies(),
                 request_id=str(uuid4()),
             )
-            self._send_json(response)
+            if (parsed.path == "/api/v1/auth/github/callback" and response.status == 200
+                    and "text/html" in self.headers.get("Accept", "")):
+                self._send_json(ApiResponse(303, response.body, response.cookies),
+                                location=response.body["return_to"])
+            else:
+                self._send_json(response)
 
         def do_POST(self) -> None:  # noqa: N802 - stdlib handler contract
-            path = urlsplit(self.path).path
-            content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().casefold()
-            if content_type != "application/json":
-                self._send_json(
-                    api._error(415, "unsupported_media_type", "Content-Type must be application/json")
-                )
-                return
+            self._read_json_request("POST")
+
+        def do_PUT(self) -> None:  # noqa: N802 - stdlib handler contract
+            self._read_json_request("PUT")
+
+        def _read_json_request(self, method: str) -> None:
+            parsed = urlsplit(self.path)
+            path = parsed.path
             try:
                 content_length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
@@ -516,23 +650,48 @@ def make_handler(
             if content_length > MAX_JSON_BODY_BYTES:
                 self._send_json(api._error(413, "body_too_large", "request body is too large"))
                 return
+            previous_timeout = self.connection.gettimeout()
             try:
-                payload = json.loads(self.rfile.read(content_length))
+                self.connection.settimeout(10)
+                raw = self.rfile.read(content_length)
+            except (TimeoutError, OSError):
+                self._send_json(api._error(400, "invalid_request", "request body could not be read"))
+                return
+            finally:
+                self.connection.settimeout(previous_timeout)
+            if len(raw) != content_length:
+                self._send_json(api._error(400, "invalid_request", "request body is incomplete"))
+                return
+            # Consume bounded bodies before rejecting headers, so Windows can deliver
+            # the JSON error without aborting a socket with unread request bytes.
+            if path.startswith("/api/v1/me/profile"):
+                origin = self.headers.get("Origin")
+                settings = getattr(api.auth_service, "settings", None)
+                expected = getattr(settings, "base_url", "http://" + self.headers.get("Host", ""))
+                site = urlsplit(expected)
+                if (origin is not None and origin != f"{site.scheme}://{site.netloc}") or (
+                    self.headers.get("Sec-Fetch-Site") == "cross-site"
+                ):
+                    self._send_json(api._error(403, "insufficient_permission", "cross-origin profile writes are not allowed"))
+                    return
+            content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().casefold()
+            if content_type != "application/json":
+                self._send_json(api._error(415, "unsupported_media_type", "Content-Type must be application/json"))
+                return
+            try:
+                payload = json.loads(raw)
             except (json.JSONDecodeError, UnicodeDecodeError):
                 self._send_json(api._error(400, "invalid_json", "request body contains invalid JSON"))
                 return
             response = api.handle(
-                "POST",
-                path,
-                body=payload,
-                cookies=self._parse_cookies(),
-                request_id=str(uuid4()),
+                method, path, parse_qs(parsed.query, keep_blank_values=True),
+                body=payload, cookies=self._parse_cookies(), request_id=str(uuid4()),
             )
-            self._send_json(response, allow="POST")
+            self._send_json(response)
 
         def log_message(self, format: str, *args: object) -> None:
-            # Keep standard access logging, but never include request bodies or headers.
-            super().log_message(format, *args)
+            # OAuth callback query strings contain credentials: never log them.
+            super().log_message("%s %s", self.command, urlsplit(self.path).path)
 
     return Handler
 

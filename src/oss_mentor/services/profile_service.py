@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from typing import Any
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from oss_mentor.contracts import DeveloperProfileV2
 from oss_mentor.developer_profiles import (
     apply_profile_suggestion,
     build_github_profile_import,
     build_profile_merge_preview,
+    custom_profile_for_matching,
+    LANGUAGE_DISPLAY_NAMES,
 )
 from oss_mentor.storage.base import ProfileStore
 
@@ -64,6 +68,51 @@ class ProfileService:
         storage: ProfileStore,
     ) -> None:
         self.storage = storage
+
+    def update_owned_profile(self, user_id: int, payload: dict[str, Any]) -> dict[str, Any]:
+        """Validate an untrusted PUT, assign provenance and preserve unchanged metadata."""
+        if not isinstance(payload, dict):
+            raise ValueError("profile must be an object")
+        locks = payload.get("locks", {})
+        if not isinstance(locks, dict) or any(type(value) is not bool for value in locks.values()):
+            raise ValueError("locks must map profile fields to booleans")
+        editable = {key: value for key, value in payload.items() if key != "locks"}
+        if not isinstance(editable.get("service_track"), str):
+            raise ValueError("service_track must be newcomer or growth")
+        validated = custom_profile_for_matching(editable)
+        # Match validation lowercases skill keys. Persist conventional language spelling,
+        # so imported language evidence addresses the same skill as manual input.
+        validated["skills"] = {
+            LANGUAGE_DISPLAY_NAMES.get(name, name): level for name, level in validated["skills"].items()
+        }
+        with self.storage.transaction() as storage:
+            current = storage.profile_for_user(user_id)
+            validated["profile_key"] = current["profile_key"] if current else str(uuid4())
+            fields = set(validated) - {"skills", "profile_key", "profile_source"}
+            fields.update("skills." + name for name in validated["skills"])
+            if set(locks) - fields:
+                raise ValueError("locks contains an unknown profile field")
+            metadata = {}
+            now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            for field in fields:
+                old_value = (current or {}).get(field)
+                new_value = validated.get(field)
+                if field.startswith("skills."):
+                    name = field.removeprefix("skills.")
+                    old_value = (current or {}).get("skills", {}).get(name)
+                    new_value = validated["skills"][name]
+                prior = (current or {}).get("field_metadata", {}).get(field, {})
+                if current and old_value == new_value and prior:
+                    metadata[field] = dict(prior)
+                else:
+                    metadata[field] = {"source": "user_input", "locked": prior.get("locked", False),
+                                       "observed_at": now}
+                if field in locks:
+                    metadata[field]["locked"] = locks[field]
+            validated["field_metadata"] = metadata
+            if current and current.get("consent_version"):
+                validated["consent_version"] = current["consent_version"]
+            return ProfileService(storage).save_manual_profile(validated, user_id=user_id)
 
     def save_manual_profile(
         self,
@@ -211,6 +260,14 @@ class ProfileService:
         )
 
     def _resolve_suggestion(
+        self, *, profile_key: str, suggestion_id: int, decision: str,
+    ) -> dict[str, Any]:
+        with self.storage.transaction() as storage:
+            return ProfileService(storage)._resolve_in_transaction(
+                profile_key=profile_key, suggestion_id=suggestion_id, decision=decision
+            )
+
+    def _resolve_in_transaction(
         self,
         *,
         profile_key: str,

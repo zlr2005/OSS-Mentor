@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from contextlib import contextmanager, nullcontext
+from copy import copy
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -108,6 +110,30 @@ class SQLiteProfileStorage(
     SQLiteCandidateStore
 ):
     """SQLite implementation of the profile persistence contract."""
+
+    def connect(self):
+        connection = getattr(self, "_transaction_connection", None)
+        if connection is not None:
+            # Nested operations borrow the connection; only transaction() commits.
+            return nullcontext(connection)
+        return super().connect()
+
+    @contextmanager
+    def transaction(self):
+        """Serialize read/modify/write decisions, without sharing connections across threads."""
+        if getattr(self, "_transaction_connection", None) is not None:
+            yield self
+            return
+        with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            scoped = copy(self)
+            scoped._transaction_connection = connection
+            yield scoped
+
+    def initialize(self) -> None:
+        if getattr(self, "_transaction_connection", None) is not None:
+            raise RuntimeError("initialize storage before opening a transaction")
+        super().initialize()
 
     def upsert_profile(self, profile: DeveloperProfileV2) -> int:
         """Support the shared dataclass contract as well as the legacy model."""

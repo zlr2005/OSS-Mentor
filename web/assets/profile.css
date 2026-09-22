@@ -1,0 +1,1949 @@
+/* ================================================================
+   OSS-Mentor · Developer Profile
+   B5 page-specific styles.
+
+   Shared design variables and common components come from styles.css.
+   This file intentionally does not redefine the global application shell.
+   ================================================================ */
+
+.profile-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px 90px;
+}
+
+.profile-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-back-link {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.profile-back-link:hover {
+  color: var(--green);
+}
+
+
+/* ================================================================
+   Accessibility
+   ================================================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ================================================================
+   Hero
+   ================================================================ */
+
+.profile-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(330px, .72fr);
+  gap: 54px;
+  align-items: center;
+  padding: 78px 0 86px;
+}
+
+.profile-hero-copy h1 {
+  margin-bottom: 25px;
+}
+
+.profile-hero-description {
+  max-width: 690px;
+  margin-bottom: 34px;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.profile-principle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.profile-principle {
+  min-height: 142px;
+  padding: 17px;
+  background: rgba(255, 255, 255, .45);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+.profile-principle-index {
+  display: block;
+  margin-bottom: 24px;
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.profile-principle strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.profile-principle p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+
+/* ================================================================
+   Overview card
+   ================================================================ */
+
+.profile-overview-card,
+.github-import-card,
+.github-import-summary,
+.profile-editor {
+  background: rgba(255, 253, 247, .94);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.profile-overview-card {
+  padding: 28px;
+  border-radius: 22px;
+}
+
+.profile-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.profile-card-kicker {
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.profile-card-heading h2,
+.profile-card-heading h3 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif SC", serif;
+}
+
+.profile-card-heading h2 {
+  font-size: 28px;
+}
+
+.profile-card-heading h3 {
+  font-size: 22px;
+}
+
+.profile-state-badge {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  color: var(--muted);
+  background: #f1f1eb;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.profile-state-badge[data-state="ready"],
+.profile-state-badge[data-state="saved"] {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: #b9d6c7;
+}
+
+.profile-state-badge[data-state="dirty"],
+.profile-state-badge[data-state="pending"] {
+  color: #9b542c;
+  background: var(--orange-soft);
+  border-color: #e8c1aa;
+}
+
+.profile-state-badge[data-state="error"] {
+  color: #91382b;
+  background: #f7ddd8;
+  border-color: #e6bbb3;
+}
+
+.profile-state-badge[data-state="empty"] {
+  color: var(--muted);
+  background: #f1f1eb;
+}
+
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 24px;
+  padding: 17px;
+  background: #f2f4ef;
+  border-radius: 15px;
+}
+
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  color: white;
+  background: var(--green);
+  border-radius: 15px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+
+.profile-display-name {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 16px;
+}
+
+.profile-identity p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.profile-overview-list,
+.github-summary-list {
+  margin: 0;
+}
+
+.profile-overview-list > div,
+.github-summary-list > div {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 1.3fr);
+  gap: 18px;
+  padding: 11px 2px;
+  border-bottom: 1px solid #e3e2da;
+}
+
+.profile-overview-list > div:last-child,
+.github-summary-list > div:last-child {
+  border-bottom: 0;
+}
+
+.profile-overview-list dt,
+.github-summary-list dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.profile-overview-list dd,
+.github-summary-list dd {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.profile-save-state {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+  text-align: center;
+}
+
+
+/* ================================================================
+   Sections
+   ================================================================ */
+
+.profile-section {
+  padding: 76px 0;
+  border-top: 1px solid var(--line);
+}
+
+.profile-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(280px, .7fr);
+  gap: 70px;
+  align-items: end;
+  margin-bottom: 31px;
+}
+
+.profile-section-heading h2 {
+  margin: 0;
+}
+
+.profile-section-heading > p {
+  max-width: 520px;
+  margin: 0 0 6px auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+
+/* ================================================================
+   Manual profile editor
+   ================================================================ */
+
+.profile-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(350px, .95fr);
+  gap: 0;
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.profile-editor-column {
+  min-width: 0;
+}
+
+.profile-editor-column:first-child {
+  border-right: 1px solid var(--line);
+}
+
+.profile-editor-block {
+  padding: 27px 29px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-editor-column .profile-editor-block:last-child {
+  border-bottom: 0;
+}
+
+.profile-block-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.profile-block-title > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-block-title h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.profile-block-index {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: white;
+  background: var(--green);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.profile-source-chip,
+.profile-edit-state {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  color: #52615b;
+  background: #eef0eb;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.profile-source-chip[data-source="user_confirmed"] {
+  color: #225d48;
+  background: #dcebe3;
+}
+
+.profile-source-chip[data-source="user_input"] {
+  color: #40574e;
+  background: #e5ebe6;
+}
+
+.profile-source-chip[data-source="github_explicit_evidence"] {
+  color: #8f4d29;
+  background: var(--orange-soft);
+}
+
+.profile-source-chip[data-source="github_weak_inference"] {
+  color: #736756;
+  background: #eee8dc;
+}
+
+.profile-block-description {
+  margin: -8px 0 20px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.profile-field-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-field-grid-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-field-grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-field {
+  min-width: 0;
+}
+
+.profile-field label,
+.profile-option-fieldset legend {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-field input,
+.profile-field select,
+.suggestion-filter select,
+.profile-skill-row select {
+  width: 100%;
+  color: var(--ink);
+  background: white;
+  border: 1px solid #c8cbc5;
+  border-radius: 10px;
+}
+
+.profile-field input {
+  padding: 12px 13px;
+}
+
+.profile-field select {
+  padding: 12px 34px 12px 13px;
+}
+
+.profile-field input:focus,
+.profile-field select:focus,
+.profile-skill-row select:focus,
+.suggestion-filter select:focus {
+  outline: 3px solid rgba(23, 107, 80, .16);
+  outline-offset: 1px;
+  border-color: #8ab6a4;
+}
+
+.profile-field-help {
+  margin: 6px 0 0;
+  color: #8a918d;
+  font-size: 9px;
+}
+
+.profile-option-fieldset {
+  min-width: 0;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+
+.profile-option-fieldset:last-child {
+  margin-bottom: 0;
+}
+
+.profile-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.profile-choice-grid-wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-choice-grid label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 9px 10px;
+  color: #54615c;
+  background: #f2f3ef;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+  transition:
+    color .14s ease,
+    background .14s ease,
+    border-color .14s ease;
+}
+
+.profile-choice-grid label:has(input:checked) {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: #b7d6c6;
+}
+
+.profile-choice-grid input {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--green);
+}
+
+
+/* ================================================================
+   Skills
+   ================================================================ */
+
+.profile-skill-block {
+  height: 100%;
+}
+
+.profile-skill-list {
+  display: grid;
+  gap: 7px;
+}
+
+.profile-skill-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 62px 62px;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px 11px;
+  background: #f3f4f0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.profile-skill-row[data-locked="true"] {
+  background: #eef3ef;
+  border-color: #c6d9ce;
+}
+
+.profile-skill-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profile-skill-name strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.profile-skill-row select {
+  padding: 6px 7px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.profile-lock-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.profile-lock-control input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--green);
+}
+
+
+/* ================================================================
+   Form footer
+   ================================================================ */
+
+.profile-form-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  padding: 20px 28px;
+  background: #f2f3ee;
+  border-top: 1px solid var(--line);
+}
+
+.profile-form-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.profile-form-error {
+  margin: 0 0 5px;
+  color: #96382c;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.profile-form-error[hidden] {
+  display: none;
+}
+
+.profile-save-button {
+  width: auto;
+  min-width: 180px;
+  gap: 28px;
+}
+
+
+/* ================================================================
+   GitHub import
+   ================================================================ */
+
+.github-import-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, .75fr);
+  gap: 20px;
+}
+
+.github-import-card,
+.github-import-summary {
+  padding: 28px;
+  border-radius: 20px;
+}
+
+.github-import-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 23px;
+}
+
+.github-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  color: white;
+  background: #252a28;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.github-import-heading h3 {
+  margin-bottom: 3px;
+  font-size: 17px;
+}
+
+.github-import-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.github-import-rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 22px;
+}
+
+.github-import-rules > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  background: #f2f4ef;
+  border-radius: 9px;
+}
+
+.github-import-rules span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: var(--green);
+  background: var(--green-soft);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.github-import-rules p {
+  margin: 0;
+  color: #56625d;
+  font-size: 10px;
+}
+
+.github-consent {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 13px 14px;
+  color: #4f5d57;
+  background: #faf8f1;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.github-consent input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--green);
+}
+
+.profile-secondary-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  color: var(--green);
+  background: white;
+  border: 1px solid #a9c9bb;
+  border-radius: 11px;
+  cursor: pointer;
+  font-weight: 750;
+  transition:
+    transform .14s ease,
+    background .14s ease;
+}
+
+.profile-secondary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #f1f7f3;
+}
+
+.profile-secondary-button:disabled {
+  color: #89918e;
+  background: #f2f2ed;
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+
+.github-import-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.github-import-status[data-state="loading"] {
+  color: #8d5c34;
+}
+
+.github-import-status[data-state="success"] {
+  color: var(--green);
+}
+
+.github-import-status[data-state="error"] {
+  color: #96382c;
+}
+
+.github-summary-list {
+  margin-bottom: 20px;
+}
+
+.github-language-preview {
+  padding-top: 17px;
+  border-top: 1px solid var(--line);
+}
+
+.github-language-preview h4 {
+  margin: 0 0 11px;
+  font-size: 11px;
+}
+
+.github-language-list {
+  display: grid;
+  gap: 8px;
+}
+
+.github-language-item {
+  display: grid;
+  grid-template-columns: 86px 1fr 42px;
+  gap: 9px;
+  align-items: center;
+  font-size: 10px;
+}
+
+.github-language-name {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+.github-language-bar {
+  height: 7px;
+  overflow: hidden;
+  background: #e7e8e2;
+  border-radius: 999px;
+}
+
+.github-language-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  border-radius: inherit;
+}
+
+.github-language-percent {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+
+/* ================================================================
+   Suggestion toolbar
+   ================================================================ */
+
+.suggestion-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 14px;
+  padding: 15px 18px;
+  background: rgba(255, 255, 255, .48);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+}
+
+.suggestion-toolbar strong {
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+.suggestion-toolbar-note {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.suggestion-filter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.suggestion-filter select {
+  width: auto;
+  min-width: 96px;
+  padding: 7px 28px 7px 9px;
+  font-size: 10px;
+}
+
+
+/* ================================================================
+   Suggestion cards
+   ================================================================ */
+
+.suggestion-list {
+  display: grid;
+  gap: 13px;
+}
+
+.suggestion-card {
+  padding: 22px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  box-shadow: 0 8px 24px rgba(29, 46, 39, .04);
+}
+
+.suggestion-card[data-status="accepted"] {
+  border-color: #b7d4c5;
+}
+
+.suggestion-card[data-status="rejected"] {
+  opacity: .78;
+}
+
+.suggestion-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 17px;
+}
+
+.suggestion-field-name {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.suggestion-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.suggestion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.suggestion-source,
+.suggestion-confidence {
+  padding: 4px 8px;
+  background: #f1f2ed;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.suggestion-source[data-source="github_explicit_evidence"] {
+  color: #96522c;
+  background: var(--orange-soft);
+}
+
+.suggestion-source[data-source="github_weak_inference"] {
+  color: #6f6555;
+  background: #eee9de;
+}
+
+.suggestion-change {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
+  gap: 11px;
+  align-items: stretch;
+  margin-bottom: 17px;
+}
+
+.suggestion-change > div {
+  padding: 13px 14px;
+  background: #f3f4f0;
+  border-radius: 10px;
+}
+
+.suggestion-change > div:last-child {
+  background: var(--green-soft);
+}
+
+.suggestion-change span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.suggestion-change strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.suggestion-change-arrow {
+  display: grid !important;
+  place-items: center;
+  margin: 0 !important;
+  color: var(--green) !important;
+  font-size: 17px !important;
+}
+
+.suggestion-evidence {
+  padding: 13px 15px;
+  background: #faf8f1;
+  border: 1px solid #e5e1d5;
+  border-radius: 10px;
+}
+
+.suggestion-evidence-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+
+.suggestion-evidence-heading strong {
+  font-size: 10px;
+}
+
+.suggestion-observed-at {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.suggestion-evidence-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 17px;
+  color: #626b67;
+  font-size: 10px;
+}
+
+.suggestion-evidence-list li {
+  overflow-wrap: anywhere;
+}
+
+.suggestion-blocked-reason {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  color: #8d3a2d;
+  background: #f7ddd8;
+  border-radius: 8px;
+  font-size: 10px;
+}
+
+.suggestion-blocked-reason[hidden] {
+  display: none;
+}
+
+.suggestion-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.profile-accept-button,
+.profile-reject-button {
+  padding: 8px 13px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.profile-accept-button {
+  color: white;
+  background: var(--green);
+  border: 1px solid var(--green);
+}
+
+.profile-accept-button:hover:not(:disabled) {
+  background: #105a42;
+}
+
+.profile-reject-button {
+  color: #6a5851;
+  background: white;
+  border: 1px solid #d6cbc5;
+}
+
+.profile-reject-button:hover:not(:disabled) {
+  color: #953e2d;
+  background: #fbefea;
+}
+
+.profile-accept-button:disabled,
+.profile-reject-button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+
+/* ================================================================
+   Empty state
+   ================================================================ */
+
+.profile-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 150px;
+  padding: 25px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .4);
+  border: 1px dashed #c5c8c0;
+  border-radius: 16px;
+}
+
+.profile-empty-state[hidden] {
+  display: none;
+}
+
+.profile-empty-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 43px;
+  height: 43px;
+  color: var(--green);
+  background: var(--green-soft);
+  border-radius: 13px;
+  font-size: 18px;
+}
+
+.profile-empty-state h3 {
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.profile-empty-state p,
+.profile-empty-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+
+/* ================================================================
+   Provenance
+   ================================================================ */
+
+.provenance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.provenance-card {
+  min-width: 0;
+  padding: 21px;
+  background: rgba(255, 255, 255, .48);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+.provenance-dot {
+  display: block;
+  width: 11px;
+  height: 11px;
+  margin-bottom: 32px;
+  border-radius: 50%;
+}
+
+.provenance-user-confirmed {
+  background: var(--green);
+}
+
+.provenance-user-input {
+  background: #789b8c;
+}
+
+.provenance-github-explicit {
+  background: var(--orange);
+}
+
+.provenance-github-weak {
+  background: #b4a588;
+}
+
+.provenance-card h3 {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.provenance-card p {
+  min-height: 60px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.provenance-card code {
+  display: inline-block;
+  max-width: 100%;
+  padding: 4px 7px;
+  overflow: hidden;
+  color: #57615d;
+  background: #efefe9;
+  border-radius: 6px;
+  font-size: 8px;
+  text-overflow: ellipsis;
+}
+
+
+/* ================================================================
+   Loading / busy state
+   ================================================================ */
+
+.profile-is-busy {
+  pointer-events: none;
+  opacity: .68;
+}
+
+.profile-loading-line {
+  overflow: hidden;
+  position: relative;
+  background: #e9e9e3;
+}
+
+.profile-loading-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, .75),
+      transparent
+    );
+  animation: profile-shimmer 1.2s infinite;
+}
+
+@keyframes profile-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+
+/* ================================================================
+   Responsive
+   ================================================================ */
+
+@media (max-width: 1000px) {
+  .profile-hero {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .profile-overview-card {
+    max-width: 650px;
+  }
+
+  .profile-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-editor-column:first-child {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .github-import-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .provenance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-main {
+    padding: 0 18px 60px;
+  }
+
+  .profile-top-actions {
+    gap: 7px;
+  }
+
+  .profile-back-link {
+    display: none;
+  }
+
+  .profile-hero {
+    padding: 52px 0 62px;
+  }
+
+  .profile-hero-description {
+    font-size: 15px;
+  }
+
+  .profile-principle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-principle {
+    min-height: auto;
+  }
+
+  .profile-principle-index {
+    margin-bottom: 12px;
+  }
+
+  .profile-section {
+    padding: 58px 0;
+  }
+
+  .profile-section-heading {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .profile-section-heading > p {
+    margin-left: 0;
+  }
+
+  .profile-field-grid-two,
+  .profile-field-grid-three {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-choice-grid,
+  .profile-choice-grid-wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-form-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .profile-save-button {
+    width: 100%;
+  }
+
+  .github-import-rules {
+    grid-template-columns: 1fr;
+  }
+
+  .suggestion-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .suggestion-filter {
+    justify-content: space-between;
+  }
+
+  .suggestion-card-header {
+    flex-direction: column;
+  }
+
+  .suggestion-meta {
+    justify-content: flex-start;
+  }
+
+  .suggestion-change {
+    grid-template-columns: 1fr;
+  }
+
+  .suggestion-change-arrow {
+    min-height: 20px;
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 520px) {
+  .profile-overview-card,
+  .github-import-card,
+  .github-import-summary {
+    padding: 21px;
+  }
+
+  .profile-editor-block {
+    padding: 22px 20px;
+  }
+
+  .profile-block-title {
+    flex-direction: column;
+  }
+
+  .profile-choice-grid,
+  .profile-choice-grid-wide {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-skill-row {
+    grid-template-columns: minmax(0, 1fr) 58px;
+  }
+
+  .profile-lock-control {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .profile-form-footer {
+    padding: 18px 20px;
+  }
+
+  .profile-overview-list > div,
+  .github-summary-list > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .profile-overview-list dd,
+  .github-summary-list dd {
+    text-align: left;
+  }
+
+  .provenance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .provenance-card p {
+    min-height: auto;
+  }
+
+  .github-language-item {
+    grid-template-columns: 72px 1fr 38px;
+  }
+}
+/* ================================================================
+   Profile UI · Visual Refinement v2
+   Dashboard-oriented presentation layer.
+   ================================================================ */
+
+/* ---------- Page rhythm ---------- */
+
+.profile-main {
+  max-width: 1240px;
+  padding-bottom: 110px;
+}
+
+.profile-hero {
+  position: relative;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, .72fr);
+  gap: 72px;
+  min-height: 590px;
+  padding: 66px 0 78px;
+}
+
+.profile-hero::before {
+  content: "";
+  position: absolute;
+  top: 35px;
+  left: -160px;
+  width: 430px;
+  height: 430px;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle,
+      rgba(23, 107, 80, .075),
+      transparent 67%
+    );
+  filter: blur(6px);
+}
+
+.profile-hero-copy {
+  align-self: center;
+}
+
+.profile-hero-copy .eyebrow {
+  margin-bottom: 18px;
+}
+
+.profile-hero-copy h1 {
+  max-width: 760px;
+  margin-bottom: 24px;
+  font-size: clamp(52px, 5.3vw, 76px);
+  line-height: 1.02;
+  letter-spacing: -.055em;
+}
+
+.profile-hero-description {
+  max-width: 680px;
+  margin-bottom: 30px;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+
+/* ---------- Principles become compact capability cards ---------- */
+
+.profile-principle-grid {
+  gap: 12px;
+}
+
+.profile-principle {
+  position: relative;
+  min-height: 122px;
+  padding: 18px 18px 17px;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, .75),
+      rgba(255, 253, 247, .45)
+    );
+  box-shadow: 0 8px 26px rgba(29, 46, 39, .035);
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    border-color .18s ease;
+}
+
+.profile-principle:hover {
+  transform: translateY(-2px);
+  border-color: #c3ccc6;
+  box-shadow: 0 12px 32px rgba(29, 46, 39, .065);
+}
+
+.profile-principle-index {
+  margin-bottom: 18px;
+}
+
+.profile-principle strong {
+  font-size: 14px;
+}
+
+.profile-principle p {
+  max-width: 180px;
+  font-size: 10px;
+}
+
+
+/* ---------- Overview becomes the dashboard anchor ---------- */
+
+.profile-overview-card {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+  padding: 30px;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255, 253, 247, .98),
+      rgba(245, 247, 242, .96)
+    );
+  border-radius: 24px;
+  box-shadow:
+    0 28px 70px rgba(29, 46, 39, .11),
+    0 2px 10px rgba(29, 46, 39, .035);
+}
+
+.profile-overview-card::before {
+  content: "";
+  position: absolute;
+  top: -90px;
+  right: -90px;
+  width: 220px;
+  height: 220px;
+  background:
+    radial-gradient(
+      circle,
+      rgba(23, 107, 80, .13),
+      transparent 68%
+    );
+  border-radius: 50%;
+}
+
+.profile-overview-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-card-heading {
+  margin-bottom: 22px;
+}
+
+.profile-card-heading h2 {
+  font-size: 30px;
+}
+
+.profile-state-badge {
+  padding: 6px 11px;
+  backdrop-filter: blur(8px);
+}
+
+.profile-identity {
+  margin-bottom: 23px;
+  padding: 17px 18px;
+  background:
+    linear-gradient(
+      135deg,
+      #edf3ee,
+      #f4f5f0
+    );
+  border: 1px solid #e1e6e1;
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+  box-shadow:
+    0 8px 18px rgba(23, 107, 80, .18);
+}
+
+.profile-display-name {
+  font-size: 17px;
+}
+
+.profile-overview-list > div {
+  padding: 12px 3px;
+}
+
+.profile-overview-list dt {
+  font-size: 10px;
+  letter-spacing: .02em;
+}
+
+.profile-overview-list dd {
+  color: #27352f;
+  font-size: 11px;
+}
+
+.profile-save-state {
+  margin-top: 20px;
+  padding: 12px 14px 0;
+}
+
+
+/* ---------- Section hierarchy ---------- */
+
+.profile-section {
+  padding: 86px 0;
+}
+
+.profile-section-heading {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, .66fr);
+  margin-bottom: 35px;
+}
+
+.profile-section-heading h2 {
+  font-size: clamp(38px, 4vw, 52px);
+}
+
+.profile-section-heading > p {
+  line-height: 1.75;
+}
+
+
+/* ---------- Editor becomes a product dashboard ---------- */
+
+.profile-editor {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 253, 247, .98),
+      rgba(248, 248, 244, .96)
+    );
+  border-radius: 26px;
+  box-shadow:
+    0 24px 65px rgba(29, 46, 39, .07);
+}
+
+.profile-editor-block {
+  padding: 30px 32px;
+}
+
+.profile-block-title {
+  margin-bottom: 24px;
+}
+
+.profile-block-title h3 {
+  font-size: 16px;
+}
+
+.profile-block-index {
+  width: 29px;
+  height: 29px;
+  box-shadow:
+    0 5px 12px rgba(23, 107, 80, .14);
+}
+
+.profile-field input,
+.profile-field select,
+.profile-skill-row select {
+  border-color: #d1d5cf;
+  background: #fffefa;
+}
+
+.profile-field input:hover,
+.profile-field select:hover,
+.profile-skill-row select:hover {
+  border-color: #aebcb4;
+}
+
+
+/* ---------- Choice chips ---------- */
+
+.profile-choice-grid {
+  gap: 8px;
+}
+
+.profile-choice-grid label {
+  min-height: 40px;
+  padding: 9px 11px;
+  background: #f4f5f1;
+  border-color: #ecece6;
+}
+
+.profile-choice-grid label:hover {
+  border-color: #c8d4cd;
+}
+
+.profile-choice-grid label:has(input:checked) {
+  box-shadow:
+    inset 0 0 0 1px rgba(23, 107, 80, .03);
+}
+
+
+/* ---------- Skill console ---------- */
+
+.profile-skill-list {
+  gap: 8px;
+}
+
+.profile-skill-row {
+  min-height: 48px;
+  padding: 10px 12px;
+  background:
+    linear-gradient(
+      90deg,
+      #f4f5f1,
+      #f7f7f3
+    );
+  border-color: #ecece6;
+  transition:
+    transform .14s ease,
+    border-color .14s ease,
+    background .14s ease;
+}
+
+.profile-skill-row:hover {
+  transform: translateX(2px);
+  border-color: #cad5ce;
+}
+
+.profile-skill-row[data-locked="true"] {
+  background:
+    linear-gradient(
+      90deg,
+      #eaf2ed,
+      #f2f6f3
+    );
+  border-color: #bcd1c5;
+}
+
+.profile-skill-name strong {
+  font-size: 11px;
+}
+
+
+/* ---------- Form footer ---------- */
+
+.profile-form-footer {
+  padding: 22px 30px;
+  background:
+    linear-gradient(
+      90deg,
+      #eff2ed,
+      #f4f4ef
+    );
+}
+
+.profile-save-button {
+  min-width: 190px;
+  box-shadow:
+    0 8px 20px rgba(23, 107, 80, .16);
+}
+
+
+/* ---------- GitHub import ---------- */
+
+.github-import-layout {
+  gap: 22px;
+}
+
+.github-import-card,
+.github-import-summary {
+  padding: 30px;
+  border-radius: 22px;
+  box-shadow:
+    0 18px 50px rgba(29, 46, 39, .06);
+}
+
+.github-import-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.github-import-card::after {
+  content: "";
+  position: absolute;
+  right: -95px;
+  bottom: -105px;
+  width: 240px;
+  height: 240px;
+  pointer-events: none;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      rgba(223, 108, 61, .1),
+      transparent 68%
+    );
+}
+
+.github-import-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.github-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  box-shadow:
+    0 10px 24px rgba(37, 42, 40, .15);
+}
+
+.github-import-heading h3 {
+  font-size: 18px;
+}
+
+.github-import-rules > div {
+  border: 1px solid #e8ebe6;
+}
+
+.github-consent {
+  border-style: dashed;
+}
+
+.profile-secondary-button {
+  min-height: 46px;
+}
+
+
+/* ---------- Suggestion review becomes review workflow ---------- */
+
+.suggestion-toolbar {
+  padding: 17px 20px;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, .68),
+      rgba(246, 247, 242, .7)
+    );
+}
+
+.suggestion-card {
+  padding: 24px;
+  border-radius: 19px;
+  box-shadow:
+    0 11px 32px rgba(29, 46, 39, .045);
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease;
+}
+
+.suggestion-card:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 15px 38px rgba(29, 46, 39, .07);
+}
+
+.suggestion-change > div {
+  min-height: 72px;
+  padding: 14px 16px;
+}
+
+.suggestion-change > div:last-child {
+  border: 1px solid #c0d7ca;
+}
+
+.suggestion-evidence {
+  padding: 15px 17px;
+  background:
+    linear-gradient(
+      180deg,
+      #fbfaf5,
+      #f8f6ef
+    );
+}
+
+
+/* ---------- Provenance ---------- */
+
+.provenance-grid {
+  gap: 14px;
+}
+
+.provenance-card {
+  min-height: 215px;
+  padding: 23px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, .68),
+      rgba(250, 248, 241, .62)
+    );
+  box-shadow:
+    0 8px 24px rgba(29, 46, 39, .025);
+}
+
+.provenance-card:hover {
+  border-color: #c6cec9;
+}
+
+.provenance-dot {
+  margin-bottom: 28px;
+}
+
+
+/* ---------- Responsive refinement ---------- */
+
+@media (max-width: 1000px) {
+  .profile-hero {
+    min-height: auto;
+  }
+
+  .profile-overview-card {
+    position: relative;
+    top: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-hero {
+    gap: 28px;
+    padding-top: 46px;
+  }
+
+  .profile-hero-copy h1 {
+    font-size: clamp(42px, 13vw, 58px);
+  }
+
+  .profile-section {
+    padding: 64px 0;
+  }
+
+  .profile-editor-block,
+  .github-import-card,
+  .github-import-summary {
+    padding: 23px 21px;
+  }
+}

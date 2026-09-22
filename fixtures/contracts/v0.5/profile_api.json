@@ -1,12 +1,12 @@
 {
-  "contract_version": "profile-integration-v0.5-draft-1",
+  "contract_version": "profile-integration-v0.5-draft-2",
   "status": "local_candidate_pending_C_D_review",
   "owner_id_source": "authenticated_session_only",
-  "routes_implemented": false,
+  "routes_implemented": true,
   "routes": [
-    {"method": "GET", "path": "/api/v1/me/profile", "response_fields": ["profile"]},
+    {"method": "GET", "path": "/api/v1/me/profile", "response_fields": ["profile", "suggestions", "consent_version"]},
     {"method": "PUT", "path": "/api/v1/me/profile", "response_fields": ["profile"]},
-    {"method": "POST", "path": "/api/v1/me/profile/import-github", "request_example": {"consent_version": "2026-07-29"}, "service_response": "import"},
+    {"method": "POST", "path": "/api/v1/me/profile/import-github", "request_example": {"consent_version": "profile-import-consent-v0.1"}, "service_response": "import"},
     {"method": "POST", "path": "/api/v1/me/profile/suggestions/{suggestion_id}/accept", "request_example": {}, "service_response": "resolve"},
     {"method": "POST", "path": "/api/v1/me/profile/suggestions/{suggestion_id}/reject", "request_example": {}, "service_response": "resolve"}
   ],
@@ -36,10 +36,14 @@
     "resolved_at": null
   },
   "errors": {
+    "400": "invalid_request",
     "401": "authentication_required",
+    "403": "insufficient_permission",
     "404": "not_found",
     "409": "state_conflict",
     "422": "profile_validation_failed",
+    "429": "rate_limited",
+    "502": "github_upstream_error",
     "503": "service_not_ready"
   }
 }

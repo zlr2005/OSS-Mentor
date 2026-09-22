@@ -4,77 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>登录 · OSS-Mentor</title>
-  <style>
-    :root {
-      --green: #16a34a;
-      --red: #dc2626;
-      --amber: #d97706;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-secondary: #64748b;
-      --border: #e2e8f0;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 1rem;
-      line-height: 1.6;
-    }
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 2.5rem 2rem;
-      max-width: 420px;
-      width: 100%;
-      text-align: center;
-    }
-    .brand { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.5rem; }
-    .brand span { color: var(--green); }
-    .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
-    .login-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      background: #24292f;
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      padding: 0.8rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .login-button:hover { background: #1b1f24; }
-    .login-button svg { width: 20px; height: 20px; }
-    .demo-note {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid var(--border);
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-    }
-    .demo-note a { color: var(--green); text-decoration: none; font-weight: 600; }
-    .error-msg {
-      display: none;
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 0.8rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-    }
-    .error-msg.show { display: block; }
-    .loading { color: var(--text-secondary); font-style: italic; margin-bottom: 1rem; }
-  </style>
+  <link rel="stylesheet" href="/assets/login.css">
+  <script src="/assets/login.js" defer></script>
 </head>
 <body>
 <div class="card">
@@ -96,32 +27,6 @@
   </div>
 </div>
 
-<script>
-  var loginLink = document.getElementById("github-login");
-  var errorBox = document.getElementById("error");
-  var loadingEl = document.getElementById("loading");
 
-  function showError(message) {
-    errorBox.textContent = message;
-    errorBox.classList.add("show");
-  }
-
-  fetch("/api/v1/auth/github/start" + "?return_to=" + encodeURIComponent("/"))
-    .then(function (response) { return response.json(); })
-    .then(function (data) {
-      if (data.oauth_configured === false) {
-        loginLink.style.display = "none";
-        showError(data.message || "GitHub OAuth 未配置");
-        return;
-      }
-      loginLink.href = data.authorize_url;
-      loginLink.addEventListener("click", function () {
-        loadingEl.hidden = false;
-      });
-    })
-    .catch(function () {
-      showError("无法连接本地服务，请确认 OSS-Mentor 已启动。");
-    });
-</script>
 </body>
 </html>

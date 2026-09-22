@@ -48,6 +48,11 @@ paths:
             Set-Cookie:
               schema: {type: string}
               description: HttpOnly; SameSite=Lax; local sessions last 7 days
+        "303":
+          description: Browser requests accepting text/html receive the same session cookie and a local return_to redirect
+          headers:
+            Location:
+              schema: {type: string}
         "400": {description: Missing code or state}
         "401": {description: Invalid or expired OAuth state}
         "502": {description: GitHub upstream error}
@@ -65,28 +70,164 @@ paths:
         "503": {description: Auth service not configured}
   /api/v1/profiles:
     get:
-      summary: List public-safe profile templates
+      summary: List anonymous local profile templates (user-bound profiles excluded)
       responses:
         "200": {description: Profile template summaries}
   /api/v1/me/profile:
     get:
-      summary: Return the current user's developer profile (member B)
+      summary: Read the signed-in user's profile and persisted suggestions
+      security: [{SessionCookie: []}]
       responses:
-        "200": {description: Current user profile}
-        "401": {description: Login required}
-        "404": {description: Profile not found}
+        "200":
+          description: Owned profile; no internal owner IDs
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "405": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "413": {$ref: "#/components/responses/ProfileError"}
+        "415": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "429": {$ref: "#/components/responses/ProfileError"}
+        "502": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
     put:
-      summary: Validate and update the current user's profile (member B)
+      summary: Create or replace the signed-in user's editable profile
+      description: |
+        No query parameters or owner identifiers are accepted. The server generates
+        the profile key and provenance. Optional locks map canonical field names
+        (including skills.Python) to booleans. Unchanged fields retain their provenance.
+        Cross-origin browser writes are rejected. Create a profile before importing.
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ProfileWrite"}
       responses:
-        "200": {description: Updated profile}
-        "401": {description: Login required}
-        "422": {description: Profile validation failed}
+        "200":
+          description: Created or updated owned profile
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "405": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "413": {$ref: "#/components/responses/ProfileError"}
+        "415": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "429": {$ref: "#/components/responses/ProfileError"}
+        "502": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
   /api/v1/me/profile/import-github:
     post:
-      summary: Regenerate profile suggestions from the current authorization (member B)
+      summary: Import a bounded public-data sample using the current OAuth session
+      description: |
+        Explicit current consent is required. Tokens are process-local only;
+        after restart re-login is required (503), while manual profile access remains
+        available. Collection verifies /user and samples at most 10 public repositories
+        and 100 public events. It is not a complete contribution history. No private
+        repository requests use authorization. On upstream failure nothing is persisted.
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [consent_version]
+              properties:
+                consent_version: {type: string, enum: [profile-import-consent-v0.1]}
       responses:
-        "200": {description: Profile suggestions}
-        "401": {description: Login required}
+        "200":
+          description: Persisted suggestions, preview and collection limitations
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileImportResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "405": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "413": {$ref: "#/components/responses/ProfileError"}
+        "415": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "429": {$ref: "#/components/responses/ProfileError"}
+        "502": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
+  /api/v1/me/profile/suggestions/{suggestion_id}/accept:
+    post:
+      summary: Accept an owned pending suggestion atomically
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: suggestion_id
+          in: path
+          required: true
+          schema: {type: integer, minimum: 1, maximum: 9999999999999999999}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, maxProperties: 0}
+      responses:
+        "200":
+          description: Persisted profile, resolved suggestion and all suggestion statuses
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileDecisionResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "405": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "413": {$ref: "#/components/responses/ProfileError"}
+        "415": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "429": {$ref: "#/components/responses/ProfileError"}
+        "502": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
+  /api/v1/me/profile/suggestions/{suggestion_id}/reject:
+    post:
+      summary: Reject an owned pending suggestion atomically
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: suggestion_id
+          in: path
+          required: true
+          schema: {type: integer, minimum: 1, maximum: 9999999999999999999}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, maxProperties: 0}
+      responses:
+        "200":
+          description: Persisted profile, resolved suggestion and all suggestion statuses
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileDecisionResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "405": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "413": {$ref: "#/components/responses/ProfileError"}
+        "415": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "429": {$ref: "#/components/responses/ProfileError"}
+        "502": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
   /api/v1/tasks/{task_candidate_id}:
     get:
       summary: Task detail and current availability (member A)
@@ -143,7 +284,131 @@ paths:
       responses:
         "200": {description: System status}
 components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: oss_mentor_session
+  responses:
+    ProfileError:
+      description: |
+        400 invalid_request/invalid_json/invalid_content_length; 401 authentication_required;
+        403 insufficient_permission; 404 not_found; 405 method_not_allowed; 409 state_conflict;
+        413 body_too_large; 415 unsupported_media_type; 422 profile_validation_failed;
+        429 rate_limited; 502 github_upstream_error; 503 service_not_ready.
+        Database and upstream exception details and credentials are never returned.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    ProfileWrite:
+      type: object
+      additionalProperties: false
+      required: [service_track, preferred_languages, operating_systems, preferred_task_types, max_code_difficulty, max_setup_difficulty, desired_skill_stretch, skills]
+      properties:
+        display_name: {type: string, minLength: 1, maxLength: 60, default: 自定义画像}
+        service_track: {type: string, enum: [newcomer, growth]}
+        preferred_languages:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items: {type: string}
+          description: Python, JavaScript, TypeScript, Java, Go or Rust (case-insensitive)
+        operating_systems:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items: {type: string, enum: [windows, macos, linux]}
+        preferred_task_types:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items: {type: string, enum: [bug_fix, testing, documentation, feature, refactor, build_tooling]}
+        max_code_difficulty: {type: integer, minimum: 0, maximum: 3}
+        max_setup_difficulty: {type: integer, minimum: 0, maximum: 3}
+        desired_skill_stretch: {type: integer, minimum: 0, maximum: 2}
+        skills:
+          type: object
+          minProperties: 1
+          maxProperties: 24
+          additionalProperties: {type: integer, minimum: 0, maximum: 4}
+          description: Skill names are trimmed, case-insensitive, at most 50 characters, and cannot start with platform colon.
+        locks:
+          type: object
+          additionalProperties: {type: boolean}
+    StoredProfile:
+      allOf:
+        - {$ref: "#/components/schemas/CustomProfile"}
+        - type: object
+          required: [profile_key, field_metadata]
+          properties:
+            profile_key: {type: string}
+            profile_source: {type: string, enum: [demo, user_input, import]}
+            consent_version: {type: string}
+            field_metadata:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  source: {type: string}
+                  locked: {type: boolean}
+                  observed_at: {type: string, format: date-time, nullable: true}
+    ProfileSuggestion:
+      type: object
+      required: [profile_field_suggestion_id, field_name, suggestion_source, field, source, current_value, proposed_value, confidence, evidence, observed_at, status, blocked_reason, resolved_at]
+      properties:
+        profile_field_suggestion_id: {type: integer, minimum: 1}
+        field_name: {type: string}
+        suggestion_source: {type: string}
+        field: {type: string, description: Compatibility alias of field_name}
+        source: {type: string, description: Compatibility alias of suggestion_source}
+        current_value: {nullable: true}
+        proposed_value: {nullable: true}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        evidence: {type: array, items: {type: object}}
+        observed_at: {type: string, format: date-time}
+        status: {type: string, enum: [pending, accepted, rejected]}
+        blocked_reason: {type: string, nullable: true}
+        resolved_at: {type: string, format: date-time, nullable: true}
+        import_key: {type: string}
+        github_login: {type: string}
+    ProfileResponse:
+      type: object
+      required: [profile, api_version, request_id]
+      properties:
+        profile: {$ref: "#/components/schemas/StoredProfile"}
+        suggestions:
+          type: array
+          description: Included by GET, all statuses
+          items: {$ref: "#/components/schemas/ProfileSuggestion"}
+        consent_version: {type: string, description: Current import consent required by GET}
+        api_version: {type: string}
+        request_id: {type: string, format: uuid}
+    ProfileImportResponse:
+      type: object
+      required: [profile_key, github_import, merge_preview, persistence, suggestions, collection, api_version, request_id]
+      properties:
+        profile_key: {type: string}
+        github_import: {type: object}
+        merge_preview: {type: object, description: Transient domain suggestions use field/source}
+        persistence: {type: object}
+        suggestions:
+          type: array
+          items: {$ref: "#/components/schemas/ProfileSuggestion"}
+        collection: {type: object, description: Bounded sample limits and coverage caveats}
+        api_version: {type: string}
+        request_id: {type: string, format: uuid}
+    ProfileDecisionResponse:
+      type: object
+      required: [profile, suggestion, suggestions, api_version, request_id]
+      properties:
+        profile: {$ref: "#/components/schemas/StoredProfile"}
+        suggestion: {$ref: "#/components/schemas/ProfileSuggestion"}
+        suggestions:
+          type: array
+          items: {$ref: "#/components/schemas/ProfileSuggestion"}
+        api_version: {type: string}
+        request_id: {type: string, format: uuid}
     CustomProfile:
       type: object
       required: [service_track, preferred_languages, operating_systems, preferred_task_types]

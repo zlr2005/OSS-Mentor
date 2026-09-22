@@ -7,7 +7,7 @@ same Protocols so contract tests can run against both.
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import ContextManager, Protocol, runtime_checkable
 
 from oss_mentor.contracts import DeveloperProfileV2, RecommendationItemV3
 
@@ -53,6 +53,8 @@ class ProfileStore(Protocol):
     def upsert_profile(self, profile: DeveloperProfileV2) -> int: ...
 
     def initialize(self) -> None: ...
+
+    def transaction(self) -> ContextManager[ProfileStore]: ...
 
     def save_profile(
         self,
