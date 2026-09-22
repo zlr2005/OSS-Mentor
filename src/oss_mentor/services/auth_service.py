@@ -30,6 +30,18 @@ def _hmac_sha256(key: str, message: str) -> str:
     return hmac.new(key.encode("utf-8"), message.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Never forward OAuth credentials or tokens to a redirect target."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _open_no_redirect(request: urllib.request.Request, *, timeout: int):
+    """Open a GitHub request with redirects disabled for this request only."""
+    return urllib.request.build_opener(_NoRedirect()).open(request, timeout=timeout)
+
+
 class AuthSettings:
     def __init__(
         self,
@@ -130,7 +142,7 @@ class AuthService:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=10) as response:
+            with _open_no_redirect(request, timeout=10) as response:
                 return json.loads(response.read().decode("utf-8"))
         except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
             raise GitHubAuthError(f"github token exchange failed: {exc}") from exc
@@ -146,7 +158,7 @@ class AuthService:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=10) as response:
+            with _open_no_redirect(request, timeout=10) as response:
                 return json.loads(response.read().decode("utf-8"))
         except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
             raise GitHubAuthError(f"github user fetch failed: {exc}") from exc

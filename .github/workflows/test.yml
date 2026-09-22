@@ -72,9 +72,11 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
-      - name: Apply PostgreSQL baseline migration
+      - name: Apply PostgreSQL migrations
         run: |
-          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -f db/postgres/001_initial.sql
+          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f db/postgres/001_initial.sql
+          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f db/postgres/002_profile_identity.sql
+          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f scripts/ci_postgres_profile_check.sql
           PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -c "SELECT COUNT(*) FROM repository"
 
   secret-scan:
@@ -111,3 +113,19 @@ jobs:
         run: pip install -e .
       - name: Run web smoke tests (static asset whitelist)
         run: python -m unittest tests.test_web_ui -v
+
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check profile JavaScript syntax
+        run: |
+          node --check web/assets/profile.js
+          node --check web/assets/login.js
+      - name: Run profile gateway tests
+        run: node --test tests/profile_gateway.test.cjs
