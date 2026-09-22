@@ -1947,3 +1947,7 @@
     padding: 23px 21px;
   }
 }
+/* Data mode must remain visible; hidden error/detail elements stay hidden. */
+[hidden] { display: none !important; }
+.profile-mode-panel { padding: 1rem; margin-bottom: 1.25rem; border: 1px solid currentColor; border-radius: 12px; }
+.profile-mode-panel p { margin: 0 0 .5rem; }

@@ -11,13 +11,13 @@
  * - Accept / reject is explicit.
  * - The public API routes remain owned by member D.
  *
- * When D completes the v0.5 API glue, the gateway below can consume:
+ * Live API is the default. ?mode=demo explicitly selects local fixtures.
+ * The gateway consumes:
  *   GET  /api/v1/me/profile
  *   PUT  /api/v1/me/profile
  *   POST /api/v1/me/profile/import-github
  *
- * Single-suggestion resolution is intentionally kept behind the gateway
- * boundary until the shared API contract is finalized.
+ * Decisions use /suggestions/{id}/accept|reject and server-owned provenance.
  */
 
 const PROFILE_STORAGE_KEY = "oss-mentor.profile.v05";
@@ -192,7 +192,11 @@ const state = {
   suggestions: [],
   githubImport: null,
   dirty: false,
-  gatewayMode: "demo",
+  gatewayMode: new URLSearchParams(window.location.search).get("mode") === "demo" ? "demo" : "api",
+  ready: false,
+  persisted: false,
+  busy: false,
+  consentVersion: "profile-import-consent-v0.1",
 };
 
 
@@ -318,34 +322,31 @@ function saveLocalImport(githubImport) {
 
 const profileGateway = {
   async loadProfile() {
-    /*
-     * The current B5 development branch intentionally defaults to a
-     * local adapter. D can switch this to the live API after the shared
-     * route / auth contract is integrated.
-     */
-    state.gatewayMode = "demo";
-    return loadLocalProfile();
+    if (state.gatewayMode === "demo") {
+      state.suggestions = loadLocalSuggestions().map(normalizeSuggestion);
+      const imported = loadLocalImport();
+      state.githubImport = imported ? normalizeGithubImport(imported) : null;
+      return loadLocalProfile();
+    }
+    try {
+      const payload = await profileRequest(PROFILE_API);
+      state.suggestions = payload.suggestions.map(normalizeSuggestion);
+      state.consentVersion = payload.consent_version;
+      state.persisted = true;
+      return payload.profile;
+    } catch (error) {
+      if (error.status !== 404) throw error;
+      state.persisted = false;
+      state.suggestions = [];
+      return clone(DEFAULT_PROFILE);
+    }
   },
 
   async saveProfile(profile) {
     if (state.gatewayMode === "api") {
-      const response = await fetch(PROFILE_API, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin",
-        body: JSON.stringify(profile),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          await apiErrorMessage(response, "画像保存失败"),
-        );
-      }
-
-      const payload = await response.json();
-      return normalizeProfile(payload.profile || payload);
+      const payload = await profileRequest(PROFILE_API, "PUT", editableProfile(profile));
+      state.persisted = true;
+      return payload.profile;
     }
 
     saveLocalProfile(profile);
@@ -354,24 +355,7 @@ const profileGateway = {
 
   async importGithub() {
     if (state.gatewayMode === "api") {
-      const response = await fetch(GITHUB_IMPORT_API, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          consent_version: "profile-import-consent-v0.1",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          await apiErrorMessage(response, "GitHub 画像导入失败"),
-        );
-      }
-
-      return response.json();
+      return profileRequest(GITHUB_IMPORT_API, "POST", {consent_version: state.consentVersion});
     }
 
     return buildDemoGithubImport(
@@ -381,42 +365,92 @@ const profileGateway = {
   },
 
   async resolveSuggestion(suggestion, decision) {
-    /*
-     * The current shared v0.5 API plan does not yet expose a finalized
-     * per-suggestion route. Demo mode therefore exercises B's complete
-     * UI semantics locally. The business service in PR #14 remains the
-     * source of truth for persisted resolution after D wires the route.
-     */
     if (state.gatewayMode === "api") {
-      throw new Error(
-        "单项建议的共享 API 契约尚未由平台层完成接入。",
-      );
+      const id = suggestion.profile_field_suggestion_id;
+      if (!Number.isSafeInteger(id) || id <= 0 || !["accept", "reject"].includes(decision)) {
+        throw new Error("无效的建议操作。");
+      }
+      return profileRequest(`${PROFILE_API}/suggestions/${id}/${decision}`, "POST", {});
     }
 
     return resolveDemoSuggestion(suggestion, decision);
   },
 };
 
-async function apiErrorMessage(response, fallback) {
-  try {
-    const payload = await response.json();
-
-    if (payload && typeof payload.message === "string") {
-      return payload.message;
-    }
-
-    if (payload && typeof payload.detail === "string") {
-      return payload.detail;
-    }
-
-    if (payload && typeof payload.code === "string") {
-      return `${fallback}：${payload.code}`;
-    }
-  } catch {
-    // Ignore non-JSON responses.
+function editableProfile(profile) {
+  const payload = {};
+  for (const key of ["display_name", "service_track", "preferred_languages", "operating_systems",
+    "preferred_task_types", "max_code_difficulty", "max_setup_difficulty", "desired_skill_stretch", "skills"]) {
+    payload[key] = clone(profile[key]);
   }
+  payload.locks = {};
+  for (const [field, metadata] of Object.entries(profile.field_metadata || {})) {
+    if (Object.hasOwn(payload, field) || (field.startsWith("skills.") && Object.hasOwn(payload.skills, field.slice(7)))) {
+      payload.locks[field] = Boolean(metadata.locked);
+    }
+  }
+  return payload;
+}
 
-  return `${fallback}（HTTP ${response.status}）`;
+async function profileRequest(path, method = "GET", body) {
+  const controller = new AbortController();
+  // Collection may perform up to 12 bounded upstream calls.
+  const timer = setTimeout(() => controller.abort(), method === "GET" ? 15000 : 150000);
+  try {
+    const response = await fetch(path, {method, credentials: "same-origin", cache: "no-store",
+      headers: {Accept: "application/json", ...(body === undefined ? {} : {"Content-Type": "application/json"})},
+      body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal});
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const hints = {401: "请先登录，或重新登录恢复会话。", 403: "请求被拒绝，请检查访问权限。",
+        409: "建议已变化，请重新加载页面。", 422: "提交内容未通过校验。",
+        429: "GitHub 请求限额已用完，请稍后重试。", 503: "服务或 GitHub 凭据未就绪；凭据失效时请重新登录。"};
+      const detail = payload.error || {};
+      const error = new Error(`${hints[response.status] || "请求失败。"} ${detail.message || ""}（HTTP ${response.status}${payload.request_id ? `，请求 ${payload.request_id}` : ""}）`);
+      error.status = response.status;
+      if (response.status === 401) {
+        state.ready = false;
+        state.profile = clone(DEFAULT_PROFILE);
+        state.suggestions = [];
+        state.githubImport = null;
+        hydrateProfileForm(state.profile);
+        renderSuggestions();
+        renderGithubImport(null);
+        showFormError(error.message);
+        setText("profile-api-status", "需要登录");
+      }
+      throw error;
+    }
+    if (!payload || typeof payload !== "object" || !payload.api_version) throw new Error("服务返回了无效的 API 响应。");
+    return payload;
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("请求超时，操作结果尚未确认；请重新加载后检查再操作。");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function updateInteractionState() {
+  for (const element of all("#profile-form input, #profile-form select, #profile-form button, #github-import-consent, .suggestion-card button")) {
+    element.disabled = !state.ready || state.busy;
+  }
+  for (const button of all('.suggestion-card [data-action]')) {
+    const id = Number(button.closest(".suggestion-card").dataset.suggestionId);
+    const suggestion = state.suggestions.find(item => item.profile_field_suggestion_id === id);
+    if (suggestion && ((button.dataset.action === "accept" && suggestion.blocked_reason) || suggestion.status !== "pending")) button.disabled = true;
+  }
+  const button = byId("github-import-button");
+  if (button) button.disabled = !state.ready || state.busy || !byId("github-import-consent").checked;
+}
+
+function canChangeServerProfile() {
+  if (!state.ready || state.busy) return false;
+  if (state.gatewayMode === "api" && (!state.persisted || state.dirty)) {
+    showFormError("请先保存手工画像，再导入或处理建议，以免覆盖未保存修改。");
+    return false;
+  }
+  return true;
 }
 
 
@@ -481,9 +515,7 @@ function normalizeProfile(rawProfile) {
   )) {
     const normalizedLevel = clampNumber(level, 0, 4, 0);
 
-    if (normalizedLevel > 0) {
-      profile.skills[skillName] = normalizedLevel;
-    }
+    profile.skills[skillName] = normalizedLevel;
   }
 
   profile.field_metadata = {};
@@ -665,7 +697,7 @@ function collectProfileFromForm() {
     desired_skill_stretch: Number(
       byId("desired-skill-stretch").value,
     ),
-    skills: {},
+    skills: clone(previous.skills),
     field_metadata: clone(
       previous.field_metadata || {},
     ),
@@ -675,21 +707,21 @@ function collectProfileFromForm() {
     const skillName = select.dataset.skill;
     const level = clampNumber(select.value, 0, 4, 0);
 
-    if (level > 0) {
-      profile.skills[skillName] = level;
-    }
-
     const lockInput = document.querySelector(
       `[data-lock-field="${cssEscape(`skills.${skillName}`)}"]`,
     );
 
     const locked = Boolean(lockInput && lockInput.checked);
 
-    profile.field_metadata[`skills.${skillName}`] = {
-      source: locked ? "user_confirmed" : "user_input",
-      locked,
-      observed_at: observedAt,
-    };
+    // Zero is a real level for an existing/locked skill, not deletion.
+    if (level > 0 || locked || Object.hasOwn(previous.skills, skillName)) {
+      profile.skills[skillName] = level;
+    }
+
+    const prior = previous.field_metadata[`skills.${skillName}`];
+    profile.field_metadata[`skills.${skillName}`] = prior && previous.skills[skillName] === level
+      ? {...prior, locked}
+      : {source: "user_input", locked, observed_at: observedAt};
   }
 
   const manualFields = [
@@ -707,17 +739,12 @@ function collectProfileFromForm() {
     const previousMetadata =
       profile.field_metadata[fieldName] || {};
 
-    profile.field_metadata[fieldName] = {
-      ...previousMetadata,
-      source: previousMetadata.locked
-        ? "user_confirmed"
-        : "user_input",
-      locked: Boolean(previousMetadata.locked),
-      observed_at: observedAt,
-    };
+    profile.field_metadata[fieldName] = JSON.stringify(profile[fieldName]) === JSON.stringify(previous[fieldName])
+      ? previousMetadata
+      : {...previousMetadata, source: "user_input", locked: Boolean(previousMetadata.locked), observed_at: observedAt};
   }
 
-  return normalizeProfile(profile);
+  return profile;
 }
 
 function checkedValues(selector) {
@@ -733,8 +760,8 @@ function validateProfile(profile) {
     errors.push("请填写显示名称。");
   }
 
-  if (profile.display_name.length > 80) {
-    errors.push("显示名称不能超过 80 个字符。");
+  if (Array.from(profile.display_name).length > 60) {
+    errors.push("显示名称不能超过 60 个字符。");
   }
 
   if (!["newcomer", "growth"].includes(profile.service_track)) {
@@ -827,7 +854,8 @@ function renderProfileOverview(profile) {
 
   if (badge) {
     badge.dataset.state = state.dirty ? "dirty" : "ready";
-    badge.textContent = state.dirty ? "有未保存修改" : "画像已加载";
+    badge.textContent = !state.ready ? "未加载" : state.dirty ? "有未保存修改"
+      : state.gatewayMode === "api" && !state.persisted ? "尚未创建" : "画像已加载";
   }
 
   renderSkillMetadata(profile);
@@ -945,6 +973,7 @@ function showFormError(message) {
 
 async function handleProfileSubmit(event) {
   event.preventDefault();
+  if (!state.ready || state.busy) return;
   clearFormError();
 
   const profile = collectProfileFromForm();
@@ -962,6 +991,8 @@ async function handleProfileSubmit(event) {
   const button = byId("save-profile-button");
 
   setBusy(button, true);
+  state.busy = true;
+  updateInteractionState();
   setText("profile-save-state", "正在保存画像…");
 
   try {
@@ -998,6 +1029,8 @@ async function handleProfileSubmit(event) {
     );
   } finally {
     setBusy(button, false);
+    state.busy = false;
+    updateInteractionState();
   }
 }
 
@@ -1362,7 +1395,7 @@ function handleConsentChange() {
     return;
   }
 
-  button.disabled = !consent.checked;
+  updateInteractionState();
 
   setText(
     "github-import-status",
@@ -1373,6 +1406,7 @@ function handleConsentChange() {
 }
 
 async function handleGithubImport() {
+  if (!canChangeServerProfile()) return;
   const consent = byId("github-import-consent");
 
   if (!consent || !consent.checked) {
@@ -1385,6 +1419,8 @@ async function handleGithubImport() {
 
   const button = byId("github-import-button");
   setBusy(button, true);
+  state.busy = true;
+  updateInteractionState();
 
   setGithubImportStatus(
     "正在生成 GitHub 画像建议…",
@@ -1401,8 +1437,10 @@ async function handleGithubImport() {
     state.githubImport = normalized.githubImport;
     state.suggestions = normalized.suggestions;
 
-    saveLocalImport(state.githubImport);
-    saveLocalSuggestions(state.suggestions);
+    if (state.gatewayMode === "demo") {
+      saveLocalImport(state.githubImport);
+      saveLocalSuggestions(state.suggestions);
+    }
 
     renderGithubImport(state.githubImport);
     renderSuggestions();
@@ -1422,6 +1460,8 @@ async function handleGithubImport() {
     );
   } finally {
     setBusy(button, false);
+    state.busy = false;
+    updateInteractionState();
   }
 }
 
@@ -1502,6 +1542,7 @@ function normalizeGithubImport(rawImport) {
     recent_repository_count:
       Number(
         raw.recent_repository_count
+        ?? raw.recent_active_repository_count
         ?? raw.recent_repo_count
         ?? 0,
       ),
@@ -1513,7 +1554,7 @@ function normalizeGithubImport(rawImport) {
         || [],
       ),
 
-    activity: asObject(raw.activity),
+    activity: asObject(raw.activity || raw.activity_summary),
 
     suggestions: asArray(raw.suggestions),
   };
@@ -1622,6 +1663,7 @@ function renderGithubImport(githubImport) {
     setText("github-summary-public-repos", "—");
     setText("github-summary-recent-repos", "—");
     setText("github-summary-observed-at", "—");
+    setText("github-connection-summary", "本次页面会话暂无导入摘要；已保存的建议从服务器加载，不代表没有历史导入。");
 
     renderLanguageDistribution([]);
     return;
@@ -1814,26 +1856,10 @@ function formatEvidenceItem(item) {
     return String(item);
   }
 
-  const source =
-    item.source
-    || item.repository
-    || item.path
-    || item.raw_value;
-
-  const match =
-    item.match
-    || item.value
-    || item.normalized_token;
-
-  if (source && match) {
-    return `${source}: ${match}`;
-  }
-
-  if (source) {
-    return String(source);
-  }
-
-  return JSON.stringify(item);
+  // Keep repository/path details as well as the source tag. Rendering uses textContent.
+  return Object.entries(item).map(([key, value]) =>
+    `${key}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`
+  ).join(" · ");
 }
 
 function renderSuggestions() {
@@ -2004,8 +2030,8 @@ function renderSuggestions() {
 
     if (suggestion.blocked_reason) {
       blockedReason.hidden = false;
-      blockedReason.textContent =
-        suggestion.blocked_reason;
+      blockedReason.textContent = ({higher_priority_current_source: "当前手工填写或确认值优先，不能用此建议覆盖。",
+        locked: "该字段已锁定，不能接受覆盖建议。"})[suggestion.blocked_reason] || suggestion.blocked_reason;
     }
 
     const acceptButton =
@@ -2033,7 +2059,7 @@ function renderSuggestions() {
           : "拒绝";
     } else if (suggestion.blocked_reason) {
       acceptButton.disabled = true;
-      acceptButton.textContent = "字段已锁定";
+      acceptButton.textContent = "不可覆盖";
     }
 
     container.appendChild(fragment);
@@ -2112,6 +2138,7 @@ function formatSuggestionValue(value) {
    ================================================================ */
 
 async function handleSuggestionAction(event) {
+  if (!canChangeServerProfile()) return;
   const button = event.target.closest(
     "[data-action]",
   );
@@ -2156,6 +2183,8 @@ async function handleSuggestionAction(event) {
   }
 
   setSuggestionCardBusy(card, true);
+  state.busy = true;
+  updateInteractionState();
 
   try {
     const result =
@@ -2174,8 +2203,10 @@ async function handleSuggestionAction(event) {
           normalizeSuggestion(item, index),
       );
 
-    saveLocalProfile(state.profile);
-    saveLocalSuggestions(state.suggestions);
+    if (state.gatewayMode === "demo") {
+      saveLocalProfile(state.profile);
+      saveLocalSuggestions(state.suggestions);
+    }
 
     hydrateProfileForm(state.profile);
     renderSuggestions();
@@ -2201,6 +2232,8 @@ async function handleSuggestionAction(event) {
     }
   } finally {
     setSuggestionCardBusy(card, false);
+    state.busy = false;
+    updateInteractionState();
   }
 }
 
@@ -2451,7 +2484,7 @@ function bindEvents() {
   if (filter) {
     filter.addEventListener(
       "change",
-      renderSuggestions,
+      () => { renderSuggestions(); updateInteractionState(); },
     );
   }
 
@@ -2491,6 +2524,10 @@ function renderGatewayStatus() {
 
 async function initializeProfilePage() {
   bindEvents();
+  updateInteractionState();
+  setText("profile-mode-note", state.gatewayMode === "api"
+    ? "真实服务模式：画像和建议保存在当前登录账户下，不写入浏览器演示存储。"
+    : "演示模式：使用固定样例和浏览器本地存储，不连接画像 API，也不读取真实 GitHub 数据。");
 
   setText(
     "profile-save-state",
@@ -2502,24 +2539,8 @@ async function initializeProfilePage() {
       await profileGateway.loadProfile(),
     );
 
-    state.suggestions =
-      loadLocalSuggestions().map(
-        (suggestion, index) =>
-          normalizeSuggestion(
-            suggestion,
-            index,
-          ),
-      );
-
-    const storedImport =
-      loadLocalImport();
-
-    state.githubImport =
-      storedImport
-        ? normalizeGithubImport(storedImport)
-        : null;
-
     state.dirty = false;
+    state.ready = true;
 
     hydrateProfileForm(state.profile);
     renderGatewayStatus();
@@ -2553,6 +2574,9 @@ async function initializeProfilePage() {
     state.profile = clone(DEFAULT_PROFILE);
     hydrateProfileForm(state.profile);
     renderSuggestions();
+    setText("profile-save-state", "未加载，不能保存；请登录或重新加载页面。");
+  } finally {
+    updateInteractionState();
   }
 }
 

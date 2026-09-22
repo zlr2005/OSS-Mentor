@@ -27,6 +27,7 @@
       </a>
 
       <div class="profile-top-actions">
+        <a class="profile-back-link" href="/login?return_to=%2Fprofile">登录 / 重新登录</a>
         <a class="profile-back-link" href="/">返回推荐页</a>
         <span
           class="status-pill"
@@ -40,6 +41,14 @@
     </header>
 
     <main class="profile-main">
+      <section class="profile-mode-panel" aria-label="数据模式">
+        <p id="profile-mode-note" role="status">正在连接真实画像服务…</p>
+        <a href="/login?return_to=%2Fprofile">登录 / 重新登录</a>
+        <span aria-hidden="true"> · </span>
+        <a href="/profile">真实服务 / 重新加载</a>
+        <span aria-hidden="true"> · </span>
+        <a href="/profile?mode=demo">显式进入演示模式</a>
+      </section>
       <!-- =========================================================
            PAGE HERO
            ========================================================= -->
@@ -203,7 +212,7 @@
                     id="display-name"
                     name="display_name"
                     type="text"
-                    maxlength="80"
+                    maxlength="60"
                     autocomplete="name"
                     placeholder="例如：白晓漾"
                   >
@@ -924,6 +933,10 @@
                 <p id="github-connection-summary">
                   当前尚未执行 GitHub 画像导入。
                 </p>
+                <p class="profile-form-note">
+                  真实采集仅覆盖最多 10 个公开仓库与第一页 100 条公开事件，不是完整贡献历史；
+                  当前不抓取贡献文件路径。仓库语言占比不代表个人熟练程度。
+                </p>
               </div>
             </div>
 
@@ -981,7 +994,7 @@
             </p>
           </article>
 
-          <article
+            <article
             class="github-import-summary"
             id="github-import-summary"
             aria-labelledby="github-import-summary-title"

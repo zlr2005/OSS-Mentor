@@ -128,14 +128,25 @@ still requires an authorized live smoke test; deterministic tests use HTTP doubl
 
 ## Static entry points
 
-`/profile`, `/profile.html`, profile.js and profile.css serve the original UI
-draft. Its default gateway remains demo/localStorage until step 6. The homepage
-labels that entry as a demo draft. Login assets are externalized to comply with
+`/profile`, `/profile.html`, profile.js and profile.css now use the authenticated
+API by default. Only `?mode=demo` opts into localStorage and deterministic sample
+data; API failures never select demo. PUT sends only editable fields and locks,
+not identity or provenance. Import and accept/reject require a saved, clean form.
+401 clears account data and disables editing; 404 GET starts a new unsaved profile;
+503 and other errors remain visible with request IDs and login/reload links.
+Zero-valued and non-rendered skills survive saves. Evidence retains repository/path
+details. Initial GET restores persisted suggestion statuses; the import summary
+is session-only because GET does not return previous import aggregates.
+Login assets are externalized to comply with
 the existing self-only CSP. Successful OAuth callbacks requested by a browser
 accepting text/html set the cookie and 303-redirect to the validated local
 return_to; API callers still receive JSON. HTTPS configuration adds Secure to
 the cookie, and access logs omit query strings. Profile writes reject foreign
-Origin/Sec-Fetch-Site. This does not claim full browser profile acceptance.
+Origin/Sec-Fetch-Site. Step 6 was tested in a real browser against a disposable
+SQLite database and test-only account, with GitHub replaced by a fixture source.
+This is not a live GitHub OAuth acceptance claim. Run frontend regression with
+`node --test tests/profile_gateway.test.cjs`; manually reproduce browser checks
+with `python tests/profile_browser_fixture.py` (loopback only, no production use).
 
 ## Errors and compatibility
 
