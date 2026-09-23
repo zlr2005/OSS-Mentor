@@ -971,6 +971,30 @@ function showFormError(message) {
    Manual profile save
    ================================================================ */
 
+async function handleLogout() {
+  if (state.busy) {
+    return;
+  }
+
+  clearFormError();
+  state.busy = true;
+  updateInteractionState();
+
+  try {
+    await profileRequest("/api/v1/auth/logout", "POST", {});
+    window.location.assign("/login?return_to=%2Fprofile");
+  } catch (error) {
+    showFormError(
+      error instanceof Error
+        ? error.message
+        : "退出登录失败。",
+    );
+  } finally {
+    state.busy = false;
+    updateInteractionState();
+  }
+}
+
 async function handleProfileSubmit(event) {
   event.preventDefault();
   if (!state.ready || state.busy) return;
@@ -2453,6 +2477,12 @@ function bindEvents() {
         markProfileDirty();
       },
     );
+  }
+
+  const logoutButton = byId("logout-button");
+
+  if (logoutButton) {
+    logoutButton.addEventListener("click", handleLogout);
   }
 
   const consent = byId(

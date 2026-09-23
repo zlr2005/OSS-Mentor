@@ -66,6 +66,13 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('data-skill="go"', html)
         self.assertIn('data-skill="rust"', html)
 
+    def test_profile_page_exposes_logout_flow(self) -> None:
+        html = load_static_asset(self.root, "/profile").body.decode("utf-8")
+        script = load_static_asset(self.root, "/assets/profile.js").body.decode("utf-8")
+        self.assertIn('id="logout-button"', html)
+        self.assertIn("/api/v1/auth/logout", script)
+        self.assertIn("handleLogout", script)
+
     def test_status_page_is_accessible(self) -> None:
         asset = load_static_asset(self.root, "/status")
         self.assertIsNotNone(asset)
