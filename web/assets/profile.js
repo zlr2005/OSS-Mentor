@@ -392,7 +392,7 @@ function editableProfile(profile) {
   return payload;
 }
 
-async function profileRequest(path, method = "GET", body) {
+async function profileRequest(path, method = "GET", body, {requireApiVersion = true} = {}) {
   const controller = new AbortController();
   // Collection may perform up to 12 bounded upstream calls.
   const timer = setTimeout(() => controller.abort(), method === "GET" ? 15000 : 150000);
@@ -421,7 +421,9 @@ async function profileRequest(path, method = "GET", body) {
       }
       throw error;
     }
-    if (!payload || typeof payload !== "object" || !payload.api_version) throw new Error("服务返回了无效的 API 响应。");
+    if (!payload || typeof payload !== "object" || (requireApiVersion && !payload.api_version)) {
+      throw new Error("服务返回了无效的 API 响应。");
+    }
     return payload;
   } catch (error) {
     if (error.name === "AbortError") throw new Error("请求超时，操作结果尚未确认；请重新加载后检查再操作。");
@@ -981,7 +983,8 @@ async function handleLogout() {
   updateInteractionState();
 
   try {
-    await profileRequest("/api/v1/auth/logout", "POST", {});
+    const payload = await profileRequest("/api/v1/auth/logout", "POST", {}, {requireApiVersion: false});
+    if (payload.status !== "ok") throw new Error("退出登录失败：服务未确认注销结果。");
     window.location.assign("/login?return_to=%2Fprofile");
   } catch (error) {
     showFormError(

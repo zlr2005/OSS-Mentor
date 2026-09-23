@@ -6,9 +6,9 @@ const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../web/assets/profile.js'), 'utf8');
 
 function harness(search = '') {
-  const calls = [], stored = new Map();
+  const calls = [], navigations = [], stored = new Map();
   const context = vm.createContext({console, URLSearchParams, AbortController, setTimeout, clearTimeout,
-    window: {location: {search}, localStorage: {
+    window: {location: {search, assign(url) {navigations.push(url);}}, localStorage: {
       getItem(key) { calls.push(['storage-read', key]); return stored.get(key) || null; },
       setItem(key, value) { calls.push(['storage-write', key]); stored.set(key, value); }
     }}, document: {addEventListener() {}, getElementById() {return null;}, querySelectorAll() {return [];}, querySelector() {return null;}},
@@ -16,7 +16,7 @@ function harness(search = '') {
       json: async () => ({api_version: 'v0.5', profile: {}, suggestions: [], consent_version: 'test-consent'})};}
   });
   vm.runInContext(source, context);
-  return {context, calls, run: code => vm.runInContext(code, context)};
+  return {context, calls, navigations, run: code => vm.runInContext(code, context)};
 }
 
 test('default GET uses authenticated API, loads suggestions and never touches local storage', async () => {
@@ -148,4 +148,20 @@ test('save handler writes only server response and re-enables UI after success',
   assert.equal(h.run('state.dirty'), false);
   assert.equal(h.run('state.busy'), false);
   assert.equal(h.calls.length, 1);
+});
+
+test('logout accepts the auth response and redirects to login', async () => {
+  const h = harness();
+  h.run('updateInteractionState=()=>{};state.ready=true');
+  h.context.fetch = async (url, options) => {
+    h.calls.push([url, options]);
+    return {ok: true, status: 200, json: async () => ({status: 'ok', request_id: 'req-logout'})};
+  };
+  await h.run('handleLogout()');
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.calls[0][0], '/api/v1/auth/logout');
+  assert.equal(h.calls[0][1].method, 'POST');
+  assert.equal(h.calls[0][1].credentials, 'same-origin');
+  assert.deepEqual(h.navigations, ['/login?return_to=%2Fprofile']);
+  assert.equal(h.run('state.busy'), false);
 });
