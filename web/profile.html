@@ -1,0 +1,1312 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="OSS-Mentor 开发者画像：手工维护画像并审核 GitHub 导入建议"
+    >
+    <title>我的画像 · OSS-Mentor</title>
+
+    <!-- D 维护的共享视觉变量与基础样式，只引用，不修改 -->
+    <link rel="stylesheet" href="/assets/styles.css">
+
+    <!-- B5 页面专属样式 -->
+    <link rel="stylesheet" href="/assets/profile.css">
+
+    <!-- B5 页面专属交互 -->
+    <script src="/assets/profile.js" defer></script>
+  </head>
+
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="返回 OSS-Mentor 首页">
+        <span class="brand-mark" aria-hidden="true">OM</span>
+        <span>OSS-Mentor</span>
+      </a>
+
+      <div class="profile-top-actions">
+        <a class="profile-back-link" href="/login?return_to=%2Fprofile">登录 / 重新登录</a>
+        <a class="profile-back-link" href="/">返回推荐页</a>
+        <span
+          class="status-pill"
+          id="profile-api-status"
+          role="status"
+          aria-live="polite"
+        >
+          正在检查画像服务
+        </span>
+      </div>
+    </header>
+
+    <main class="profile-main">
+      <section class="profile-mode-panel" aria-label="数据模式">
+        <p id="profile-mode-note" role="status">正在连接真实画像服务…</p>
+        <a href="/login?return_to=%2Fprofile">登录 / 重新登录</a>
+        <span aria-hidden="true"> · </span>
+        <button type="button" id="logout-button" class="profile-inline-link">退出登录</button>
+        <span aria-hidden="true"> · </span>
+        <a href="/profile">真实服务 / 重新加载</a>
+        <span aria-hidden="true"> · </span>
+        <a href="/profile?mode=demo">显式进入演示模式</a>
+      </section>
+      <!-- =========================================================
+           PAGE HERO
+           ========================================================= -->
+      <section
+        class="profile-hero"
+        aria-labelledby="profile-page-title"
+      >
+        <div class="profile-hero-copy">
+          <p class="eyebrow">Developer Profile</p>
+
+          <h1 id="profile-page-title">
+            让推荐真正理解<br>
+            <span>你现在会什么。</span>
+          </h1>
+
+          <p class="profile-hero-description">
+            你可以完全手工维护画像，也可以在明确同意后，让 GitHub
+            公共贡献记录生成画像建议。GitHub 建议不会静默覆盖你已经填写或锁定的字段。
+          </p>
+
+          <div class="profile-principle-grid">
+            <article class="profile-principle">
+              <span class="profile-principle-index">01</span>
+              <strong>手工优先</strong>
+              <p>你的确认结果优先于 GitHub 推断。</p>
+            </article>
+
+            <article class="profile-principle">
+              <span class="profile-principle-index">02</span>
+              <strong>证据可见</strong>
+              <p>每条自动建议都展示来源、证据和置信度。</p>
+            </article>
+
+            <article class="profile-principle">
+              <span class="profile-principle-index">03</span>
+              <strong>逐项决定</strong>
+              <p>建议必须由你接受或拒绝后才能影响画像。</p>
+            </article>
+          </div>
+        </div>
+
+        <aside
+          class="profile-overview-card"
+          aria-labelledby="profile-overview-title"
+        >
+          <div class="profile-card-heading">
+            <div>
+              <p class="profile-card-kicker">当前画像</p>
+              <h2 id="profile-overview-title">画像概览</h2>
+            </div>
+
+            <span
+              class="profile-state-badge"
+              id="profile-state-badge"
+              data-state="loading"
+            >
+              加载中
+            </span>
+          </div>
+
+          <div class="profile-identity">
+            <div
+              class="profile-avatar"
+              id="profile-avatar"
+              aria-hidden="true"
+            >
+              OM
+            </div>
+
+            <div>
+              <strong
+                class="profile-display-name"
+                id="profile-display-name"
+              >
+                尚未创建画像
+              </strong>
+
+              <p id="profile-summary-line">
+                可以从手工画像开始，不需要连接 GitHub。
+              </p>
+            </div>
+          </div>
+
+          <dl class="profile-overview-list">
+            <div>
+              <dt>贡献阶段</dt>
+              <dd id="overview-track">未设置</dd>
+            </div>
+
+            <div>
+              <dt>偏好语言</dt>
+              <dd id="overview-languages">未设置</dd>
+            </div>
+
+            <div>
+              <dt>代码难度上限</dt>
+              <dd id="overview-code-difficulty">未设置</dd>
+            </div>
+
+            <div>
+              <dt>环境难度上限</dt>
+              <dd id="overview-setup-difficulty">未设置</dd>
+            </div>
+          </dl>
+
+          <p
+            class="profile-save-state"
+            id="profile-save-state"
+            role="status"
+            aria-live="polite"
+          >
+            尚未修改
+          </p>
+        </aside>
+      </section>
+
+      <!-- =========================================================
+           MANUAL PROFILE
+           ========================================================= -->
+      <section
+        class="profile-section"
+        aria-labelledby="manual-profile-title"
+      >
+        <div class="profile-section-heading">
+          <div>
+            <p class="eyebrow">Manual Profile</p>
+            <h2 id="manual-profile-title">手工画像</h2>
+          </div>
+
+          <p>
+            没有 GitHub 数据也可以完成全部画像设置。
+            用户手工填写和确认的数据具有更高优先级。
+          </p>
+        </div>
+
+        <form
+          class="profile-editor"
+          id="profile-form"
+          novalidate
+        >
+          <div class="profile-editor-column">
+            <div class="profile-editor-block">
+              <div class="profile-block-title">
+                <div>
+                  <span class="profile-block-index">01</span>
+                  <h3>基本信息</h3>
+                </div>
+
+                <span
+                  class="profile-source-chip"
+                  data-source-for="identity"
+                >
+                  用户填写
+                </span>
+              </div>
+
+              <div class="profile-field-grid profile-field-grid-two">
+                <div class="profile-field">
+                  <label for="display-name">显示名称</label>
+                  <input
+                    id="display-name"
+                    name="display_name"
+                    type="text"
+                    maxlength="60"
+                    autocomplete="name"
+                    placeholder="例如：白晓漾"
+                  >
+                  <p class="profile-field-help">
+                    仅用于画像展示，不参与能力评分。
+                  </p>
+                </div>
+
+                <div class="profile-field">
+                  <label for="service-track">贡献阶段</label>
+                  <select
+                    id="service-track"
+                    name="service_track"
+                  >
+                    <option value="newcomer">
+                      Newcomer · 首次或早期开源贡献
+                    </option>
+                    <option value="growth">
+                      Growth · 希望进一步成长
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-editor-block">
+              <div class="profile-block-title">
+                <div>
+                  <span class="profile-block-index">02</span>
+                  <h3>偏好与环境</h3>
+                </div>
+
+                <span class="profile-edit-state">
+                  可手工修改
+                </span>
+              </div>
+
+              <fieldset class="profile-option-fieldset">
+                <legend>偏好语言</legend>
+
+                <div
+                  class="profile-choice-grid"
+                  id="preferred-language-options"
+                >
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_languages"
+                      value="Python"
+                    >
+                    <span>Python</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_languages"
+                      value="JavaScript"
+                    >
+                    <span>JavaScript</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_languages"
+                      value="TypeScript"
+                    >
+                    <span>TypeScript</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_languages"
+                      value="Java"
+                    >
+                    <span>Java</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_languages"
+                      value="Go"
+                    >
+                    <span>Go</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_languages"
+                      value="Rust"
+                    >
+                    <span>Rust</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset class="profile-option-fieldset">
+                <legend>可用操作系统</legend>
+
+                <div class="profile-choice-grid">
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="operating_systems"
+                      value="windows"
+                    >
+                    <span>Windows</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="operating_systems"
+                      value="macos"
+                    >
+                    <span>macOS</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="operating_systems"
+                      value="linux"
+                    >
+                    <span>Linux</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset class="profile-option-fieldset">
+                <legend>希望参与的任务类型</legend>
+
+                <div class="profile-choice-grid profile-choice-grid-wide">
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_task_types"
+                      value="bug_fix"
+                    >
+                    <span>Bug 修复</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_task_types"
+                      value="testing"
+                    >
+                    <span>测试</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_task_types"
+                      value="documentation"
+                    >
+                    <span>文档</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_task_types"
+                      value="feature"
+                    >
+                    <span>功能开发</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_task_types"
+                      value="refactor"
+                    >
+                    <span>重构</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="preferred_task_types"
+                      value="build_tooling"
+                    >
+                    <span>构建工具</span>
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+
+            <div class="profile-editor-block">
+              <div class="profile-block-title">
+                <div>
+                  <span class="profile-block-index">03</span>
+                  <h3>难度与成长空间</h3>
+                </div>
+
+                <span class="profile-edit-state">
+                  0–3
+                </span>
+              </div>
+
+              <div class="profile-field-grid profile-field-grid-three">
+                <div class="profile-field">
+                  <label for="max-code-difficulty">
+                    代码难度上限
+                  </label>
+
+                  <select
+                    id="max-code-difficulty"
+                    name="max_code_difficulty"
+                  >
+                    <option value="0">0 · 极低</option>
+                    <option value="1">1 · 较低</option>
+                    <option value="2">2 · 中等</option>
+                    <option value="3">3 · 较高</option>
+                  </select>
+                </div>
+
+                <div class="profile-field">
+                  <label for="max-setup-difficulty">
+                    环境搭建难度上限
+                  </label>
+
+                  <select
+                    id="max-setup-difficulty"
+                    name="max_setup_difficulty"
+                  >
+                    <option value="0">0 · 极低</option>
+                    <option value="1">1 · 较低</option>
+                    <option value="2">2 · 中等</option>
+                    <option value="3">3 · 较高</option>
+                  </select>
+                </div>
+
+                <div class="profile-field">
+                  <label for="desired-skill-stretch">
+                    期望技能跨度
+                  </label>
+
+                  <select
+                    id="desired-skill-stretch"
+                    name="desired_skill_stretch"
+                  >
+                    <option value="0">0 · 优先已有技能</option>
+                    <option value="1">1 · 适度成长</option>
+                    <option value="2">2 · 更大成长空间</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- =====================================================
+               SKILL PROFILE
+               ===================================================== -->
+          <div class="profile-editor-column">
+            <div class="profile-editor-block profile-skill-block">
+              <div class="profile-block-title">
+                <div>
+                  <span class="profile-block-index">04</span>
+                  <h3>技能画像</h3>
+                </div>
+
+                <span class="profile-edit-state">
+                  0 未接触 · 4 熟练
+                </span>
+              </div>
+
+              <p class="profile-block-description">
+                技能等级可以由你手工维护。GitHub 只会生成建议，
+                不会直接把这里的等级改掉。
+              </p>
+
+              <div
+                class="profile-skill-list"
+                id="profile-skill-list"
+              >
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="Python"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Python</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="Python"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">Python 技能等级</span>
+                    <select
+                      name="skill.Python"
+                      data-skill="Python"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.Python"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="JavaScript"
+                >
+                  <div class="profile-skill-name">
+                    <strong>JavaScript</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="JavaScript"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">
+                      JavaScript 技能等级
+                    </span>
+                    <select
+                      name="skill.JavaScript"
+                      data-skill="JavaScript"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.JavaScript"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="TypeScript"
+                >
+                  <div class="profile-skill-name">
+                    <strong>TypeScript</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="TypeScript"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">
+                      TypeScript 技能等级
+                    </span>
+                    <select
+                      name="skill.TypeScript"
+                      data-skill="TypeScript"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.TypeScript"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="Java"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Java</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="Java"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">Java 技能等级</span>
+                    <select
+                      name="skill.Java"
+                      data-skill="Java"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.Java"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="Go"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Go</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="Go"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">Go 技能等级</span>
+                    <select
+                      name="skill.Go"
+                      data-skill="Go"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.Go"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="Rust"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Rust</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="Rust"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">Rust 技能等级</span>
+                    <select
+                      name="skill.Rust"
+                      data-skill="Rust"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.Rust"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="testing"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Testing</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="testing"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">Testing 技能等级</span>
+                    <select
+                      name="skill.testing"
+                      data-skill="testing"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.testing"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="git"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Git</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="git"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">Git 技能等级</span>
+                    <select
+                      name="skill.git"
+                      data-skill="git"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.git"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="documentation"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Documentation</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="documentation"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">
+                      Documentation 技能等级
+                    </span>
+                    <select
+                      name="skill.documentation"
+                      data-skill="documentation"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.documentation"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+
+                <article
+                  class="profile-skill-row"
+                  data-skill-row="build_tooling"
+                >
+                  <div class="profile-skill-name">
+                    <strong>Build Tooling</strong>
+                    <span
+                      class="profile-source-chip"
+                      data-skill-source="build_tooling"
+                    >
+                      用户填写
+                    </span>
+                  </div>
+
+                  <label>
+                    <span class="sr-only">
+                      Build Tooling 技能等级
+                    </span>
+                    <select
+                      name="skill.build_tooling"
+                      data-skill="build_tooling"
+                    >
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                  </label>
+
+                  <label class="profile-lock-control">
+                    <input
+                      type="checkbox"
+                      data-lock-field="skills.build_tooling"
+                    >
+                    <span>锁定</span>
+                  </label>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-form-footer">
+            <div>
+              <p
+                class="profile-form-error"
+                id="profile-form-error"
+                role="alert"
+                hidden
+              ></p>
+
+              <p class="profile-form-note">
+                保存手工画像不会自动触发 GitHub 导入。
+              </p>
+            </div>
+
+            <button
+              class="primary-button profile-save-button"
+              id="save-profile-button"
+              type="submit"
+            >
+              <span>保存画像</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- =========================================================
+           GITHUB IMPORT
+           ========================================================= -->
+      <section
+        class="profile-section"
+        aria-labelledby="github-import-title"
+      >
+        <div class="profile-section-heading">
+          <div>
+            <p class="eyebrow">GitHub Import</p>
+            <h2 id="github-import-title">从公开贡献生成建议</h2>
+          </div>
+
+          <p>
+            只有在你明确同意后才会执行导入。
+            GitHub 数据只用于生成建议和证据，不直接覆盖画像。
+          </p>
+        </div>
+
+        <div class="github-import-layout">
+          <article class="github-import-card">
+            <div class="github-import-heading">
+              <div class="github-mark" aria-hidden="true">
+                GH
+              </div>
+
+              <div>
+                <h3>GitHub 公共画像导入</h3>
+                <p id="github-connection-summary">
+                  当前尚未执行 GitHub 画像导入。
+                </p>
+                <p class="profile-form-note">
+                  真实采集仅覆盖最多 10 个公开仓库与第一页 100 条公开事件，不是完整贡献历史；
+                  当前不抓取贡献文件路径。仓库语言占比不代表个人熟练程度。
+                </p>
+              </div>
+            </div>
+
+            <div class="github-import-rules">
+              <div>
+                <span aria-hidden="true">✓</span>
+                <p>只使用公开数据</p>
+              </div>
+
+              <div>
+                <span aria-hidden="true">✓</span>
+                <p>不保存私有仓库内容</p>
+              </div>
+
+              <div>
+                <span aria-hidden="true">✓</span>
+                <p>贡献次数不直接等于代码能力</p>
+              </div>
+
+              <div>
+                <span aria-hidden="true">✓</span>
+                <p>变化字段只生成建议</p>
+              </div>
+            </div>
+
+            <label class="github-consent">
+              <input
+                id="github-import-consent"
+                type="checkbox"
+              >
+              <span>
+                我同意 OSS-Mentor 使用我的 GitHub
+                <strong>公开贡献数据</strong>
+                生成画像建议。
+              </span>
+            </label>
+
+            <button
+              class="profile-secondary-button"
+              id="github-import-button"
+              type="button"
+              disabled
+            >
+              <span>生成 GitHub 画像建议</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+
+            <p
+              class="github-import-status"
+              id="github-import-status"
+              role="status"
+              aria-live="polite"
+            >
+              勾选同意后可以开始导入。
+            </p>
+          </article>
+
+            <article
+            class="github-import-summary"
+            id="github-import-summary"
+            aria-labelledby="github-import-summary-title"
+          >
+            <div class="profile-card-heading">
+              <div>
+                <p class="profile-card-kicker">
+                  Import Preview
+                </p>
+                <h3 id="github-import-summary-title">
+                  最近一次导入
+                </h3>
+              </div>
+
+              <span
+                class="profile-state-badge"
+                id="github-import-state"
+                data-state="empty"
+              >
+                暂无数据
+              </span>
+            </div>
+
+            <dl class="github-summary-list">
+              <div>
+                <dt>GitHub 用户</dt>
+                <dd id="github-summary-login">—</dd>
+              </div>
+
+              <div>
+                <dt>公开仓库</dt>
+                <dd id="github-summary-public-repos">—</dd>
+              </div>
+
+              <div>
+                <dt>近期活跃仓库</dt>
+                <dd id="github-summary-recent-repos">—</dd>
+              </div>
+
+              <div>
+                <dt>观察时间</dt>
+                <dd id="github-summary-observed-at">—</dd>
+              </div>
+            </dl>
+
+            <div class="github-language-preview">
+              <h4>常用语言证据</h4>
+
+              <div
+                class="github-language-list"
+                id="github-language-list"
+              >
+                <p class="profile-empty-copy">
+                  导入后显示语言占比和对应证据。
+                </p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           SUGGESTION REVIEW
+           ========================================================= -->
+      <section
+        class="profile-section"
+        aria-labelledby="suggestions-title"
+      >
+        <div class="profile-section-heading">
+          <div>
+            <p class="eyebrow">Review Suggestions</p>
+            <h2 id="suggestions-title">逐条审核画像建议</h2>
+          </div>
+
+          <p>
+            每条建议都显示当前值、建议值、来源、证据和置信度。
+            接受或拒绝由你决定。
+          </p>
+        </div>
+
+        <div class="suggestion-toolbar">
+          <div>
+            <strong id="pending-suggestion-count">
+              0 条待处理建议
+            </strong>
+
+            <span id="suggestion-toolbar-note">
+              GitHub 导入后会在这里显示建议。
+            </span>
+          </div>
+
+          <label class="suggestion-filter">
+            <span>显示</span>
+
+            <select id="suggestion-status-filter">
+              <option value="pending">
+                待处理
+              </option>
+              <option value="accepted">
+                已接受
+              </option>
+              <option value="rejected">
+                已拒绝
+              </option>
+              <option value="all">
+                全部
+              </option>
+            </select>
+          </label>
+        </div>
+
+        <div
+          class="suggestion-list"
+          id="suggestion-list"
+          aria-live="polite"
+        >
+          <div
+            class="profile-empty-state"
+            id="suggestion-empty-state"
+          >
+            <div
+              class="profile-empty-icon"
+              aria-hidden="true"
+            >
+              ↗
+            </div>
+
+            <div>
+              <h3>还没有 GitHub 画像建议</h3>
+              <p>
+                你可以继续使用手工画像；
+                GitHub 导入不是使用推荐功能的前置条件。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           EVIDENCE / PROVENANCE
+           ========================================================= -->
+      <section
+        class="profile-section"
+        aria-labelledby="provenance-title"
+      >
+        <div class="profile-section-heading">
+          <div>
+            <p class="eyebrow">Evidence & Provenance</p>
+            <h2 id="provenance-title">画像从哪里来</h2>
+          </div>
+
+          <p>
+            OSS-Mentor 保留字段来源和解释信息，让你知道当前画像为什么是这个值。
+          </p>
+        </div>
+
+        <div class="provenance-grid">
+          <article class="provenance-card">
+            <span
+              class="provenance-dot provenance-user-confirmed"
+              aria-hidden="true"
+            ></span>
+
+            <h3>用户已确认</h3>
+            <p>
+              最高优先级。用户确认后的字段不会被 GitHub 重新导入静默覆盖。
+            </p>
+
+            <code>user_confirmed</code>
+          </article>
+
+          <article class="provenance-card">
+            <span
+              class="provenance-dot provenance-user-input"
+              aria-hidden="true"
+            ></span>
+
+            <h3>用户填写</h3>
+            <p>
+              手工输入的画像值优先于所有 GitHub 自动推断结果。
+            </p>
+
+            <code>user_input</code>
+          </article>
+
+          <article class="provenance-card">
+            <span
+              class="provenance-dot provenance-github-explicit"
+              aria-hidden="true"
+            ></span>
+
+            <h3>GitHub 明确证据</h3>
+            <p>
+              例如真实修改了测试、文档或构建配置对应路径。
+            </p>
+
+            <code>github_explicit_evidence</code>
+          </article>
+
+          <article class="provenance-card">
+            <span
+              class="provenance-dot provenance-github-weak"
+              aria-hidden="true"
+            ></span>
+
+            <h3>GitHub 弱推断</h3>
+            <p>
+              例如仓库语言占比，只作为较弱的画像建议依据。
+            </p>
+
+            <code>github_weak_inference</code>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===========================================================
+         FUTURE JS TEMPLATE
+         profile.js 会克隆这个模板渲染建议
+         =========================================================== -->
+    <template id="suggestion-card-template">
+      <article
+        class="suggestion-card"
+        data-suggestion-id=""
+      >
+        <div class="suggestion-card-header">
+          <div>
+            <span class="suggestion-field-name">
+              字段
+            </span>
+
+            <h3 class="suggestion-title">
+              GitHub 画像建议
+            </h3>
+          </div>
+
+          <div class="suggestion-meta">
+            <span class="suggestion-source">
+              来源
+            </span>
+
+            <span class="suggestion-confidence">
+              置信度 —
+            </span>
+          </div>
+        </div>
+
+        <div class="suggestion-change">
+          <div>
+            <span>当前值</span>
+            <strong class="suggestion-current-value">
+              —
+            </strong>
+          </div>
+
+          <span
+            class="suggestion-change-arrow"
+            aria-hidden="true"
+          >
+            →
+          </span>
+
+          <div>
+            <span>建议值</span>
+            <strong class="suggestion-proposed-value">
+              —
+            </strong>
+          </div>
+        </div>
+
+        <div class="suggestion-evidence">
+          <div class="suggestion-evidence-heading">
+            <strong>证据</strong>
+            <span class="suggestion-observed-at">
+              —
+            </span>
+          </div>
+
+          <ul class="suggestion-evidence-list">
+          </ul>
+        </div>
+
+        <p
+          class="suggestion-blocked-reason"
+          hidden
+        ></p>
+
+        <div class="suggestion-actions">
+          <button
+            class="profile-accept-button"
+            type="button"
+            data-action="accept"
+          >
+            接受建议
+          </button>
+
+          <button
+            class="profile-reject-button"
+            type="button"
+            data-action="reject"
+          >
+            拒绝
+          </button>
+        </div>
+      </article>
+    </template>
+
+    <footer>
+      <span>OSS-Mentor · Developer Profile</span>
+      <span>手工优先 · 来源可追溯 · GitHub 建议需确认</span>
+    </footer>
+  </body>
+</html>

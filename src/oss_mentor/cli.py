@@ -1353,7 +1353,7 @@ def build_parser() -> argparse.ArgumentParser:
     feedback_summary_command.set_defaults(handler=command_feedback_summary)
 
     serve_command = subparsers.add_parser(
-        "serve-api", help="Serve the local read-only recommendation API."
+        "serve-api", help="Serve the local recommendation and authenticated profile API."
     )
     serve_command.add_argument("--database", help="SQLite database path.")
     serve_command.add_argument("--host", default="127.0.0.1")

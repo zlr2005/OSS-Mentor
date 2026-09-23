@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from oss_mentor.services.auth_service import (
     AuthService,
     AuthSettings,
     GitHubAuthError,
     SESSION_COOKIE_NAME,
+    _NoRedirect,
 )
 
 
@@ -107,6 +109,20 @@ def _settings(configured: bool = True) -> AuthSettings:
     )
 
 
+class _FakeResponse:
+    def __init__(self, payload: bytes) -> None:
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        return False
+
+    def read(self) -> bytes:
+        return self.payload
+
+
 class AuthServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.store = FakeIdentityStore()
@@ -199,6 +215,38 @@ class AuthServiceTests(unittest.TestCase):
 
     def test_session_cookie_name_is_stable(self) -> None:
         self.assertEqual("oss_mentor_session", SESSION_COOKIE_NAME)
+
+    def test_oauth_redirect_handler_rejects_redirects(self) -> None:
+        handler = _NoRedirect()
+        self.assertIsNone(
+            handler.redirect_request(
+                None, None, 302, "Found", {}, "https://foreign.example/steal"
+            )
+        )
+
+    def test_oauth_network_calls_use_no_redirect_opener(self) -> None:
+        service = AuthService(self.store, _settings())
+        with patch("oss_mentor.services.auth_service._open_no_redirect") as open_request:
+            open_request.return_value.__enter__.return_value = _FakeResponse(
+                b'{"access_token": "fixture-token"}')
+            self.assertEqual(
+                "fixture-token", service._exchange_code("fixture-code")["access_token"]
+            )
+            exchange_request = open_request.call_args.args[0]
+            self.assertEqual(
+                "https://github.com/login/oauth/access_token", exchange_request.full_url
+            )
+
+            open_request.return_value.__enter__.return_value = _FakeResponse(
+                b'{"id": 101, "login": "fixture-dev"}')
+            self.assertEqual(
+                "fixture-dev", service._fetch_github_user("fixture-token")["login"]
+            )
+            user_request = open_request.call_args.args[0]
+            self.assertEqual("https://api.github.com/user", user_request.full_url)
+            self.assertEqual(
+                "Bearer fixture-token", user_request.get_header("Authorization")
+            )
 
 
 if __name__ == "__main__":

@@ -866,6 +866,10 @@ class SQLiteCandidateStore:
                     COUNT(ds.skill_name) AS skill_count
                 FROM developer_profile AS dp
                 LEFT JOIN developer_skill AS ds USING (developer_profile_id)
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM profile_user_binding AS binding
+                    WHERE binding.developer_profile_id = dp.developer_profile_id
+                )
                 GROUP BY dp.developer_profile_id
                 ORDER BY dp.profile_key
                 """
