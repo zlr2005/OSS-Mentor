@@ -25,6 +25,7 @@ OSS-Mentor 是一个面向开源贡献者的双通道导学系统：
 - [进阶通道离线评估 v0.2](docs/ranking_evaluation_v0.2.md)
 - [新手通道离线评估 v0.2](docs/ranking_evaluation_newcomer_v0.2.md)
 - [Member C 推荐算法 v0.3 交付说明](docs/member_c_delivery_v0.3.md)
+- [Member C 画像到推荐模块集成答复 v0.5](docs/member_c_profile_recommendation_handoff_v0.5.md)
 - [进阶通道离线评估 v0.3](docs/ranking_evaluation_v0.3.md)
 - [新手通道离线评估 v0.3](docs/ranking_evaluation_newcomer_v0.3.md)
 - [任务特征与双通道排序 v0.1](docs/task_features_and_ranking_v0.1.md)
