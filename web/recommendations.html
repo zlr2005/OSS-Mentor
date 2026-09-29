@@ -1,0 +1,86 @@
+<!doctype html>
+<!--
+THESIS: 推荐不是任务卡墙，而是一张可审阅的成长路线；拒绝“分数大字 + 同质卡片”的默认排列。
+OWN-WORLD: 延续 OSS-Mentor 的纸张米白、森林绿、陶土橙，以排序清单、证据条和工作台侧栏组织信息。
+STORY: 用户确认当前画像，逐项理解匹配依据与技能差距，然后打开任务或提交反馈。
+FIRST VIEWPORT: 顶栏下方左侧固定画像/批次摘要，右侧直接出现第一条推荐及其完整解释，刷新操作位于标题行。
+FORM: Operate 模式的“推荐审阅台”，自有结构第 4 项，surface seed 9d524f4d；桌面双栏、移动端单列。
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="OSS-Mentor 登录用户的可解释开源任务推荐">
+    <title>我的推荐 · OSS-Mentor</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <link rel="stylesheet" href="/assets/recommendations.css">
+    <script src="/assets/recommendations.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar recommendation-topbar">
+      <a class="brand" href="/" aria-label="OSS-Mentor 首页">
+        <span class="brand-mark" aria-hidden="true">OM</span>
+        <span>OSS-Mentor</span>
+      </a>
+      <nav aria-label="主要导航">
+        <a href="/profile">画像</a>
+        <a href="/recommendations" aria-current="page">我的推荐</a>
+      </nav>
+    </header>
+
+    <main class="recommendation-main">
+      <header class="recommendation-heading">
+        <div>
+          <p class="recommendation-kicker">匹配版本 developer-task-match-v0.3</p>
+          <h1>有依据地选择<span>下一次贡献。</span></h1>
+          <p>仍可领取、符合画像硬约束的任务，按能力覆盖、成长空间与多样性排序。</p>
+        </div>
+        <button class="refresh-button" id="refresh-recommendations" type="button">刷新推荐</button>
+      </header>
+
+      <div class="recommendation-workbench">
+        <aside class="recommendation-context" aria-labelledby="context-title">
+          <div class="context-heading">
+            <p>当前上下文</p>
+            <span id="context-state">读取中</span>
+          </div>
+          <h2 id="context-title">你的成长画像</h2>
+          <dl id="profile-summary" class="context-list">
+            <div><dt>画像</dt><dd>正在读取…</dd></div>
+            <div><dt>轨道</dt><dd>—</dd></div>
+            <div><dt>推荐数</dt><dd>—</dd></div>
+            <div><dt>批次</dt><dd>—</dd></div>
+          </dl>
+          <p class="context-note">反馈只作用于当前登录用户和当前画像，不会影响其他用户。</p>
+          <a class="profile-link" href="/profile">调整开发者画像 <span aria-hidden="true">→</span></a>
+        </aside>
+
+        <section class="recommendation-results" aria-labelledby="recommendation-title">
+          <div class="results-heading">
+            <div>
+              <p>按适合度排序</p>
+              <h2 id="recommendation-title">推荐清单</h2>
+            </div>
+            <span id="result-status" role="status" aria-live="polite">正在生成推荐…</span>
+          </div>
+
+          <div class="recommendation-message" id="recommendation-message" role="status" hidden>
+            <strong id="message-title"></strong>
+            <p id="message-copy"></p>
+            <a id="message-action" href="/profile" hidden>前往画像页</a>
+          </div>
+
+          <ol class="ranked-list" id="ranked-list" aria-busy="true">
+            <li class="recommendation-loading"><span></span><span></span><span></span></li>
+            <li class="recommendation-loading"><span></span><span></span><span></span></li>
+          </ol>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      <span>OSS-Mentor · 可解释推荐 v0.3</span>
+      <span>分数帮助排序，最终选择由你决定。</span>
+    </footer>
+  </body>
+</html>

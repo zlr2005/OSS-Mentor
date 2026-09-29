@@ -123,14 +123,6 @@ class CandidateStore(Protocol):
 class RecommendationStore(Protocol):
     """Recommendation snapshot persistence (owned by member C)."""
 
-    def save_recommendation_batch(
-        self,
-        *,
-        run_id: str,
-        profile_hash: str,
-        candidate_hash: str,
-        match_version: str,
-        items: list[RecommendationItemV3],
-    ) -> None: ...
+    def save_recommendation_batch(self, batch: object) -> None: ...
 
     def find_recommendation_batch(self, run_id: str) -> dict | None: ...

@@ -29,10 +29,10 @@
 - `tests/test_contracts.py`：skill casefold 与冲突检测；
 - `tests/test_recommendation_service.py`：`DeveloperProfileV2` 输入约束、`MatchResult` 到 `RecommendationItemV3`、0–1 分数、结构化原因、负反馈排序；
 - `tests/test_recommendation_service.py`：真实 SQLite 用户、session 和画像绑定消费，验证 session 无法选择其他画像。
+- `tests/test_recommendation_migration.py`：010 推荐批次迁移与排名字段；
+- v0.3 的多样性、快照、双轨评估和页面交付详见 `docs/member_c_delivery_v0.3.md`。
 
-## 后续改进
+## 后续集成
 
 - D 接入路由后增加 HTTP 级 401、无画像、limit 和 cookie 测试；
-- 推荐快照迁移 `010_recommendation_runs.sql` 尚未进入本分支；
-- 在数据量扩大前补充同仓库最多 3 条、任务类型多样性和反馈惩罚系数的离线评估；
 - 将旧公开/匿名推荐路径逐步迁移到同一服务，消除当前 API 中遗留的 `MatchResult` 响应形状。

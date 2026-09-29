@@ -1,0 +1,39 @@
+{
+  "schema_version": "recommendation_contract_v0.5",
+  "match_version": "developer-task-match-v0.3",
+  "feedback_context": "user:7:profile:fixture-profile",
+  "items": [
+    {
+      "task_candidate_id": 101,
+      "repository_full_name": "example/python-tool",
+      "issue_number": 41,
+      "title": "Add tests for configuration parsing",
+      "html_url": "https://github.com/example/python-tool/issues/41",
+      "service_track": "newcomer",
+      "score": 0.86,
+      "difficulty": {"code": 1, "setup": 1},
+      "matched_skills": ["Python"],
+      "missing_skills": ["pytest"],
+      "reasons": [
+        {
+          "code": "skill_match",
+          "label": "技能覆盖良好",
+          "evidence": "skill_coverage=0.900",
+          "score_delta": 0.27,
+          "feature_version": "task-features-v0.3"
+        },
+        {
+          "code": "newcomer_signal",
+          "label": "适合新贡献者",
+          "evidence": "newcomer_label_signal=true",
+          "score_delta": 0.18,
+          "feature_version": "task-features-v0.3"
+        }
+      ],
+      "warnings": [],
+      "availability": "available",
+      "verified_at": "2026-07-29T12:30:00Z",
+      "feedback_state": null
+    }
+  ]
+}

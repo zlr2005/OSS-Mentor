@@ -43,7 +43,7 @@ from oss_mentor.data_quality import (
 from oss_mentor.developer_profiles import load_profiles
 from oss_mentor.matching import rank_for_profile
 from oss_mentor.ranking_evaluation import (
-    MATCH_VERSION_V2,
+    MATCH_VERSION_V3,
     build_ranking_evaluation_report,
     load_task_fit_annotations,
     render_ranking_evaluation_markdown,
@@ -834,12 +834,12 @@ def command_evaluate_ranking(settings: Settings, args: argparse.Namespace) -> in
     json_output = (
         args.output
         if args.output
-        else str(settings.repo_root / "data" / "reports" / "ranking_evaluation_v0.2.json")
+        else str(settings.repo_root / "data" / "reports" / "ranking_evaluation_v0.3.json")
     )
     markdown_output = (
         Path(args.markdown_output).expanduser().resolve()
         if args.markdown_output
-        else settings.repo_root / "docs" / "ranking_evaluation_v0.2.md"
+        else settings.repo_root / "docs" / "ranking_evaluation_v0.3.md"
     )
     _write_json(json_output, report)
     markdown_output.parent.mkdir(parents=True, exist_ok=True)
@@ -1337,8 +1337,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_command.add_argument(
         "--match-version",
-        default=MATCH_VERSION_V2,
-        choices=("developer-task-match-v0.1", "developer-task-match-v0.2"),
+        default=MATCH_VERSION_V3,
+        choices=(
+            "developer-task-match-v0.1",
+            "developer-task-match-v0.2",
+            "developer-task-match-v0.3",
+        ),
     )
     evaluate_command.add_argument("--limit", type=int, default=50, choices=range(1, 501))
     evaluate_command.add_argument("--output", help="Optional JSON report path.")

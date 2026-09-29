@@ -73,6 +73,22 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("/api/v1/auth/logout", script)
         self.assertIn("handleLogout", script)
 
+    def test_recommendation_review_page_has_session_route_and_states(self) -> None:
+        html = (self.root / "recommendations.html").read_text(encoding="utf-8")
+        script = (self.root / "assets" / "recommendations.js").read_text(
+            encoding="utf-8"
+        )
+        css = (self.root / "assets" / "recommendations.css").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('id="ranked-list"', html)
+        self.assertIn('id="recommendation-message"', html)
+        self.assertIn("/api/v1/me/recommendations?limit=10", script)
+        self.assertIn("error.status === 401", script)
+        self.assertIn('error.code === "profile_not_found"', script)
+        self.assertIn('url.protocol === "https:"', script)
+        self.assertIn("prefers-reduced-motion", css)
+
     def test_status_page_is_accessible(self) -> None:
         asset = load_static_asset(self.root, "/status")
         self.assertIsNotNone(asset)

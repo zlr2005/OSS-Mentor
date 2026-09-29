@@ -353,7 +353,9 @@ class RankingEvaluationCliTests(unittest.TestCase):
             summary = json.loads(output.getvalue())
             self.assertEqual("ranking_evaluation_generated", summary["event"])
             report = json.loads(json_path.read_text(encoding="utf-8"))
-            self.assertEqual("ranking_evaluation_v0.2", report["schema_version"])
+            self.assertEqual("ranking_evaluation_v0.3", report["schema_version"])
+            selected = report["metrics_by_version"][report["selected_match_version"]]
+            self.assertEqual(0.0, selected["unavailable_task_leakage_rate"])
             self.assertFalse(report["annotation_acceptance"]["passed"])
             self.assertIn("推荐算法离线评估", markdown_path.read_text(encoding="utf-8"))
 

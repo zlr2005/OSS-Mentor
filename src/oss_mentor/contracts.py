@@ -80,6 +80,8 @@ REASON_CODE_NEWCOMER_SIGNAL = "newcomer_signal"
 REASON_CODE_ACTIVE_REPOSITORY = "active_repository"
 REASON_CODE_FRESH_ISSUE = "fresh_issue"
 REASON_CODE_CONTRIBUTING_GUIDE = "contributing_guide_available"
+REASON_CODE_ISSUE_CLARITY = "issue_clarity"
+REASON_CODE_GROWTH_VALUE = "growth_value"
 REASON_CODE_NEGATIVE_FEEDBACK = "negative_feedback_penalty"
 REASON_CODE_DIVERSITY_RERANK = "diversity_rerank"
 REASON_CODES = (
@@ -91,6 +93,8 @@ REASON_CODES = (
     REASON_CODE_ACTIVE_REPOSITORY,
     REASON_CODE_FRESH_ISSUE,
     REASON_CODE_CONTRIBUTING_GUIDE,
+    REASON_CODE_ISSUE_CLARITY,
+    REASON_CODE_GROWTH_VALUE,
     REASON_CODE_NEGATIVE_FEEDBACK,
     REASON_CODE_DIVERSITY_RERANK,
 )
@@ -112,6 +116,7 @@ class Reason:
     label: str
     evidence: str
     score_delta: float
+    feature_version: str = CONTRACT_VERSION
 
     def __post_init__(self) -> None:
         if self.code not in REASON_CODES:
@@ -166,6 +171,7 @@ class RecommendationItemV3:
                     "label": reason.label,
                     "evidence": reason.evidence,
                     "score_delta": reason.score_delta,
+                    "feature_version": reason.feature_version,
                 }
                 for reason in self.reasons
             ],
@@ -174,6 +180,26 @@ class RecommendationItemV3:
             "verified_at": self.verified_at,
             "feedback_state": self.feedback_state,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class RecommendationBatchV3:
+    run_id: str
+    feedback_context: str | None
+    service_track: str
+    match_version: str
+    profile_hash: str
+    candidate_hash: str
+    items: tuple[RecommendationItemV3, ...]
+    rankings: tuple[dict[str, Any], ...]
+    warnings: tuple[str, ...]
+    created_at: str
+
+    def __post_init__(self) -> None:
+        if self.service_track not in SERVICE_TRACKS:
+            raise ValueError(f"invalid service_track: {self.service_track}")
+        if len(self.items) != len(self.rankings):
+            raise ValueError("items and rankings must have the same length")
 
 
 @dataclass(frozen=True, slots=True)

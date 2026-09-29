@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import unittest
+from pathlib import Path
 
 from oss_mentor.contracts import (
     CANDIDATE_AVAILABILITY_STATES,
@@ -47,6 +49,25 @@ def _make_item(**overrides):
 
 
 class ContractTests(unittest.TestCase):
+    def test_recommendation_fixture_matches_v3_contract(self) -> None:
+        fixture = json.loads((
+            Path(__file__).resolve().parents[1]
+            / "fixtures" / "contracts" / "v0.5" / "recommendations.json"
+        ).read_text(encoding="utf-8"))
+        self.assertEqual("developer-task-match-v0.3", fixture["match_version"])
+        for payload in fixture["items"]:
+            item = RecommendationItemV3(
+                **{
+                    **payload,
+                    "difficulty": Difficulty(**payload["difficulty"]),
+                    "matched_skills": tuple(payload["matched_skills"]),
+                    "missing_skills": tuple(payload["missing_skills"]),
+                    "reasons": tuple(Reason(**reason) for reason in payload["reasons"]),
+                    "warnings": tuple(payload["warnings"]),
+                }
+            )
+            self.assertEqual(payload, item.to_dict())
+
     def test_developer_profile_normalizes_skill_keys_with_casefold(self) -> None:
         profile = DeveloperProfileV2(
             profile_key="casefold",
@@ -78,7 +99,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(6, len(TASK_TYPES))
         self.assertEqual(7, len(CANDIDATE_AVAILABILITY_STATES))
         self.assertEqual(5, len(SYNC_RUN_STATUSES))
-        self.assertEqual(10, len(REASON_CODES))
+        self.assertEqual(12, len(REASON_CODES))
 
     def test_recommendation_item_serializes_to_contract_shape(self) -> None:
         item = _make_item()
@@ -90,6 +111,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(
             REASON_CODE_SKILL_MATCH, payload["reasons"][0]["code"]
         )
+        self.assertEqual("contracts-v0.5", payload["reasons"][0]["feature_version"])
 
     def test_score_must_be_in_unit_range(self) -> None:
         with self.assertRaises(ValueError):

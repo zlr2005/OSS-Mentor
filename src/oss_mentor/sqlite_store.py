@@ -82,6 +82,7 @@ class SQLiteCandidateStore:
         maintenance_status: str | None = None,
         maintenance_reason: str | None = None,
         activity_checked_at: str | None = None,
+        has_contributing_guide: bool | None = None,
         mark_synced: bool = False,
     ) -> int:
         now = self._now()
@@ -165,6 +166,11 @@ class SQLiteCandidateStore:
                     activity_checked_at,
                     full_name,
                 ),
+            )
+        if "has_contributing_guide" in columns and has_contributing_guide is not None:
+            connection.execute(
+                "UPDATE repository SET has_contributing_guide = ? WHERE full_name = ?",
+                (int(has_contributing_guide), full_name),
             )
         row = connection.execute(
             "SELECT repository_id FROM repository WHERE full_name = ?", (full_name,)
@@ -896,7 +902,9 @@ class SQLiteCandidateStore:
         with self.connect() as connection:
             candidates = connection.execute(
                 """
-                SELECT tc.*, r.full_name AS repository, r.primary_language
+                SELECT tc.*, r.full_name AS repository, r.primary_language,
+                       r.maintenance_status, r.pushed_at,
+                       r.has_contributing_guide
                 FROM task_candidate AS tc
                 JOIN repository AS r USING (repository_id)
                 WHERE tc.candidate_eligibility = 'eligible'

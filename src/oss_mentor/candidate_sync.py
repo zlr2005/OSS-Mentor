@@ -253,6 +253,7 @@ class CandidateSynchronizer:
         candidate_labels: tuple[str, ...] = (),
         ecosystem: str | None = None,
         primary_language: str | None = None,
+        has_contributing_guide: bool | None = None,
     ) -> CandidateSyncResult:
         self.store.initialize()
         request_start, retry_start, _, _ = self._client_metrics()
@@ -267,6 +268,7 @@ class CandidateSynchronizer:
             "ecosystems_last_synced_at": None,
             "ecosystem": ecosystem,
             "primary_language": primary_language,
+            "has_contributing_guide": has_contributing_guide,
             "mark_synced": True,
             **repository_health,
         }
@@ -724,6 +726,7 @@ class CandidateService:
                     ),
                     ecosystem=getattr(repository, "ecosystem", None),
                     primary_language=getattr(repository, "primary_language", None),
+                    has_contributing_guide=getattr(repository, "has_contributing", None),
                 )
             except (
                 GitHubApiError,

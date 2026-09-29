@@ -18,6 +18,7 @@ from oss_mentor.services.recommendation_service import (
 )
 from oss_mentor.storage.identity import IdentityStore
 from oss_mentor.storage.profiles import SQLiteProfileStorage
+from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "db" / "sqlite" / "001_mvp.sql"
@@ -35,7 +36,7 @@ def candidate(candidate_id: int, score: float, *, repository: str = "example/dem
         "estimated_setup_difficulty": 1,
         "newcomer_score": score,
         "growth_value_score": score,
-        "text_clarity_score": 100,
+        "text_clarity_score": score,
         "primary_language": "Python",
         "task_types": ["testing"],
         "requirements": [
@@ -84,7 +85,7 @@ def profile(**overrides):
 class RecommendationContractTests(unittest.TestCase):
     def test_service_accepts_profile_contract_and_maps_match_result(self):
         store = CandidateStoreFixture([candidate(1, 80)])
-        item = RecommendationService(store).recommend(profile=profile())[0]
+        item = RecommendationService(store).recommend(profile=profile()).items[0]
 
         self.assertIsInstance(item, RecommendationItemV3)
         self.assertEqual("python", next(iter(profile().skills)))
@@ -100,6 +101,17 @@ class RecommendationContractTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             RecommendationService(CandidateStoreFixture([])).recommend(profile={})
 
+    def test_detail_and_exclusion_use_the_same_contract(self):
+        service = RecommendationService(CandidateStoreFixture([
+            candidate(1, 80), candidate(2, 70)
+        ]))
+        detail = service.recommendation_detail(profile=profile(), task_candidate_id=1)
+        items = service.recommend(
+            profile=profile(), excluded_candidate_ids=(1,)
+        ).items
+        self.assertEqual(1, detail.task_candidate_id)
+        self.assertEqual([2], [item.task_candidate_id for item in items])
+
     def test_current_context_negative_feedback_is_applied_before_ranking(self):
         store = CandidateStoreFixture(
             [candidate(1, 100), candidate(2, 70)],
@@ -107,7 +119,7 @@ class RecommendationContractTests(unittest.TestCase):
         )
         items = RecommendationService(store).recommend(
             profile=profile(), feedback_context="user:7:profile:profile-1"
-        )
+        ).items
 
         self.assertEqual([2, 1], [item.task_candidate_id for item in items])
         penalized = items[1]
@@ -116,6 +128,48 @@ class RecommendationContractTests(unittest.TestCase):
         penalty = next(reason for reason in penalized.reasons
                        if reason.code == REASON_CODE_NEGATIVE_FEEDBACK)
         self.assertEqual(-0.25, penalty.score_delta)
+
+        batch = RecommendationService(store).recommend_batch(
+            profile=profile(), feedback_context="user:7:profile:profile-1"
+        )
+        penalized_ranking = next(
+            row for row in batch.rankings if row["task_candidate_id"] == 1
+        )
+        self.assertEqual(25.0, round(
+            penalized_ranking["raw_score"] - penalized_ranking["final_score"], 2
+        ))
+
+    def test_diversity_tracks_raw_and_final_positions(self):
+        tasks = [
+            {**candidate(1, 100, repository="same/repo"), "task_types": ["testing"]},
+            {**candidate(2, 99, repository="same/repo"), "task_types": ["testing"]},
+            {**candidate(3, 98, repository="same/repo"), "task_types": ["testing"]},
+            {**candidate(4, 97, repository="same/repo"), "task_types": ["testing"]},
+            {**candidate(5, 60, repository="docs/repo"), "task_types": ["documentation"]},
+        ]
+        batch = RecommendationService(CandidateStoreFixture(tasks)).recommend_batch(
+            profile=profile(preferred_task_types=("testing", "documentation")), limit=4
+        )
+        repositories = [item.repository_full_name for item in batch.items]
+        self.assertLessEqual(repositories.count("same/repo"), 3)
+        self.assertIn(5, [item.task_candidate_id for item in batch.items])
+        self.assertTrue(any(row["diversity_reranked"] for row in batch.rankings))
+
+    def test_snapshot_persists_hashes_ranks_reasons_and_warnings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            storage = SQLiteRecommendationStorage(Path(temporary) / "snapshot.sqlite3", MIGRATIONS)
+            service = RecommendationService(
+                CandidateStoreFixture([candidate(1, 80)]),
+                recommendation_store=storage,
+            )
+            batch = service.recommend_batch(profile=profile(), feedback_context="fixture")
+            saved = storage.find_recommendation_batch(batch.run_id)
+
+        self.assertEqual(batch.profile_hash, saved["profile_snapshot_hash"])
+        self.assertEqual(batch.candidate_hash, saved["candidate_snapshot_hash"])
+        self.assertEqual(1, saved["items"][0]["final_rank"])
+        self.assertTrue(saved["items"][0]["reasons"])
+        self.assertNotIn("skills", saved)
 
 
 class SessionProfileConsumptionTests(unittest.TestCase):

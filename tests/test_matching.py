@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from oss_mentor.matching import match_candidate, recommendation_availability
+from oss_mentor.matching import MATCH_VERSION_V3, match_candidate, recommendation_availability
 
 
 def task(**overrides):
@@ -45,6 +45,36 @@ def profile(**overrides):
 
 
 class MatchingTests(unittest.TestCase):
+    def test_v3_filters_availability_and_declared_operating_systems(self) -> None:
+        self.assertIsNone(match_candidate(
+            profile(), task(candidate_availability="closed"), match_version=MATCH_VERSION_V3
+        ))
+        self.assertIsNone(match_candidate(
+            profile(), task(operating_systems=["windows"]), match_version=MATCH_VERSION_V3
+        ))
+
+    def test_v3_scores_all_required_soft_features(self) -> None:
+        result = match_candidate(
+            profile(),
+            task(
+                candidate_availability="available",
+                maintenance_status="active",
+                has_contributing_guide=1,
+                created_at="2026-09-01T00:00:00Z",
+                last_activity_at="2026-09-20T00:00:00Z",
+                github_verified_at="2026-09-29T00:00:00Z",
+                text_clarity_score=80,
+            ),
+            match_version=MATCH_VERSION_V3,
+        )
+        self.assertIsNotNone(result)
+        codes = {item["code"] for item in result.score_components}
+        self.assertTrue({
+            "language_match", "task_type_match", "skill_match", "issue_clarity",
+            "active_repository", "fresh_issue", "newcomer_signal",
+            "contributing_guide_available",
+        }.issubset(codes))
+
     def test_newcomer_match_is_explainable(self) -> None:
         result = match_candidate(profile(), task())
         self.assertIsNotNone(result)

@@ -253,11 +253,13 @@ class CandidateRefreshReportTests(unittest.TestCase):
                 "008_sync_runs.sql",
                 "009_github_profile_evidence.sql",
                 "009a_profile_user_identity.sql",
+                "010_recommendation_runs.sql",
             },
             migrations,
         )
         self.assertIn("last_candidate_refresh_at", columns)
         self.assertIn("maintenance_status", columns)
+        self.assertIn("has_contributing_guide", columns)
 
 
 if __name__ == "__main__":
