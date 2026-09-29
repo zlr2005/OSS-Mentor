@@ -11,6 +11,7 @@ from oss_mentor.contracts import (
     SYNC_RUN_STATUSES,
     TASK_TYPES,
     Difficulty,
+    DeveloperProfileV2,
     Reason,
     RecommendationItemV3,
 )
@@ -46,6 +47,31 @@ def _make_item(**overrides):
 
 
 class ContractTests(unittest.TestCase):
+    def test_developer_profile_normalizes_skill_keys_with_casefold(self) -> None:
+        profile = DeveloperProfileV2(
+            profile_key="casefold",
+            display_name="Casefold",
+            service_track="newcomer",
+            preferred_languages=("Python",),
+            operating_systems=("linux",),
+            preferred_task_types=("testing",),
+            max_code_difficulty=1,
+            max_setup_difficulty=1,
+            desired_skill_stretch=0,
+            skills={"Python": 2, "Straße": 1},
+        )
+        self.assertEqual({"python": 2, "strasse": 1}, profile.skills)
+
+    def test_casefold_collisions_with_conflicting_levels_are_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            DeveloperProfileV2(
+                profile_key="collision", display_name="Collision",
+                service_track="newcomer", preferred_languages=("Python",),
+                operating_systems=("linux",), preferred_task_types=("testing",),
+                max_code_difficulty=1, max_setup_difficulty=1,
+                desired_skill_stretch=0, skills={"Python": 1, "python": 2},
+            )
+
     def test_fixed_enums_have_no_synonyms(self) -> None:
         self.assertEqual(("newcomer", "growth"), SERVICE_TRACKS)
         self.assertEqual(4, len(FEEDBACK_STATES))

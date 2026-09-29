@@ -194,6 +194,19 @@ class DeveloperProfileV2:
     def __post_init__(self) -> None:
         if self.service_track not in SERVICE_TRACKS:
             raise ValueError(f"invalid service_track: {self.service_track}")
+        normalized_skills: dict[str, int] = {}
+        for raw_name, raw_level in self.skills.items():
+            name = str(raw_name).strip().casefold()
+            if not name:
+                raise ValueError("skill names must not be empty")
+            if isinstance(raw_level, bool) or not isinstance(raw_level, int):
+                raise ValueError(f"skill level must be an integer: {raw_name}")
+            if not 0 <= raw_level <= 4:
+                raise ValueError(f"skill level must be between 0 and 4: {raw_name}")
+            if name in normalized_skills and normalized_skills[name] != raw_level:
+                raise ValueError(f"conflicting skill levels after casefold: {raw_name}")
+            normalized_skills[name] = raw_level
+        object.__setattr__(self, "skills", normalized_skills)
 
 
 @dataclass(frozen=True, slots=True)

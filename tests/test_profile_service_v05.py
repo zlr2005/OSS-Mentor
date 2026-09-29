@@ -134,7 +134,7 @@ class ProfileServiceV05Tests(
         )
         self.assertEqual(
             2,
-            contract.skills["Python"],
+            contract.skills["python"],
         )
 
     def test_import_twice_is_idempotent(

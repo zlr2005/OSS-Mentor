@@ -50,7 +50,7 @@ def as_developer_profile_v2(
             profile["desired_skill_stretch"]
         ),
         skills={
-            str(name): int(level)
+            str(name).strip().casefold(): int(level)
             for name, level in profile.get(
                 "skills",
                 {},
@@ -165,6 +165,14 @@ class ProfileService:
             if profile is not None
             else None
         )
+
+    def profile_for_user_contract(
+        self,
+        user_id: int,
+    ) -> DeveloperProfileV2 | None:
+        """Return the authenticated user's current profile as the shared contract."""
+        profile = self.profile_for_user(user_id)
+        return as_developer_profile_v2(profile) if profile is not None else None
 
     def import_github_profile(
         self,
