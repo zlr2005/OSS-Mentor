@@ -30,9 +30,10 @@ node --check web/assets/profile.js
 git diff --check
 ```
 
-This run: **512 Python tests OK (52.930 s); 12 Node tests passed**. Compilation,
-JavaScript syntax and whitespace checks passed. Node tests are currently a separate
-command, not added to D's shared CI workflow.
+This historical Step 6 run produced **512 Python tests OK (52.930 s); 12 Node
+tests passed**. Compilation, JavaScript syntax and whitespace checks passed. At
+the time Node tests were separate; D's later platform-hardening follow-up added
+them to the shared CI workflow.
 
 Browser fixture command:
 
@@ -63,15 +64,23 @@ Temporary test pages/server were closed after checks. No real GitHub account was
 HTTP 503/409/422/429, malformed responses and network failures were adapter-tested;
 they are not all claimed as manually exercised browser scenarios.
 
-## Outstanding
+## Follow-up status (2026-09-29)
 
-Step 6 is complete for local API wiring. Step 7 still needs authorized real OAuth
-and public-data collection acceptance, broader session/error/responsive coverage and
-recommendation-side consumption with C/D. Shared contract approval, Node CI integration,
-production token storage, PostgreSQL parity and release remain outstanding. Multiple-tab
-optimistic concurrency/versioning is not implemented; reload after stale-conflict errors.
-No changes to ranking weights, PostgreSQL, CI or deployment were made here.
+Step 6 remains the historical fixture-based UI/API verification. Its authorized
+real GitHub OAuth, public-data import, save/refresh, suggestion-decision and logout
+follow-up passed at `9845fe5`; see
+[`profile_oauth_acceptance_2026-09-29.md`](profile_oauth_acceptance_2026-09-29.md).
+D's platform-hardening follow-up also added Node CI, PostgreSQL profile migration
+parity and redirect blocking. B3's fixed-snapshot no-regression result is recorded
+in [`b3_quality_rerun_2026-09-29.md`](b3_quality_rerun_2026-09-29.md).
+
+Final C recommendation-side consumption confirmation, D platform approval,
+production credential storage, a PostgreSQL runtime adapter and release remain
+outstanding. Multiple-tab optimistic concurrency/versioning is not implemented;
+reload after stale-conflict errors. The original Step 6 change itself did not
+modify ranking weights, PostgreSQL, CI or deployment.
 
 Original `C:\oss\OSS-Mentor` remains clean on `feat/v05-profile-ui` at
 `41f9510fdd17879771b873b50fc0f2715ffd71f1`; new functionality exists only in the
-integration copy. No push or remote PR changes.
+integration copy. That statement describes the original Step 6 run; the later
+integration work is now published in PR #14 and remains unmerged.

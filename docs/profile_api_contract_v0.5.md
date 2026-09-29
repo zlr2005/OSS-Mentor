@@ -1,11 +1,12 @@
 # Developer profile integration contract v0.5 (local candidate)
 
-Status: local candidate, pending C and D review; not a team-approved freeze.
-This branch now implements the service/storage boundary, authenticated HTTP
-routes, public GitHub collection and static entry points. The copied profile
-page is still a demo; enabling its API gateway is a separate next step.
-D still owns `api.py`, OpenAPI, authentication and shared storage interfaces;
-these local integration changes require D's approval before upstream merging.
+Status: integration candidate, pending final C and D review; not a team-approved freeze.
+The integration branch implements the service/storage boundary, authenticated
+HTTP routes, public GitHub collection, the real-API profile page and static entry
+points. Demo mode remains available only through the explicit `?mode=demo` opt-in.
+D owns the final review of `api.py`, OpenAPI, authentication and shared storage
+interfaces. The real OAuth/profile acceptance result is recorded in
+[`profile_oauth_acceptance_2026-09-29.md`](profile_oauth_acceptance_2026-09-29.md).
 
 ## Identity, migration and ownership
 
@@ -167,11 +168,12 @@ profile (including legacy bindings) and retains anonymous local/demo profiles.
 
 ## PostgreSQL handoff and review record
 
-D's PostgreSQL baseline is unchanged. It still needs B's 009 tables and an
-equivalent nullable integer owner FK, unique owner index and profile cleanup
-semantics. Translate the SQLite deletion trigger appropriately and run the same
-contract/lifecycle tests against a real PostgreSQL adapter before claiming
-backend parity.
+D's `db/postgres/002_profile_identity.sql` adds the profile tables, nullable
+integer owner FK, unique owner constraint and profile cleanup trigger. CI applies
+the PostgreSQL migrations and checks the expected structure. This migration
+parity is not a PostgreSQL runtime adapter: the application still uses SQLite,
+and runtime/lifecycle parity must not be claimed until the real adapter exists
+and passes the same contract tests.
 
 - Change ID: CONTRACT-v0.5-PROFILE-INTEGRATION-001.
 - Proposed by: B integration work; affected owners: B, C, D.
@@ -180,8 +182,12 @@ backend parity.
   transaction scope and static entry points.
 - Compatibility: keep 009 and legacy opaque keys, preserve old suggestion
   aliases, preserve local profiles and platform auth exports. OpenAPI, API,
-  authentication and public-profile filtering are changed for D's review;
-  ranking weights, CI and PostgreSQL baseline remain unchanged.
+  authentication and public-profile filtering remain subject to D's final review;
+  ranking weights are unchanged. D's follow-up adds PostgreSQL migration parity,
+  Node CI coverage and OAuth redirect hardening.
 - Fixtures/tests: profile_api.json, platform integration tests, profile API and
   public GitHub collector tests.
-- Approvals: pending C and D; no approval is implied by a local commit.
+- Verification: real GitHub OAuth/profile acceptance and the B3 fixed-snapshot
+  quality rerun are recorded in the linked 2026-09-29 reports.
+- Approvals: final C recommendation-consumption confirmation and D platform review
+  remain pending; passing tests and acceptance do not imply merge approval.

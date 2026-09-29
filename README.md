@@ -255,4 +255,11 @@ psql "$env:DATABASE_URL" -v ON_ERROR_STOP=1 `
 2. 用首次贡献者和进阶开发者各完成一轮可用性测试；
 3. 输出感兴趣率、开始率、完成率和不适合率的本地统计页；
 4. 根据真实反馈校准匹配权重与技能缺口解释；
-5. 再评估是否需要 GitHub 登录、持久化用户画像和 PostgreSQL 部署。
+5. 完成 v0.5 GitHub 登录与持久化用户画像的跨成员联调，并继续评估 PostgreSQL 运行时适配和生产部署。
+
+v0.5 画像集成分支的真实 OAuth/画像验收与 B3 固定快照复跑记录见：
+
+- [真实 GitHub OAuth 与画像闭环验收](docs/profile_oauth_acceptance_2026-09-29.md)；
+- [B3 数据质量固定快照复跑](docs/b3_quality_rerun_2026-09-29.md)。
+
+上述记录是 PR #14 的合并前证据，不表示 C/D 已最终批准或 v0.5 已发布。
