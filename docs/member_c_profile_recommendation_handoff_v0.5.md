@@ -186,4 +186,3 @@ OK
 - 保持 `score`、`score_delta` 的 `0–1` 语义；
 - 映射本文件第 5 节列出的错误码；
 - 运行契约 fixture、真实 session 测试和完整回归测试。
-

@@ -77,6 +77,8 @@ jobs:
           PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f db/postgres/001_initial.sql
           PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f db/postgres/002_profile_identity.sql
           PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f scripts/ci_postgres_profile_check.sql
+          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f db/postgres/003_recommendation_runs.sql
+          PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -v ON_ERROR_STOP=1 -f scripts/ci_postgres_recommendation_check.sql
           PGPASSWORD=oss_mentor_dev psql -h 127.0.0.1 -U oss_mentor -d oss_mentor_test -c "SELECT COUNT(*) FROM repository"
 
   secret-scan:
@@ -127,5 +129,6 @@ jobs:
         run: |
           node --check web/assets/profile.js
           node --check web/assets/login.js
+          node --check web/assets/recommendations.js
       - name: Run profile gateway tests
         run: node --test tests/profile_gateway.test.cjs

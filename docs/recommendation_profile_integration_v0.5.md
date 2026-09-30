@@ -1,6 +1,15 @@
 # 推荐模块画像接入 v0.5
 
-本分支完成后端算法侧的画像接入，HTTP 路由与 OpenAPI 仍由成员 D 负责。
+本分支完成后端算法侧的画像接入；D 集成分支已接入 HTTP 路由、OpenAPI、反馈上下文、静态推荐页面、PostgreSQL 迁移和 CI。
+
+## D 平台接入结果
+
+- 已注册 `GET /api/v1/me/recommendations?limit=10`，由 session 决定当前用户；
+- 已注册 `/recommendations`、`recommendations.js` 和 `recommendations.css` 静态路由；
+- 登录画像反馈由服务端重新生成 `user:{user_id}:profile:{profile_key}`，拒绝客户端伪造上下文；
+- OpenAPI 已加入 `RecommendationBatchV3`、`RecommendationItemV3`、`Reason.feature_version` 和完整原因码；
+- PostgreSQL 已增加 `003_recommendation_runs.sql` 和推荐表结构检查；
+- Node CI 已检查 `recommendations.js`，Python 全量测试覆盖推荐 HTTP 路由。
 
 ## 已确定的契约
 

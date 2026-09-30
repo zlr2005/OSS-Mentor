@@ -21,6 +21,7 @@ from oss_mentor.developer_profiles import (
 )
 from oss_mentor.matching import (
     MATCH_VERSION_V2,
+    MATCH_VERSION_V3,
     rank_for_profile,
     recommendation_availability,
 )
@@ -35,7 +36,14 @@ from oss_mentor.services.profile_service import ProfileService
 from oss_mentor.services.github_profile_source import (
     CONSENT_VERSION, GitHubProfileError, GitHubProfileSource,
 )
+from oss_mentor.services.recommendation_service import (
+    AuthenticationRequired,
+    ProfileRequired,
+    RecommendationService,
+    feedback_context_for_user,
+)
 from oss_mentor.storage.profiles import SQLiteProfileStorage
+from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
 
 
 API_VERSION = "v0.5"
@@ -64,6 +72,10 @@ _STATIC_ROUTES = {
     "/status": ("status.html", "text/html; charset=utf-8"),
     "/profile": ("profile.html", "text/html; charset=utf-8"),
     "/profile.html": ("profile.html", "text/html; charset=utf-8"),
+    "/recommendations": ("recommendations.html", "text/html; charset=utf-8"),
+    "/recommendations.html": ("recommendations.html", "text/html; charset=utf-8"),
+    "/assets/recommendations.js": ("assets/recommendations.js", "text/javascript; charset=utf-8"),
+    "/assets/recommendations.css": ("assets/recommendations.css", "text/css; charset=utf-8"),
     "/assets/profile.js": ("assets/profile.js", "text/javascript; charset=utf-8"),
     "/assets/profile.css": ("assets/profile.css", "text/css; charset=utf-8"),
     "/assets/login.js": ("assets/login.js", "text/javascript; charset=utf-8"),
@@ -94,6 +106,7 @@ class RecommendationApi:
         auth_service: AuthService | None = None,
         profile_service: ProfileService | None = None,
         github_profile_source: GitHubProfileSource | None = None,
+        recommendation_service: RecommendationService | None = None,
     ) -> None:
         self.store = store
         self.auth_service = auth_service
@@ -103,6 +116,21 @@ class RecommendationApi:
                 SQLiteProfileStorage(store.database_path, store.migration_path)
             )
         self.github_profile_source = github_profile_source or GitHubProfileSource()
+        self.recommendation_service = recommendation_service
+        if (
+            self.recommendation_service is None
+            and self.auth_service is not None
+            and self.profile_service is not None
+            and isinstance(store, SQLiteCandidateStore)
+        ):
+            self.recommendation_service = RecommendationService(
+                candidate_store=store,
+                profile_service=self.profile_service,
+                auth_service=self.auth_service,
+                recommendation_store=SQLiteRecommendationStorage(
+                    store.database_path, store.migration_path
+                ),
+            )
 
     @staticmethod
     def _profile_body(profile: dict) -> dict:
@@ -190,6 +218,48 @@ class RecommendationApi:
                 return self._error(409, "state_conflict", "suggestion is already resolved")
             return self._error(422, "profile_validation_failed", str(exc))
         return self._error(404, "not_found", "route was not found")
+
+    def _me_recommendations_route(self, query, cookies) -> ApiResponse:
+        if self.recommendation_service is None:
+            return self._error(503, "service_not_ready", "recommendation service is not configured")
+        raw_limit = (query.get("limit") or ["10"])[0]
+        try:
+            limit = int(raw_limit)
+        except ValueError:
+            return self._error(400, "invalid_limit", "limit must be an integer")
+        if not 1 <= limit <= 100:
+            return self._error(400, "invalid_limit", "limit must be between 1 and 100")
+        try:
+            result = self.recommendation_service.recommend_for_session(
+                session_id=cookies.get(SESSION_COOKIE_NAME), limit=limit
+            )
+        except AuthenticationRequired:
+            return self._error(401, "authentication_required", "login is required")
+        except ProfileRequired:
+            return self._error(404, "profile_required", "create a profile before requesting recommendations")
+        except ValueError as exc:
+            return self._error(400, "invalid_request", str(exc))
+        items = [item.to_dict() for item in result.items]
+        profile = result.profile
+        return ApiResponse(
+            200,
+            {
+                "run_id": result.run_id,
+                "profile": {
+                    "profile_key": profile.profile_key,
+                    "display_name": profile.display_name,
+                    "service_track": profile.service_track,
+                    "profile_source": profile.profile_source,
+                    "profile_version": profile.profile_version,
+                },
+                "feedback_context": result.feedback_context,
+                "warnings": list(result.warnings),
+                "count": len(items),
+                "items": items,
+                "match_version": MATCH_VERSION_V3,
+                "api_version": API_VERSION,
+            },
+        )
 
     @staticmethod
     def _error(status: int, code: str, message: str) -> ApiResponse:
@@ -291,6 +361,8 @@ class RecommendationApi:
     ) -> ApiResponse:
         query = query or {}
         cookies = cookies or {}
+        if method == "GET" and path == "/api/v1/me/recommendations":
+            return self._me_recommendations_route(query, cookies)
         if path in {"/api/v1/me/profile", "/api/v1/me/profile/import-github"} or re.fullmatch(
             r"/api/v1/me/profile/suggestions/[1-9][0-9]{0,18}/(accept|reject)", path
         ):
@@ -421,12 +493,32 @@ class RecommendationApi:
                     "invalid_feedback_state",
                     "feedback_state must be interested, not_suitable, started, or completed",
                 )
-            try:
-                feedback_context, service_track = self._validate_feedback_context(
-                    body.get("feedback_context")
+            supplied_context = body.get("feedback_context")
+            if isinstance(supplied_context, str) and supplied_context.startswith("user:"):
+                if self.auth_service is None or self.profile_service is None:
+                    return self._error(503, "service_not_ready", "authenticated feedback is not configured")
+                user = self.auth_service.current_user(cookies.get(SESSION_COOKIE_NAME))
+                if user is None:
+                    return self._error(401, "authentication_required", "login is required")
+                profile = self.profile_service.profile_for_user(int(user["user_id"]))
+                if profile is None:
+                    return self._error(404, "profile_required", "create a profile before recording feedback")
+                expected_context = feedback_context_for_user(
+                    int(user["user_id"]), str(profile["profile_key"])
                 )
-            except ValueError as exc:
-                return self._error(400, "invalid_feedback_context", str(exc))
+                if supplied_context != expected_context:
+                    return self._error(
+                        403,
+                        "insufficient_permission",
+                        "feedback context does not belong to the current user",
+                    )
+                feedback_context = expected_context
+                service_track = str(profile["service_track"])
+            else:
+                try:
+                    feedback_context, service_track = self._validate_feedback_context(supplied_context)
+                except ValueError as exc:
+                    return self._error(400, "invalid_feedback_context", str(exc))
             try:
                 feedback = self.store.record_feedback(
                     task_candidate_id=task_candidate_id,
@@ -544,6 +636,7 @@ class RecommendationApi:
             "/api/v1/auth/github/callback",
             "/api/v1/auth/logout",
             "/api/v1/me",
+            "/api/v1/me/recommendations",
         }:
             return self._error(405, "method_not_allowed", "method is not supported for this route")
         return self._error(404, "not_found", "route was not found")

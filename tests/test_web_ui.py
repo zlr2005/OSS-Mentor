@@ -73,21 +73,26 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("/api/v1/auth/logout", script)
         self.assertIn("handleLogout", script)
 
-    def test_recommendation_review_page_has_session_route_and_states(self) -> None:
-        html = (self.root / "recommendations.html").read_text(encoding="utf-8")
-        script = (self.root / "assets" / "recommendations.js").read_text(
-            encoding="utf-8"
-        )
-        css = (self.root / "assets" / "recommendations.css").read_text(
-            encoding="utf-8"
-        )
+    def test_recommendation_page_is_allowlisted_and_wired(self) -> None:
+        html_asset = load_static_asset(self.root, "/recommendations")
+        self.assertIsNotNone(html_asset)
+        self.assertEqual("text/html; charset=utf-8", html_asset.content_type)
+        script_asset = load_static_asset(self.root, "/assets/recommendations.js")
+        css_asset = load_static_asset(self.root, "/assets/recommendations.css")
+        self.assertEqual("text/javascript; charset=utf-8", script_asset.content_type)
+        self.assertEqual("text/css; charset=utf-8", css_asset.content_type)
+        html = html_asset.body.decode("utf-8")
+        script = script_asset.body.decode("utf-8")
+        css = css_asset.body.decode("utf-8")
         self.assertIn('id="ranked-list"', html)
         self.assertIn('id="recommendation-message"', html)
         self.assertIn("/api/v1/me/recommendations?limit=10", script)
         self.assertIn("error.status === 401", script)
-        self.assertIn('error.code === "profile_not_found"', script)
+        self.assertIn("profile_required", script)
         self.assertIn('url.protocol === "https:"', script)
         self.assertIn("prefers-reduced-motion", css)
+        index = load_static_asset(self.root, "/").body.decode("utf-8")
+        self.assertIn('href="/recommendations"', index)
 
     def test_status_page_is_accessible(self) -> None:
         asset = load_static_asset(self.root, "/status")

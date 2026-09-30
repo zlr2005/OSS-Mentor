@@ -228,6 +228,24 @@ paths:
         "429": {$ref: "#/components/responses/ProfileError"}
         "502": {$ref: "#/components/responses/ProfileError"}
         "503": {$ref: "#/components/responses/ProfileError"}
+  /api/v1/me/recommendations:
+    get:
+      summary: Recommendations for the signed-in user's current profile
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200":
+          description: RecommendationBatchV3 with public item fields
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RecommendationBatchV3"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
   /api/v1/tasks/{task_candidate_id}:
     get:
       summary: Task detail and current availability (member A)
@@ -241,7 +259,7 @@ paths:
         "404": {description: Task not found}
   /api/v1/recommendations:
     get:
-      summary: Recommendations for a stored profile with feedback state restore (member C)
+      summary: Legacy recommendations for a public stored profile, retained for compatibility
       parameters:
         - name: profile_key
           in: query
@@ -251,7 +269,7 @@ paths:
           in: query
           schema: {type: integer, minimum: 1, maximum: 100, default: 10}
       responses:
-        "200": {description: Ranked RecommendationItemV3 list}
+        "200": {description: Legacy MatchResult list; use /api/v1/me/recommendations for RecommendationItemV3}
         "400": {description: Invalid query}
         "404": {description: Profile not found}
   /api/v1/recommendations/custom:
@@ -268,11 +286,29 @@ paths:
         "400": {description: Invalid profile}
   /api/v1/feedback:
     post:
-      summary: Save feedback state and append a state-change event (member C)
+      summary: Save feedback state and append a state-change event
+      description: |
+        Preset/custom contexts remain anonymous. A user:* context is accepted only for the
+        current session and must match the server-generated current-user feedback context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [task_candidate_id, feedback_context, feedback_state]
+              properties:
+                task_candidate_id: {type: integer, minimum: 1}
+                feedback_context: {type: string, description: preset:*, custom:* or the server-issued user:* context}
+                feedback_state: {type: string, enum: [interested, not_suitable, started, completed]}
       responses:
         "200": {description: Feedback recorded}
         "400": {description: Invalid feedback payload}
-        "404": {description: Task not found}
+        "401": {description: Login required for user feedback}
+        "403": {description: User feedback context does not belong to the current session}
+        "404": {description: Task or profile not found}
+        "503": {description: Recommendation/feedback service not ready}
   /api/v1/feedback/summary:
     get:
       summary: Feedback funnel and state-transition statistics (member C)
@@ -293,7 +329,7 @@ components:
     ProfileError:
       description: |
         400 invalid_request/invalid_json/invalid_content_length; 401 authentication_required;
-        403 insufficient_permission; 404 not_found; 405 method_not_allowed; 409 state_conflict;
+        403 insufficient_permission; 404 not_found/profile_required; 405 method_not_allowed; 409 state_conflict;
         413 body_too_large; 415 unsupported_media_type; 422 profile_validation_failed;
         429 rate_limited; 502 github_upstream_error; 503 service_not_ready.
         Database and upstream exception details and credentials are never returned.
@@ -407,6 +443,74 @@ components:
         suggestions:
           type: array
           items: {$ref: "#/components/schemas/ProfileSuggestion"}
+        api_version: {type: string}
+        request_id: {type: string, format: uuid}
+    RecommendationReason:
+      type: object
+      required: [code, label, evidence, score_delta, feature_version]
+      properties:
+        code:
+          type: string
+          enum:
+            - language_match
+            - task_type_match
+            - skill_match
+            - skill_stretch
+            - newcomer_signal
+            - active_repository
+            - fresh_issue
+            - contributing_guide_available
+            - issue_clarity
+            - growth_value
+            - negative_feedback_penalty
+            - diversity_rerank
+        label: {type: string}
+        evidence: {type: string}
+        score_delta: {type: number, minimum: -1, maximum: 1}
+        feature_version: {type: string}
+    RecommendationItemV3:
+      type: object
+      required: [task_candidate_id, repository_full_name, issue_number, title, html_url, service_track, score, difficulty, matched_skills, missing_skills, reasons, warnings, availability, verified_at, feedback_state]
+      properties:
+        task_candidate_id: {type: integer, minimum: 1}
+        repository_full_name: {type: string}
+        issue_number: {type: integer, minimum: 1}
+        title: {type: string}
+        html_url: {type: string, format: uri}
+        service_track: {type: string, enum: [newcomer, growth]}
+        score: {type: number, minimum: 0, maximum: 1}
+        difficulty:
+          type: object
+          required: [code, setup]
+          properties:
+            code: {type: integer, minimum: 0, maximum: 3}
+            setup: {type: integer, minimum: 0, maximum: 3}
+        matched_skills: {type: array, items: {type: string}}
+        missing_skills: {type: array, items: {type: string}}
+        reasons: {type: array, items: {$ref: "#/components/schemas/RecommendationReason"}}
+        warnings: {type: array, items: {type: string}}
+        availability: {type: string, enum: [available]}
+        verified_at: {type: string, format: date-time, nullable: true}
+        feedback_state: {type: string, enum: [interested, not_suitable, started, completed], nullable: true}
+    RecommendationBatchV3:
+      type: object
+      required: [run_id, profile, feedback_context, warnings, count, items, match_version, api_version, request_id]
+      properties:
+        run_id: {type: string}
+        profile:
+          type: object
+          required: [profile_key, display_name, service_track, profile_source, profile_version]
+          properties:
+            profile_key: {type: string}
+            display_name: {type: string}
+            service_track: {type: string, enum: [newcomer, growth]}
+            profile_source: {type: string}
+            profile_version: {type: string}
+        feedback_context: {type: string, pattern: "^user:[1-9][0-9]*:profile:[A-Za-z0-9_.-]{1,80}$"}
+        warnings: {type: array, items: {type: string}}
+        count: {type: integer, minimum: 0}
+        items: {type: array, items: {$ref: "#/components/schemas/RecommendationItemV3"}}
+        match_version: {type: string}
         api_version: {type: string}
         request_id: {type: string, format: uuid}
     CustomProfile:

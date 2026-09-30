@@ -4,7 +4,7 @@
 
 本分支已实现 `team_work_plan_v0.2.md` 中 Member C 的代码与制品范围：排序模型 v0.3、多样性重排、结构化解释、推荐快照、双轨评估、专用推荐页面、契约 fixture 和测试。
 
-OAuth、登录推荐 HTTP 路由和 OpenAPI 的最终接入仍由 Member D 负责。本分支只提供传输无关的 session 推荐服务，并未新增 `/api/v1/me/recommendations` API 路由。
+OAuth、登录推荐 HTTP 路由和 OpenAPI 的最终接入由 Member D 负责。C 分支提供传输无关的 session 推荐服务；D 平台集成分支已补上 `GET /api/v1/me/recommendations`、登录反馈上下文、静态推荐页、OpenAPI 和 PostgreSQL 推荐快照迁移。
 
 ## 2. C1 排序模型 v0.3
 
