@@ -1,0 +1,70 @@
+:root {
+      --green: #16a34a;
+      --red: #dc2626;
+      --amber: #d97706;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+      line-height: 1.6;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+    .brand { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .brand span { color: var(--green); }
+    .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
+    .login-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #24292f;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .login-button:hover { background: #1b1f24; }
+    .login-button svg { width: 20px; height: 20px; }
+    .demo-note {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    .demo-note a { color: var(--green); text-decoration: none; font-weight: 600; }
+    .error-msg {
+      display: none;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 0.8rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .error-msg.show { display: block; }
+    .loading { color: var(--text-secondary); font-style: italic; margin-bottom: 1rem; }
+    [hidden] { display: none !important; }

@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import secrets
+from threading import Lock
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -27,6 +28,18 @@ def _iso(value: datetime) -> str:
 
 def _hmac_sha256(key: str, message: str) -> str:
     return hmac.new(key.encode("utf-8"), message.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Never forward OAuth credentials or tokens to a redirect target."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _open_no_redirect(request: urllib.request.Request, *, timeout: int):
+    """Open a GitHub request with redirects disabled for this request only."""
+    return urllib.request.build_opener(_NoRedirect()).open(request, timeout=timeout)
 
 
 class AuthSettings:
@@ -60,6 +73,21 @@ class AuthService:
     def __init__(self, store: Any, settings: AuthSettings) -> None:
         self.store = store
         self.settings = settings
+        # Tokens never go to SQLite, response bodies or logs. Restart requires re-login.
+        self._session_tokens: dict[str, tuple[str, datetime, int]] = {}
+        self._token_lock = Lock()
+
+    def github_credential(self, session_id: str | None) -> tuple[str, int] | None:
+        user = self.current_user(session_id)
+        with self._token_lock:
+            self._session_tokens = {
+                key: item for key, item in self._session_tokens.items() if item[1] > _utc_now()
+            }
+            if user is None:
+                self._session_tokens.pop(session_id, None)
+                return None
+            entry = self._session_tokens.get(session_id)
+            return (entry[0], entry[2]) if entry else None
 
     def _sign_state(self, state: str) -> str:
         return _hmac_sha256(self.settings.session_secret, state)
@@ -80,7 +108,9 @@ class AuthService:
                 "oauth_configured": False,
                 "message": "GitHub OAuth 未配置。请设置 GITHUB_OAUTH_CLIENT_ID 与 GITHUB_OAUTH_CLIENT_SECRET 后重启。",
             }
-        if not return_to.startswith("/") or "://" in return_to or return_to.startswith("//"):
+        if (not return_to.startswith("/") or "://" in return_to or return_to.startswith("//")
+                or "\\" in return_to
+                or any(ord(character) < 32 or ord(character) == 127 for character in return_to)):
             raise GitHubAuthError("return_to must be a local absolute path")
         state = secrets.token_urlsafe(32)
         expires_at = _utc_now() + timedelta(seconds=OAUTH_STATE_TTL_SECONDS)
@@ -112,7 +142,7 @@ class AuthService:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=10) as response:
+            with _open_no_redirect(request, timeout=10) as response:
                 return json.loads(response.read().decode("utf-8"))
         except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
             raise GitHubAuthError(f"github token exchange failed: {exc}") from exc
@@ -128,7 +158,7 @@ class AuthService:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=10) as response:
+            with _open_no_redirect(request, timeout=10) as response:
                 return json.loads(response.read().decode("utf-8"))
         except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
             raise GitHubAuthError(f"github user fetch failed: {exc}") from exc
@@ -185,6 +215,11 @@ class AuthService:
             session_id=session_id,
             expires_at=_iso(session_expires),
         )
+        with self._token_lock:
+            self._session_tokens = {
+                key: item for key, item in self._session_tokens.items() if item[1] > _utc_now()
+            }
+            self._session_tokens[session_id] = (str(access_token), session_expires, int(github_user_id))
         return {
             "session_id": session_id,
             "expires_at": _iso(session_expires),
@@ -214,5 +249,7 @@ class AuthService:
         }
 
     def logout(self, session_id: str | None) -> None:
+        with self._token_lock:
+            self._session_tokens.pop(session_id, None)
         if session_id:
             self.store.revoke_session(session_id)

@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 
 MATCH_VERSION_V1 = "developer-task-match-v0.1"
 MATCH_VERSION_V2 = "developer-task-match-v0.2"
+MATCH_VERSION_V3 = "developer-task-match-v0.3"
 MATCH_VERSION = MATCH_VERSION_V1
-SUPPORTED_MATCH_VERSIONS = (MATCH_VERSION_V1, MATCH_VERSION_V2)
+SUPPORTED_MATCH_VERSIONS = (MATCH_VERSION_V1, MATCH_VERSION_V2, MATCH_VERSION_V3)
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +27,7 @@ class MatchResult:
     maximum_skill_gap: int
     skill_gaps: tuple[dict[str, Any], ...]
     reasons: tuple[str, ...]
+    score_components: tuple[dict[str, Any], ...] = ()
     match_version: str = MATCH_VERSION
 
 
@@ -33,6 +36,40 @@ def _platform_level(profile: dict[str, Any], skill_name: str) -> int | None:
         return None
     platform = skill_name.split(":", maxsplit=1)[1].casefold()
     return 1 if platform in set(profile["operating_systems"]) else 0
+
+
+def _freshness(task: dict[str, Any]) -> float:
+    """Return deterministic issue freshness at the candidate verification time."""
+    activity = task.get("last_activity_at") or task.get("created_at")
+    verified = task.get("github_verified_at") or task.get("source_fetched_at")
+    if not activity or not verified:
+        return 0.0
+    try:
+        activity_at = datetime.fromisoformat(str(activity).replace("Z", "+00:00"))
+        verified_at = datetime.fromisoformat(str(verified).replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    age_days = max((verified_at - activity_at).total_seconds() / 86400.0, 0.0)
+    if age_days <= 30:
+        return 1.0
+    if age_days <= 90:
+        return 0.7
+    if age_days <= 180:
+        return 0.4
+    return 0.1
+
+
+def _repository_activity(task: dict[str, Any]) -> float:
+    status = str(task.get("maintenance_status") or "unknown").casefold()
+    if status == "active":
+        return 1.0
+    if status == "unknown":
+        return 0.5
+    return 0.0
+
+
+def _component(code: str, value: float, evidence: str) -> dict[str, Any]:
+    return {"code": code, "score_delta": round(value, 4), "evidence": evidence}
 
 
 def match_candidate(
@@ -44,6 +81,11 @@ def match_candidate(
     if match_version not in SUPPORTED_MATCH_VERSIONS:
         raise ValueError(f"unsupported match version: {match_version}")
     effective_track = "newcomer" if profile["service_track"] == "newcomer" else "growth"
+    if (
+        match_version == MATCH_VERSION_V3
+        and task.get("candidate_availability", "available") != "available"
+    ):
+        return None
     if effective_track == "newcomer" and not bool(task["newcomer_label_signal"]):
         return None
     if int(task["estimated_code_difficulty"]) > int(profile["max_code_difficulty"]):
@@ -61,6 +103,19 @@ def match_candidate(
     }
     task_types = {value.casefold() for value in task["task_types"]}
     if preferred_types and not preferred_types.intersection(task_types):
+        return None
+    supported_operating_systems = {
+        str(value).casefold() for value in task.get("operating_systems", ())
+    }
+    profile_operating_systems = {
+        str(value).casefold() for value in profile["operating_systems"]
+    }
+    if (
+        match_version == MATCH_VERSION_V3
+        and supported_operating_systems
+        and profile_operating_systems
+        and not supported_operating_systems.intersection(profile_operating_systems)
+    ):
         return None
 
     gaps: list[dict[str, Any]] = []
@@ -93,7 +148,10 @@ def match_candidate(
                 platform_level is not None
                 or effective_track == "newcomer"
                 or gap > 1
-                or (match_version == MATCH_VERSION_V2 and is_primary_language)
+                or (
+                    match_version in {MATCH_VERSION_V2, MATCH_VERSION_V3}
+                    and is_primary_language
+                )
             ):
                 critical_mismatch = True
     if critical_mismatch:
@@ -110,7 +168,46 @@ def match_candidate(
     if type_overlap:
         reasons.append("preferred_task_type")
 
-    if effective_track == "newcomer":
+    score_components: list[dict[str, Any]] = []
+    if match_version == MATCH_VERSION_V3:
+        language_points = 8.0 if language_match else 0.0
+        type_points = 8.0 if type_overlap else 0.0
+        clarity_ratio = min(max(float(task.get("text_clarity_score") or 0), 0.0), 100.0) / 100.0
+        activity_ratio = _repository_activity(task)
+        freshness_ratio = _freshness(task)
+        contributing = bool(
+            task.get("has_contributing_guide")
+            or task.get("contributing_guide_available")
+        )
+        score_components.extend((
+            _component("language_match", language_points, f"primary_language={task.get('primary_language') or 'unknown'}"),
+            _component("task_type_match", type_points, f"overlap={','.join(sorted(preferred_types.intersection(task_types)))}"),
+        ))
+        if effective_track == "newcomer":
+            score_components.extend((
+                _component("skill_match", coverage * 30.0, f"skill_coverage={coverage:.3f}"),
+                _component("fresh_issue", freshness_ratio * 8.0, f"freshness_ratio={freshness_ratio:.2f}"),
+                _component("active_repository", activity_ratio * 8.0, f"maintenance_status={task.get('maintenance_status') or 'unknown'}"),
+                _component("newcomer_signal", 18.0, "newcomer_label_signal=true"),
+                _component("contributing_guide_available", 8.0 if contributing else 0.0, f"has_contributing_guide={str(contributing).lower()}"),
+                _component("issue_clarity", clarity_ratio * 12.0, f"text_clarity_score={clarity_ratio * 100:.2f}"),
+            ))
+        else:
+            desired = int(profile["desired_skill_stretch"])
+            stretch_ratio = max(0.0, 1.0 - abs(maximum_gap - desired) / 2.0)
+            growth_ratio = min(max(float(task.get("growth_value_score") or 0), 0.0), 100.0) / 100.0
+            score_components.extend((
+                _component("skill_match", coverage * 20.0, f"skill_coverage={coverage:.3f}"),
+                _component("skill_stretch", stretch_ratio * 20.0, f"maximum_gap={maximum_gap};target={desired}"),
+                _component("fresh_issue", freshness_ratio * 8.0, f"freshness_ratio={freshness_ratio:.2f}"),
+                _component("active_repository", activity_ratio * 8.0, f"maintenance_status={task.get('maintenance_status') or 'unknown'}"),
+                _component("contributing_guide_available", 8.0 if contributing else 0.0, f"has_contributing_guide={str(contributing).lower()}"),
+                _component("issue_clarity", clarity_ratio * 10.0, f"text_clarity_score={clarity_ratio * 100:.2f}"),
+                _component("growth_value", growth_ratio * 10.0, f"growth_value_score={growth_ratio * 100:.2f}"),
+            ))
+        score = sum(float(item["score_delta"]) for item in score_components)
+        reasons.extend(item["code"] for item in score_components if item["score_delta"] > 0)
+    elif effective_track == "newcomer":
         base = float(task["newcomer_score"] or 0)
         if match_version == MATCH_VERSION_V2:
             clarity = float(task.get("text_clarity_score") or 0)
@@ -148,6 +245,7 @@ def match_candidate(
         maximum_skill_gap=maximum_gap,
         skill_gaps=tuple(gaps),
         reasons=tuple(reasons),
+        score_components=tuple(score_components),
         match_version=match_version,
     )
 
@@ -159,6 +257,7 @@ def rank_for_profile(
     limit: int = 20,
     match_version: str = MATCH_VERSION,
 ) -> list[MatchResult]:
+    tasks_by_id = {int(task["task_candidate_id"]): task for task in tasks}
     results = [
         result
         for task in tasks
@@ -172,13 +271,30 @@ def rank_for_profile(
 
     selected: list[MatchResult] = []
     repository_counts: dict[str, int] = {}
+    covered_task_types: set[str] = set()
     pool = list(ranked)
+    repository_cap = 3 if match_version == MATCH_VERSION_V3 else limit
     while pool and len(selected) < limit:
+        eligible_indexes = [
+            index for index, item in enumerate(pool)
+            if repository_counts.get(item.repository, 0) < repository_cap
+        ]
+        if not eligible_indexes:
+            break
         best_index = min(
-            range(len(pool)),
+            eligible_indexes,
             key=lambda index: (
-                repository_counts.get(pool[index].repository, 0),
-                -pool[index].match_score,
+                repository_counts.get(pool[index].repository, 0)
+                if match_version == MATCH_VERSION_V2 else 0,
+                -(
+                    pool[index].match_score
+                    + (5.0 if match_version == MATCH_VERSION_V3 and (
+                        {str(value).casefold() for value in tasks_by_id[pool[index].task_candidate_id].get("task_types", ())}
+                        - covered_task_types
+                    ) else 0.0)
+                    - (repository_counts.get(pool[index].repository, 0) * 2.0
+                       if match_version == MATCH_VERSION_V3 else 0.0)
+                ),
                 pool[index].repository,
                 pool[index].issue_number,
             ),
@@ -187,6 +303,10 @@ def rank_for_profile(
         selected.append(chosen)
         repository_counts[chosen.repository] = (
             repository_counts.get(chosen.repository, 0) + 1
+        )
+        covered_task_types.update(
+            str(value).casefold()
+            for value in tasks_by_id[chosen.task_candidate_id].get("task_types", ())
         )
     return selected
 

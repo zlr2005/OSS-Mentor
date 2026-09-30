@@ -24,6 +24,10 @@ OSS-Mentor 是一个面向开源贡献者的双通道导学系统：
 - [数据质量报告 v0.2](docs/data_quality_report_v0.2.md)
 - [进阶通道离线评估 v0.2](docs/ranking_evaluation_v0.2.md)
 - [新手通道离线评估 v0.2](docs/ranking_evaluation_newcomer_v0.2.md)
+- [Member C 推荐算法 v0.3 交付说明](docs/member_c_delivery_v0.3.md)
+- [Member C 画像到推荐模块集成答复 v0.5](docs/member_c_profile_recommendation_handoff_v0.5.md)
+- [进阶通道离线评估 v0.3](docs/ranking_evaluation_v0.3.md)
+- [新手通道离线评估 v0.3](docs/ranking_evaluation_newcomer_v0.3.md)
 - [任务特征与双通道排序 v0.1](docs/task_features_and_ranking_v0.1.md)
 - [开发者画像与个性化匹配 v0.1](docs/personalized_matching_v0.1.md)
 - [本地推荐 API v0.1](docs/local_api_v0.1.md)
@@ -255,4 +259,12 @@ psql "$env:DATABASE_URL" -v ON_ERROR_STOP=1 `
 2. 用首次贡献者和进阶开发者各完成一轮可用性测试；
 3. 输出感兴趣率、开始率、完成率和不适合率的本地统计页；
 4. 根据真实反馈校准匹配权重与技能缺口解释；
-5. 再评估是否需要 GitHub 登录、持久化用户画像和 PostgreSQL 部署。
+5. 完成 v0.5 GitHub 登录与持久化用户画像的跨成员联调，并继续评估 PostgreSQL 运行时适配和生产部署。
+
+v0.5 画像集成分支的真实 OAuth/画像验收与 B3 固定快照复跑记录见：
+
+- [真实 GitHub OAuth 与画像闭环验收](docs/profile_oauth_acceptance_2026-09-29.md)；
+- [B3 数据质量固定快照复跑](docs/b3_quality_rerun_2026-09-29.md)。
+- [画像、推荐与反馈联合验证](docs/profile_recommendation_joint_acceptance_2026-09-30.md)。
+
+上述记录是 PR #14 的合并前证据，不表示 C/D 已最终批准或 v0.5 已发布。
