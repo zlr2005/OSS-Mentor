@@ -265,5 +265,6 @@ v0.5 画像集成分支的真实 OAuth/画像验收与 B3 固定快照复跑记�
 
 - [真实 GitHub OAuth 与画像闭环验收](docs/profile_oauth_acceptance_2026-09-29.md)；
 - [B3 数据质量固定快照复跑](docs/b3_quality_rerun_2026-09-29.md)。
+- [画像、推荐与反馈联合验证](docs/profile_recommendation_joint_acceptance_2026-09-30.md)。
 
 上述记录是 PR #14 的合并前证据，不表示 C/D 已最终批准或 v0.5 已发布。

@@ -23,7 +23,7 @@
 
 ## D 的 API 接入点
 
-建议由 D 新增 `GET /api/v1/me/recommendations`：
+以下接入已由 D 在 `753e70b` 实现，入口为 `GET /api/v1/me/recommendations`：
 
 1. 从 `oss_mentor_session` cookie 取 session ID；
 2. 调用 `RecommendationService.recommend_for_session(session_id=..., limit=...)`；
@@ -43,5 +43,5 @@
 
 ## 后续集成
 
-- D 接入路由后增加 HTTP 级 401、无画像、limit 和 cookie 测试；
+- D 的 `tests/test_recommendation_api.py` 已覆盖路由处理函数的认证、画像、limit 和反馈上下文；真实 HTTP、SQLite 与浏览器联合验证见 [2026-09-30 验收记录](profile_recommendation_joint_acceptance_2026-09-30.md)。
 - 将旧公开/匿名推荐路径逐步迁移到同一服务，消除当前 API 中遗留的 `MatchResult` 响应形状。
