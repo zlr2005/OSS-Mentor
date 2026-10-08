@@ -1,0 +1,47 @@
+# 推荐模块画像接入 v0.5
+
+本分支完成后端算法侧的画像接入；D 集成分支已接入 HTTP 路由、OpenAPI、反馈上下文、静态推荐页面、PostgreSQL 迁移和 CI。
+
+## D 平台接入结果
+
+- 已注册 `GET /api/v1/me/recommendations?limit=10`，由 session 决定当前用户；
+- 已注册 `/recommendations`、`recommendations.js` 和 `recommendations.css` 静态路由；
+- 登录画像反馈由服务端重新生成 `user:{user_id}:profile:{profile_key}`，拒绝客户端伪造上下文；
+- OpenAPI 已加入 `RecommendationBatchV3`、`RecommendationItemV3`、`Reason.feature_version` 和完整原因码；
+- PostgreSQL 已增加 `003_recommendation_runs.sql` 和推荐表结构检查；
+- Node CI 已检查 `recommendations.js`，Python 全量测试覆盖推荐 HTTP 路由。
+
+## 已确定的契约
+
+- 推荐服务只接受 `DeveloperProfileV2`，不接受历史 `dict` 画像。
+- `DeveloperProfileV2.skills` 在构造时统一执行 `strip().casefold()`；归一化后同名但等级冲突的数据会被拒绝。
+- `MatchResult.match_score` 在进入 `RecommendationItemV3` 时从 `0–100` 除以 100 转为 `0–1`。
+- 匹配原因映射为固定原因码的 `Reason`，包含中文标签、可核验证据和统一为 `0–1` 尺度的 `score_delta`。
+- 登录推荐的算法入口为 `RecommendationService.recommend_for_session()`。它按 `session -> user_id -> 当前用户画像` 解析，不接受客户端指定画像。
+- 登录用户反馈上下文固定为 `user:{user_id}:profile:{profile_key}`，确保负反馈只作用于当前用户及其当前画像。
+- `not_suitable` 在截取 Top N 前降低 0.25 分，并输出 `negative_feedback_penalty` 结构化原因；其他反馈状态只恢复展示，不改变排序。
+
+## D 的 API 接入点
+
+以下接入已由 D 在 `753e70b` 实现，入口为 `GET /api/v1/me/recommendations`：
+
+1. 从 `oss_mentor_session` cookie 取 session ID；
+2. 调用 `RecommendationService.recommend_for_session(session_id=..., limit=...)`；
+3. 将 `AuthenticationRequired` 映射为 401，将 `ProfileRequired` 映射为 404 或产品约定状态；
+4. 使用 `result.profile`、`result.feedback_context` 和 `[item.to_dict() for item in result.items]` 组装响应；
+5. 记录反馈时必须由同一个 session 重新生成 `feedback_context`，不能信任客户端提交的用户上下文。
+
+现有公开演示画像与匿名自定义画像接口可继续保留；后续迁移时应调用 `RecommendationService.recommend()`，不要在 API 层自行复制分数和原因映射。
+
+## 测试覆盖
+
+- `tests/test_contracts.py`：skill casefold 与冲突检测；
+- `tests/test_recommendation_service.py`：`DeveloperProfileV2` 输入约束、`MatchResult` 到 `RecommendationItemV3`、0–1 分数、结构化原因、负反馈排序；
+- `tests/test_recommendation_service.py`：真实 SQLite 用户、session 和画像绑定消费，验证 session 无法选择其他画像。
+- `tests/test_recommendation_migration.py`：010 推荐批次迁移与排名字段；
+- v0.3 的多样性、快照、双轨评估和页面交付详见 `docs/member_c_delivery_v0.3.md`。
+
+## 后续集成
+
+- D 的 `tests/test_recommendation_api.py` 已覆盖路由处理函数的认证、画像、limit 和反馈上下文；真实 HTTP、SQLite 与浏览器联合验证见 [2026-09-30 验收记录](profile_recommendation_joint_acceptance_2026-09-30.md)。
+- 将旧公开/匿名推荐路径逐步迁移到同一服务，消除当前 API 中遗留的 `MatchResult` 响应形状。

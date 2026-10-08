@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import unittest
+from pathlib import Path
 
 from oss_mentor.contracts import (
     CANDIDATE_AVAILABILITY_STATES,
@@ -11,6 +13,7 @@ from oss_mentor.contracts import (
     SYNC_RUN_STATUSES,
     TASK_TYPES,
     Difficulty,
+    DeveloperProfileV2,
     Reason,
     RecommendationItemV3,
 )
@@ -46,13 +49,57 @@ def _make_item(**overrides):
 
 
 class ContractTests(unittest.TestCase):
+    def test_recommendation_fixture_matches_v3_contract(self) -> None:
+        fixture = json.loads((
+            Path(__file__).resolve().parents[1]
+            / "fixtures" / "contracts" / "v0.5" / "recommendations.json"
+        ).read_text(encoding="utf-8"))
+        self.assertEqual("developer-task-match-v0.3", fixture["match_version"])
+        for payload in fixture["items"]:
+            item = RecommendationItemV3(
+                **{
+                    **payload,
+                    "difficulty": Difficulty(**payload["difficulty"]),
+                    "matched_skills": tuple(payload["matched_skills"]),
+                    "missing_skills": tuple(payload["missing_skills"]),
+                    "reasons": tuple(Reason(**reason) for reason in payload["reasons"]),
+                    "warnings": tuple(payload["warnings"]),
+                }
+            )
+            self.assertEqual(payload, item.to_dict())
+
+    def test_developer_profile_normalizes_skill_keys_with_casefold(self) -> None:
+        profile = DeveloperProfileV2(
+            profile_key="casefold",
+            display_name="Casefold",
+            service_track="newcomer",
+            preferred_languages=("Python",),
+            operating_systems=("linux",),
+            preferred_task_types=("testing",),
+            max_code_difficulty=1,
+            max_setup_difficulty=1,
+            desired_skill_stretch=0,
+            skills={"Python": 2, "Straße": 1},
+        )
+        self.assertEqual({"python": 2, "strasse": 1}, profile.skills)
+
+    def test_casefold_collisions_with_conflicting_levels_are_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            DeveloperProfileV2(
+                profile_key="collision", display_name="Collision",
+                service_track="newcomer", preferred_languages=("Python",),
+                operating_systems=("linux",), preferred_task_types=("testing",),
+                max_code_difficulty=1, max_setup_difficulty=1,
+                desired_skill_stretch=0, skills={"Python": 1, "python": 2},
+            )
+
     def test_fixed_enums_have_no_synonyms(self) -> None:
         self.assertEqual(("newcomer", "growth"), SERVICE_TRACKS)
         self.assertEqual(4, len(FEEDBACK_STATES))
         self.assertEqual(6, len(TASK_TYPES))
         self.assertEqual(7, len(CANDIDATE_AVAILABILITY_STATES))
         self.assertEqual(5, len(SYNC_RUN_STATUSES))
-        self.assertEqual(10, len(REASON_CODES))
+        self.assertEqual(12, len(REASON_CODES))
 
     def test_recommendation_item_serializes_to_contract_shape(self) -> None:
         item = _make_item()
@@ -64,6 +111,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(
             REASON_CODE_SKILL_MATCH, payload["reasons"][0]["code"]
         )
+        self.assertEqual("contracts-v0.5", payload["reasons"][0]["feature_version"])
 
     def test_score_must_be_in_unit_range(self) -> None:
         with self.assertRaises(ValueError):

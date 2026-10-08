@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import mean
@@ -11,6 +12,7 @@ from typing import Any
 from oss_mentor.matching import (
     MATCH_VERSION_V1,
     MATCH_VERSION_V2,
+    MATCH_VERSION_V3,
     MatchResult,
     rank_for_profile,
 )
@@ -29,7 +31,7 @@ ANNOTATION_FIELDS = (
     "annotation_reason",
     "annotator",
 )
-RANKING_EVALUATION_SCHEMA_VERSION = "ranking_evaluation_v0.2"
+RANKING_EVALUATION_SCHEMA_VERSION = "ranking_evaluation_v0.3"
 FIT_THRESHOLD = 2.0
 MIN_ANNOTATED_TASKS = 30
 MIN_ANNOTATORS = 2
@@ -245,6 +247,18 @@ def _ranking_metrics(
         for task_type in _task_types_for_result(result, candidates_by_key)
     }
     repositories = {result.repository for result in top10}
+    repository_counts = Counter(result.repository for result in top10)
+    task_type_counts = Counter(
+        task_type
+        for result in top10
+        for task_type in _task_types_for_result(result, candidates_by_key)
+    )
+    unavailable = sum(
+        1 for result in top10
+        if candidates_by_key.get(_task_key(result), {}).get(
+            "candidate_availability", "available"
+        ) != "available"
+    )
     denominator = max(len(annotated_top10), 1)
     return {
         "recommendation_count": len(ranking),
@@ -261,6 +275,18 @@ def _ranking_metrics(
         ),
         "task_type_diversity": len(task_types),
         "repository_diversity": len(repositories),
+        "maximum_repository_share": round(
+            max(repository_counts.values(), default=0) / len(top10), 3
+        ) if top10 else 0.0,
+        "maximum_task_type_share": round(
+            max(task_type_counts.values(), default=0) / len(top10), 3
+        ) if top10 else 0.0,
+        "repository_cap_violations": sum(
+            1 for count in repository_counts.values() if count > 3
+        ),
+        "unavailable_task_leakage_rate": round(
+            unavailable / len(top10), 3
+        ) if top10 else 0.0,
     }
 
 
@@ -366,11 +392,11 @@ def build_ranking_evaluation_report(
     candidates: list[dict[str, Any]],
     annotations: list[TaskFitAnnotation],
     limit: int = 50,
-    selected_match_version: str = MATCH_VERSION_V2,
+    selected_match_version: str = MATCH_VERSION_V3,
 ) -> dict[str, Any]:
     if track not in {"newcomer", "growth"}:
         raise ValueError(f"unsupported track: {track}")
-    if selected_match_version not in {MATCH_VERSION_V1, MATCH_VERSION_V2}:
+    if selected_match_version not in {MATCH_VERSION_V1, MATCH_VERSION_V2, MATCH_VERSION_V3}:
         raise ValueError(f"unsupported match version: {selected_match_version}")
 
     grouped_annotations = _annotation_groups(annotations)
@@ -381,6 +407,9 @@ def build_ranking_evaluation_report(
         ),
         MATCH_VERSION_V2: rank_for_profile(
             profile, candidates, limit=limit, match_version=MATCH_VERSION_V2
+        ),
+        MATCH_VERSION_V3: rank_for_profile(
+            profile, candidates, limit=limit, match_version=MATCH_VERSION_V3
         ),
     }
     warnings: list[dict[str, Any]] = []
@@ -435,7 +464,7 @@ def build_ranking_evaluation_report(
         "candidate_count": len(candidates),
         "metrics_by_version": metrics,
         "top10_changes": _top10_changes(
-            rankings[MATCH_VERSION_V1], rankings[MATCH_VERSION_V2]
+            rankings[MATCH_VERSION_V2], rankings[MATCH_VERSION_V3]
         ),
         "selected_top10": [
             {
@@ -447,9 +476,9 @@ def build_ranking_evaluation_report(
             for result in selected_ranking[:10]
         ],
         "weight_change_rationale": [
-            "v0.2 raises the skill-coverage contribution to reduce critical skill misses.",
-            "v0.2 keeps explicit platform requirements as hard filters.",
-            "v0.2 applies repository-balanced top-k selection to reduce concentration.",
+            "v0.3 makes candidate availability and declared operating systems hard filters.",
+            "v0.3 scores repository activity, issue freshness and contribution guidance explicitly.",
+            "v0.3 caps a repository at three Top-10 positions and rewards task-type coverage.",
         ],
         "warnings": warnings,
         "limitations": [
@@ -462,7 +491,7 @@ def build_ranking_evaluation_report(
 
 def render_ranking_evaluation_markdown(report: dict[str, Any]) -> str:
     lines = [
-        "# OSS-Mentor 推荐算法离线评估 v0.2",
+        "# OSS-Mentor 推荐算法离线评估 v0.3",
         "",
         "## 概览",
         "",
@@ -485,8 +514,8 @@ def render_ranking_evaluation_markdown(report: dict[str, Any]) -> str:
         "",
         "## 指标对比",
         "",
-        "| 版本 | P@5 | P@10 | 关键技能不匹配率 | 平台不匹配率 | 基础技能覆盖率 | 任务类型多样性 | 仓库多样性 | 空结果率 |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| 版本 | P@5 | P@10 | 关键技能不匹配率 | 平台不匹配率 | 技能覆盖率 | 类型数 | 仓库数 | 最大仓库占比 | 最大类型占比 | 仓库超限 | 失效泄漏率 | 空结果率 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for version, metrics in report["metrics_by_version"].items():
         lines.append(
@@ -501,6 +530,10 @@ def render_ranking_evaluation_markdown(report: dict[str, Any]) -> str:
                     f"{metrics['basic_skill_coverage_rate']:.3f}",
                     str(metrics["task_type_diversity"]),
                     str(metrics["repository_diversity"]),
+                    f"{metrics['maximum_repository_share']:.3f}",
+                    f"{metrics['maximum_task_type_share']:.3f}",
+                    str(metrics["repository_cap_violations"]),
+                    f"{metrics['unavailable_task_leakage_rate']:.3f}",
                     f"{metrics['empty_recommendation_rate']:.3f}",
                 ]
             )
