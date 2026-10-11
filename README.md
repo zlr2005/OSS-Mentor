@@ -20,7 +20,8 @@ OSS-Mentor 是一个面向开源贡献者的双通道导学系统：
 - [候选任务采集与刷新 v0.2](docs/candidate_collection_refresh_v0.2.md)
 - [候选池聚合报告 v0.2](docs/candidate_pool_report_v0.2.md)
 - [推荐库存扩充与选项保障 v0.3](docs/recommendation_inventory_expansion_v0.3.md)
-- [候选池聚合报告 v0.3](docs/candidate_pool_report_v0.3.md)
+- [候选池聚合报告 v0.3（历史兼容快照）](docs/candidate_pool_report_v0.3.md)
+- [v0.5 真实在线库存到登录推荐发布验收](docs/online_inventory_recommendation_acceptance_2026-10-10.md)
 - [数据质量报告 v0.2](docs/data_quality_report_v0.2.md)
 - [进阶通道离线评估 v0.2](docs/ranking_evaluation_v0.2.md)
 - [新手通道离线评估 v0.2](docs/ranking_evaluation_newcomer_v0.2.md)
@@ -259,12 +260,13 @@ psql "$env:DATABASE_URL" -v ON_ERROR_STOP=1 `
 2. 用首次贡献者和进阶开发者各完成一轮可用性测试；
 3. 输出感兴趣率、开始率、完成率和不适合率的本地统计页；
 4. 根据真实反馈校准匹配权重与技能缺口解释；
-5. 基于 main 完成真实 GitHub 在线库存到登录用户非空推荐的发布验收，并继续评估 PostgreSQL 运行时适配和生产部署。
+5. 完成 PostgreSQL 运行时适配、Docker + PostgreSQL 端到端验收和生产部署准备。
 
 v0.5 画像集成分支的真实 OAuth/画像验收与 B3 固定快照复跑记录见：
 
 - [真实 GitHub OAuth 与画像闭环验收](docs/profile_oauth_acceptance_2026-09-29.md)；
 - [B3 数据质量固定快照复跑](docs/b3_quality_rerun_2026-09-29.md)。
-- [画像、推荐与反馈联合验证](docs/profile_recommendation_joint_acceptance_2026-09-30.md)。
+- [画像、推荐与反馈联合验证](docs/profile_recommendation_joint_acceptance_2026-09-30.md)；
+- [v0.5 真实在线库存到登录推荐发布验收](docs/online_inventory_recommendation_acceptance_2026-10-10.md)。
 
-PR #14 已于 2026-10-08 合并到 main，合并提交为 `cee233c9871f866e4ff629547bd9e17f63870be1`，C/D 最终审阅均已通过。上述记录保留为合并前验收证据；真实在线库存推荐、PostgreSQL 运行时适配和生产部署仍属于后续发布工作。
+PR #14 已于 2026-10-08 合并到 main，合并提交为 `cee233c9871f866e4ff629547bd9e17f63870be1`，C/D 最终审阅均已通过。真实 GitHub 在线库存到登录用户非空推荐已于 2026-10-10 在 SQLite 本地模式下通过，并通过 PR #17 修复候选可用状态持久化问题；PostgreSQL 运行时适配和生产部署仍属于后续发布工作。
