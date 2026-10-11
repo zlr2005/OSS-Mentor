@@ -49,6 +49,7 @@ from oss_mentor.ranking_evaluation import (
     render_ranking_evaluation_markdown,
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.storage.candidates import SQLiteCandidateStorage
 from oss_mentor.task_features import extract_task_features, infer_skill_requirements
 
 
@@ -107,8 +108,8 @@ def _database_path(settings: Settings, args: argparse.Namespace) -> Path:
     )
 
 
-def _candidate_store(settings: Settings, args: argparse.Namespace) -> SQLiteCandidateStore:
-    return SQLiteCandidateStore(
+def _candidate_store(settings: Settings, args: argparse.Namespace) -> SQLiteCandidateStorage:
+    return SQLiteCandidateStorage(
         _database_path(settings, args),
         settings.repo_root / "db" / "sqlite" / "001_mvp.sql",
     )

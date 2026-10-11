@@ -10,7 +10,7 @@ from oss_mentor.candidate_refresh import CandidateRefresher
 from oss_mentor.candidate_report import build_candidate_report
 from oss_mentor.candidate_rules import evaluate_candidate
 from oss_mentor.collector.github_client import GitHubApiError
-from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.storage.candidates import SQLiteCandidateStorage
 
 
 def record(**overrides):
@@ -62,7 +62,7 @@ class CandidateRefreshReportTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         root = Path(__file__).resolve().parents[1]
-        self.store = SQLiteCandidateStore(
+        self.store = SQLiteCandidateStorage(
             Path(self.temporary.name) / "test.sqlite3",
             root / "db" / "sqlite" / "001_mvp.sql",
         )
@@ -110,7 +110,11 @@ class CandidateRefreshReportTests(unittest.TestCase):
             (record(assignment_state="assigned"), "temporarily_ineligible", "already_assigned"),
             (record(is_locked=True), "temporarily_ineligible", "locked"),
             (record(has_linked_open_pr=True), "temporarily_ineligible", "linked_open_pr"),
-            (record(), "eligible", None),
+            (
+                record(github_verified_at=datetime.now(timezone.utc).isoformat()),
+                "eligible",
+                None,
+            ),
         ]
         for current, expected_status, expected_reason in cases:
             with self.subTest(expected_status=expected_status, reason=expected_reason):
@@ -118,6 +122,17 @@ class CandidateRefreshReportTests(unittest.TestCase):
                 self._refresh(current)
                 candidate = self._candidate()
                 self.assertEqual(expected_status, candidate["candidate_eligibility"])
+                expected_availability = {
+                    "not_open": "closed",
+                    "already_assigned": "assigned",
+                    "locked": "locked",
+                    "linked_open_pr": "linked_open_pr",
+                    None: "available",
+                }[expected_reason]
+                self.assertEqual(
+                    expected_availability,
+                    candidate["candidate_availability"],
+                )
                 if expected_reason:
                     self.assertIn(expected_reason, candidate["ineligibility_reasons_json"])
 
@@ -186,7 +201,7 @@ class CandidateRefreshReportTests(unittest.TestCase):
         report = build_candidate_report(
             self.store, now=datetime(2026, 7, 14, tzinfo=timezone.utc)
         )
-        self.assertEqual("candidate_pool_report_v0.3", report["schema_version"])
+        self.assertEqual("candidate_pool_report_v0.5", report["schema_version"])
         for track in ("newcomer", "growth"):
             coverage = report["recommendation_coverage"][track]
             self.assertEqual(1, coverage["total_count"])
