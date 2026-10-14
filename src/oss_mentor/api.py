@@ -12,6 +12,8 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 from uuid import UUID, uuid4
 
+from oss_mentor.candidate_sync import CandidateDetail, CandidateService
+from oss_mentor.collector.github_client import GitHubApiError, RateLimitExceeded
 from oss_mentor.developer_profiles import (
     ALLOWED_LANGUAGES,
     ALLOWED_OPERATING_SYSTEMS,
@@ -44,12 +46,16 @@ from oss_mentor.services.recommendation_service import (
 )
 from oss_mentor.storage.profiles import SQLiteProfileStorage
 from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
+from oss_mentor.storage.candidates import SQLiteCandidateStorage
 
 
 API_VERSION = "v0.5"
 MAX_JSON_BODY_BYTES = 32 * 1024
 FEEDBACK_STATES = {"interested", "not_suitable", "started", "completed"}
 PROFILE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
+TASK_DETAIL_PATH_PATTERN = re.compile(r"^/api/v1/tasks/([1-9][0-9]{0,18})$")
+REFRESH_TRUE = {"1", "true", "yes"}
+REFRESH_FALSE = {"0", "false", "no", ""}
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +80,10 @@ _STATIC_ROUTES = {
     "/profile.html": ("profile.html", "text/html; charset=utf-8"),
     "/recommendations": ("recommendations.html", "text/html; charset=utf-8"),
     "/recommendations.html": ("recommendations.html", "text/html; charset=utf-8"),
+    "/task": ("task.html", "text/html; charset=utf-8"),
+    "/task.html": ("task.html", "text/html; charset=utf-8"),
+    "/assets/task.js": ("assets/task.js", "text/javascript; charset=utf-8"),
+    "/assets/task.css": ("assets/task.css", "text/css; charset=utf-8"),
     "/assets/recommendations.js": ("assets/recommendations.js", "text/javascript; charset=utf-8"),
     "/assets/recommendations.css": ("assets/recommendations.css", "text/css; charset=utf-8"),
     "/assets/profile.js": ("assets/profile.js", "text/javascript; charset=utf-8"),
@@ -97,6 +107,30 @@ def load_static_asset(static_root: Path | None, path: str) -> StaticAsset | None
     return StaticAsset(source.read_bytes(), content_type)
 
 
+def _candidate_detail_body(row: dict[str, Any]) -> dict[str, Any]:
+    """Task detail straight from the local snapshot; never calls the network."""
+
+    return {
+        "task_candidate_id": int(row["task_candidate_id"]),
+        "repository_full_name": str(row["repository"]),
+        "issue_number": int(row["issue_number"]),
+        "title": str(row["title"]),
+        "body_text": row.get("body_text"),
+        "html_url": str(row["html_url"]),
+        "availability": str(row["candidate_availability"]),
+        "availability_reasons": list(row.get("availability_reasons") or []),
+        "verified_at": row.get("github_verified_at"),
+        "refreshed": False,
+    }
+
+
+def _refreshed_candidate_detail_body(detail: CandidateDetail) -> dict[str, Any]:
+    return {
+        **asdict(detail),
+        "availability_reasons": list(detail.availability_reasons),
+    }
+
+
 class RecommendationApi:
     """Transport-independent API routes, suitable for unit testing."""
 
@@ -107,8 +141,15 @@ class RecommendationApi:
         profile_service: ProfileService | None = None,
         github_profile_source: GitHubProfileSource | None = None,
         recommendation_service: RecommendationService | None = None,
+        candidate_service: CandidateService | None = None,
     ) -> None:
         self.store = store
+        self.candidate_service = candidate_service
+        self.candidate_storage: SQLiteCandidateStorage | None = None
+        if isinstance(store, SQLiteCandidateStore):
+            self.candidate_storage = SQLiteCandidateStorage(
+                store.database_path, store.migration_path
+            )
         self.auth_service = auth_service
         self.profile_service = profile_service
         if self.profile_service is None and isinstance(store, SQLiteCandidateStore):
@@ -265,6 +306,70 @@ class RecommendationApi:
     def _error(status: int, code: str, message: str) -> ApiResponse:
         return ApiResponse(status, {"error": {"code": code, "message": message}})
 
+    def _task_detail_route(self, path: str, query: dict[str, list[str]]) -> ApiResponse:
+        """Serve one task detail; GitHub re-verification is opt-in via refresh=true."""
+
+        match = TASK_DETAIL_PATH_PATTERN.fullmatch(path)
+        if match is None:
+            return self._error(404, "not_found", "route was not found")
+        task_candidate_id = int(match.group(1))
+        unsupported = sorted(set(query) - {"refresh"})
+        if unsupported:
+            return self._error(
+                400, "invalid_request", f"unsupported query parameter: {unsupported[0]}"
+            )
+        raw_refresh = (query.get("refresh") or ["0"])[0].strip().lower()
+        if raw_refresh in REFRESH_TRUE:
+            refresh = True
+        elif raw_refresh in REFRESH_FALSE:
+            refresh = False
+        else:
+            return self._error(400, "invalid_request", "refresh must be true or false")
+
+        if refresh:
+            if self.candidate_service is None:
+                return self._error(
+                    503,
+                    "service_not_ready",
+                    "task re-verification is not configured for this server",
+                )
+            try:
+                detail = self.candidate_service.candidate_detail(task_candidate_id)
+            except KeyError:
+                return self._error(404, "not_found", "task candidate was not found")
+            except RateLimitExceeded:
+                return self._error(429, "rate_limited", "GitHub rate limit exhausted")
+            except GitHubApiError as exc:
+                if getattr(exc, "status_code", None) == 429:
+                    return self._error(429, "rate_limited", "GitHub rate limit exhausted")
+                return self._error(
+                    502, "github_upstream_error", "GitHub returned an unrecoverable error"
+                )
+            return ApiResponse(
+                200, {**_refreshed_candidate_detail_body(detail), "api_version": API_VERSION}
+            )
+
+        if self.candidate_storage is None:
+            return self._error(503, "service_not_ready", "candidate storage is not configured")
+        row = self.candidate_storage.candidate_detail_row(task_candidate_id)
+        if row is None:
+            return self._error(404, "not_found", "task candidate was not found")
+        return ApiResponse(200, {**_candidate_detail_body(row), "api_version": API_VERSION})
+
+    def _database_ready(self) -> tuple[bool, str | None]:
+        """Separate "process is alive" from "database cannot be used"."""
+
+        if not self.store.database_path.is_file():
+            return False, "database_missing"
+        if self.candidate_storage is None:
+            return True, None
+        try:
+            with self.candidate_storage.connect() as connection:
+                connection.execute("SELECT 1").fetchone()
+        except sqlite3.Error:
+            return False, "database_unavailable"
+        return True, None
+
     def _recommendations(
         self,
         profile: dict[str, Any],
@@ -361,6 +466,12 @@ class RecommendationApi:
     ) -> ApiResponse:
         query = query or {}
         cookies = cookies or {}
+        if path.startswith("/api/v1/tasks/"):
+            if method != "GET":
+                return self._error(
+                    405, "method_not_allowed", "method is not supported for this route"
+                )
+            return self._task_detail_route(path, query)
         if method == "GET" and path == "/api/v1/me/recommendations":
             return self._me_recommendations_route(query, cookies)
         if path in {"/api/v1/me/profile", "/api/v1/me/profile/import-github"} or re.fullmatch(
@@ -368,12 +479,14 @@ class RecommendationApi:
         ):
             return self._profile_route(method, path, query, body, cookies)
         if method == "GET" and path == "/health":
+            database_ready, database_error = self._database_ready()
             return ApiResponse(
-                200,
+                200 if database_ready else 503,
                 {
-                    "status": "ok",
+                    "status": "ok" if database_ready else "not_ready",
                     "api_version": API_VERSION,
-                    "database_ready": self.store.database_path.is_file(),
+                    "database_ready": database_ready,
+                    **({"database_error": database_error} if database_error else {}),
                 },
             )
         if method == "GET" and path == "/api/v1/profiles":
@@ -797,8 +910,11 @@ def serve(
     cors_origin: str | None = None,
     static_root: Path | None = None,
     auth_service: AuthService | None = None,
+    candidate_service: CandidateService | None = None,
 ) -> None:
-    api = RecommendationApi(store, auth_service=auth_service)
+    api = RecommendationApi(
+        store, auth_service=auth_service, candidate_service=candidate_service
+    )
     server = ThreadingHTTPServer(
         (host, port),
         make_handler(api, cors_origin=cors_origin, static_root=static_root),

@@ -38,6 +38,9 @@ OSS-Mentor 是一个面向开源贡献者的双通道导学系统：
 - [推荐反馈闭环 v0.3](docs/recommendation_feedback_v0.3.md)
 - [OpenAPI v0.3](docs/openapi_v0.3.yaml)
 - [OpenAPI v0.4](docs/openapi_v0.4.yaml)
+- [OpenAPI v0.5](docs/openapi_v0.5.yaml)
+- [推荐模块画像接入 v0.5](docs/recommendation_profile_integration_v0.5.md)
+- [画像、推荐与反馈联合验证（2026-09-30）](docs/profile_recommendation_joint_acceptance_2026-09-30.md)
 
 ## 当前采集器范围
 
@@ -226,7 +229,55 @@ python -m oss_mentor serve-api
 
 然后访问 `http://127.0.0.1:8765/`，可使用两个预设画像，也可填写语言、平台、任务偏好和技能水平生成一次性自定义推荐。语言和任务类型采用硬约束，界面会读取当前组合的真实库存、禁用零库存选项，并在无匹配任务时阻止提交。自定义画像只在内存中参与本次计算，不写入 SQLite。每条推荐可标记为“感兴趣 / 不适合 / 已开始 / 已完成”，当前状态和变化事件保存在本地。
 
+推荐页的“查看任务详情”会打开任务详情页：
+
+```text
+http://127.0.0.1:8765/task?task_candidate_id=<id>&feedback_context=<context>
+```
+
+详情页默认只读取本地候选快照，不访问网络，并显示可用性、上次复核时间和排除原因。需要打开时立刻重新复核单个任务时，用 `serve-api --enable-task-refresh` 启动并配置只读 `GITHUB_TOKEN`；未启用时该操作返回 503，而不是静默忽略。
+
 测试不访问 GitHub 网络，覆盖配置校验、分页、跨域保护、Raw envelope、CLI dry-run 和 SQL 迁移依赖顺序。
+
+## Docker 部署
+
+先准备环境变量，再初始化数据库，最后启动应用；`serve-api` 在数据库文件不存在时会直接报错退出，因此不要跳过初始化。
+
+```powershell
+Copy-Item .env.example .env   # 填入 GITHUB_TOKEN、OAuth 凭据和 OSS_MENTOR_SESSION_SECRET
+
+docker compose build
+docker compose run --rm app python -m oss_mentor init-demo
+docker compose up
+```
+
+或者用真实候选池替代演示数据：
+
+```powershell
+docker compose run --rm app python -m oss_mentor sync-candidates `
+  --all-enabled --limit-per-repo 20 --output /app/data/reports/sync.json --allow-network
+docker compose up
+```
+
+- 应用镜像由 `Dockerfile` 构建，`compose.yaml` 同时启动 `app` 与 `postgres:16`；
+- 数据库文件位于 `oss_mentor_data` 卷，容器的 `/app/data` 就是本地 `data/` 目录；
+- `serve-api` 默认只绑 `127.0.0.1`，容器内必须显式 `--host 0.0.0.0 --allow-remote` 才能被端口映射访问，`compose.yaml` 已写入该命令；`OSS_MENTOR_HOST` 和 `OSS_MENTOR_PORT` 作为 CLI 默认值读取；
+- `app` 的 healthcheck 请求 `/health`：进程存活但数据库不可用会返回 503，容器随之标记为 unhealthy；
+- PostgreSQL 目前只有迁移层支持，见下一节；`compose.yaml` 传入的 `OSS_MENTOR_DATABASE_URL` 尚未被运行时读取，容器实际仍使用 SQLite；
+- 未配置 OAuth 时容器仍可启动，登录入口会提示 `oauth_configured=false`，演示画像和自定义画像推荐可继续使用。
+
+## 故障排查
+
+| 现象 | 原因与处理 |
+|---|---|
+| `/health` 返回 503，`database_error=database_missing` | 数据库文件不存在。先运行 `python -m oss_mentor init-demo` 或 `sync-candidates`，再启动服务 |
+| `/health` 返回 503，`database_error=database_unavailable` | 文件存在但无法读取，检查路径权限或是否被其他进程独占 |
+| 登录后推荐为空 | 候选池没有 `available` 任务。先 `sync-candidates` / `refresh-candidates`，再用 `candidate-report` 确认可推荐量 |
+| `/api/v1/auth/github/start` 返回 `oauth_configured=false` | 未配置 `GITHUB_OAUTH_CLIENT_ID`、`GITHUB_OAUTH_CLIENT_SECRET` 和 `OSS_MENTOR_SESSION_SECRET`，此时只能使用演示或自定义画像 |
+| 服务重启后需要重新登录 | 设计如此：GitHub access token 只保存在进程内存，SQLite 中只有 HMAC 摘要 |
+| 任务详情“重新复核可用性”返回 503 | `serve-api` 未加 `--enable-task-refresh`，或缺少只读 `GITHUB_TOKEN` |
+| 任务详情显示“待复核” | 上次 GitHub 复核超过 24 小时。用页面按钮单独复核，或按批量流程执行 `refresh-candidates` |
+| 端口被占用或静态资源缺失 | 运行 `python -m oss_mentor doctor`，它会检查 Python、迁移、画像、候选库存、端口和静态资源 |
 
 ## PostgreSQL schema
 
