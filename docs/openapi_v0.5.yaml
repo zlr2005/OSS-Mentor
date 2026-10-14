@@ -14,8 +14,21 @@ paths:
   /health:
     get:
       summary: Process health and database connectivity
+      description: |
+        Returns 200 only when the process is alive and the SQLite file is readable.
+        A live process with an unusable database returns 503 with
+        `status=not_ready` and `database_error`, so probes can tell the two apart.
       responses:
-        "200": {description: API is available}
+        "200":
+          description: Process alive and the database is usable
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/HealthResponse"}
+        "503":
+          description: Process alive but the database is missing or unusable
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/HealthResponse"}
   /api/v1/auth/github/start:
     get:
       summary: Create an OAuth state and return the GitHub authorization URL
@@ -248,15 +261,36 @@ paths:
         "503": {$ref: "#/components/responses/ProfileError"}
   /api/v1/tasks/{task_candidate_id}:
     get:
-      summary: Task detail and current availability (member A)
+      summary: Task detail and current availability
+      description: |
+        Public Issue data only; login is not required. By default the response comes
+        from the local candidate snapshot and makes no network request. Passing
+        `refresh=true` asks the server to re-verify one stale task against GitHub;
+        it is available only when the server was started with
+        `serve-api --enable-task-refresh` and a read-only `GITHUB_TOKEN`, and it
+        returns 503 when re-verification is not configured.
       parameters:
         - name: task_candidate_id
           in: path
           required: true
-          schema: {type: integer}
+          schema: {type: integer, minimum: 1}
+        - name: refresh
+          in: query
+          required: false
+          schema: {type: boolean, default: false}
+          description: Re-verify this task against GitHub before responding
       responses:
-        "200": {description: Task detail}
-        "404": {description: Task not found}
+        "200":
+          description: Task detail; refreshed=true only after a successful re-verification
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaskDetail"}
+        "400": {description: Unsupported query parameter or non-boolean refresh}
+        "404": {description: Task candidate not found}
+        "405": {description: Method not allowed; this route is read-only}
+        "429": {description: GitHub rate limit exhausted during re-verification}
+        "502": {description: GitHub returned an unrecoverable error during re-verification}
+        "503": {description: Re-verification is not configured on this server}
   /api/v1/recommendations:
     get:
       summary: Legacy recommendations for a public stored profile, retained for compatibility
@@ -337,6 +371,40 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    HealthResponse:
+      type: object
+      required: [status, api_version, database_ready, request_id]
+      properties:
+        status: {type: string, enum: [ok, not_ready]}
+        api_version: {type: string}
+        database_ready: {type: boolean}
+        database_error:
+          type: string
+          nullable: true
+          enum: [database_missing, database_unavailable]
+          description: Present only when database_ready is false
+        request_id: {type: string}
+    TaskDetail:
+      type: object
+      required: [task_candidate_id, repository_full_name, issue_number, title, html_url, availability, availability_reasons, refreshed, api_version, request_id]
+      properties:
+        task_candidate_id: {type: integer}
+        repository_full_name: {type: string}
+        issue_number: {type: integer}
+        title: {type: string}
+        body_text: {type: string, nullable: true}
+        html_url: {type: string, format: uri}
+        availability:
+          type: string
+          enum: [available, closed, assigned, linked_open_pr, locked, repository_inactive, temporarily_unverified]
+        availability_reasons:
+          type: array
+          items: {type: string}
+          description: Excluded/limited reasons such as issue_closed or verification_older_than_limit
+        verified_at: {type: string, nullable: true, description: UTC ISO 8601 of the last GitHub verification}
+        refreshed: {type: boolean}
+        api_version: {type: string}
+        request_id: {type: string}
     ProfileWrite:
       type: object
       additionalProperties: false
