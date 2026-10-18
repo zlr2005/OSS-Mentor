@@ -1,0 +1,194 @@
+{
+  "schema_version": "assessment-scenarios-v0.1",
+  "questionnaire_version": "2026-10-18.v1",
+  "scenarios": [
+    {
+      "id": "zero_history",
+      "description": "没有 GitHub 历史但可以通过自评形成可编辑画像预览",
+      "submission": {
+        "questionnaire_version": "2026-10-18.v1",
+        "submitted_at": "2026-10-18T08:00:00Z",
+        "answers": {
+          "open_source_stage": "none",
+          "languages_used": ["python"],
+          "code_change_confidence": "need_walkthrough",
+          "testing_confidence": "read_only",
+          "documentation_confidence": "small_edit",
+          "current_focus": "documentation",
+          "weekly_time": "under_2h",
+          "operating_systems": ["windows"],
+          "documentation_structure": "correct_text",
+          "documentation_validation": "visual_review"
+        }
+      },
+      "external_evidence": [],
+      "expect": {
+        "interest": "current_interest.task.documentation",
+        "unknown_feature": "capability.debugging"
+      }
+    },
+    {
+      "id": "experienced_contributor",
+      "description": "有真实贡献经历且证据与自评一致",
+      "submission": {
+        "questionnaire_version": "2026-10-18.v1",
+        "submitted_at": "2026-10-18T08:10:00Z",
+        "answers": {
+          "open_source_stage": "submitted",
+          "languages_used": ["python", "javascript"],
+          "code_change_confidence": "independent_small",
+          "testing_confidence": "design_cases",
+          "documentation_confidence": "follow_and_update",
+          "current_focus": "implementation",
+          "weekly_time": "over_5h",
+          "operating_systems": ["linux", "windows"],
+          "implementation_debugging": "fix_and_verify",
+          "implementation_scope": "one_module"
+        }
+      },
+      "external_evidence": [
+        {
+          "feature_name": "capability.code_change",
+          "value": 0.75,
+          "confidence": 0.8,
+          "source_kind": "github_direct",
+          "evidence_ref": "fixture:commit:experienced-1",
+          "observed_at": "2026-10-17T12:00:00Z"
+        }
+      ],
+      "expect": {
+        "feature": "capability.code_change",
+        "value": 0.75,
+        "source_kind": "github_direct"
+      }
+    },
+    {
+      "id": "direction_change",
+      "description": "历史文档贡献者当前希望转向测试方向",
+      "submission": {
+        "questionnaire_version": "2026-10-18.v1",
+        "submitted_at": "2026-10-18T08:20:00Z",
+        "answers": {
+          "open_source_stage": "submitted",
+          "languages_used": ["python"],
+          "code_change_confidence": "with_examples",
+          "testing_confidence": "modify_existing",
+          "documentation_confidence": "independent_guide",
+          "current_focus": "quality",
+          "weekly_time": "2_to_5h",
+          "operating_systems": ["linux"],
+          "quality_reproduction": "fill_gaps",
+          "quality_test_design": "adapt_case"
+        }
+      },
+      "external_evidence": [
+        {
+          "feature_name": "capability.documentation",
+          "value": 0.75,
+          "confidence": 0.85,
+          "source_kind": "github_direct",
+          "evidence_ref": "fixture:pr:docs-7",
+          "observed_at": "2026-09-30T10:00:00Z"
+        }
+      ],
+      "expect": {
+        "interest": "current_interest.task.quality",
+        "historical_feature": "capability.documentation"
+      }
+    },
+    {
+      "id": "evidence_conflict",
+      "description": "自评与直接贡献证据存在明显冲突",
+      "submission": {
+        "questionnaire_version": "2026-10-18.v1",
+        "submitted_at": "2026-10-18T08:30:00Z",
+        "answers": {
+          "open_source_stage": "local_change",
+          "languages_used": ["python"],
+          "code_change_confidence": "independent_small",
+          "testing_confidence": "modify_existing",
+          "documentation_confidence": "small_edit",
+          "current_focus": "implementation",
+          "weekly_time": "2_to_5h",
+          "operating_systems": ["windows"],
+          "implementation_debugging": "locate",
+          "implementation_scope": "one_file"
+        }
+      },
+      "external_evidence": [
+        {
+          "feature_name": "capability.code_change",
+          "value": 0.25,
+          "confidence": 0.8,
+          "source_kind": "github_direct",
+          "evidence_ref": "fixture:review:needs-guidance",
+          "observed_at": "2026-10-10T09:00:00Z"
+        }
+      ],
+      "expect": {
+        "feature": "capability.code_change",
+        "value": 0.25,
+        "conflict": true
+      }
+    },
+    {
+      "id": "partial_evidence",
+      "description": "只有部分自评信息，非适用方向特征保持未知",
+      "submission": {
+        "questionnaire_version": "2026-10-18.v1",
+        "submitted_at": "2026-10-18T08:40:00Z",
+        "answers": {
+          "open_source_stage": "explored",
+          "languages_used": ["typescript"],
+          "code_change_confidence": "with_examples",
+          "testing_confidence": "read_only",
+          "documentation_confidence": "small_edit",
+          "current_focus": "quality",
+          "weekly_time": "under_2h",
+          "operating_systems": ["macos"],
+          "quality_reproduction": "follow_exact",
+          "quality_test_design": "run_existing"
+        }
+      },
+      "external_evidence": [],
+      "expect": {
+        "unknown_feature": "capability.change_scope"
+      }
+    },
+    {
+      "id": "manual_lock",
+      "description": "用户锁定值优先，导入和问答不能静默覆盖",
+      "submission": {
+        "questionnaire_version": "2026-10-18.v1",
+        "submitted_at": "2026-10-18T08:50:00Z",
+        "answers": {
+          "open_source_stage": "submitted",
+          "languages_used": ["python"],
+          "code_change_confidence": "independent_small",
+          "testing_confidence": "modify_existing",
+          "documentation_confidence": "follow_and_update",
+          "current_focus": "implementation",
+          "weekly_time": "over_5h",
+          "operating_systems": ["linux"],
+          "implementation_debugging": "fix_and_verify",
+          "implementation_scope": "cross_module"
+        }
+      },
+      "external_evidence": [
+        {
+          "feature_name": "capability.code_change",
+          "value": 0.25,
+          "confidence": 1.0,
+          "source_kind": "user_locked",
+          "evidence_ref": "fixture:user-lock:code-change",
+          "observed_at": "2026-10-18T07:00:00Z"
+        }
+      ],
+      "expect": {
+        "feature": "capability.code_change",
+        "value": 0.25,
+        "blocked_reason": "field_locked"
+      }
+    }
+  ]
+}
