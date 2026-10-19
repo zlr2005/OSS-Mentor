@@ -1,0 +1,45 @@
+schema_version = 1
+config_name = "gfibot-stage2-baselines-v1"
+dataset_version = "gfibot-m0-v1.1"
+seed = 20261017
+
+[inputs]
+normalized_dir = "../../data/midterm/normalized/gfibot-m0-v1.1"
+graph_dir = "../../data/midterm/graphs/gfibot-m0-v1.1"
+
+[outputs]
+models_dir = "../../data/models/gfibot-m0-v1.1/baselines"
+runs_dir = "../../data/runs/gfibot-m0-v1.1/baselines"
+
+[protocol]
+split_protocol = "fixed_train_graph"
+candidate_scope = "historical_resolved_issue_subset"
+candidate_modes = ["same_repo", "cross_repo"]
+candidate_seed = 20261017
+max_candidates = 500
+cutoffs = [5, 10, 20]
+
+[locks]
+split_manifest_sha256 = "d17bd5a3c6102877a2f6726c4fdd65c252d2eb69b0bde50541892da71bde62ee"
+train_sha256 = "ecfae054980546872a6c7854f6e4d3d112b10e03d06f396c4fc3e23a333f20dd"
+valid_sha256 = "3b8ca739071f273788d6b7294c9ce497b69336dfd1bbb7a42bb635075274943f"
+test_sha256 = "0aea0d87601b26a0a4a4772e91d918b3c1fe4819b94a83fe7c0c5b17e62caf1c"
+developer_mapping_sha256 = "124d4fe81c1d8829d30c8eb4492e4f4f73a7462c24f4e98ab1ce9775e097e0d8"
+issue_mapping_sha256 = "a0fb44ccf86bf97bd09e1f393ab31e48a1c7c858237536b4495b90c88624e18f"
+repository_mapping_sha256 = "62df31ce70e22ed422069dbcc725fd575b5a02fda1122d89756174fa7e63cd34"
+issues_sha256 = "549c6e64a0ed62310431d1c98014ff664453c54748b69460ddbd0b0ce0dd2dbf"
+developer_issue_edges_sha256 = "49feb1079946792e5af7644ff80cf9fa9a3f447bf2987b1a74b4974a838cc358"
+issue_snapshots_sha256 = "03a7760cb6055e8cf460eea6a9c345fb0de08c497fb7ff0e33eb6a3361d0476d"
+
+[text]
+max_features = 50000
+min_df = 2
+ngram_max = 2
+
+[bpr]
+dimensions = [16, 32]
+learning_rates = [0.01, 0.05]
+regularization = 0.0001
+epochs = 15
+batch_size = 2048
+negative_pool_size = 5

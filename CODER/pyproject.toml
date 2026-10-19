@@ -7,13 +7,24 @@ name = "oss-mentor-coder-issue"
 version = "0.0.0"
 description = "Isolated research infrastructure for CODER-inspired issue recommendation"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+  "joblib==1.5.2",
+  "numpy==2.3.4",
+  "pymongo==4.15.3",
+  "pyarrow==21.0.0",
+  "scikit-learn==1.7.2",
+  "scipy==1.16.2",
+  "tzdata==2025.2",
+]
 
 [project.optional-dependencies]
 test = ["pytest==8.4.2"]
 
 [project.scripts]
 coder-data-manifest = "coder_issue.manifest:main"
+coder-prepare-data = "coder_issue.data.prepare_data:main"
+coder-validate-data = "coder_issue.data.validation:main"
+coder-run-baselines = "coder_issue.baselines.pipeline:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
