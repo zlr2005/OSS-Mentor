@@ -362,6 +362,24 @@ class StageThreeToFiveTests(unittest.TestCase):
                 self.assertTrue((run_dir / "training.log").is_file())
             finally:
                 monitor.close()
+        with tempfile.TemporaryDirectory(dir=CODER_ROOT) as directory:
+            failed_dir = Path(directory)
+            failed_monitor = RunMonitor(
+                failed_dir,
+                run_id="failed-test",
+                variant="lightgcn",
+                interval_seconds=1,
+            )
+            try:
+                failed_monitor.finish(
+                    "failed", error_type="RuntimeError", error_message="synthetic failure"
+                )
+                self.assertFalse((failed_dir / "_RUNNING").exists())
+                failed = json.loads((failed_dir / "_FAILED").read_text(encoding="utf-8"))
+                self.assertEqual("failed", failed["status"])
+                self.assertEqual("RuntimeError", failed["error_type"])
+            finally:
+                failed_monitor.close()
         self.assertEqual("1h01m01s", format_duration(3661))
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
+import math
 from pathlib import Path
 import tomllib
 from typing import Any
@@ -42,6 +43,12 @@ class NeuralSettings:
     epochs: int
     batch_size: int
     progress_interval_seconds: float
+    validation_interval_epochs: int
+    validation_start_epoch: int
+    early_stopping_enabled: bool
+    early_stopping_patience: int
+    early_stopping_min_delta: float
+    early_stopping_min_epochs: int
     embedding_dimensions: tuple[int, ...]
     issue_layers: tuple[int, ...]
     learning_rates: tuple[float, ...]
@@ -92,6 +99,18 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
     progress_interval_seconds = float(
         _get(training, "progress_interval_seconds", "training")
     )
+    validation_interval_epochs = int(
+        _get(training, "validation_interval_epochs", "training")
+    )
+    validation_start_epoch = int(_get(training, "validation_start_epoch", "training"))
+    early_stopping_enabled = bool(_get(training, "early_stopping_enabled", "training"))
+    early_stopping_patience = int(_get(training, "early_stopping_patience", "training"))
+    early_stopping_min_delta = float(
+        _get(training, "early_stopping_min_delta", "training")
+    )
+    early_stopping_min_epochs = int(
+        _get(training, "early_stopping_min_epochs", "training")
+    )
     dimensions = tuple(int(x) for x in _get(training, "embedding_dimensions", "training"))
     issue_layers = tuple(int(x) for x in _get(training, "issue_layers", "training"))
     learning_rates = tuple(float(x) for x in _get(training, "learning_rates", "training"))
@@ -108,6 +127,18 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         raise ConfigurationError("learning rates must be positive and repository weights non-negative")
     if progress_interval_seconds <= 0:
         raise ConfigurationError("training.progress_interval_seconds must be positive")
+    if validation_interval_epochs <= 0:
+        raise ConfigurationError("training.validation_interval_epochs must be positive")
+    if validation_start_epoch <= 0:
+        raise ConfigurationError("training.validation_start_epoch must be positive")
+    if early_stopping_patience <= 0:
+        raise ConfigurationError("training.early_stopping_patience must be positive")
+    if not math.isfinite(early_stopping_min_delta) or early_stopping_min_delta < 0:
+        raise ConfigurationError(
+            "training.early_stopping_min_delta must be finite and non-negative"
+        )
+    if early_stopping_min_epochs <= 0:
+        raise ConfigurationError("training.early_stopping_min_epochs must be positive")
     if any(dimension % heads for dimension in dimensions):
         raise ConfigurationError("every embedding dimension must be divisible by GAT heads")
     return NeuralSettings(
@@ -126,6 +157,12 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         epochs=epochs,
         batch_size=batch_size,
         progress_interval_seconds=progress_interval_seconds,
+        validation_interval_epochs=validation_interval_epochs,
+        validation_start_epoch=validation_start_epoch,
+        early_stopping_enabled=early_stopping_enabled,
+        early_stopping_patience=early_stopping_patience,
+        early_stopping_min_delta=early_stopping_min_delta,
+        early_stopping_min_epochs=early_stopping_min_epochs,
         embedding_dimensions=dimensions,
         issue_layers=issue_layers,
         learning_rates=learning_rates,

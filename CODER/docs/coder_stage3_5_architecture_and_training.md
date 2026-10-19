@@ -2,7 +2,7 @@
 
 ## 1. 实现状态与边界
 
-本次完成了阶段 3～5 的模型、训练、缓存、评测和模型打包代码，但**没有使用 GFI-Bot 数据训练模型、没有执行 Transformer 编码、没有产生或声称任何真实模型指标**。
+阶段 3～5 的模型、训练、缓存、评测和模型打包代码已经完成。历史运行 `lightgcn-v1` 使用旧的“固定 50 Epoch 后单次验证”机制成功训练并保留为历史基线；后续运行使用周期性验证、最佳 Epoch checkpoint 和 Early Stopping。训练机制升级本身没有启动或冒充新的真实实验。
 
 实现是面向 Developer–Issue–Repository 推荐的 CODER-inspired 设计，不是 CODER 论文官方实现或原数据集复现。阶段 5 的 Developer–Repository 边由 Issue 解决关系派生，只能解释为“项目级辅助传播或跨粒度约束”，不能解释为独立的 Star/Fork 多行为学习。
 
@@ -34,7 +34,8 @@
 | 训练配置 | `training/config.py` | 冻结输入校验、候选 Manifest 校验、训练参数解析 |
 | 多粒度评测 | `evaluation/multigranular.py` | Issue/Repository 的 Recall、NDCG、MRR、Hit，以及冷启动和跨仓库分组 |
 | 覆盖率 | `evaluation/groups.py` | 跨仓库用户识别和项目级模块实际覆盖率 |
-| 安全训练入口 | `training/pipeline.py` | dry-run、验证集选参、测试门禁、模型打包和运行 Manifest |
+| 训练选择控制 | `training/selection.py` | 周期验证、Early Stopping、原子 checkpoint、最佳 Epoch 恢复和恢复后分数校验 |
+| 安全训练入口 | `training/pipeline.py` | dry-run、逐 Trial 最佳 Epoch/超参数选择、测试门禁、模型打包和运行 Manifest |
 
 统一配置位于 `CODER/configs/coder_multigranular.toml`，命令包装位于 `CODER/scripts/train_multigranular.py`。
 
@@ -186,7 +187,7 @@ CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
 CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
   --config CODER/configs/coder_multigranular.toml `
   --variant lightgcn `
-  --run-id lightgcn-v1 `
+  --run-id lightgcn-v2-earlystop `
   --execute-training
 ```
 
@@ -197,7 +198,7 @@ CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
 - 搜索网格总 trial 数及每个 trial 的完整参数；
 - 每个 epoch 的开始、结束、loss、耗时和粗略剩余时间；
 - 长 epoch 内的 batch 进度与累计 loss（默认最长静默 10 秒）；
-- 验证选择分数、当前最佳分数、正式评测和导出阶段。
+- 周期验证分数、当前最佳 Epoch、Patience、Early Stopping、正式评测和导出阶段。
 
 终端日志也会同步写入：
 
@@ -208,7 +209,7 @@ data/runs/gfibot-m0-v1.1/coder/<run-id>/training.log
 机器上的其他终端可实时观察：
 
 ```powershell
-Get-Content data/runs/gfibot-m0-v1.1/coder/lightgcn-v1/training.log -Wait
+Get-Content data/runs/gfibot-m0-v1.1/coder/lightgcn-v2-earlystop/training.log -Wait
 ```
 
 `_RUNNING` 现在是原子更新的 JSON 状态文件，包含 PID、当前 stage、trial、epoch、batch、累计耗时和最近更新时间。日志最大间隔由配置中的 `training.progress_interval_seconds` 控制，也可单次覆盖：
@@ -217,7 +218,7 @@ Get-Content data/runs/gfibot-m0-v1.1/coder/lightgcn-v1/training.log -Wait
 CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
   --config CODER/configs/coder_multigranular.toml `
   --variant lightgcn `
-  --run-id lightgcn-v1 `
+  --run-id lightgcn-v2-earlystop `
   --progress-interval-seconds 5 `
   --execute-training
 ```
@@ -256,13 +257,75 @@ foreach ($variant in $variants) {
 3. 对文本变体准备或复用离线缓存；
 4. 构建所选消融模型；
 5. 对配置中的 embedding dimension、LightGCN 层数、学习率、GAT 层数、编码器和 `λ_repo` 做网格训练；
-6. 每个候选模型只在 `valid_cross_repo` 上计算选择指标，默认是可预测用户 `NDCG@10`；
-7. 冻结最佳参数并先保存模型包；
-8. 冻结后才读取 test 候选，分别评估 Issue 和 Repository；
-9. 单独输出 cold-start、warm-start、predictable、unpredictable 和 cross-repository-user 分组；
-10. 输出项目模块覆盖率、训练历史、选择记录、向量和运行 Manifest。
+6. 每个 Trial 从指定 Epoch 开始周期性使用且只使用 `valid_cross_repo.parquet`，默认按可预测用户 `NDCG@10` 选择；
+7. 验证严格改善时原子写入该 Trial 的最佳 checkpoint；相等时保留更早 Epoch；
+8. Patience 按验证次数计算，满足最小训练轮数后可只提前结束当前 Trial；最大 Epoch 总会补一次验证；
+9. 每个 Trial 结束后恢复最佳 Epoch，并复算验证指标检查 checkpoint 一致性；
+10. 用各 Trial 的最佳验证分数选择全局最佳 Trial，重新构建相同配置并恢复其 checkpoint；
+11. 再次验证恢复分数后，先冻结正式模型包；
+12. 模型包冻结后才允许读取 test 候选，分别评估 Issue 和 Repository；
+13. 单独输出 cold-start、warm-start、predictable、unpredictable 和 cross-repository-user 分组；
+14. 输出项目模块覆盖率、训练/验证历史、选择记录、向量和运行 Manifest。
 
 测试集不能用来选择维度、层数、学习率、编码器、GAT 层数或 `λ_repo`。
+
+### 6.5 验证与 Early Stopping 配置
+
+```toml
+[training]
+epochs = 50
+validation_interval_epochs = 5
+validation_start_epoch = 5
+selection_metric = "ndcg@10"
+early_stopping_enabled = true
+early_stopping_patience = 5
+early_stopping_min_delta = 0.0
+early_stopping_min_epochs = 10
+```
+
+默认在 Epoch 5、10、15……验证；如果最大 Epoch 不落在该序列上，仍强制验证最后一个 Epoch。一次改善必须满足 `score > best_score + min_delta`，因此相同分数不会覆盖更早 checkpoint。Patience 是连续未改善的验证次数，而不是 Epoch 数。关闭 `early_stopping_enabled` 后仍执行周期验证和最佳 Epoch 选择，只是不提前结束 Trial。
+
+Checkpoint 位于运行目录的 `checkpoints/trial-NNNN.best.pt`。文件通过“临时文件写完后原子替换”更新，保存完整 `state_dict`（包括 LightGCN、GAT、MLP、图邻接和相关 buffer）、模型配置、Epoch、验证分数与 Trial 元数据。由于本阶段不要求断点续训，不保存 optimizer 状态。
+
+### 6.6 下一轮实验命令
+
+LightGCN dry-run：
+
+```powershell
+CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
+  --config CODER/configs/coder_multigranular.toml `
+  --variant lightgcn `
+  --run-id lightgcn-v2-earlystop
+```
+
+LightGCN 正式训练：
+
+```powershell
+CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
+  --config CODER/configs/coder_multigranular.toml `
+  --variant lightgcn `
+  --run-id lightgcn-v2-earlystop `
+  --execute-training
+```
+
+GAT 结构变体 dry-run：
+
+```powershell
+CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
+  --config CODER/configs/coder_multigranular.toml `
+  --variant coder_issue_structure `
+  --run-id coder-structure-v1-earlystop
+```
+
+GAT 结构变体正式训练：
+
+```powershell
+CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
+  --config CODER/configs/coder_multigranular.toml `
+  --variant coder_issue_structure `
+  --run-id coder-structure-v1-earlystop `
+  --execute-training
+```
 
 ## 7. 输出结构
 
@@ -280,7 +343,11 @@ data/models/gfibot-m0-v1.1/coder/<run-id>/
   embeddings.npz
 
 data/runs/gfibot-m0-v1.1/coder/<run-id>/
+  checkpoints/
+    trial-0001.best.pt
+    ...
   validation_selection.json
+  validation_history.json
   metrics.json
   comparison.json
   project_coverage.json
@@ -293,7 +360,10 @@ data/runs/gfibot-m0-v1.1/coder/<run-id>/
 
 ## 8. 验收与当前证据
 
-当前只进行了安全验证，不是正式实验：
+当前证据分为历史正式实验和本次机制测试：
+
+- `lightgcn-v1` 是使用旧训练机制完成的历史正式运行，产物保持不变；
+- 新 Early Stopping 机制只完成合成数据自动化测试和真实冻结输入 dry-run，尚未执行 `lightgcn-v2-earlystop` 或 `coder-structure-v1-earlystop`；
 
 - LightGCN 归一化传播、层平均、批量评分、向量导出、保存和加载通过合成图测试；
 - BPR 与多粒度联合 loss 能反向传播并更新参数；
@@ -301,8 +371,8 @@ data/runs/gfibot-m0-v1.1/coder/<run-id>/
 - 规范候选采样和项目候选派生可复现，且不会把正例采成 comparison；
 - 文本分段包含标题、正文和代码块；缓存第二次运行不重复编码；
 - GAT 和完整融合模型能前向、保存并加载；
-- dry-run 已验证真实的冻结输入和候选，但没有创建训练运行目录；
-- 未安装或下载任何 Transformer 权重，未使用真实数据训练。
+- dry-run 验证真实的冻结输入和候选时不会创建训练运行目录；
+- 未安装或下载任何新的 Transformer 权重。
 
 正式训练完成后，无论项目模块相对 `coder_issue_base` 提升、持平还是下降，都应保留并报告真实结果，不得更换切分或测试集。
 

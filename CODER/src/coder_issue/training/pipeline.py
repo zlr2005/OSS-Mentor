@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import argparse
-import copy
 from datetime import datetime, timezone
 import hashlib
 from itertools import product
 import json
 import logging
+import math
 from pathlib import Path
 import platform
 import sys
@@ -33,12 +33,19 @@ from coder_issue.training.config import load_neural_settings, validate_neural_in
 from coder_issue.training.losses import BPRLoss
 from coder_issue.training.monitoring import RunMonitor, format_duration
 from coder_issue.training.negative_sampling import CanonicalCandidateSampler, RepositoryCandidateSampler
+from coder_issue.training.selection import (
+    EarlyStoppingPolicy,
+    ValidationSchedule,
+    restore_best_checkpoint,
+    run_training_trial,
+)
 from coder_issue.training.trainer import (
     BatchProgress, TorchIssueRanker, seed_training, train_coder_epoch,
 )
 
 
 LOGGER = logging.getLogger(__name__)
+VALIDATION_CANDIDATE_FILENAME = "valid_cross_repo.parquet"
 VARIANT_FLAGS = {
     "lightgcn": (False, False, False),
     "coder_issue_text": (True, False, False),
@@ -102,6 +109,70 @@ def _semantic_candidates(settings) -> list[tuple[str, np.ndarray]]:
         LOGGER.info("encoder cache %s: %s", option.name, statistics)
         outputs.append((f"{option.name}@{option.revision}", embeddings))
     return outputs
+
+
+def validation_candidate_path(settings) -> Path:
+    """Return the only candidate file allowed for in-training model selection."""
+
+    return settings.candidate_dir / VALIDATION_CANDIDATE_FILENAME
+
+
+def _build_trial_model(
+    *,
+    parameters: dict[str, object],
+    semantic_array: np.ndarray | None,
+    developer_count: int,
+    issue_count: int,
+    repository_count: int,
+    label_count: int,
+    graphs,
+    settings,
+    use_text: bool,
+    use_structure: bool,
+    use_repository: bool,
+    device: torch.device,
+) -> CoderIssueModel:
+    dimension = int(parameters["embedding_dim"])
+    structure_layers = int(parameters["structure_layers"])
+    structural = None
+    if use_structure:
+        structural = StructuralGATEncoder(
+            StructuralGATConfig(
+                repository_count,
+                issue_count,
+                label_count,
+                dimension,
+                structure_layers,
+                settings.structure_heads,
+                settings.structure_dropout,
+            ),
+            graphs.structural_edge_index,
+        )
+    config = CoderConfig(
+        developer_count,
+        issue_count,
+        repository_count,
+        embedding_dim=dimension,
+        issue_layers=int(parameters["issue_layers"]),
+        repository_layers=settings.repository_layers,
+        structure_layers=structure_layers or 2,
+        structure_heads=settings.structure_heads,
+        structure_dropout=settings.structure_dropout,
+        semantic_dim=0 if semantic_array is None else semantic_array.shape[1],
+        use_text=use_text,
+        use_structure=use_structure,
+        use_repository=use_repository,
+    )
+    return CoderIssueModel(
+        config,
+        issue_adjacency=graphs.issue_adjacency,
+        issue_to_repository=graphs.issue_to_repository,
+        repository_adjacency=graphs.repository_adjacency if use_repository else None,
+        semantic_embeddings=(
+            torch.from_numpy(semantic_array) if semantic_array is not None else None
+        ),
+        structural_encoder=structural,
+    ).to(device)
 
 
 def train_variant(
@@ -199,13 +270,45 @@ def train_variant(
             use_repository=use_repository,
         )
         semantic_options = _semantic_candidates(settings) if use_text else [("disabled", None)]
+        semantic_by_version = dict(semantic_options)
         structure_options = settings.structure_layers if use_structure else (0,)
         repository_weights = settings.repository_loss_weights if use_repository else (0.0,)
         trials: list[dict[str, object]] = []
+        validation_histories: list[dict[str, object]] = []
         best_score = -float("inf")
-        best_model = None
         best_parameters: dict[str, object] | None = None
-        validation_path = settings.candidate_dir / "valid_cross_repo.parquet"
+        best_checkpoint_path: Path | None = None
+        best_trial_summary: dict[str, object] | None = None
+        validation_path = validation_candidate_path(settings)
+        schedule = ValidationSchedule(
+            settings.validation_interval_epochs, settings.validation_start_epoch
+        )
+        early_stopping = EarlyStoppingPolicy(
+            enabled=settings.early_stopping_enabled,
+            patience=settings.early_stopping_patience,
+            min_delta=settings.early_stopping_min_delta,
+            min_epochs=settings.early_stopping_min_epochs,
+        )
+        training_strategy = {
+            "validation_candidate": VALIDATION_CANDIDATE_FILENAME,
+            "validation_group": "predictable",
+            "selection_metric": settings.selection_metric,
+            "validation_interval_epochs": settings.validation_interval_epochs,
+            "validation_start_epoch": settings.validation_start_epoch,
+            "early_stopping_enabled": settings.early_stopping_enabled,
+            "early_stopping_patience": settings.early_stopping_patience,
+            "early_stopping_min_delta": settings.early_stopping_min_delta,
+            "early_stopping_min_epochs": settings.early_stopping_min_epochs,
+            "checkpoint_format": "atomic torch state_dict; optimizer state intentionally omitted",
+        }
+        search_space = {
+            "embedding_dimensions": list(settings.embedding_dimensions),
+            "issue_layers": list(settings.issue_layers),
+            "learning_rates": list(settings.learning_rates),
+            "structure_layers": list(structure_options),
+            "repository_loss_weights": list(repository_weights),
+            "encoder_versions": [name for name, _ in semantic_options],
+        }
         trial_grid = product(
             settings.embedding_dimensions,
             settings.issue_layers,
@@ -225,9 +328,16 @@ def train_variant(
         monitor.update(
             LOGGER,
             "training",
-            f"hyperparameter grid ready: {total_trials} trial(s) x {settings.epochs} epoch(s)",
+            (
+                f"hyperparameter grid ready: {total_trials} trial(s) x up to "
+                f"{settings.epochs} epoch(s); validate every "
+                f"{settings.validation_interval_epochs} epoch(s) from epoch "
+                f"{settings.validation_start_epoch}; early_stopping="
+                f"{settings.early_stopping_enabled}"
+            ),
             total_trials=total_trials,
             epochs_per_trial=settings.epochs,
+            training_strategy=training_strategy,
         )
         completed_trial_seconds: list[float] = []
         for trial_number, (
@@ -252,45 +362,26 @@ def train_variant(
                 parameters=parameters,
             )
             seed_training(settings.seed)
-            structural = None
-            if use_structure:
-                structural = StructuralGATEncoder(
-                    StructuralGATConfig(
-                        repository_count, issue_count, label_count, dimension,
-                        structure_layers, settings.structure_heads, settings.structure_dropout,
-                    ),
-                    graphs.structural_edge_index,
-                )
-            config = CoderConfig(
-                developer_count, issue_count, repository_count,
-                embedding_dim=dimension,
-                issue_layers=layers,
-                repository_layers=settings.repository_layers,
-                structure_layers=structure_layers or 2,
-                structure_heads=settings.structure_heads,
-                structure_dropout=settings.structure_dropout,
-                semantic_dim=0 if semantic_array is None else semantic_array.shape[1],
+            model = _build_trial_model(
+                parameters=parameters,
+                semantic_array=semantic_array,
+                developer_count=developer_count,
+                issue_count=issue_count,
+                repository_count=repository_count,
+                label_count=label_count,
+                graphs=graphs,
+                settings=settings,
                 use_text=use_text,
                 use_structure=use_structure,
                 use_repository=use_repository,
+                device=device,
             )
-            model = CoderIssueModel(
-                config,
-                issue_adjacency=graphs.issue_adjacency,
-                issue_to_repository=graphs.issue_to_repository,
-                repository_adjacency=graphs.repository_adjacency if use_repository else None,
-                semantic_embeddings=(
-                    torch.from_numpy(semantic_array) if semantic_array is not None else None
-                ),
-                structural_encoder=structural,
-            ).to(device)
             optimizer = torch.optim.Adam(
                 model.parameters(), lr=learning_rate, weight_decay=settings.weight_decay
             )
             criterion = BPRLoss()
-            history = []
-            for epoch in range(settings.epochs):
-                epoch_number = epoch + 1
+
+            def train_epoch(epoch_number: int):
                 epoch_started = time.monotonic()
                 monitor.update(
                     LOGGER,
@@ -334,13 +425,12 @@ def train_variant(
                     issue_sampler=issue_sampler,
                     repository_sampler=repository_sampler,
                     repository_weight=repository_weight,
-                    epoch=epoch,
+                    epoch=epoch_number - 1,
                     batch_size=settings.batch_size,
                     seed=settings.seed,
                     device=device,
                     progress_callback=report_batch,
                 )
-                history.append(result.__dict__)
                 epoch_seconds = time.monotonic() - epoch_started
                 remaining_epochs = settings.epochs - epoch_number
                 monitor.update(
@@ -359,26 +449,116 @@ def train_variant(
                     issue_loss=result.issue_loss,
                     repository_loss=result.repository_loss,
                 )
-            monitor.update(
-                LOGGER,
-                "validation",
-                f"trial {trial_number}/{total_trials} training complete; evaluating validation only",
-                trial=trial_number,
-                total_trials=total_trials,
+                return result
+
+            def evaluate_validation(current_model):
+                ranker = TorchIssueRanker(current_model, known, device=device)
+                return evaluate_issue_groups(
+                    ranker,
+                    validation_path,
+                    cross_repository_users=cross_users,
+                    cutoffs=settings.baseline.protocol.cutoffs,
+                )
+
+            def report_validation(record: dict[str, object]) -> None:
+                patience = int(record["validations_without_improvement"])
+                repository_loss = record["repository_loss"]
+                repository_segment = (
+                    ""
+                    if repository_loss is None
+                    else f" | repository_loss={float(repository_loss):.6f}"
+                )
+                monitor.update(
+                    LOGGER,
+                    "validation",
+                    (
+                        f"trial {trial_number}/{total_trials} | epoch "
+                        f"{record['epoch']}/{settings.epochs} | "
+                        f"train_loss={float(record['issue_loss']):.6f}"
+                        f"{repository_segment} | "
+                        f"valid_{settings.selection_metric}="
+                        f"{float(record['validation_score']):.6f} | "
+                        f"best_epoch={record['best_epoch']} | patience="
+                        f"{patience}/{settings.early_stopping_patience} | "
+                        f"validation_time={format_duration(float(record['validation_seconds']))}"
+                    ),
+                    trial=trial_number,
+                    total_trials=total_trials,
+                    epoch=record["epoch"],
+                    total_epochs=settings.epochs,
+                    validation_score=record["validation_score"],
+                    best_validation_score=record["best_validation_score"],
+                    best_epoch=record["best_epoch"],
+                    validations_without_improvement=patience,
+                )
+
+            checkpoint_path = run_dir / "checkpoints" / f"trial-{trial_number:04d}.best.pt"
+            trial_result = run_training_trial(
+                model,
+                epochs=settings.epochs,
+                schedule=schedule,
+                policy=early_stopping,
+                checkpoint_path=checkpoint_path,
+                checkpoint_metadata={
+                    "trial": trial_number,
+                    "variant": variant,
+                    "dataset_version": settings.dataset_version,
+                    "graph_version": settings.graph_version,
+                    "seed": settings.seed,
+                    "selection_metric": settings.selection_metric,
+                    "parameters": parameters,
+                },
+                train_epoch=train_epoch,
+                evaluator=evaluate_validation,
+                selection_metric=settings.selection_metric,
+                map_location=device,
+                on_validation=report_validation,
             )
-            ranker = TorchIssueRanker(model, known, device=device)
-            validation = evaluate_issue_groups(
-                ranker, validation_path, cross_repository_users=cross_users,
-                cutoffs=settings.baseline.protocol.cutoffs,
-            )
-            score = float(validation["predictable"][settings.selection_metric])
+            score = trial_result.best_validation_score
+            checkpoint_relative = str(checkpoint_path.relative_to(run_dir))
             trials.append(
-                {"parameters": parameters, "validation": validation, "history": history, "score": score}
+                {
+                    "parameters": parameters,
+                    "validation": trial_result.best_validation,
+                    "history": trial_result.history,
+                    "score": score,
+                    "best_epoch": trial_result.best_epoch,
+                    "epochs_trained": trial_result.epochs_trained,
+                    "best_validation_score": score,
+                    "stopped_early": trial_result.stopped_early,
+                    "stop_reason": trial_result.stop_reason,
+                    "best_checkpoint": checkpoint_relative,
+                    "restored_validation_score": trial_result.restored_validation_score,
+                }
+            )
+            validation_histories.append(
+                {
+                    "trial": trial_number,
+                    "parameters": parameters,
+                    "validations": [
+                        {"trial": trial_number, "parameters": parameters, **record}
+                        for record in trial_result.validation_history
+                    ],
+                    "best_epoch": trial_result.best_epoch,
+                    "epochs_trained": trial_result.epochs_trained,
+                    "best_validation_score": score,
+                    "stopped_early": trial_result.stopped_early,
+                    "stop_reason": trial_result.stop_reason,
+                }
             )
             if score > best_score:
                 best_score = score
-                best_parameters = parameters
-                best_model = copy.deepcopy(model).cpu()
+                best_parameters = dict(parameters)
+                best_checkpoint_path = checkpoint_path
+                best_trial_summary = {
+                    "trial": trial_number,
+                    "best_epoch": trial_result.best_epoch,
+                    "epochs_trained": trial_result.epochs_trained,
+                    "best_validation_score": score,
+                    "stopped_early": trial_result.stopped_early,
+                    "stop_reason": trial_result.stop_reason,
+                    "best_checkpoint": checkpoint_relative,
+                }
             trial_seconds = time.monotonic() - trial_started
             completed_trial_seconds.append(trial_seconds)
             remaining_trials = total_trials - trial_number
@@ -388,7 +568,10 @@ def train_variant(
                 "validation",
                 (
                     f"trial {trial_number}/{total_trials} complete in {format_duration(trial_seconds)}; "
-                    f"predictable {settings.selection_metric}={score:.6f}; best={best_score:.6f}; "
+                    f"best_epoch={trial_result.best_epoch}; trained_epochs="
+                    f"{trial_result.epochs_trained}; stop={trial_result.stop_reason}; "
+                    f"predictable {settings.selection_metric}={score:.6f}; "
+                    f"global_best={best_score:.6f}; "
                     f"estimated grid remainder={format_duration(mean_trial_seconds * remaining_trials)}"
                 ),
                 trial=trial_number,
@@ -396,18 +579,92 @@ def train_variant(
                 validation_score=score,
                 best_validation_score=best_score,
             )
-        assert best_model is not None and best_parameters is not None
+            if trial_result.stopped_early:
+                LOGGER.info(
+                    "trial %d/%d | Early Stopping | best_epoch=%d | trained_epochs=%d",
+                    trial_number,
+                    total_trials,
+                    trial_result.best_epoch,
+                    trial_result.epochs_trained,
+                )
+        assert (
+            best_parameters is not None
+            and best_checkpoint_path is not None
+            and best_trial_summary is not None
+        )
         monitor.update(
             LOGGER,
             "freezing_model",
-            f"validation winner frozen: {json.dumps(best_parameters, sort_keys=True)}",
+            (
+                "global validation winner selected and restoring its best Epoch: "
+                f"{json.dumps(best_parameters, sort_keys=True)}; "
+                f"best_epoch={best_trial_summary['best_epoch']}"
+            ),
             selected_parameters=best_parameters,
             best_validation_score=best_score,
+            best_epoch=best_trial_summary["best_epoch"],
         )
         _write_json(run_dir / "validation_selection.json", trials)
+        _write_json(
+            run_dir / "validation_history.json",
+            {
+                "schema_version": 1,
+                **training_strategy,
+                "search_space": search_space,
+                "trials": validation_histories,
+            },
+        )
 
         # Test candidates are used for metric evaluation only after the validation winner is frozen.
-        best_model = best_model.to(device)
+        best_semantic = semantic_by_version[str(best_parameters["encoder_version"])]
+        best_model = _build_trial_model(
+            parameters=best_parameters,
+            semantic_array=best_semantic,
+            developer_count=developer_count,
+            issue_count=issue_count,
+            repository_count=repository_count,
+            label_count=label_count,
+            graphs=graphs,
+            settings=settings,
+            use_text=use_text,
+            use_structure=use_structure,
+            use_repository=use_repository,
+            device=device,
+        )
+        restored_checkpoint = restore_best_checkpoint(
+            best_checkpoint_path, best_model, map_location=device
+        )
+        if restored_checkpoint["epoch"] != best_trial_summary["best_epoch"]:
+            raise RuntimeError("global best checkpoint epoch does not match selection metadata")
+        best_model.eval()
+        with torch.inference_mode():
+            restored_ranker = TorchIssueRanker(best_model, known, device=device)
+            restored_validation = evaluate_issue_groups(
+                restored_ranker,
+                validation_path,
+                cross_repository_users=cross_users,
+                cutoffs=settings.baseline.protocol.cutoffs,
+            )
+        restored_global_score = float(
+            restored_validation["predictable"][settings.selection_metric]
+        )
+        if not math.isfinite(restored_global_score) or not math.isclose(
+            restored_global_score, best_score, rel_tol=1e-6, abs_tol=1e-8
+        ):
+            raise RuntimeError(
+                "global best checkpoint score changed after reconstruction: "
+                f"selected={best_score}, restored={restored_global_score}"
+            )
+        monitor.update(
+            LOGGER,
+            "freezing_model",
+            (
+                f"global best checkpoint restored and verified: epoch="
+                f"{best_trial_summary['best_epoch']} {settings.selection_metric}="
+                f"{restored_global_score:.6f}"
+            ),
+            restored_validation_score=restored_global_score,
+        )
         best_model.save_bundle(
             model_dir,
             metadata={
@@ -418,6 +675,15 @@ def train_variant(
                 "profile_mode": "known_history_only",
                 "coverage_state": "fixed_train_graph",
                 "selected_parameters": best_parameters,
+                "best_trial": best_trial_summary["trial"],
+                "best_epoch": best_trial_summary["best_epoch"],
+                "epochs_trained": best_trial_summary["epochs_trained"],
+                "best_validation_score": best_score,
+                "restored_validation_score": restored_global_score,
+                "stopped_early": best_trial_summary["stopped_early"],
+                "stop_reason": best_trial_summary["stop_reason"],
+                "selection_checkpoint": best_trial_summary["best_checkpoint"],
+                "training_strategy": training_strategy,
             },
         )
         _write_json(
@@ -513,6 +779,16 @@ def train_variant(
             "config_sha256": hashlib.sha256(settings.config_path.read_bytes()).hexdigest(),
             "input_sha256": input_hashes,
             "selected_parameters": best_parameters,
+            "best_trial": best_trial_summary["trial"],
+            "best_epoch": best_trial_summary["best_epoch"],
+            "epochs_trained": best_trial_summary["epochs_trained"],
+            "best_validation_score": best_score,
+            "restored_validation_score": restored_global_score,
+            "stopped_early": best_trial_summary["stopped_early"],
+            "stop_reason": best_trial_summary["stop_reason"],
+            "best_checkpoint": best_trial_summary["best_checkpoint"],
+            "training_strategy": training_strategy,
+            "search_space": search_space,
             "test_gate": "test evaluated after validation selection and model bundle freeze",
             "project_relation_semantics": "project-level auxiliary propagation derived from issue solutions",
             "versions": {"python": sys.version.split()[0], "torch": torch.__version__, "platform": platform.platform()},
