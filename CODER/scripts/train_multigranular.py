@@ -1,4 +1,8 @@
-"""Explicit stage 3-5 training wrapper."""
+"""Observable and interrupt-safe stage 3-5 training entry point.
+
+Progress is printed to the terminal and persisted under the selected run directory.
+Press Ctrl+C once to record a clean ``_CANCELLED`` terminal state.
+"""
 
 from coder_issue.training.pipeline import main
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
+import logging
 from pathlib import Path
 import tempfile
 import unittest
@@ -23,10 +25,13 @@ from coder_issue.models.lightgcn import (
 from coder_issue.models.text_encoder import EmbeddingCache, IssueText, segment_issue_text
 from coder_issue.training.config import load_neural_settings, validate_neural_inputs
 from coder_issue.training.losses import BPRLoss, MultiGranularLoss
+from coder_issue.training.monitoring import RunMonitor, format_duration
 from coder_issue.training.negative_sampling import (
     CanonicalCandidateSampler, RepositoryCandidateSampler,
 )
-from coder_issue.training.trainer import TorchIssueRanker, seed_training, train_coder_epoch
+from coder_issue.training.trainer import (
+    BatchProgress, TorchIssueRanker, seed_training, train_coder_epoch,
+)
 
 
 CODER_ROOT = Path(__file__).resolve().parents[1]
@@ -282,7 +287,7 @@ class StageThreeToFiveTests(unittest.TestCase):
             seed=17,
         )
 
-        def train_once():
+        def train_once(progress_callback=None):
             seed_training(23)
             model = CoderIssueModel(
                 CoderConfig(2, 4, 2, embedding_dim=4, issue_layers=1),
@@ -303,19 +308,61 @@ class StageThreeToFiveTests(unittest.TestCase):
                 batch_size=2,
                 seed=23,
                 device=torch.device("cpu"),
+                progress_callback=progress_callback,
             )
             scores = model.score_known_users(
                 torch.tensor([0, 1]), torch.tensor([[0, 2], [1, 2]])
             ).detach().clone()
             return before, model.issue_graph.embedding.weight.detach().clone(), scores, result
 
-        before, after, scores, result = train_once()
+        progress_events: list[BatchProgress] = []
+        before, after, scores, result = train_once(progress_events.append)
         _, repeated, repeated_scores, repeated_result = train_once()
         self.assertFalse(torch.equal(before, after))
         torch.testing.assert_close(after, repeated)
         torch.testing.assert_close(scores, repeated_scores)
         self.assertAlmostEqual(result.issue_loss, repeated_result.issue_loss)
         self.assertEqual(2, result.issue_comparison_count)
+        self.assertEqual(1, len(progress_events))
+        self.assertEqual((1, 1, 2, 2), (
+            progress_events[0].batch,
+            progress_events[0].total_batches,
+            progress_events[0].processed,
+            progress_events[0].total,
+        ))
+
+    def test_run_monitor_persists_progress_and_clean_cancel_state(self) -> None:
+        with tempfile.TemporaryDirectory(dir=CODER_ROOT) as directory:
+            run_dir = Path(directory)
+            monitor = RunMonitor(
+                run_dir,
+                run_id="observable-test",
+                variant="lightgcn",
+                interval_seconds=0.001,
+            )
+            try:
+                monitor.update(
+                    logging.getLogger(__name__),
+                    "training",
+                    "epoch 1/2",
+                    epoch=1,
+                    total_epochs=2,
+                )
+                state = json.loads((run_dir / "_RUNNING").read_text(encoding="utf-8"))
+                self.assertEqual("training", state["stage"])
+                self.assertEqual(1, state["epoch"])
+                monitor.finish(
+                    "cancelled", error_type="KeyboardInterrupt", error_message="Ctrl+C"
+                )
+                self.assertFalse((run_dir / "_RUNNING").exists())
+                cancelled = json.loads(
+                    (run_dir / "_CANCELLED").read_text(encoding="utf-8")
+                )
+                self.assertEqual("cancelled", cancelled["status"])
+                self.assertTrue((run_dir / "training.log").is_file())
+            finally:
+                monitor.close()
+        self.assertEqual("1h01m01s", format_duration(3661))
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 import random
 from typing import Callable
 
@@ -32,6 +33,21 @@ class EpochResult:
     repository_comparison_count: int
 
 
+@dataclass(frozen=True)
+class BatchProgress:
+    """One lightweight progress event emitted after a completed optimizer step."""
+
+    batch: int
+    total_batches: int
+    processed: int
+    total: int
+    issue_loss: float
+    repository_loss: float | None
+
+
+ProgressCallback = Callable[[BatchProgress], None]
+
+
 def _batches(order: Tensor, size: int):
     for start in range(0, len(order), size):
         yield order[start : start + size]
@@ -48,13 +64,16 @@ def train_lightgcn_epoch(
     batch_size: int,
     seed: int,
     device: torch.device,
+    progress_callback: ProgressCallback | None = None,
 ) -> EpochResult:
     model.train()
     sampled = sampler.sample(epoch)
     generator = torch.Generator(device="cpu").manual_seed(seed + epoch)
     order = torch.randperm(len(sampled.query_ids), generator=generator)
     total = 0.0
-    for indices in _batches(order, batch_size):
+    processed = 0
+    total_batches = math.ceil(len(order) / batch_size)
+    for batch_number, indices in enumerate(_batches(order, batch_size), start=1):
         rows = sampled.query_ids[indices.numpy()]
         users = torch.as_tensor(developer_ids[rows], device=device)
         positive = torch.as_tensor(sampled.positive_ids[indices.numpy()], device=device)
@@ -73,6 +92,11 @@ def train_lightgcn_epoch(
         loss.backward()
         optimizer.step()
         total += float(loss.detach()) * len(indices)
+        processed += len(indices)
+        if progress_callback is not None:
+            progress_callback(BatchProgress(
+                batch_number, total_batches, processed, len(order), total / processed, None
+            ))
     return EpochResult(total / len(order), None, len(order), 0)
 
 
@@ -89,6 +113,7 @@ def train_coder_epoch(
     batch_size: int,
     seed: int,
     device: torch.device,
+    progress_callback: ProgressCallback | None = None,
 ) -> EpochResult:
     model.train()
     issue_sample = issue_sampler.sample(epoch)
@@ -109,7 +134,9 @@ def train_coder_epoch(
     issue_total = 0.0
     repository_total = 0.0
     repository_count = 0
-    for indices in _batches(order, batch_size):
+    processed = 0
+    total_batches = math.ceil(len(order) / batch_size)
+    for batch_number, indices in enumerate(_batches(order, batch_size), start=1):
         positions = indices.numpy()
         rows = issue_sample.query_ids[positions]
         users = torch.as_tensor(developer_ids[rows], device=device)
@@ -148,6 +175,16 @@ def train_coder_epoch(
         loss.backward()
         optimizer.step()
         issue_total += float(issue_loss.detach()) * len(indices)
+        processed += len(indices)
+        if progress_callback is not None:
+            progress_callback(BatchProgress(
+                batch_number,
+                total_batches,
+                processed,
+                len(order),
+                issue_total / processed,
+                repository_total / repository_count if repository_count else None,
+            ))
     return EpochResult(
         issue_total / len(order),
         repository_total / repository_count if repository_count else None,

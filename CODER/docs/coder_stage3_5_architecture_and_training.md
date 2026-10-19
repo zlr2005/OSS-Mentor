@@ -190,6 +190,44 @@ CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
   --execute-training
 ```
 
+训练启动后会立即输出并持久化以下进度：
+
+- 冻结输入哈希校验开始/完成；
+- 建图、训练数据和规范候选加载阶段；
+- 搜索网格总 trial 数及每个 trial 的完整参数；
+- 每个 epoch 的开始、结束、loss、耗时和粗略剩余时间；
+- 长 epoch 内的 batch 进度与累计 loss（默认最长静默 10 秒）；
+- 验证选择分数、当前最佳分数、正式评测和导出阶段。
+
+终端日志也会同步写入：
+
+```text
+data/runs/gfibot-m0-v1.1/coder/<run-id>/training.log
+```
+
+机器上的其他终端可实时观察：
+
+```powershell
+Get-Content data/runs/gfibot-m0-v1.1/coder/lightgcn-v1/training.log -Wait
+```
+
+`_RUNNING` 现在是原子更新的 JSON 状态文件，包含 PID、当前 stage、trial、epoch、batch、累计耗时和最近更新时间。日志最大间隔由配置中的 `training.progress_interval_seconds` 控制，也可单次覆盖：
+
+```powershell
+CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
+  --config CODER/configs/coder_multigranular.toml `
+  --variant lightgcn `
+  --run-id lightgcn-v1 `
+  --progress-interval-seconds 5 `
+  --execute-training
+```
+
+### 6.3 安全取消与状态判断
+
+在前台训练终端按一次 `Ctrl+C`。入口会保存已有诊断和部分产物、删除 `_RUNNING`，并写入 `_CANCELLED`；正常结束写 `_SUCCESS`，异常结束写 `_FAILED`。三个终态文件均为 JSON，并记录耗时和最后进度。不要用任务管理器强杀，强杀无法执行状态收尾。
+
+若终端或机器被强制关闭，可能遗留 `_RUNNING`。重新启动前先用其中的 PID 和更新时间确认进程确实不存在，再将对应 run/model 目录归档；训练器不会自动覆盖或删除已有实验目录。
+
 依次训练消融和完整模型：
 
 ```powershell
@@ -211,7 +249,7 @@ foreach ($variant in $variants) {
 
 不要并行启动多个文本变体首次编码同一个缓存目录。首次编码完成后，后续运行会复用缓存。
 
-### 6.3 训练内部顺序
+### 6.4 训练内部顺序
 
 1. 校验 `gfibot-m0-v1.1` 和 15 份冻结输入/候选哈希；
 2. 只用 `train.parquet` 构建 Developer–Issue 和派生 Developer–Repository 图；
@@ -247,7 +285,8 @@ data/runs/gfibot-m0-v1.1/coder/<run-id>/
   comparison.json
   project_coverage.json
   run_manifest.json
-  _SUCCESS | _FAILED
+  _SUCCESS | _FAILED | _CANCELLED
+  training.log
 ```
 
 `model_manifest.json` 强制记录 `model_version`、`dataset_version`、`graph_version`、`encoder_version`、`profile_mode` 和 `coverage_state`。模型分数是匹配分，不是成功解决概率。

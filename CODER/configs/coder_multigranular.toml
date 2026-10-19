@@ -18,6 +18,7 @@ run_dir = "../../data/runs/gfibot-m0-v1.1/coder"
 device = "cpu"
 epochs = 50
 batch_size = 1024
+progress_interval_seconds = 10
 embedding_dimensions = [32]
 issue_layers = [2, 4]
 learning_rates = [0.001, 0.005]

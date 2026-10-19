@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 import platform
 import sys
+import time
 
 import numpy as np
 import pyarrow.compute as pc
@@ -30,8 +31,11 @@ from coder_issue.models.text_encoder import (
 )
 from coder_issue.training.config import load_neural_settings, validate_neural_inputs
 from coder_issue.training.losses import BPRLoss
+from coder_issue.training.monitoring import RunMonitor, format_duration
 from coder_issue.training.negative_sampling import CanonicalCandidateSampler, RepositoryCandidateSampler
-from coder_issue.training.trainer import TorchIssueRanker, seed_training, train_coder_epoch
+from coder_issue.training.trainer import (
+    BatchProgress, TorchIssueRanker, seed_training, train_coder_epoch,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -73,10 +77,12 @@ def _creation_texts(settings, max_segments: int):
 
 
 def _semantic_candidates(settings) -> list[tuple[str, np.ndarray]]:
+    LOGGER.info("preparing creation-time issue text for %d encoder(s)", len(settings.encoders))
     texts = _creation_texts(settings, settings.max_segments)
     outputs: list[tuple[str, np.ndarray]] = []
     mapping_hash = settings.baseline.locks["issue_mapping_sha256"]
     for option in settings.encoders:
+        LOGGER.info("loading frozen text encoder %s@%s", option.name, option.revision)
         encoder = FrozenTransformerEncoder(
             option.name,
             revision=option.revision,
@@ -98,25 +104,64 @@ def _semantic_candidates(settings) -> list[tuple[str, np.ndarray]]:
     return outputs
 
 
-def train_variant(settings, *, variant: str, run_id: str) -> Path:
+def train_variant(
+    settings,
+    *,
+    variant: str,
+    run_id: str,
+    validated_input_hashes: dict[str, str] | None = None,
+    progress_interval_seconds: float | None = None,
+) -> Path:
     use_text, use_structure, use_repository = _variant_flags(variant)
-    input_hashes = validate_neural_inputs(settings, require_text=use_text)
+    input_hashes = (
+        dict(validated_input_hashes)
+        if validated_input_hashes is not None
+        else validate_neural_inputs(settings, require_text=use_text)
+    )
     if variant not in settings.variants:
         raise ValueError(f"variant is disabled by configuration: {variant}")
     run_dir = settings.run_dir / run_id
     model_dir = settings.model_dir / run_id
     if run_dir.exists() or model_dir.exists():
-        raise FileExistsError(f"refusing to overwrite existing run/model: {run_id}")
+        raise FileExistsError(
+            f"refusing to overwrite existing run/model: {run_id}; inspect {run_dir} and "
+            "use a new run-id, or explicitly archive a confirmed inactive run"
+        )
     run_dir.mkdir(parents=True)
     model_dir.mkdir(parents=True)
-    (run_dir / "_RUNNING").write_text(datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    monitor = RunMonitor(
+        run_dir,
+        run_id=run_id,
+        variant=variant,
+        interval_seconds=(
+            settings.progress_interval_seconds
+            if progress_interval_seconds is None
+            else progress_interval_seconds
+        ),
+    )
     try:
+        monitor.update(
+            LOGGER,
+            "initializing",
+            f"run={run_id} variant={variant} device={settings.device} outputs={run_dir}",
+            dataset_version=settings.dataset_version,
+            graph_version=settings.graph_version,
+        )
         seed_training(settings.seed)
         device = torch.device(settings.device)
         developer_count, issue_count, repository_count = mapping_sizes(settings.baseline)
         label_count = pq.ParquetFile(
             settings.baseline.normalized_dir / "mappings/label_mapping.parquet"
         ).metadata.num_rows
+        monitor.update(
+            LOGGER,
+            "building_graphs",
+            "building frozen train-only Developer-Issue and structural graphs",
+            developer_count=developer_count,
+            issue_count=issue_count,
+            repository_count=repository_count,
+            label_count=label_count,
+        )
         graphs = build_training_graphs(
             graph_dir=settings.baseline.graph_dir,
             normalized_dir=settings.baseline.normalized_dir,
@@ -125,10 +170,17 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
             num_repositories=repository_count,
             num_labels=label_count,
         )
+        monitor.update(LOGGER, "loading_training_data", "loading frozen training interactions")
         train = read_interactions(settings.baseline, "train")
         known = np.bincount(train.developer_ids, minlength=developer_count) > 0
         cross_users = cross_repository_users(train.developer_ids, train.repository_ids)
         candidate_train = settings.candidate_dir / "train_cross_repo.parquet"
+        monitor.update(
+            LOGGER,
+            "loading_candidates",
+            f"loading canonical comparisons from {candidate_train}",
+            training_interactions=len(train.developer_ids),
+        )
         issue_sampler = CanonicalCandidateSampler.from_parquet(candidate_train, seed=settings.seed)
         repository_sampler = (
             RepositoryCandidateSampler.from_issue_candidates(
@@ -138,6 +190,14 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
             )
             if use_repository else None
         )
+        monitor.update(
+            LOGGER,
+            "preparing_features",
+            "preparing semantic/structural feature options",
+            use_text=use_text,
+            use_structure=use_structure,
+            use_repository=use_repository,
+        )
         semantic_options = _semantic_candidates(settings) if use_text else [("disabled", None)]
         structure_options = settings.structure_layers if use_structure else (0,)
         repository_weights = settings.repository_loss_weights if use_repository else (0.0,)
@@ -146,15 +206,51 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
         best_model = None
         best_parameters: dict[str, object] | None = None
         validation_path = settings.candidate_dir / "valid_cross_repo.parquet"
-        for dimension, layers, learning_rate, structure_layers, repository_weight, semantic in product(
+        trial_grid = product(
             settings.embedding_dimensions,
             settings.issue_layers,
             settings.learning_rates,
             structure_options,
             repository_weights,
             semantic_options,
-        ):
+        )
+        total_trials = (
+            len(settings.embedding_dimensions)
+            * len(settings.issue_layers)
+            * len(settings.learning_rates)
+            * len(structure_options)
+            * len(repository_weights)
+            * len(semantic_options)
+        )
+        monitor.update(
+            LOGGER,
+            "training",
+            f"hyperparameter grid ready: {total_trials} trial(s) x {settings.epochs} epoch(s)",
+            total_trials=total_trials,
+            epochs_per_trial=settings.epochs,
+        )
+        completed_trial_seconds: list[float] = []
+        for trial_number, (
+            dimension, layers, learning_rate, structure_layers, repository_weight, semantic
+        ) in enumerate(trial_grid, start=1):
             encoder_version, semantic_array = semantic
+            parameters = {
+                "embedding_dim": dimension,
+                "issue_layers": layers,
+                "learning_rate": learning_rate,
+                "structure_layers": structure_layers,
+                "repository_loss_weight": repository_weight,
+                "encoder_version": encoder_version,
+            }
+            trial_started = time.monotonic()
+            monitor.update(
+                LOGGER,
+                "training",
+                f"trial {trial_number}/{total_trials} started: {json.dumps(parameters, sort_keys=True)}",
+                trial=trial_number,
+                total_trials=total_trials,
+                parameters=parameters,
+            )
             seed_training(settings.seed)
             structural = None
             if use_structure:
@@ -194,6 +290,42 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
             criterion = BPRLoss()
             history = []
             for epoch in range(settings.epochs):
+                epoch_number = epoch + 1
+                epoch_started = time.monotonic()
+                monitor.update(
+                    LOGGER,
+                    "training",
+                    f"trial {trial_number}/{total_trials}, epoch {epoch_number}/{settings.epochs} started",
+                    trial=trial_number,
+                    total_trials=total_trials,
+                    epoch=epoch_number,
+                    total_epochs=settings.epochs,
+                )
+
+                def report_batch(progress: BatchProgress) -> None:
+                    percent = 100.0 * progress.processed / progress.total
+                    losses = f"issue_loss={progress.issue_loss:.6f}"
+                    if progress.repository_loss is not None:
+                        losses += f" repository_loss={progress.repository_loss:.6f}"
+                    monitor.update(
+                        LOGGER,
+                        "training",
+                        (
+                            f"trial {trial_number}/{total_trials}, epoch "
+                            f"{epoch_number}/{settings.epochs}, batch "
+                            f"{progress.batch}/{progress.total_batches} ({percent:.1f}%), {losses}"
+                        ),
+                        force=progress.batch in {1, progress.total_batches},
+                        trial=trial_number,
+                        total_trials=total_trials,
+                        epoch=epoch_number,
+                        total_epochs=settings.epochs,
+                        batch=progress.batch,
+                        total_batches=progress.total_batches,
+                        processed_comparisons=progress.processed,
+                        total_comparisons=progress.total,
+                    )
+
                 result = train_coder_epoch(
                     model,
                     optimizer=optimizer,
@@ -206,22 +338,40 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
                     batch_size=settings.batch_size,
                     seed=settings.seed,
                     device=device,
+                    progress_callback=report_batch,
                 )
                 history.append(result.__dict__)
+                epoch_seconds = time.monotonic() - epoch_started
+                remaining_epochs = settings.epochs - epoch_number
+                monitor.update(
+                    LOGGER,
+                    "training",
+                    (
+                        f"trial {trial_number}/{total_trials}, epoch "
+                        f"{epoch_number}/{settings.epochs} complete in {format_duration(epoch_seconds)}; "
+                        f"issue_loss={result.issue_loss:.6f}; "
+                        f"estimated trial remainder={format_duration(epoch_seconds * remaining_epochs)}"
+                    ),
+                    trial=trial_number,
+                    total_trials=total_trials,
+                    epoch=epoch_number,
+                    total_epochs=settings.epochs,
+                    issue_loss=result.issue_loss,
+                    repository_loss=result.repository_loss,
+                )
+            monitor.update(
+                LOGGER,
+                "validation",
+                f"trial {trial_number}/{total_trials} training complete; evaluating validation only",
+                trial=trial_number,
+                total_trials=total_trials,
+            )
             ranker = TorchIssueRanker(model, known, device=device)
             validation = evaluate_issue_groups(
                 ranker, validation_path, cross_repository_users=cross_users,
                 cutoffs=settings.baseline.protocol.cutoffs,
             )
             score = float(validation["predictable"][settings.selection_metric])
-            parameters = {
-                "embedding_dim": dimension,
-                "issue_layers": layers,
-                "learning_rate": learning_rate,
-                "structure_layers": structure_layers,
-                "repository_loss_weight": repository_weight,
-                "encoder_version": encoder_version,
-            }
             trials.append(
                 {"parameters": parameters, "validation": validation, "history": history, "score": score}
             )
@@ -229,7 +379,31 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
                 best_score = score
                 best_parameters = parameters
                 best_model = copy.deepcopy(model).cpu()
+            trial_seconds = time.monotonic() - trial_started
+            completed_trial_seconds.append(trial_seconds)
+            remaining_trials = total_trials - trial_number
+            mean_trial_seconds = sum(completed_trial_seconds) / len(completed_trial_seconds)
+            monitor.update(
+                LOGGER,
+                "validation",
+                (
+                    f"trial {trial_number}/{total_trials} complete in {format_duration(trial_seconds)}; "
+                    f"predictable {settings.selection_metric}={score:.6f}; best={best_score:.6f}; "
+                    f"estimated grid remainder={format_duration(mean_trial_seconds * remaining_trials)}"
+                ),
+                trial=trial_number,
+                total_trials=total_trials,
+                validation_score=score,
+                best_validation_score=best_score,
+            )
         assert best_model is not None and best_parameters is not None
+        monitor.update(
+            LOGGER,
+            "freezing_model",
+            f"validation winner frozen: {json.dumps(best_parameters, sort_keys=True)}",
+            selected_parameters=best_parameters,
+            best_validation_score=best_score,
+        )
         _write_json(run_dir / "validation_selection.json", trials)
 
         # Test candidates are used for metric evaluation only after the validation winner is frozen.
@@ -266,11 +440,27 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
                 metrics["repository"][split] = {}
             for mode in settings.baseline.protocol.candidate_modes:
                 candidate_path = settings.candidate_dir / f"{split}_{mode}.parquet"
+                monitor.update(
+                    LOGGER,
+                    "evaluation",
+                    f"evaluating issue ranking: split={split} mode={mode}",
+                    evaluation_split=split,
+                    candidate_mode=mode,
+                    evaluation_target="issue",
+                )
                 metrics["issue"][split][mode] = evaluate_issue_groups(
                     ranker, candidate_path, cross_repository_users=cross_users,
                     cutoffs=settings.baseline.protocol.cutoffs,
                 )
                 if use_repository:
+                    monitor.update(
+                        LOGGER,
+                        "evaluation",
+                        f"evaluating repository ranking: split={split} mode={mode}",
+                        evaluation_split=split,
+                        candidate_mode=mode,
+                        evaluation_target="repository",
+                    )
                     metrics["repository"][split][mode] = evaluate_repository_groups(
                         best_model,
                         candidate_path,
@@ -302,6 +492,7 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
                     "note": "All entries use the same frozen split and candidate files.",
                 },
             )
+        monitor.update(LOGGER, "exporting", "writing metrics and exported embeddings")
         with torch.inference_mode():
             users, issues = best_model.fused_embeddings()
             export = {"user_embeddings": users.cpu().numpy(), "issue_embeddings": issues.cpu().numpy()}
@@ -327,12 +518,25 @@ def train_variant(settings, *, variant: str, run_id: str) -> Path:
             "versions": {"python": sys.version.split()[0], "torch": torch.__version__, "platform": platform.platform()},
         }
         _write_json(run_dir / "run_manifest.json", run_manifest)
-        (run_dir / "_RUNNING").unlink()
-        (run_dir / "_SUCCESS").write_text(json.dumps({"run_id": run_id}), encoding="utf-8")
+        monitor.update(
+            LOGGER,
+            "complete",
+            f"training workflow complete; artifacts written to {run_dir}",
+        )
+        monitor.finish("success")
         return run_dir
-    except Exception:
-        (run_dir / "_FAILED").write_text(datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    except KeyboardInterrupt as exc:
+        LOGGER.warning("training cancelled by user; preserving partial artifacts in %s", run_dir)
+        monitor.finish("cancelled", error_type=type(exc).__name__, error_message="Ctrl+C")
         raise
+    except Exception as exc:
+        LOGGER.exception("training run failed; preserving diagnostics in %s", run_dir)
+        monitor.finish(
+            "failed", error_type=type(exc).__name__, error_message=str(exc)
+        )
+        raise
+    finally:
+        monitor.close()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -344,6 +548,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--execute-training", action="store_true",
         help="required safety switch; without it only inputs/configuration are validated",
     )
+    parser.add_argument(
+        "--progress-interval-seconds",
+        type=float,
+        default=None,
+        help="override the configured maximum interval between training progress messages",
+    )
     return parser
 
 
@@ -351,19 +561,42 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     configure_logging(level="INFO", log_format="text")
     try:
+        LOGGER.info(
+            "loading training configuration: config=%s variant=%s run_id=%s execute=%s",
+            args.config,
+            args.variant,
+            args.run_id,
+            args.execute_training,
+        )
         settings = load_neural_settings(args.config)
+        if args.progress_interval_seconds is not None and args.progress_interval_seconds <= 0:
+            raise ValueError("--progress-interval-seconds must be positive")
+        LOGGER.info(
+            "validating frozen dataset, mappings, graph, split, and candidate hashes for %s",
+            settings.dataset_version,
+        )
         hashes = validate_neural_inputs(
             settings, require_text=_variant_flags(args.variant)[0] and args.execute_training
         )
+        LOGGER.info("validated %d immutable input artifacts", len(hashes))
         if not args.execute_training:
             LOGGER.info(
                 "dry-run validated %d frozen inputs for %s; no training started",
                 len(hashes), args.variant,
             )
             return 0
-        output = train_variant(settings, variant=args.variant, run_id=args.run_id)
+        output = train_variant(
+            settings,
+            variant=args.variant,
+            run_id=args.run_id,
+            validated_input_hashes=hashes,
+            progress_interval_seconds=args.progress_interval_seconds,
+        )
         LOGGER.info("training workflow complete: %s", output)
         return 0
+    except KeyboardInterrupt:
+        LOGGER.warning("stage 3-5 workflow cancelled by user")
+        return 130
     except Exception:
         LOGGER.exception("stage 3-5 workflow failed")
         return 1

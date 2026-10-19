@@ -41,6 +41,7 @@ class NeuralSettings:
     device: str
     epochs: int
     batch_size: int
+    progress_interval_seconds: float
     embedding_dimensions: tuple[int, ...]
     issue_layers: tuple[int, ...]
     learning_rates: tuple[float, ...]
@@ -88,6 +89,9 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         raise ConfigurationError("graph_version must match the frozen dataset version")
     epochs = int(_get(training, "epochs", "training"))
     batch_size = int(_get(training, "batch_size", "training"))
+    progress_interval_seconds = float(
+        _get(training, "progress_interval_seconds", "training")
+    )
     dimensions = tuple(int(x) for x in _get(training, "embedding_dimensions", "training"))
     issue_layers = tuple(int(x) for x in _get(training, "issue_layers", "training"))
     learning_rates = tuple(float(x) for x in _get(training, "learning_rates", "training"))
@@ -102,6 +106,8 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         raise ConfigurationError("epochs, batch size, heads, and dimensions must be positive")
     if min(learning_rates) <= 0 or min(repository_weights) < 0:
         raise ConfigurationError("learning rates must be positive and repository weights non-negative")
+    if progress_interval_seconds <= 0:
+        raise ConfigurationError("training.progress_interval_seconds must be positive")
     if any(dimension % heads for dimension in dimensions):
         raise ConfigurationError("every embedding dimension must be divisible by GAT heads")
     return NeuralSettings(
@@ -119,6 +125,7 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         device=str(_get(training, "device", "training")),
         epochs=epochs,
         batch_size=batch_size,
+        progress_interval_seconds=progress_interval_seconds,
         embedding_dimensions=dimensions,
         issue_layers=issue_layers,
         learning_rates=learning_rates,
