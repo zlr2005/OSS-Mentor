@@ -51,6 +51,8 @@ wandb/
 mlruns/
 lightning_logs/
 /CODER/.cache/
+/CODER/.test-tmp/
+/CODER/tmp*/
 /CODER/checkpoints/
 /CODER/runs/
 
