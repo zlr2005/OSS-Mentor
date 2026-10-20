@@ -13,7 +13,9 @@
 
 ## 当前状态
 
-这一版只提供 B 模块内部的确定性评分、证据融合和固定 fixture。尚未完成的内容包括：
+这一版提供 B 模块内部的确定性评分、证据融合、确认规则和固定 fixture。
+确认规则使用私有字典结构，不保存数据库，也不接收浏览器提交的用户身份。
+尚未完成的内容包括：
 
 - D 的 `contracts_midterm.py` 适配；
 - 问卷回答、预览和确认记录的 SQLite `012` 迁移；
@@ -23,6 +25,41 @@
 - 基于真实样本的权重校准和误差分析。
 
 在 S0 公共契约冻结前，不应把本模块的私有字典结构复制成第二套公共契约。
+
+## 画像确认规则
+
+`profiling.confirmation` 将尚未保存的 assessment preview 与当前特征状态进行比较，
+生成带稳定建议 ID 的确认计划。调用方只提交建议 ID 对应的 `accept` 或 `reject`；
+没有提交决定的建议继续保持待处理。确认函数返回新的内存画像版本和审计结果，
+`persisted=false` 明确表示还没有写入数据库。
+
+主要入口：
+
+```python
+from oss_mentor.profiling.confirmation import (
+    build_feature_state,
+    build_confirmation_plan,
+    confirm_assessment_plan,
+    set_feature_lock,
+)
+```
+
+- `build_feature_state` 为测试或适配器建立完整特征状态；未提供的字段默认为未知。
+- `build_confirmation_plan` 只为有变化或新增证据的已观察字段生成建议。
+- 当前画像或预览中标记为锁定的字段会生成 blocked 建议，不能接受或拒绝。
+- 冲突建议不会自动生效；接受或拒绝都会记录确认时已展示冲突。
+- `confirm_assessment_plan` 检查 `base_profile_version`，旧计划确认新版画像时失败。
+- 接受只更新对应字段；拒绝保持原值；未处理建议 ID 保留在结果中。
+- `set_feature_lock` 表示用户显式锁定或解锁，并生成新的画像版本。
+- 所有函数都不修改输入；相同输入与时间生成相同计划、建议 ID 和结果。
+
+固定确认场景位于 `fixtures/midterm/b/confirmation_scenarios_v0.1.json`，覆盖：
+全部接受、全部拒绝、部分处理、冲突确认、当前字段锁定、预览锁定、过期版本、
+重复确认、未知建议 ID、未知字段保持未知，以及解锁后重新确认。
+
+这一阶段的 `profile-feature-state-v0.1` 是 B 模块内部特征状态，不能直接当作
+`DeveloperProfileV2` 或 D 的持久化契约。真实保存时由后续适配器把 session 用户、
+数据库记录和公共契约接入这些纯业务函数。
 
 ## C / D 最小交接样例
 
