@@ -13,14 +13,15 @@
 
 ## 当前状态
 
-这一版提供 B 模块内部的确定性评分、证据融合、确认规则和固定 fixture。
+这一版提供 B 模块内部的确定性评分、GitHub 贡献证据解释、证据融合、确认规则、
+确认后特征交付和固定 fixture。
 确认规则使用私有字典结构，不保存数据库，也不接收浏览器提交的用户身份。
 尚未完成的内容包括：
 
 - D 的 `contracts_midterm.py` 适配；
 - 问卷回答、预览和确认记录的 SQLite `012` 迁移；
 - D 负责的 HTTP API 和页面；
-- A 的真实贡献数据适配；
+- A 的真实贡献数据公共契约适配（当前已有与计划字段对齐的私有适配器）；
 - C 的 CodeBERT 编码产物适配；
 - 基于真实样本的权重校准和误差分析。
 
@@ -156,5 +157,47 @@ C 验证 23 维顺序、mask 和当前兴趣可以消费；D 验证问卷选项�
 两方都需记录验收的提交 SHA、命令和结果。当前测试命令显式发现 `tests/midterm_b`；
 共享 CI 是否登记这一目录由 D 确认，不能仅凭本地通过认定 CI 已覆盖。
 
-下一阶段仍需：D 的 S0 契约及迁移编号确认；B 的回答/预览保存和确认业务；
-A 的本人贡献记录；C 的统一编码产物。此交付没有实现公共 API、页面或真实贡献接入。
+下一阶段仍需：D 的 S0 契约及迁移编号确认；B 的回答、预览和确认记录持久化；
+A 的真实本人贡献记录；C 的统一编码产物。确认业务规则已经实现，但此交付没有实现
+公共 API、页面或真实贡献数据接入。
+
+## GitHub 贡献证据解释
+
+`profiling.evidence.interpret_github_contributions` 消费计划约定的 `ContributionRecord`
+和 `CodeDocument` 字段，输出可直接传入 `build_assessment_preview` 的保守证据行，并为
+每条原始记录保留审计状态。规则只对已确认身份、预测时点之前且能定位到可用文件的
+记录生成能力证据；身份未确认、未来事件、缺少文件快照和不可用文件均保留排除原因。
+
+- 源代码修改支持 `capability.code_change`，但不会因 commit 数增加而提高能力值；
+- 测试文件修改支持 `capability.testing`，只对独立测试设计给出保守的低等级证据；
+- 文档文件修改支持 `capability.documentation`；
+- review 只能证明参与经历，不能单独证明实现、调试或测试设计能力；
+- 完全没有 GitHub 历史和采集失败都是合法输入，结果保持未知；
+- 重复导入按稳定记录标识去重并报告 `duplicate_count`；
+- 输出保留仓库、文件版本、commit、时间、行为和来源位置，便于追溯。
+
+固定输入位于 `fixtures/midterm/b/github_evidence_scenarios_v0.1.json`。当前只实现无需
+A/C 最终产物即可验证的路径规则；CodeBERT 语义信号必须使用 C 冻结的编码 manifest，
+不会在 B 模块下载或维护第二套模型。
+
+## 确认后增强画像交付
+
+`profiling.delivery.build_confirmed_feature_snapshot` 只接受通过确认规则得到的完整
+`profile-feature-state-v0.1`，导出与 C 约定一致的有序值、缺失 mask、锁定 mask、兴趣和
+证据引用。以下命令用合成 fixture 生成可重复的正式目录结构：
+
+```powershell
+python scripts/midterm_b/export_confirmed_profiles.py `
+  --source-commit <当前提交 SHA> `
+  --snapshot-version b-w1-fixture-v0.1
+```
+
+生成内容：
+
+- `data/midterm/profiles/<version>/enhanced_profile_features.json`
+- `data/midterm/profiles/<version>/manifest.json`
+- `data/midterm/validation/b/<version>.json`
+
+脚本拒绝覆盖已有版本。manifest 记录输入与产物 SHA-256、代码提交、特征版本、数量和
+限制；验证记录包含数组对齐、未知值占位、冲突数量及确认前后差异。当前数据明确标记为
+`synthetic_fixture`，不能当作真实研究参与者、正式训练集或能力概率。

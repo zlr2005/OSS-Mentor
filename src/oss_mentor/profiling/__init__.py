@@ -17,6 +17,18 @@ from .confirmation import (
     set_feature_lock,
     validate_feature_state,
 )
+from .delivery import (
+    PROFILE_DELIVERY_MANIFEST_SCHEMA_VERSION,
+    PROFILE_DELIVERY_VALIDATION_SCHEMA_VERSION,
+    build_confirmed_feature_snapshot,
+    build_delivery_validation,
+    build_profile_delivery_manifest,
+    validate_confirmed_feature_snapshot,
+)
+from .evidence import (
+    GITHUB_EVIDENCE_BATCH_SCHEMA_VERSION,
+    interpret_github_contributions,
+)
 
 __all__ = [
     "ASSESSMENT_PREVIEW_SCHEMA_VERSION",
@@ -32,4 +44,12 @@ __all__ = [
     "confirm_assessment_plan",
     "set_feature_lock",
     "validate_feature_state",
+    "PROFILE_DELIVERY_MANIFEST_SCHEMA_VERSION",
+    "PROFILE_DELIVERY_VALIDATION_SCHEMA_VERSION",
+    "build_confirmed_feature_snapshot",
+    "build_delivery_validation",
+    "build_profile_delivery_manifest",
+    "validate_confirmed_feature_snapshot",
+    "GITHUB_EVIDENCE_BATCH_SCHEMA_VERSION",
+    "interpret_github_contributions",
 ]
