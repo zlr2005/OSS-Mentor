@@ -90,7 +90,13 @@ class CoderIssueModel(nn.Module):
                 config.num_issues, config.semantic_dim
             ):
                 raise ValueError("row-aligned semantic embeddings are required")
-            self.register_buffer("semantic_embeddings", semantic_embeddings.to(torch.float32))
+            # Own writable storage. A Tensor created from a read-only NumPy memmap
+            # otherwise makes load_state_dict() writes undefined and can terminate
+            # the Windows Python process in native code.
+            self.register_buffer(
+                "semantic_embeddings",
+                semantic_embeddings.detach().to(torch.float32).clone(),
+            )
         else:
             self.register_buffer("semantic_embeddings", torch.empty(0))
 
@@ -107,10 +113,14 @@ class CoderIssueModel(nn.Module):
         self.user_fusion = _mlp(user_width, config.embedding_dim) if enhanced else nn.Identity()
         self.issue_fusion = _mlp(issue_width, config.embedding_dim) if enhanced else nn.Identity()
 
-    def fused_embeddings(self) -> tuple[Tensor, Tensor]:
+    def joint_embeddings(self) -> tuple[Tensor, Tensor, Tensor | None, Tensor | None]:
+        """Compute all trainable graph paths once for one optimizer step."""
+
         issue_users, collaborative_issues = self.issue_graph.propagated_embeddings()
         user_parts = [issue_users]
         issue_parts = [collaborative_issues]
+        repository_users: Tensor | None = None
+        repositories: Tensor | None = None
         if self.config.use_text:
             issue_parts.append(self.semantic_embeddings)
         if self.config.use_structure:
@@ -120,9 +130,16 @@ class CoderIssueModel(nn.Module):
             repository_users, repositories = self.repository_graph.propagated_embeddings()
             user_parts.append(repository_users)
             issue_parts.append(repositories[self.issue_to_repository])
-        return self.user_fusion(torch.cat(user_parts, dim=-1)), self.issue_fusion(
-            torch.cat(issue_parts, dim=-1)
+        return (
+            self.user_fusion(torch.cat(user_parts, dim=-1)),
+            self.issue_fusion(torch.cat(issue_parts, dim=-1)),
+            repository_users,
+            repositories,
         )
+
+    def fused_embeddings(self) -> tuple[Tensor, Tensor]:
+        users, issues, _, _ = self.joint_embeddings()
+        return users, issues
 
     def issue_pair_scores(self, user_ids: Tensor, issue_ids: Tensor) -> Tensor:
         users, issues = self.fused_embeddings()
@@ -176,7 +193,9 @@ class CoderIssueModel(nn.Module):
     def load_bundle(cls, path: Path, *, map_location: str | torch.device = "cpu") -> "CoderIssueModel":
         manifest = json.loads((path / "model_manifest.json").read_text(encoding="utf-8"))
         config = CoderConfig(**manifest["config"])
-        state = torch.load(path / "weights.pt", map_location=map_location, weights_only=True)
+        state = torch.load(
+            path / "weights.pt", map_location=map_location, weights_only=True, mmap=True
+        )
         structural = None
         if config.use_structure:
             structural_config = StructuralGATConfig(

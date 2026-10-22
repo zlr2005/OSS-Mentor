@@ -227,7 +227,18 @@ CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
 
 在前台训练终端按一次 `Ctrl+C`。入口会保存已有诊断和部分产物、删除 `_RUNNING`，并写入 `_CANCELLED`；正常结束写 `_SUCCESS`，异常结束写 `_FAILED`。三个终态文件均为 JSON，并记录耗时和最后进度。不要用任务管理器强杀，强杀无法执行状态收尾。
 
-若终端或机器被强制关闭，可能遗留 `_RUNNING`。重新启动前先用其中的 PID 和更新时间确认进程确实不存在，再将对应 run/model 目录归档；训练器不会自动覆盖或删除已有实验目录。
+若终端或机器被强制关闭，可能遗留 `_RUNNING`。恢复命令会同时核对 PID、
+进程创建时间和命令行，真实活跃进程会被拒绝；确认是异常退出后，旧状态会归档，
+再从 `latest`（损坏时回退 `previous`）恢复：
+
+```powershell
+CODER/.venv/Scripts/python.exe CODER/scripts/train_multigranular.py `
+  --config CODER/configs/coder_full_single.toml `
+  --variant coder_issue_repo `
+  --run-id coder-full-single-v1 `
+  --execute-training `
+  --resume
+```
 
 依次训练消融和完整模型：
 
@@ -252,7 +263,7 @@ foreach ($variant in $variants) {
 
 ### 6.4 训练内部顺序
 
-1. 校验 `gfibot-m0-v1.1` 和 15 份冻结输入/候选哈希；
+1. 校验 `gfibot-m0-v1.1` 和 18 份冻结输入/候选哈希；
 2. 只用 `train.parquet` 构建 Developer–Issue 和派生 Developer–Repository 图；
 3. 对文本变体准备或复用离线缓存；
 4. 构建所选消融模型；
@@ -285,7 +296,11 @@ early_stopping_min_epochs = 10
 
 默认在 Epoch 5、10、15……验证；如果最大 Epoch 不落在该序列上，仍强制验证最后一个 Epoch。一次改善必须满足 `score > best_score + min_delta`，因此相同分数不会覆盖更早 checkpoint。Patience 是连续未改善的验证次数，而不是 Epoch 数。关闭 `early_stopping_enabled` 后仍执行周期验证和最佳 Epoch 选择，只是不提前结束 Trial。
 
-Checkpoint 位于运行目录的 `checkpoints/trial-NNNN.best.pt`。文件通过“临时文件写完后原子替换”更新，保存完整 `state_dict`（包括 LightGCN、GAT、MLP、图邻接和相关 buffer）、模型配置、Epoch、验证分数与 Trial 元数据。由于本阶段不要求断点续训，不保存 optimizer 状态。
+最佳模型仍位于 `checkpoints/trial-NNNN.best.pt`。训练恢复点为
+`checkpoints/latest.pt` 和 `checkpoints/previous.pt`，通过临时文件校验后原子替换，
+保存可训练参数、Adam、RNG、Batch/Epoch/Trial 进度和历史。静态图与文本 buffer
+由冻结输入及哈希缓存重建，避免高频 checkpoint 重复写入；恢复前严格核对实验身份。
+完整说明见 `coder_full_training_hardening.md`。
 
 ### 6.6 下一轮实验命令
 

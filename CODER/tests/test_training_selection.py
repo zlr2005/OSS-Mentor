@@ -196,6 +196,57 @@ class TrainingSelectionTests(unittest.TestCase):
                 outputs.append((result.best_epoch, result.best_validation_score, model.weight.item()))
         self.assertEqual(outputs[0], outputs[1])
 
+    def test_resume_state_continues_at_next_epoch_without_duplicate_history(self) -> None:
+        model = TinyModel()
+        train_calls: list[int] = []
+        with tempfile.TemporaryDirectory(dir=CODER_ROOT) as directory:
+            checkpoint = Path(directory) / "best.pt"
+            with torch.no_grad():
+                model.weight.fill_(1.0)
+            best_report = {"predictable": {"ndcg@10": 0.5}}
+            save_best_checkpoint(
+                checkpoint, model, epoch=1, validation_score=0.5, metadata={}
+            )
+
+            def train_epoch(epoch: int) -> EpochResult:
+                train_calls.append(epoch)
+                with torch.no_grad():
+                    model.weight.fill_(float(epoch))
+                return EpochResult(float(epoch), None, 1, 0)
+
+            result = run_training_trial(
+                model,
+                epochs=4,
+                schedule=ValidationSchedule(1, 1),
+                policy=EarlyStoppingPolicy(False, 2, 0.0, 1),
+                checkpoint_path=checkpoint,
+                checkpoint_metadata={},
+                train_epoch=train_epoch,
+                evaluator=lambda current: {
+                    "predictable": {
+                        "ndcg@10": {3: 0.4, 4: 0.6}[int(current.weight.item())]
+                    }
+                },
+                selection_metric="ndcg@10",
+                resume_state={
+                    "history": [
+                        dict(EpochResult(1.0, None, 1, 0).__dict__),
+                        dict(EpochResult(2.0, None, 1, 0).__dict__),
+                    ],
+                    "validation_history": [{"epoch": 1}, {"epoch": 2}],
+                    "best_validation": best_report,
+                    "best_score": 0.5,
+                    "best_epoch": 1,
+                    "validations_without_improvement": 1,
+                    "epochs_trained": 2,
+                    "start_epoch": 3,
+                },
+            )
+        self.assertEqual([3, 4], train_calls)
+        self.assertEqual(4, len(result.history))
+        self.assertEqual(4, result.best_epoch)
+        self.assertEqual(4.0, float(model.weight.item()))
+
     def test_validation_never_steps_the_optimizer(self) -> None:
         model = TinyModel()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
@@ -233,6 +284,38 @@ class TrainingSelectionTests(unittest.TestCase):
         self.assertEqual(3, optimizer_steps)
         self.assertEqual([1, 2, 3, 3], steps_seen_by_validation)
         self.assertEqual(1, result.best_epoch)
+
+    def test_terminal_probe_skips_duplicate_restore_validation(self) -> None:
+        model = TinyModel()
+        validation_calls = 0
+
+        def train_epoch(epoch: int) -> EpochResult:
+            with torch.no_grad():
+                model.weight.fill_(float(epoch))
+            return EpochResult(0.25, 0.5, 1, 1)
+
+        def evaluate(_current: TinyModel):
+            nonlocal validation_calls
+            validation_calls += 1
+            return {"predictable": {"ndcg@10": 0.75}}
+
+        with tempfile.TemporaryDirectory(dir=CODER_ROOT) as directory:
+            checkpoint = Path(directory) / "best.pt"
+            result = run_training_trial(
+                model,
+                epochs=1,
+                schedule=ValidationSchedule(1, 1),
+                policy=EarlyStoppingPolicy(False, 1, 0.0, 1),
+                checkpoint_path=checkpoint,
+                checkpoint_metadata={"probe_batch": True},
+                train_epoch=train_epoch,
+                evaluator=evaluate,
+                selection_metric="ndcg@10",
+                restore_and_verify_best=False,
+            )
+            self.assertTrue(checkpoint.is_file())
+        self.assertEqual(1, validation_calls)
+        self.assertEqual(0.75, result.restored_validation_score)
 
     def test_non_finite_validation_score_fails(self) -> None:
         with tempfile.TemporaryDirectory(dir=CODER_ROOT) as directory:

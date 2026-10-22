@@ -229,6 +229,26 @@ class StageThreeToFiveTests(unittest.TestCase):
             self.assertEqual(expected, config.variant)
             self.assertEqual(((2, 4), (4, 4)), (tuple(users.shape), tuple(issues.shape)))
 
+    def test_semantic_buffer_owns_writable_storage_for_checkpoint_restore(self) -> None:
+        semantic = torch.arange(12, dtype=torch.float32).reshape(4, 3)
+        model = CoderIssueModel(
+            CoderConfig(
+                2, 4, 2, embedding_dim=4, issue_layers=1,
+                semantic_dim=3, use_text=True,
+            ),
+            issue_adjacency=_issue_graph(),
+            issue_to_repository=torch.tensor([0, 0, 1, 1]),
+            semantic_embeddings=semantic,
+        )
+        self.assertNotEqual(
+            semantic.untyped_storage().data_ptr(),
+            model.semantic_embeddings.untyped_storage().data_ptr(),
+        )
+        state = model.state_dict()
+        state["semantic_embeddings"] = torch.zeros_like(model.semantic_embeddings)
+        model.load_state_dict(state)
+        self.assertEqual(0.0, float(model.semantic_embeddings.sum()))
+
     def test_issue_and_repository_metrics_are_separate_and_grouped(self) -> None:
         config = CoderConfig(
             2, 4, 2, embedding_dim=4, issue_layers=1, repository_layers=1,
@@ -276,8 +296,8 @@ class StageThreeToFiveTests(unittest.TestCase):
         self.assertEqual(0.5, coverage["developer_coverage"])
         settings = load_neural_settings(CODER_ROOT / "configs/coder_multigranular.toml")
         hashes = validate_neural_inputs(settings)
-        self.assertEqual(15, len(hashes))
-        self.assertEqual(15, len(validate_neural_inputs(settings, require_text=True)))
+        self.assertEqual(18, len(hashes))
+        self.assertEqual(18, len(validate_neural_inputs(settings, require_text=True)))
         self.assertTrue(all(len(option.revision) == 40 for option in settings.encoders))
 
     def test_one_epoch_updates_lightgcn_variant_reproducibly(self) -> None:

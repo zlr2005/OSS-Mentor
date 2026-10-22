@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import time
 from typing import Protocol, Sequence
+import uuid
 
 import numpy as np
 
@@ -120,13 +124,170 @@ def _text_hash(item: SegmentedIssue) -> str:
 
 
 class EmbeddingCache:
-    """Row-aligned cache that re-encodes only missing or changed Issue text."""
+    """Row-aligned cache with validated, resumable issue chunks."""
 
     def __init__(self, root: Path) -> None:
         self.root = root
         self.manifest_path = root / "embedding_manifest.json"
         self.embedding_path = root / "issue_embeddings.npy"
         self.row_mapping_path = root / "row_mapping.npy"
+        self.shard_dir = root / "shards"
+        self.progress_path = root / "embedding_progress.json"
+
+    @staticmethod
+    def _atomic_json(path: Path, payload: object) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.parent / f".tmp-{uuid.uuid4().hex}.json"
+        try:
+            temporary.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
+    @staticmethod
+    def _atomic_npy(path: Path, value: np.ndarray) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Keep the temporary name independent of the (potentially long) target name.
+        # It stays beside the target so os.replace() is an atomic same-filesystem move.
+        temporary = path.parent / f".tmp-{uuid.uuid4().hex}.npy"
+        try:
+            np.save(temporary, value)
+            # A truncated shard must never be promoted.
+            np.load(temporary, mmap_mode="r").shape
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
+    def _shard_paths(
+        self,
+        *,
+        start: int,
+        count: int,
+        chunk_hash: str,
+    ) -> tuple[Path, Path]:
+        """Return the compact canonical path and the legacy hexadecimal path.
+
+        URL-safe Base64 is a reversible representation of the complete SHA-256
+        digest (43 rather than 64 characters), so no cache identity bits are lost.
+        The legacy path remains readable to preserve completed chunks from older
+        versions.
+        """
+
+        compact_hash = base64.urlsafe_b64encode(bytes.fromhex(chunk_hash)).decode(
+            "ascii"
+        ).rstrip("=")
+        prefix = f"chunk-{start:08d}-{count:06d}-"
+        return (
+            self.shard_dir / f"{prefix}{compact_hash}.npy",
+            self.shard_dir / f"{prefix}{chunk_hash}.npy",
+        )
+
+    @staticmethod
+    def _array_sha256(value: np.ndarray) -> str:
+        digest = hashlib.sha256()
+        array = np.asarray(value)
+        if array.ndim == 0:
+            digest.update(array.tobytes())
+        else:
+            rows = max(1, (8 * 1024 * 1024) // max(1, array[0].nbytes))
+            for start in range(0, len(array), rows):
+                digest.update(np.ascontiguousarray(array[start : start + rows]).tobytes())
+        return digest.hexdigest()
+
+    @staticmethod
+    def _all_finite(value: np.ndarray) -> bool:
+        array = np.asarray(value)
+        if array.ndim == 0:
+            return bool(np.isfinite(array))
+        rows = max(1, (8 * 1024 * 1024) // max(1, array[0].nbytes))
+        return all(
+            bool(np.isfinite(array[start : start + rows]).all())
+            for start in range(0, len(array), rows)
+        )
+
+    def inspect(
+        self,
+        *,
+        dataset_version: str,
+        mapping_sha256: str,
+        model_name: str,
+        revision: str,
+        dimension: int | None,
+        max_segments: int,
+        row_count: int,
+    ) -> tuple[str, list[str]]:
+        """Return CACHE_READY/PARTIAL/MISSING/INVALID without loading a model."""
+
+        files = (self.embedding_path, self.manifest_path, self.row_mapping_path)
+        present = [path.is_file() for path in files]
+        has_shards = self.shard_dir.is_dir() and any(self.shard_dir.glob("*.npy"))
+        if not any(present) and not has_shards:
+            return "CACHE_MISSING", ["no final cache or resumable chunks"]
+        if not all(present):
+            return ("CACHE_PARTIAL" if has_shards else "CACHE_INVALID"), [
+                "final cache file set is incomplete"
+            ]
+        try:
+            manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+            mapping = np.load(self.row_mapping_path, mmap_mode="r")
+            embeddings = np.load(self.embedding_path, mmap_mode="r")
+            expected = {
+                "dataset_version": dataset_version,
+                "mapping_sha256": mapping_sha256,
+                "model_name": model_name,
+                "revision": revision,
+                "max_segments": max_segments,
+                "row_count": row_count,
+            }
+            mismatches = [
+                f"{key}: expected {value!r}, got {manifest.get(key)!r}"
+                for key, value in expected.items() if manifest.get(key) != value
+            ]
+            if dimension is not None and manifest.get("dimension") != dimension:
+                mismatches.append(
+                    f"dimension: expected {dimension!r}, got {manifest.get('dimension')!r}"
+                )
+            expected_dimension = int(manifest.get("dimension", -1))
+            if embeddings.shape != (row_count, expected_dimension):
+                mismatches.append(f"embedding shape is {embeddings.shape}")
+            if mapping.shape != (row_count,) or not np.array_equal(
+                mapping, np.arange(row_count, dtype=np.int64)
+            ):
+                mismatches.append("row mapping is not contiguous and aligned")
+            if not self._all_finite(embeddings):
+                mismatches.append("embeddings contain NaN or Inf")
+            expected_hash = manifest.get("embedding_sha256")
+            if expected_hash and self._array_sha256(embeddings) != expected_hash:
+                mismatches.append("embedding content hash mismatch")
+            return ("CACHE_INVALID", mismatches) if mismatches else ("CACHE_READY", [])
+        except Exception as exc:
+            return "CACHE_INVALID", [f"{type(exc).__name__}: {exc}"]
+
+    def _encode_issue_chunk(
+        self,
+        items: Sequence[SegmentedIssue],
+        encoder: SegmentEncoder,
+        *,
+        segment_batch_size: int,
+    ) -> np.ndarray:
+        flat = [segment for item in items for segment in item.segments]
+        encoded_parts = [
+            encoder.encode(flat[start : start + segment_batch_size])
+            for start in range(0, len(flat), segment_batch_size)
+        ]
+        encoded = np.concatenate(encoded_parts, axis=0)
+        result = np.zeros((len(items), encoder.dimension), dtype=np.float32)
+        cursor = 0
+        for row, item in enumerate(items):
+            end = cursor + len(item.segments)
+            vector = encoded[cursor:end].mean(axis=0)
+            norm = np.linalg.norm(vector)
+            result[row] = vector / norm if norm else vector
+            cursor = end
+        return result
 
     def encode_or_reuse(
         self,
@@ -137,7 +298,15 @@ class EmbeddingCache:
         mapping_sha256: str,
         max_segments: int,
         batch_size: int = 64,
+        segment_batch_size: int | None = None,
+        chunk_size: int = 256,
+        progress_callback=None,
     ) -> tuple[np.ndarray, dict[str, int]]:
+        if batch_size <= 0 or chunk_size <= 0:
+            raise ValueError("batch_size and chunk_size must be positive")
+        segment_batch_size = batch_size if segment_batch_size is None else segment_batch_size
+        if segment_batch_size <= 0:
+            raise ValueError("segment_batch_size must be positive")
         ordered = sorted(items, key=lambda item: item.issue_id)
         ids = [item.issue_id for item in ordered]
         if ids != list(range(len(ids))):
@@ -176,26 +345,58 @@ class EmbeddingCache:
         if isinstance(old_embeddings, np.memmap):
             old_embeddings._mmap.close()
             old_embeddings = None
-        for start in range(0, len(missing), batch_size):
-            indices = missing[start : start + batch_size]
-            flat: list[str] = []
-            spans: list[tuple[int, int]] = []
-            for index in indices:
-                begin = len(flat)
-                flat.extend(ordered[index].segments)
-                spans.append((begin, len(flat)))
-            encoded = encoder.encode(flat)
-            for index, (begin, end) in zip(indices, spans, strict=True):
-                vector = encoded[begin:end].mean(axis=0)
-                norm = np.linalg.norm(vector)
-                embeddings[index] = vector / norm if norm else vector
+        encoded_count = 0
+        self.shard_dir.mkdir(parents=True, exist_ok=True)
+        for start in range(0, len(missing), chunk_size):
+            indices = missing[start : start + chunk_size]
+            chunk_hash = hashlib.sha256(
+                "\0".join(hashes[index] for index in indices).encode("ascii")
+            ).hexdigest()
+            shard, legacy_shard = self._shard_paths(
+                start=start,
+                count=len(indices),
+                chunk_hash=chunk_hash,
+            )
+            chunk: np.ndarray | None = None
+            for candidate_path in (shard, legacy_shard):
+                if not candidate_path.is_file():
+                    continue
+                try:
+                    candidate = np.load(candidate_path)
+                    if candidate.shape == (len(indices), encoder.dimension) and self._all_finite(candidate):
+                        chunk = candidate.astype(np.float32, copy=False)
+                        break
+                except Exception:
+                    chunk = None
+            if chunk is None:
+                chunk = self._encode_issue_chunk(
+                    [ordered[index] for index in indices], encoder,
+                    segment_batch_size=segment_batch_size,
+                )
+                self._atomic_npy(shard, chunk)
+                encoded_count += len(indices)
+            else:
+                reused += len(indices)
+            embeddings[np.asarray(indices, dtype=np.int64)] = chunk
+            self._atomic_json(self.progress_path, {
+                "schema_version": 1,
+                "dataset_version": dataset_version,
+                "mapping_sha256": mapping_sha256,
+                "model_name": encoder.model_name,
+                "revision": encoder.revision,
+                "dimension": encoder.dimension,
+                "max_segments": max_segments,
+                "row_count": len(ordered),
+                "completed_rows": reused + encoded_count,
+                "updated_at_unix": time.time(),
+            })
+            if progress_callback is not None:
+                progress_callback(reused + encoded_count, len(ordered))
         self.root.mkdir(parents=True, exist_ok=True)
-        temporary = self.embedding_path.with_suffix(".tmp.npy")
-        np.save(temporary, embeddings)
-        temporary.replace(self.embedding_path)
-        np.save(self.row_mapping_path, np.asarray(ids, dtype=np.int64))
+        self._atomic_npy(self.embedding_path, embeddings)
+        self._atomic_npy(self.row_mapping_path, np.asarray(ids, dtype=np.int64))
         manifest = {
-            "schema_version": 1,
+            "schema_version": 2,
             "dataset_version": dataset_version,
             "mapping_sha256": mapping_sha256,
             "model_name": encoder.model_name,
@@ -205,8 +406,11 @@ class EmbeddingCache:
             "row_count": len(ordered),
             "row_mapping_file": self.row_mapping_path.name,
             "text_sha256": hashes,
+            "embedding_sha256": self._array_sha256(embeddings),
+            "issue_chunk_size": chunk_size,
+            "segment_batch_size": segment_batch_size,
         }
-        self.manifest_path.write_text(
-            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8"
-        )
-        return embeddings, {"reused": reused, "encoded": len(missing)}
+        # Manifest is committed last, so an interrupted finalization cannot look ready.
+        self._atomic_json(self.manifest_path, manifest)
+        self.progress_path.unlink(missing_ok=True)
+        return embeddings, {"reused": reused, "encoded": encoded_count}

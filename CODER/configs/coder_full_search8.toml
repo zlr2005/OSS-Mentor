@@ -1,0 +1,113 @@
+schema_version = 1
+config_name = "gfibot-coder-full-search8-v1"
+dataset_version = "gfibot-m0-v1.1"
+model_version = "coder-full-search8-v1"
+graph_version = "gfibot-m0-v1.1"
+seed = 20261017
+
+[inputs]
+baseline_config = "baselines.toml"
+candidate_dir = "../../data/runs/gfibot-m0-v1.1/baselines/stage2-baselines-v1.2/candidates"
+
+[outputs]
+embedding_dir = "../../data/midterm/embeddings/gfibot-m0-v1.1"
+model_dir = "../../data/models/gfibot-m0-v1.1/coder"
+run_dir = "../../data/runs/gfibot-m0-v1.1/coder"
+
+[training]
+device = "cpu"
+epochs = 50
+batch_size = 1024
+checkpoint_interval_batches = 100
+progress_interval_seconds = 10
+validation_interval_epochs = 5
+validation_start_epoch = 5
+early_stopping_enabled = true
+early_stopping_patience = 5
+early_stopping_min_delta = 0.0
+early_stopping_min_epochs = 10
+embedding_dimensions = [32, 64]
+issue_layers = [2, 4]
+learning_rates = [0.001, 0.005]
+weight_decay = 0.0001
+repository_layers = 2
+repository_loss_weights = [0.1, 0.5]
+selection_metric = "ndcg@10"
+
+[structure]
+layers = [2, 3]
+heads = 2
+dropout = 0.1
+
+[text]
+max_segments = 12
+batch_size = 16
+segment_batch_size = 32
+chunk_size = 256
+allow_download = false
+
+[[text.encoders]]
+name = "sentence-transformers/all-MiniLM-L6-v2"
+revision = "c21050a7ef692090620a6d037dd736908f9c7cf6"
+kind = "general"
+
+[variants]
+enabled = ["coder_issue_repo"]
+
+# Explicit fractional design: exactly eight non-duplicate Trials rather than
+# the 2*2*2*2*2 Cartesian product (32 Trials) implied by the value ranges.
+[[search.trials]]
+embedding_dim = 32
+issue_layers = 4
+learning_rate = 0.001
+structure_layers = 2
+repository_loss_weight = 0.1
+
+[[search.trials]]
+embedding_dim = 32
+issue_layers = 2
+learning_rate = 0.001
+structure_layers = 2
+repository_loss_weight = 0.1
+
+[[search.trials]]
+embedding_dim = 32
+issue_layers = 4
+learning_rate = 0.005
+structure_layers = 2
+repository_loss_weight = 0.1
+
+[[search.trials]]
+embedding_dim = 32
+issue_layers = 4
+learning_rate = 0.001
+structure_layers = 3
+repository_loss_weight = 0.1
+
+[[search.trials]]
+embedding_dim = 32
+issue_layers = 4
+learning_rate = 0.001
+structure_layers = 2
+repository_loss_weight = 0.5
+
+[[search.trials]]
+embedding_dim = 64
+issue_layers = 4
+learning_rate = 0.001
+structure_layers = 2
+repository_loss_weight = 0.1
+
+[[search.trials]]
+embedding_dim = 32
+issue_layers = 2
+learning_rate = 0.005
+structure_layers = 3
+repository_loss_weight = 0.1
+
+[[search.trials]]
+embedding_dim = 32
+issue_layers = 2
+learning_rate = 0.001
+structure_layers = 3
+repository_loss_weight = 0.5

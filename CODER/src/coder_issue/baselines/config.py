@@ -140,6 +140,9 @@ def validate_frozen_inputs(settings: BaselineSettings) -> dict[str, str]:
         "issues": settings.normalized_dir / "issues.parquet",
         "developer_issue_edges": settings.normalized_dir / "developer_issue_edges.parquet",
         "issue_snapshots": settings.normalized_dir / "issue_snapshots.parquet",
+        "label_mapping": settings.normalized_dir / "mappings/label_mapping.parquet",
+        "issue_repo_edges": settings.normalized_dir / "issue_repo_edges.parquet",
+        "issue_label_edges": settings.normalized_dir / "issue_label_edges.parquet",
     }
     actual: dict[str, str] = {}
     for name, file_path in files.items():

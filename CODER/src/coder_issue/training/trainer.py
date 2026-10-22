@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 import random
+import time
 from typing import Callable
 
 import numpy as np
@@ -43,9 +44,44 @@ class BatchProgress:
     total: int
     issue_loss: float
     repository_loss: float | None
+    batch_seconds: float | None = None
+    process_rss_bytes: int | None = None
+    available_memory_bytes: int | None = None
+    cuda_allocated_bytes: int | None = None
+    cuda_peak_allocated_bytes: int | None = None
+
+
+def _resource_snapshot(device: torch.device) -> tuple[int | None, int | None, int | None, int | None]:
+    try:
+        import psutil
+        rss = psutil.Process().memory_info().rss
+        available = psutil.virtual_memory().available
+    except ImportError:
+        try:
+            from .preflight import _memory
+            memory = _memory()
+            rss = memory["process_rss"]
+            available = memory["physical_available"]
+        except Exception:
+            rss = available = None
+    if device.type == "cuda":
+        return rss, available, torch.cuda.memory_allocated(device), torch.cuda.max_memory_allocated(device)
+    return rss, available, None, None
+
+
+@dataclass(frozen=True)
+class BatchResumeState:
+    """Accumulator at a safe boundary immediately after ``optimizer.step()``."""
+
+    next_batch: int = 0
+    issue_loss_sum: float = 0.0
+    repository_loss_sum: float = 0.0
+    processed: int = 0
+    repository_count: int = 0
 
 
 ProgressCallback = Callable[[BatchProgress], None]
+CheckpointCallback = Callable[[BatchProgress, BatchResumeState], None]
 
 
 def _batches(order: Tensor, size: int):
@@ -114,6 +150,10 @@ def train_coder_epoch(
     seed: int,
     device: torch.device,
     progress_callback: ProgressCallback | None = None,
+    checkpoint_callback: CheckpointCallback | None = None,
+    resume_state: BatchResumeState | None = None,
+    stop_requested: Callable[[], bool] | None = None,
+    max_batches: int | None = None,
 ) -> EpochResult:
     model.train()
     issue_sample = issue_sampler.sample(epoch)
@@ -131,18 +171,28 @@ def train_coder_epoch(
         }
     generator = torch.Generator(device="cpu").manual_seed(seed + epoch)
     order = torch.randperm(len(issue_sample.query_ids), generator=generator)
-    issue_total = 0.0
-    repository_total = 0.0
-    repository_count = 0
-    processed = 0
+    if max_batches is not None:
+        if max_batches <= 0:
+            raise ValueError("max_batches must be positive")
+        order = order[: max_batches * batch_size]
+    resume_state = resume_state or BatchResumeState()
+    issue_total = float(resume_state.issue_loss_sum)
+    repository_total = float(resume_state.repository_loss_sum)
+    repository_count = int(resume_state.repository_count)
+    processed = int(resume_state.processed)
     total_batches = math.ceil(len(order) / batch_size)
     for batch_number, indices in enumerate(_batches(order, batch_size), start=1):
+        if batch_number <= resume_state.next_batch:
+            continue
+        batch_started = time.perf_counter()
         positions = indices.numpy()
         rows = issue_sample.query_ids[positions]
         users = torch.as_tensor(developer_ids[rows], device=device)
         positive = torch.as_tensor(issue_sample.positive_ids[positions], device=device)
         unobserved = torch.as_tensor(issue_sample.unobserved_ids[positions], device=device)
-        user_vectors, issue_vectors = model.fused_embeddings()
+        user_vectors, issue_vectors, repository_users, repository_vectors = (
+            model.joint_embeddings()
+        )
         issue_loss = criterion(
             (user_vectors[users] * issue_vectors[positive]).sum(-1),
             (user_vectors[users] * issue_vectors[unobserved]).sum(-1),
@@ -163,7 +213,7 @@ def train_coder_epoch(
             repo_unobserved = torch.as_tensor(
                 [entry[1][1] for entry in repository_entries], device=device
             )
-            repository_users, repository_vectors = model.repository_graph.propagated_embeddings()
+            assert repository_users is not None and repository_vectors is not None
             repository_loss = criterion(
                 (repository_users[users[positions]] * repository_vectors[repo_positive]).sum(-1),
                 (repository_users[users[positions]] * repository_vectors[repo_unobserved]).sum(-1),
@@ -177,14 +227,35 @@ def train_coder_epoch(
         issue_total += float(issue_loss.detach()) * len(indices)
         processed += len(indices)
         if progress_callback is not None:
-            progress_callback(BatchProgress(
+            rss, available, cuda_allocated, cuda_peak = _resource_snapshot(device)
+            progress = BatchProgress(
                 batch_number,
                 total_batches,
                 processed,
                 len(order),
                 issue_total / processed,
                 repository_total / repository_count if repository_count else None,
-            ))
+                time.perf_counter() - batch_started, rss, available, cuda_allocated, cuda_peak,
+            )
+            progress_callback(progress)
+        else:
+            rss, available, cuda_allocated, cuda_peak = _resource_snapshot(device)
+            progress = BatchProgress(
+                batch_number, total_batches, processed, len(order), issue_total / processed,
+                repository_total / repository_count if repository_count else None,
+                time.perf_counter() - batch_started, rss, available, cuda_allocated, cuda_peak,
+            )
+        state = BatchResumeState(
+            next_batch=batch_number,
+            issue_loss_sum=issue_total,
+            repository_loss_sum=repository_total,
+            processed=processed,
+            repository_count=repository_count,
+        )
+        if checkpoint_callback is not None:
+            checkpoint_callback(progress, state)
+        if stop_requested is not None and stop_requested():
+            raise KeyboardInterrupt("safe stop requested after optimizer step")
     return EpochResult(
         issue_total / len(order),
         repository_total / repository_count if repository_count else None,

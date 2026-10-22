@@ -13,6 +13,59 @@ from typing import Any
 import uuid
 
 
+def process_identity(pid: int | None = None) -> dict[str, Any]:
+    """Return PID plus creation time/command line to guard against PID reuse."""
+
+    pid = os.getpid() if pid is None else int(pid)
+    try:
+        import psutil
+        process = psutil.Process(pid)
+        return {"pid": pid, "process_create_time": process.create_time(),
+                "process_command": process.cmdline()}
+    except Exception:
+        if os.name == "nt":
+            try:
+                import ctypes
+                from ctypes import wintypes
+                PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+                handle = ctypes.windll.kernel32.OpenProcess(
+                    PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+                )
+                if not handle:
+                    raise OSError("process does not exist or cannot be queried")
+                creation = wintypes.FILETIME(); exit_time = wintypes.FILETIME()
+                kernel = wintypes.FILETIME(); user = wintypes.FILETIME()
+                if not ctypes.windll.kernel32.GetProcessTimes(
+                    handle, ctypes.byref(creation), ctypes.byref(exit_time),
+                    ctypes.byref(kernel), ctypes.byref(user)
+                ):
+                    raise OSError("GetProcessTimes failed")
+                ctypes.windll.kernel32.CloseHandle(handle)
+                ticks = (creation.dwHighDateTime << 32) | creation.dwLowDateTime
+                return {"pid": pid,
+                        "process_create_time": ticks / 10_000_000 - 11_644_473_600,
+                        "process_command": None}
+            except Exception:
+                pass
+        return {"pid": pid, "process_create_time": None, "process_command": None}
+
+
+def running_state_is_active(state: dict[str, Any]) -> bool:
+    """Require multiple process attributes; a reused PID alone is never sufficient."""
+
+    try:
+        current = process_identity(int(state["pid"]))
+    except (KeyError, TypeError, ValueError):
+        return False
+    saved_time = state.get("process_create_time")
+    saved_command = state.get("process_command")
+    if saved_time is None or current.get("process_create_time") is None:
+        return False
+    if abs(float(saved_time) - float(current["process_create_time"])) > 1.0:
+        return False
+    return saved_command == current.get("process_command")
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -70,11 +123,12 @@ class RunMonitor:
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._heartbeat_logger = logging.getLogger("coder_issue.training.heartbeat")
+        identity = process_identity()
         self.state: dict[str, Any] = {
             "schema_version": 1,
             "run_id": run_id,
             "variant": variant,
-            "pid": os.getpid(),
+            **identity,
             "started_at": self.started_at,
             "updated_at": self.started_at,
             "stage": "initializing",

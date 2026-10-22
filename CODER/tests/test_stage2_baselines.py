@@ -46,7 +46,7 @@ class StageTwoTests(unittest.TestCase):
         settings = load_baseline_settings(CODER_ROOT / "configs/baselines.toml")
         hashes = validate_frozen_inputs(settings)
         self.assertEqual("gfibot-m0-v1.1", settings.dataset_version)
-        self.assertEqual(10, len(hashes))
+        self.assertEqual(13, len(hashes))
 
     def test_candidate_file_is_shared_deterministic_and_contains_positive(self) -> None:
         train = _interactions([0], [0], [0], ["2019-02-01"])

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+from itertools import product
 import json
 import math
 from pathlib import Path
@@ -27,6 +28,16 @@ class EncoderOption:
 
 
 @dataclass(frozen=True)
+class SearchTrial:
+    embedding_dim: int
+    issue_layers: int
+    learning_rate: float
+    structure_layers: int
+    repository_loss_weight: float
+    encoder: str | None = None
+
+
+@dataclass(frozen=True)
 class NeuralSettings:
     config_path: Path
     config_name: str
@@ -42,6 +53,8 @@ class NeuralSettings:
     device: str
     epochs: int
     batch_size: int
+    max_batches_per_epoch: int | None
+    checkpoint_interval_batches: int
     progress_interval_seconds: float
     validation_interval_epochs: int
     validation_start_epoch: int
@@ -61,8 +74,11 @@ class NeuralSettings:
     structure_dropout: float
     max_segments: int
     text_batch_size: int
+    text_segment_batch_size: int
+    text_chunk_size: int
     allow_download: bool
     encoders: tuple[EncoderOption, ...]
+    search_trials: tuple[SearchTrial, ...]
     variants: tuple[str, ...]
 
 
@@ -96,6 +112,9 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         raise ConfigurationError("graph_version must match the frozen dataset version")
     epochs = int(_get(training, "epochs", "training"))
     batch_size = int(_get(training, "batch_size", "training"))
+    max_batches_raw = int(training.get("max_batches_per_epoch", 0))
+    max_batches_per_epoch = max_batches_raw or None
+    checkpoint_interval_batches = int(training.get("checkpoint_interval_batches", 100))
     progress_interval_seconds = float(
         _get(training, "progress_interval_seconds", "training")
     )
@@ -118,11 +137,31 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         float(x) for x in _get(training, "repository_loss_weights", "training")
     )
     structure_layers = tuple(int(x) for x in _get(structure, "layers", "structure"))
+    search_trials = tuple(
+        SearchTrial(
+            embedding_dim=int(_get(item, "embedding_dim", "search.trials")),
+            issue_layers=int(_get(item, "issue_layers", "search.trials")),
+            learning_rate=float(_get(item, "learning_rate", "search.trials")),
+            structure_layers=int(_get(item, "structure_layers", "search.trials")),
+            repository_loss_weight=float(
+                _get(item, "repository_loss_weight", "search.trials")
+            ),
+            encoder=(None if item.get("encoder") is None else str(item["encoder"])),
+        )
+        for item in raw.get("search", {}).get("trials", [])
+    )
     heads = int(_get(structure, "heads", "structure"))
+    text_batch_size = int(_get(text, "batch_size", "text"))
+    text_segment_batch_size = int(text.get("segment_batch_size", text_batch_size))
+    text_chunk_size = int(text.get("chunk_size", 256))
     if not all((dimensions, issue_layers, learning_rates, repository_weights, structure_layers)):
         raise ConfigurationError("training and structure search grids cannot be empty")
-    if min(epochs, batch_size, heads, *dimensions, *issue_layers, *structure_layers) <= 0:
+    if min(epochs, batch_size, checkpoint_interval_batches, heads, text_batch_size,
+           text_segment_batch_size, text_chunk_size, *dimensions, *issue_layers,
+           *structure_layers) <= 0:
         raise ConfigurationError("epochs, batch size, heads, and dimensions must be positive")
+    if max_batches_raw < 0:
+        raise ConfigurationError("training.max_batches_per_epoch cannot be negative")
     if min(learning_rates) <= 0 or min(repository_weights) < 0:
         raise ConfigurationError("learning rates must be positive and repository weights non-negative")
     if progress_interval_seconds <= 0:
@@ -141,6 +180,35 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         raise ConfigurationError("training.early_stopping_min_epochs must be positive")
     if any(dimension % heads for dimension in dimensions):
         raise ConfigurationError("every embedding dimension must be divisible by GAT heads")
+    if search_trials:
+        signatures = {
+            (
+                item.embedding_dim,
+                item.issue_layers,
+                item.learning_rate,
+                item.structure_layers,
+                item.repository_loss_weight,
+                item.encoder,
+            )
+            for item in search_trials
+        }
+        if len(signatures) != len(search_trials):
+            raise ConfigurationError("search.trials contains duplicate combinations")
+        for index, item in enumerate(search_trials, start=1):
+            if (
+                item.embedding_dim <= 0
+                or item.issue_layers <= 0
+                or item.learning_rate <= 0
+                or item.structure_layers <= 0
+                or item.repository_loss_weight < 0
+            ):
+                raise ConfigurationError(
+                    f"search.trials[{index}] contains a non-positive model parameter"
+                )
+            if item.embedding_dim % heads:
+                raise ConfigurationError(
+                    f"search.trials[{index}].embedding_dim must be divisible by GAT heads"
+                )
     return NeuralSettings(
         config_path=path,
         config_name=str(_get(raw, "config_name", "root")),
@@ -156,6 +224,8 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         device=str(_get(training, "device", "training")),
         epochs=epochs,
         batch_size=batch_size,
+        max_batches_per_epoch=max_batches_per_epoch,
+        checkpoint_interval_batches=checkpoint_interval_batches,
         progress_interval_seconds=progress_interval_seconds,
         validation_interval_epochs=validation_interval_epochs,
         validation_start_epoch=validation_start_epoch,
@@ -174,13 +244,89 @@ def load_neural_settings(path_value: str | Path) -> NeuralSettings:
         structure_heads=heads,
         structure_dropout=float(_get(structure, "dropout", "structure")),
         max_segments=int(_get(text, "max_segments", "text")),
-        text_batch_size=int(_get(text, "batch_size", "text")),
+        text_batch_size=text_batch_size,
+        text_segment_batch_size=text_segment_batch_size,
+        text_chunk_size=text_chunk_size,
         allow_download=bool(_get(text, "allow_download", "text")),
         encoders=tuple(
             EncoderOption(str(_get(item, "name", "text.encoders")), str(_get(item, "revision", "text.encoders")), str(_get(item, "kind", "text.encoders")))
             for item in _get(text, "encoders", "text")
         ),
+        search_trials=search_trials,
         variants=variants,
+    )
+
+
+def expand_search_trials(
+    settings: NeuralSettings,
+    *,
+    use_text: bool,
+    use_structure: bool,
+    use_repository: bool,
+    encoder_versions: tuple[str, ...],
+) -> tuple[dict[str, object], ...]:
+    """Expand either an explicit budgeted design or the legacy Cartesian grid."""
+
+    if use_text and not encoder_versions:
+        raise ConfigurationError("text-enabled search requires at least one encoder")
+    if settings.search_trials:
+        expanded: list[dict[str, object]] = []
+        for index, trial in enumerate(settings.search_trials, start=1):
+            if use_text:
+                if trial.encoder is None:
+                    if len(encoder_versions) != 1:
+                        raise ConfigurationError(
+                            f"search.trials[{index}].encoder is required with multiple encoders"
+                        )
+                    encoder = encoder_versions[0]
+                else:
+                    matches = [
+                        value
+                        for value in encoder_versions
+                        if value == trial.encoder or value.startswith(f"{trial.encoder}@")
+                    ]
+                    if len(matches) != 1:
+                        raise ConfigurationError(
+                            f"search.trials[{index}].encoder does not match exactly one configured encoder"
+                        )
+                    encoder = matches[0]
+            else:
+                encoder = "disabled"
+            expanded.append(
+                {
+                    "embedding_dim": trial.embedding_dim,
+                    "issue_layers": trial.issue_layers,
+                    "learning_rate": trial.learning_rate,
+                    "structure_layers": trial.structure_layers if use_structure else 0,
+                    "repository_loss_weight": (
+                        trial.repository_loss_weight if use_repository else 0.0
+                    ),
+                    "encoder_version": encoder,
+                }
+            )
+        return tuple(expanded)
+
+    structures = settings.structure_layers if use_structure else (0,)
+    repository_weights = settings.repository_loss_weights if use_repository else (0.0,)
+    encoders = encoder_versions if use_text else ("disabled",)
+    return tuple(
+        {
+            "embedding_dim": dimension,
+            "issue_layers": layers,
+            "learning_rate": learning_rate,
+            "structure_layers": structure_layers,
+            "repository_loss_weight": repository_weight,
+            "encoder_version": encoder,
+        }
+        for dimension, layers, learning_rate, structure_layers, repository_weight, encoder
+        in product(
+            settings.embedding_dimensions,
+            settings.issue_layers,
+            settings.learning_rates,
+            structures,
+            repository_weights,
+            encoders,
+        )
     )
 
 

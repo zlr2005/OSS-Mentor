@@ -140,7 +140,9 @@ def restore_best_checkpoint(
     *,
     map_location: str | torch.device,
 ) -> dict[str, Any]:
-    payload = torch.load(path, map_location=map_location, weights_only=True)
+    # Memory-map large self-contained checkpoints to avoid an eager duplicate of
+    # static graph and semantic buffers during post-training evaluation.
+    payload = torch.load(path, map_location=map_location, weights_only=True, mmap=True)
     expected_config = _model_config(model)
     if payload.get("model_config") != expected_config:
         raise ValueError("checkpoint model configuration does not match the target model")
@@ -207,23 +209,48 @@ def run_training_trial(
     selection_group: str = "predictable",
     map_location: str | torch.device = "cpu",
     on_validation: Callable[[dict[str, Any]], None] | None = None,
+    resume_state: dict[str, Any] | None = None,
+    on_epoch_committed: Callable[[dict[str, Any]], None] | None = None,
+    restore_and_verify_best: bool = True,
 ) -> TrialRunResult:
-    """Train one Trial, restore its best Epoch, and verify the restored score."""
+    """Train one Trial and normally restore and verify its best Epoch.
+
+    A terminal single-batch probe can disable the second model restoration and
+    validation pass after its atomic best checkpoint has already been written.
+    Formal training must retain the default verification behavior.
+    """
 
     if epochs <= 0:
         raise ValueError("epochs must be positive")
     tracker = TrialSelectionState(policy)
-    history: list[dict[str, Any]] = []
-    validation_history: list[dict[str, Any]] = []
-    best_validation: dict[str, Any] | None = None
+    resume_state = resume_state or {}
+    history: list[dict[str, Any]] = list(resume_state.get("history", []))
+    validation_history: list[dict[str, Any]] = list(
+        resume_state.get("validation_history", [])
+    )
+    best_validation: dict[str, Any] | None = resume_state.get("best_validation")
+    tracker.best_score = float(resume_state.get("best_score", -float("inf")))
+    tracker.best_epoch = int(resume_state.get("best_epoch", 0))
+    tracker.validations_without_improvement = int(
+        resume_state.get("validations_without_improvement", 0)
+    )
     stopped_early = False
-    epochs_trained = 0
+    epochs_trained = int(resume_state.get("epochs_trained", 0))
+    start_epoch = int(resume_state.get("start_epoch", epochs_trained + 1))
 
-    for epoch in range(1, epochs + 1):
+    for epoch in range(start_epoch, epochs + 1):
         result = train_epoch(epoch)
         epochs_trained = epoch
         history.append(dict(result.__dict__))
         if not schedule.is_due(epoch, epochs):
+            if on_epoch_committed is not None:
+                on_epoch_committed({
+                    "history": history, "validation_history": validation_history,
+                    "best_validation": best_validation, "best_score": tracker.best_score,
+                    "best_epoch": tracker.best_epoch,
+                    "validations_without_improvement": tracker.validations_without_improvement,
+                    "epochs_trained": epochs_trained, "start_epoch": epoch + 1,
+                })
             continue
         report, score, validation_seconds = _validate_model(
             model,
@@ -257,28 +284,40 @@ def run_training_trial(
         validation_history.append(record)
         if on_validation is not None:
             on_validation(record)
+        if on_epoch_committed is not None:
+            on_epoch_committed({
+                "history": history, "validation_history": validation_history,
+                "best_validation": best_validation, "best_score": tracker.best_score,
+                "best_epoch": tracker.best_epoch,
+                "validations_without_improvement": tracker.validations_without_improvement,
+                "epochs_trained": epochs_trained, "start_epoch": epoch + 1,
+            })
         if decision.should_stop:
             stopped_early = True
             break
 
     if best_validation is None or tracker.best_epoch == 0 or not checkpoint_path.is_file():
         raise RuntimeError("trial completed without a valid best checkpoint")
-    checkpoint = restore_best_checkpoint(
-        checkpoint_path, model, map_location=map_location
-    )
-    if checkpoint["epoch"] != tracker.best_epoch:
-        raise RuntimeError("restored checkpoint epoch does not match the selected best epoch")
-    restored_validation, restored_score, _ = _validate_model(
-        model,
-        evaluator,
-        selection_group=selection_group,
-        selection_metric=selection_metric,
-    )
-    if not math.isclose(restored_score, tracker.best_score, rel_tol=1e-6, abs_tol=1e-8):
-        raise RuntimeError(
-            "restored checkpoint score does not match its saved validation score: "
-            f"saved={tracker.best_score}, restored={restored_score}"
+    if restore_and_verify_best:
+        checkpoint = restore_best_checkpoint(
+            checkpoint_path, model, map_location=map_location
         )
+        if checkpoint["epoch"] != tracker.best_epoch:
+            raise RuntimeError("restored checkpoint epoch does not match the selected best epoch")
+        restored_validation, restored_score, _ = _validate_model(
+            model,
+            evaluator,
+            selection_group=selection_group,
+            selection_metric=selection_metric,
+        )
+        if not math.isclose(restored_score, tracker.best_score, rel_tol=1e-6, abs_tol=1e-8):
+            raise RuntimeError(
+                "restored checkpoint score does not match its saved validation score: "
+                f"saved={tracker.best_score}, restored={restored_score}"
+            )
+    else:
+        restored_validation = best_validation
+        restored_score = tracker.best_score
     return TrialRunResult(
         history=history,
         validation_history=validation_history,
