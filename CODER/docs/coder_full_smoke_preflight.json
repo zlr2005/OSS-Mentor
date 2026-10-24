@@ -1,0 +1,137 @@
+{
+  "device": {
+    "configured": "cpu",
+    "cuda_available": false,
+    "usable": true
+  },
+  "disk": {
+    "free": 43505590272,
+    "path": "D:\\10245501444ECNU\\大创\\OSS-Mentor\\OSS-Mentor-main\\data\\runs\\gfibot-m0-v1.1",
+    "total": 592323801088
+  },
+  "edge_consistency": {
+    "issue_label_bounds": true,
+    "issue_repository_bounds": true,
+    "one_repository_per_issue": true,
+    "train_bounds": true
+  },
+  "entity_counts": {
+    "developers": 18360,
+    "issues": 148096,
+    "labels": 6768,
+    "repositories": 97,
+    "train_interactions": 123481
+  },
+  "input_hashes": {
+    "candidate_test_cross_repo": "2d736e96aaf07a4e3980e14184ea9206edced2bb33f8d0311ff489db8ff80608",
+    "candidate_test_same_repo": "99ecf4c2169f5fc4c2d2d2dacf3393d37a4b80ee9a04584288349b2146616fe3",
+    "candidate_train_cross_repo": "c898939813300b6298d876d0c02477eb19c0c0e15ae54ed083bd61b73018096b",
+    "candidate_valid_cross_repo": "d91f08eb2d07dea990a0882e41e254daa4ad1e990089e6e8317bb5c85c6db6d0",
+    "candidate_valid_same_repo": "03a6aede22430a15ef7db841f4787e7166e37ddb82d6460dd09fb94caa78da38",
+    "developer_issue_edges": "49feb1079946792e5af7644ff80cf9fa9a3f447bf2987b1a74b4974a838cc358",
+    "developer_mapping": "124d4fe81c1d8829d30c8eb4492e4f4f73a7462c24f4e98ab1ce9775e097e0d8",
+    "issue_label_edges": "fdede01372c5f63a4c1f8d5c83bf229d6a458f3e9929b1108ebafc39b897fe71",
+    "issue_mapping": "a0fb44ccf86bf97bd09e1f393ab31e48a1c7c858237536b4495b90c88624e18f",
+    "issue_repo_edges": "1462dd65d49bdc0a187c6598b2930a193fb87debc1689f6d6dbe8f889902a217",
+    "issue_snapshots": "03a7760cb6055e8cf460eea6a9c345fb0de08c497fb7ff0e33eb6a3361d0476d",
+    "issues": "549c6e64a0ed62310431d1c98014ff664453c54748b69460ddbd0b0ce0dd2dbf",
+    "label_mapping": "bba35397b51992ceeb462f8eef52ee53f935d0db832250cd02f24b23744c7051",
+    "repository_mapping": "62df31ce70e22ed422069dbcc725fd575b5a02fda1122d89756174fa7e63cd34",
+    "split_manifest": "d17bd5a3c6102877a2f6726c4fdd65c252d2eb69b0bde50541892da71bde62ee",
+    "test": "0aea0d87601b26a0a4a4772e91d918b3c1fe4819b94a83fe7c0c5b17e62caf1c",
+    "train": "ecfae054980546872a6c7854f6e4d3d112b10e03d06f396c4fc3e23a333f20dd",
+    "valid": "3b8ca739071f273788d6b7294c9ce497b69336dfd1bbb7a42bb635075274943f"
+  },
+  "issue_embedding_cache": [
+    {
+      "encoder": "sentence-transformers/all-MiniLM-L6-v2",
+      "reasons": [],
+      "root": "D:\\10245501444ECNU\\大创\\OSS-Mentor\\OSS-Mentor-main\\data\\midterm\\embeddings\\gfibot-m0-v1.1\\sentence-transformers__all-MiniLM-L6-v2@c21050a7ef692090620a6d037dd736908f9c7cf6",
+      "status": "CACHE_READY"
+    }
+  ],
+  "mapping_consistency": {
+    "developer": true,
+    "issue": true,
+    "label": true,
+    "repository": true
+  },
+  "memory": {
+    "physical_available": 5022019584,
+    "physical_total": 16573128704,
+    "process_rss": 334045184
+  },
+  "resource_estimate": {
+    "activation_upper_bound_bytes": 266221056,
+    "adam_moment_bytes": 87040512,
+    "basis": "fp32 tensors; sparse edge indices/values approximated at 20 bytes per directed edge",
+    "checkpoint_retention_basis": "one best checkpoint per Trial plus rotating latest/previous recovery checkpoints",
+    "cpu_memory_risk": "LOW_BY_MODEL_TENSOR_ESTIMATE",
+    "disk_risk": "LOW_BY_CHECKPOINT_ESTIMATE",
+    "estimated_best_checkpoint_bytes_per_trial": 302865472,
+    "estimated_checkpoint_disk_bytes": 1082677440,
+    "estimated_recovery_checkpoint_bytes": 389905984,
+    "estimated_training_working_set_bytes": 428651584,
+    "gpu_memory_risk": "NOT_APPLICABLE_CPU_CONFIG",
+    "parameter_bytes": 43520256,
+    "semantic_buffer_bytes": 227475456,
+    "static_graph_bytes": 31869760,
+    "warning": "This is a sizing estimate, not an exact peak or runtime prediction; validate with --probe-batch."
+  },
+  "schema_version": 1,
+  "search": {
+    "epochs_per_trial": 1,
+    "total_epochs": 1,
+    "trial_count": 1,
+    "trials": [
+      {
+        "embedding_dim": 32,
+        "encoder_version": "sentence-transformers/all-MiniLM-L6-v2@c21050a7ef692090620a6d037dd736908f9c7cf6",
+        "issue_layers": 4,
+        "learning_rate": 0.001,
+        "repository_loss_weight": 0.1,
+        "structure_layers": 2
+      }
+    ],
+    "variant": "coder_issue_repo"
+  },
+  "status": "READY",
+  "temporal_visibility_audit": {
+    "conclusion": "TIME_VISIBILITY_RISK: creation-time fields avoid outcome leakage, but the current full structural graph includes nodes created after the training cutoff and permits their messages during training. Keep current graph unchanged for protocol compatibility; a new graph_version should filter nodes/edges by prediction cutoff before future formal comparisons.",
+    "future_issue_creation_label_edges_in_structural_graph": 22732,
+    "future_issue_repository_edges_in_structural_graph": 19882,
+    "issues_created_at_or_after_cutoff": 19882,
+    "participates_in_training_gat_message_passing": true,
+    "result_field_or_closure_label_used": false,
+    "train_cutoff": "2021-01-01T00:00:00+00:00"
+  },
+  "transformer_weight_cache": [
+    {
+      "allow_download": false,
+      "config_loadable": true,
+      "files": {
+        "config.json": "C:\\Users\\20651\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\c21050a7ef692090620a6d037dd736908f9c7cf6\\config.json",
+        "tokenizer_config.json": "C:\\Users\\20651\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\c21050a7ef692090620a6d037dd736908f9c7cf6\\tokenizer_config.json",
+        "weights": "C:\\Users\\20651\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\c21050a7ef692090620a6d037dd736908f9c7cf6\\pytorch_model.bin"
+      },
+      "model_loadable_on_configured_device": true,
+      "name": "sentence-transformers/all-MiniLM-L6-v2",
+      "revision": "c21050a7ef692090620a6d037dd736908f9c7cf6",
+      "status": "READY",
+      "tokenizer_loadable": true
+    }
+  ],
+  "versions": {
+    "numpy": "2.3.4",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "pyarrow": "21.0.0",
+    "python": "3.13.9",
+    "torch": "2.9.0+cpu",
+    "transformers": "4.57.1"
+  },
+  "writable": {
+    "D:\\10245501444ECNU\\大创\\OSS-Mentor\\OSS-Mentor-main\\data\\midterm\\embeddings\\gfibot-m0-v1.1": true,
+    "D:\\10245501444ECNU\\大创\\OSS-Mentor\\OSS-Mentor-main\\data\\models\\gfibot-m0-v1.1\\coder": true,
+    "D:\\10245501444ECNU\\大创\\OSS-Mentor\\OSS-Mentor-main\\data\\runs\\gfibot-m0-v1.1\\coder": true
+  }
+}

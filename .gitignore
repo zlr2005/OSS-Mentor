@@ -33,6 +33,29 @@ htmlcov/
 .venv/
 venv/
 
+# CODER raw datasets and MongoDB exports (never commit source data)
+/CODER/*.bson
+/CODER/*.bson.gz
+**/mongodump/
+**/mongo-dump/
+**/mongodb-dump/
+*.archive
+
+# CODER model artifacts and experiment caches
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+wandb/
+mlruns/
+lightning_logs/
+/CODER/.cache/
+/CODER/.test-tmp/
+/CODER/tmp*/
+/CODER/checkpoints/
+/CODER/runs/
+
 # Editors and operating systems
 .idea/
 .vscode/

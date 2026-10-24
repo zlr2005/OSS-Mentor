@@ -1,323 +1,259 @@
 # OSS-Mentor
 
-OSS-Mentor 是一个面向开源贡献者的双通道导学系统：
+> 用开发者画像与 CODER 模型，为开源贡献者推荐真实、可解释的 GitHub Issue。
 
-- 新手破冰：帮助零贡献或首次贡献者找到当前仍可做、难度匹配且说明清楚的任务；
-- 进阶成长：根据历史贡献和技能证据推荐略高于当前能力的任务，并逐步形成成长路径。
+OSS-Mentor 面向刚开始开源贡献和希望继续成长的开发者。系统从公开数据源发现候选 Issue，经 GitHub 当前状态复核和任务特征抽取后，先执行语言、任务类型、操作系统、难度与可领取状态等硬约束，再由 CODER 模型排序，最后叠加用户反馈、多样性重排和可审计快照。
 
-当前仓库已经形成可本地试用的 MVP：使用 Ecosyste.ms 发现候选、GitHub API 复核当前状态、SQLite 保存任务与预设画像，并通过网页提供双通道个性化推荐和自定义画像。
+当前仓库是本地研究原型，不是托管在线服务，也不是 CODER 论文的官方实现或原数据集复现。
 
-## 文档
+## 当前能力
 
-- [数据字典 v0.1](docs/data_dictionary_v0.1.md)
-- [数据采集方案 v0.1](docs/data_collection_plan_v0.1.md)
-- [GitHub API 字段映射 v0.1](docs/github_api_field_mapping_v0.1.md)
-- [试采仓库配置](config/pilot_repositories_v0.1.csv)
-- [PostgreSQL 初始迁移](db/migrations/001_initial_p0.sql)
-- [Collector smoke test report v0.1](docs/smoke_test_report_v0.1.md)
-- [Ecosyste.ms 与 GitHub 数据源验证报告 v0.1](docs/source_validation_report_v0.1.md)
-- [SQLite 候选任务流水线 v0.1](docs/sqlite_candidate_pipeline_v0.1.md)
-- [候选任务采集与刷新 v0.2](docs/candidate_collection_refresh_v0.2.md)
-- [候选池聚合报告 v0.2](docs/candidate_pool_report_v0.2.md)
-- [推荐库存扩充与选项保障 v0.3](docs/recommendation_inventory_expansion_v0.3.md)
-- [候选池聚合报告 v0.3（历史兼容快照）](docs/candidate_pool_report_v0.3.md)
-- [v0.5 真实在线库存到登录推荐发布验收](docs/online_inventory_recommendation_acceptance_2026-10-10.md)
-- [数据质量报告 v0.2](docs/data_quality_report_v0.2.md)
-- [进阶通道离线评估 v0.2](docs/ranking_evaluation_v0.2.md)
-- [新手通道离线评估 v0.2](docs/ranking_evaluation_newcomer_v0.2.md)
-- [Member C 推荐算法 v0.3 交付说明](docs/member_c_delivery_v0.3.md)
-- [Member C 画像到推荐模块集成答复 v0.5](docs/member_c_profile_recommendation_handoff_v0.5.md)
-- [进阶通道离线评估 v0.3](docs/ranking_evaluation_v0.3.md)
-- [新手通道离线评估 v0.3](docs/ranking_evaluation_newcomer_v0.3.md)
-- [任务特征与双通道排序 v0.1](docs/task_features_and_ranking_v0.1.md)
-- [开发者画像与个性化匹配 v0.1](docs/personalized_matching_v0.1.md)
-- [本地推荐 API v0.1](docs/local_api_v0.1.md)
-- [OpenAPI v0.1](docs/openapi_v0.1.yaml)
-- [最小网页界面 v0.1](docs/web_ui_v0.1.md)
-- [自定义用户画像 v0.2](docs/web_ui_v0.2.md)
-- [OpenAPI v0.2](docs/openapi_v0.2.yaml)
-- [推荐反馈闭环 v0.3](docs/recommendation_feedback_v0.3.md)
-- [OpenAPI v0.3](docs/openapi_v0.3.yaml)
-- [OpenAPI v0.4](docs/openapi_v0.4.yaml)
-- [OpenAPI v0.5](docs/openapi_v0.5.yaml)
-- [推荐模块画像接入 v0.5](docs/recommendation_profile_integration_v0.5.md)
-- [画像、推荐与反馈联合验证（2026-09-30）](docs/profile_recommendation_joint_acceptance_2026-09-30.md)
+- **真实候选池**：Ecosyste.ms 用于发现，GitHub REST API 用于当前状态、正文和关联 PR 复核，SQLite 保存运行时数据。
+- **双通道画像**：支持 `newcomer`（新手破冰）和 `growth`（进阶成长），画像可由表单维护，也可在 GitHub OAuth 后导入有限的公开活动证据。
+- **CODER 排序**：默认使用 `coder-full-search8-v1`，融合 Developer–Issue 协同表示、Issue 文本、Repository–Issue–Label 结构表示和 Repository 辅助表示。
+- **安全推荐链路**：硬约束不会被模型分数突破；候选缓存缺失时返回错误，不会静默退回旧排序。
+- **可解释与可追溯**：返回推荐理由、技能缺口、模型/数据/图/编码器版本、候选覆盖状态、反馈状态和推荐运行 ID。
+- **本地网页与 API**：同一 Python 服务提供静态网页、画像、推荐、反馈、状态和 GitHub OAuth 接口。
 
-## 当前采集器范围
+## 文档导航
 
-第一版 collector 使用 Python 标准库，不需要下载第三方包，支持：
-
-- 读取并校验 Wave 1/2/3/4/5 仓库 CSV；
-- 获取仓库基本信息；
-- 获取 community profile；
-- 获取语言分布；
-- 分页获取项目标签；
-- 固定 GitHub REST API `2026-03-10`；
-- 限流识别、指数退避和跨域分页保护；
-- 将响应保存为不可变 gzip JSON envelope；
-- 默认拒绝真实网络请求，必须显式传入 `--allow-network`；
-- token 仅从环境变量读取，不进入 Raw 文件。
-
-Issue、PR、Timeline、Review、Files 和 Checks 将在仓库级 smoke test 通过后接入。
-
-## 本地运行
-
-项目使用 `src` 布局。未安装包时，在 PowerShell 中设置：
-
-```powershell
-$env:PYTHONPATH = "src"
-```
-
-查看 Wave 1 仓库：
-
-```powershell
-python -m oss_mentor list-repositories --wave 1
-```
-
-查看请求计划，不访问网络：
-
-```powershell
-python -m oss_mentor collect-repositories --wave 1 --dry-run
-```
-
-只查看一个仓库：
-
-```powershell
-python -m oss_mentor collect-repositories `
-  --wave 1 `
-  --repo eslint/eslint `
-  --dry-run
-```
-
-## 真实公共 API smoke test
-
-复制 `.env.example` 中需要的变量到本地环境，但不要创建或提交包含真实 token 的文件。
-
-```powershell
-$env:PYTHONPATH = "src"
-$env:GITHUB_TOKEN = "<read-only-runtime-secret>"
-python -m oss_mentor collect-repositories `
-  --wave 1 `
-  --repo eslint/eslint `
-  --allow-network
-```
-
-如果仅进行非常小的匿名公共测试，可显式使用：
-
-```powershell
-python -m oss_mentor collect-repositories `
-  --wave 1 `
-  --repo eslint/eslint `
-  --allow-network `
-  --allow-anonymous
-```
-
-匿名 GitHub API 限额较低，不适合完整 Wave 回填。
-
-Raw 响应默认写入：
-
-```text
-data/raw/<endpoint>/<owner>/<repo>/<yyyy-mm-dd>/*.json.gz
-```
-
-`data/` 已被 `.gitignore` 排除。
-
-## 运行测试
-
-```powershell
-$env:PYTHONPATH = "src"
-python -m unittest discover -s tests -v
-```
-
-## 对比 Ecosyste.ms 与 GitHub
-
-对单个试点仓库抽样比较两个公共数据源，不需要 PostgreSQL 或 Docker：
-
-```powershell
-$env:PYTHONPATH = "src"
-python -m oss_mentor compare-issue-sources `
-  --wave 1 `
-  --repo eslint/eslint `
-  --sample-size 10 `
-  --allow-network `
-  --allow-anonymous `
-  --output data/validation/eslint_source_comparison.json
-```
-
-Ecosyste.ms 用于候选发现和历史元数据，GitHub API 用于补齐数字 Issue ID、
-当前正文以及需要额外端点才能得到的 Timeline、Review 和 CI 信息。
-
-## SQLite 候选池
-
-在新电脑上可以直接从仓库内的脱敏 fixture 初始化可演示数据库，并检查环境：
-
-```powershell
-$env:PYTHONPATH = "src"
-python -m oss_mentor init-demo
-python -m oss_mentor doctor
-python -m oss_mentor serve-api
-```
-
-`init-demo` 只在目标数据库尚不存在时复制 fixture，不会覆盖已有数据库。
-初始化后包含脱敏候选任务和匿名演示画像，无需访问 GitHub。`doctor` 会检查
-Python、迁移、画像、候选库存、端口和静态资源；缺少可推荐任务时返回非零状态。
-
-同步少量候选并通过 GitHub 当前状态复核：
-
-```powershell
-$env:PYTHONPATH = "src"
-python -m oss_mentor sync-candidates `
-  --all-enabled `
-  --limit-per-repo 20 `
-  --output data/reports/all_enabled_sync.json `
-  --allow-network
-```
-
-全量同步需要在当前 PowerShell 会话设置只读 `GITHUB_TOKEN`。可先用
-`--dry-run` 查看 28 个仓库、标签和请求量估算。刷新超过 24 小时的状态并生成聚合报告：
-
-```powershell
-python -m oss_mentor refresh-candidates `
-  --all-enabled `
-  --older-than-hours 24 `
-  --limit 500 `
-  --allow-network
-
-python -m oss_mentor candidate-report `
-  --sync-report data/reports/all_enabled_sync.json `
-  --refresh-report data/reports/candidate_refresh_run.json `
-  --output data/reports/candidate_pool_v0.3.json
-```
-
-仓库超过 180 天没有推送时会标记为维护不活跃并退出匹配池；状态与归档、
-禁用分开保存。候选池报告可同时汇总同步/刷新的 GitHub 请求量、失败仓库和原因。
-
-查看当前可推荐候选：
-
-```powershell
-python -m oss_mentor list-candidates --eligibility eligible
-```
-
-默认数据库为 `data/oss_mentor.sqlite3`，由 Python 标准库直接管理。
-同步时会优先查询试点配置中的新人候选标签，再以近期开放 Issue 补足数量；
-因此同一套候选池同时支持新手信号和进阶任务发现。
-
-无需访问外部 API 的固定演示数据位于 `fixtures/oss_mentor_demo.sqlite3`。它只包含
-少量公开任务元数据和匿名 demo 画像，不包含 Issue 正文、反馈事件或真实用户数据。
-使用方法和重新导出流程见 [`fixtures/README.md`](fixtures/README.md)。
-
-提取可解释特征并查看两个通道的排序：
-
-```powershell
-python -m oss_mentor extract-features
-python -m oss_mentor rank-candidates --track newcomer --limit 10
-python -m oss_mentor rank-candidates --track growth --limit 10
-```
-
-导入本地匿名画像并进行个性化匹配：
-
-```powershell
-python -m oss_mentor import-profiles --file config/demo_profiles_v0.1.json
-python -m oss_mentor match-candidates --profile newcomer_python_macos
-python -m oss_mentor match-candidates --profile growth_python_crossplatform
-```
-
-启动本地 API 与网页：
-
-```powershell
-python -m oss_mentor serve-api
-```
-
-然后访问 `http://127.0.0.1:8765/`，可使用两个预设画像，也可填写语言、平台、任务偏好和技能水平生成一次性自定义推荐。语言和任务类型采用硬约束，界面会读取当前组合的真实库存、禁用零库存选项，并在无匹配任务时阻止提交。自定义画像只在内存中参与本次计算，不写入 SQLite。每条推荐可标记为“感兴趣 / 不适合 / 已开始 / 已完成”，当前状态和变化事件保存在本地。
-
-推荐页的“查看任务详情”会打开任务详情页：
-
-```text
-http://127.0.0.1:8765/task?task_candidate_id=<id>&feedback_context=<context>
-```
-
-详情页默认只读取本地候选快照，不访问网络，并显示可用性、上次复核时间和排除原因。需要打开时立刻重新复核单个任务时，用 `serve-api --enable-task-refresh` 启动并配置只读 `GITHUB_TOKEN`；未启用时该操作返回 503，而不是静默忽略。
-
-测试不访问 GitHub 网络，覆盖配置校验、分页、跨域保护、Raw envelope、CLI dry-run 和 SQL 迁移依赖顺序。
-
-## Docker 部署
-
-先准备环境变量，再初始化数据库，最后启动应用；`serve-api` 在数据库文件不存在时会直接报错退出，因此不要跳过初始化。
-
-```powershell
-Copy-Item .env.example .env   # 填入 GITHUB_TOKEN、OAuth 凭据和 OSS_MENTOR_SESSION_SECRET
-
-docker compose build
-docker compose run --rm app python -m oss_mentor init-demo
-docker compose up
-```
-
-或者用真实候选池替代演示数据：
-
-```powershell
-docker compose run --rm app python -m oss_mentor sync-candidates `
-  --all-enabled --limit-per-repo 20 --output /app/data/reports/sync.json --allow-network
-docker compose up
-```
-
-- 应用镜像由 `Dockerfile` 构建，`compose.yaml` 同时启动 `app` 与 `postgres:16`；
-- 数据库文件位于 `oss_mentor_data` 卷，容器的 `/app/data` 就是本地 `data/` 目录；
-- `serve-api` 默认只绑 `127.0.0.1`，容器内必须显式 `--host 0.0.0.0 --allow-remote` 才能被端口映射访问，`compose.yaml` 已写入该命令；`OSS_MENTOR_HOST` 和 `OSS_MENTOR_PORT` 作为 CLI 默认值读取；
-- `app` 的 healthcheck 请求 `/health`：进程存活但数据库不可用会返回 503，容器随之标记为 unhealthy；
-- PostgreSQL 目前只有迁移层支持，见下一节；`compose.yaml` 传入的 `OSS_MENTOR_DATABASE_URL` 尚未被运行时读取，容器实际仍使用 SQLite；
-- 未配置 OAuth 时容器仍可启动，登录入口会提示 `oauth_configured=false`，演示画像和自定义画像推荐可继续使用。
-
-## 故障排查
-
-| 现象 | 原因与处理 |
+| 想了解什么 | 文档 |
 |---|---|
-| `/health` 返回 503，`database_error=database_missing` | 数据库文件不存在。先运行 `python -m oss_mentor init-demo` 或 `sync-candidates`，再启动服务 |
-| `/health` 返回 503，`database_error=database_unavailable` | 文件存在但无法读取，检查路径权限或是否被其他进程独占 |
-| 登录后推荐为空 | 候选池没有 `available` 任务。先 `sync-candidates` / `refresh-candidates`，再用 `candidate-report` 确认可推荐量 |
-| `/api/v1/auth/github/start` 返回 `oauth_configured=false` | 未配置 `GITHUB_OAUTH_CLIENT_ID`、`GITHUB_OAUTH_CLIENT_SECRET` 和 `OSS_MENTOR_SESSION_SECRET`，此时只能使用演示或自定义画像 |
-| 服务重启后需要重新登录 | 设计如此：GitHub access token 只保存在进程内存，SQLite 中只有 HMAC 摘要 |
-| 任务详情“重新复核可用性”返回 503 | `serve-api` 未加 `--enable-task-refresh`，或缺少只读 `GITHUB_TOKEN` |
-| 任务详情显示“待复核” | 上次 GitHub 复核超过 24 小时。用页面按钮单独复核，或按批量流程执行 `refresh-candidates` |
-| 端口被占用或静态资源缺失 | 运行 `python -m oss_mentor doctor`，它会检查 Python、迁移、画像、候选库存、端口和静态资源 |
+| 系统模块、调用链和目录职责 | [系统架构](docs/architecture.md) |
+| 当前数据、CODER 算法、训练结果和限制 | [数据与模型](docs/data-and-model.md) |
+| 成员 B 输入、成员 D 输出及 HTTP API | [接口契约](docs/interfaces.md) |
+| 安装、缓存、启动、训练恢复和测试 | [运行手册](docs/operations.md) |
+| 文档维护规则和唯一入口 | [文档索引](docs/README.md) |
 
-## PostgreSQL schema
+## 快速开始
 
-初始迁移需要 PostgreSQL 和 `pgcrypto` 扩展：
+### 1. 仅体验平台（无需 CODER 产物）
+
+此路径使用明确的旧规则排序，只适合演示页面和接口；它不是当前正式算法。
 
 ```powershell
-psql "$env:DATABASE_URL" -v ON_ERROR_STOP=1 `
-  -f db/migrations/001_initial_p0.sql
+py -3.11 -m venv .venv
+& '.\.venv\Scripts\python.exe' -m pip install -e .
+& '.\.venv\Scripts\python.exe' -m oss_mentor init-demo
+& '.\.venv\Scripts\python.exe' -m oss_mentor doctor
+& '.\.venv\Scripts\python.exe' -m oss_mentor serve-api --legacy-ranking
 ```
 
-迁移创建两个 schema：
+浏览器访问 `http://127.0.0.1:8765/`。
 
-- `oss_mentor`：标准化事实、快照、推荐和研究数据；
-- `oss_mentor_private`：加密身份映射和 secret reference，应限制分析角色访问。
+### 2. 使用当前 CODER 模型
 
-本机若没有 PostgreSQL，只能执行静态迁移测试，不能替代在真实 PostgreSQL 上的事务验证。
+需要本机已有训练导出的模型、冻结映射和平台候选缓存。默认路径为：
 
-## 安全规则
+```text
+data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1/
+data/midterm/normalized/gfibot-m0-v1.1/mappings/
+data/midterm/platform/coder-full-search8-v1/candidates.npz
+data/oss_mentor.sqlite3
+```
 
-- 不提交 token、`.env`、Raw 数据或本地数据库；
-- 不用用户 OAuth token 承担公共历史回填；
-- 不将 GitHub login、邮箱或完整评论正文写入分析主表；
-- 不通过代理、多个账号或汇集 token 绕过限流；
-- 未确认许可证前，不读取或持久化仓库代码内容；
-- T1/T2 的最终改动规模、Review 和 CI 结果不得泄漏到同一任务的 T0 推荐特征。
+```powershell
+& '.\CODER\.venv\Scripts\python.exe' -m pip install -e .
+& '.\CODER\.venv\Scripts\python.exe' -m oss_mentor doctor
+& '.\CODER\.venv\Scripts\python.exe' -m oss_mentor serve-api
+```
 
-## 下一实施阶段
+`serve-api` 默认加载 CODER；任何必要产物缺失都会在启动时失败。自定义路径可使用 `--coder-model-dir`、`--coder-mapping-dir` 和 `--coder-candidate-cache`。
 
-1. 扩大候选仓库与任务池，并定期复核 Issue 的可领取状态；
-2. 用首次贡献者和进阶开发者各完成一轮可用性测试；
-3. 输出感兴趣率、开始率、完成率和不适合率的本地统计页；
-4. 根据真实反馈校准匹配权重与技能缺口解释；
-5. 完成 PostgreSQL 运行时适配、Docker + PostgreSQL 端到端验收和生产部署准备。
+### 3. 让编码助手完成安装
 
-v0.5 画像集成分支的真实 OAuth/画像验收与 B3 固定快照复跑记录见：
+可把下面这段话交给本地编码助手：
 
-- [真实 GitHub OAuth 与画像闭环验收](docs/profile_oauth_acceptance_2026-09-29.md)；
-- [B3 数据质量固定快照复跑](docs/b3_quality_rerun_2026-09-29.md)。
-- [画像、推荐与反馈联合验证](docs/profile_recommendation_joint_acceptance_2026-09-30.md)；
-- [v0.5 真实在线库存到登录推荐发布验收](docs/online_inventory_recommendation_acceptance_2026-10-10.md)。
+```text
+请在 Windows PowerShell 中检查 Python 3.11+，安装根项目与 CODER 子项目的可编辑依赖；
+不要下载或替换固定 MiniLM revision，不要启动训练。先运行 init-demo 和 doctor；
+若 CODER 模型、映射或候选缓存缺失，只报告缺失项，不要伪造产物。
+```
 
-PR #14 已于 2026-10-08 合并到 main，合并提交为 `cee233c9871f866e4ff629547bd9e17f63870be1`，C/D 最终审阅均已通过。真实 GitHub 在线库存到登录用户非空推荐已于 2026-10-10 在 SQLite 本地模式下通过，并通过 PR #17 修复候选可用状态持久化问题；PostgreSQL 运行时适配和生产部署仍属于后续发布工作。
+完整依赖、缓存生成和恢复命令见[运行手册](docs/operations.md)。
+
+## 最小使用示例
+
+### 查看健康状态
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:8765/health'
+Invoke-RestMethod 'http://127.0.0.1:8765/api/v1/status'
+```
+
+### 使用公开演示画像获取推荐
+
+```powershell
+Invoke-RestMethod `
+  'http://127.0.0.1:8765/api/v1/recommendations?profile_key=newcomer_python_macos&limit=10'
+```
+
+### 使用一次性画像
+
+```powershell
+$body = @{
+  profile = @{
+    display_name = 'Python 新手'
+    service_track = 'newcomer'
+    preferred_languages = @('Python')
+    operating_systems = @('windows')
+    preferred_task_types = @('bug_fix', 'documentation')
+    max_code_difficulty = 1
+    max_setup_difficulty = 1
+    desired_skill_stretch = 1
+    skills = @{ python = 2; git = 1 }
+  }
+  limit = 10
+} | ConvertTo-Json -Depth 6
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri 'http://127.0.0.1:8765/api/v1/recommendations/custom' `
+  -ContentType 'application/json' `
+  -Body $body
+```
+
+## 系统架构
+
+```mermaid
+flowchart LR
+    U[浏览器或 API 客户端] --> A[HTTP API 与会话]
+    A --> P[画像服务]
+    A --> R[推荐服务]
+    P --> S[(SQLite)]
+    R --> S
+    R --> H[硬约束与候选资格]
+    H --> C[CODER 只读评分器]
+    C --> M[(模型包与冻结映射)]
+    C --> K[(平台候选向量缓存)]
+    C --> F[反馈降权与多样性重排]
+    F --> O[RecommendationItemV3]
+    E[Ecosyste.ms] --> D[候选同步]
+    G[GitHub REST API] --> D
+    D --> S
+```
+
+平台在线请求不会训练模型，也不会下载 Transformer。完整职责边界见[系统架构](docs/architecture.md)。
+
+## 推荐工作流
+
+```mermaid
+flowchart LR
+    I[DeveloperProfileV2] --> Q[读取可推荐候选]
+    Q --> G[资格与偏好硬过滤]
+    G --> C[CODER 打分]
+    C --> N[不适合反馈降权]
+    N --> D[仓库与任务类型多样性]
+    D --> S[保存推荐快照]
+    S --> O[RecommendationBatchV3 / JSON]
+```
+
+1. B 侧提供规范化画像；登录用户额外提供 GitHub login 作为历史开发者查找键。
+2. 平台只把当前可领取且满足画像门槛的任务交给模型。
+3. CODER 对已知历史用户使用训练用户向量；未知用户暂用总体用户均值向量。
+4. `not_suitable` 反馈在 Top-N 前降权，随后执行多样性重排并持久化快照。
+5. D 侧通过服务契约或 HTTP API 消费结果，不能把 `score` 解释为完成概率。
+
+## 当前模型结果
+
+正式模型包 `coder-full-search8-v1` 使用 `gfibot-m0-v1.1`、固定 MiniLM revision 和 8 Trial 搜索；最佳 Trial 为 3，最佳 Epoch 为 45。
+
+| 冻结评估切片 | NDCG@10 |
+|---|---:|
+| Valid / cross-repo / predictable（选模指标） | 0.386309 |
+| Test / cross-repo / all | 0.215078 |
+| Test / cross-repo / predictable | 0.358377 |
+| Test / cross-repo / cross-repository-user | 0.383263 |
+| Test / cross-repo / cold-start | 0.011400 |
+
+这些是固定候选协议上的离线排序指标，不代表真实贡献成功率。当前结构图包含训练截止时间之后创建的结构节点，严格时序结论必须在新图版本重训后再给出；详见[数据与模型](docs/data-and-model.md)。
+
+## 技术栈
+
+| 层级 | 技术 | 用途 | 说明 |
+|---|---|---|---|
+| 平台 | Python 3.11+ 标准库 | CLI、HTTP 服务、采集与业务编排 | 根包无强制第三方依赖 |
+| 存储 | SQLite；PostgreSQL schema | 本地运行时与可部署数据模型 | 当前推荐链路以 SQLite 为实装主路径 |
+| 模型 | PyTorch 2.9、NumPy | LightGCN、GAT、融合与只读向量评分 | 模型推理不在线训练 |
+| 文本 | Transformers 4.57、MiniLM L6 v2 | 创建时 Issue 文本向量 | revision 固定且默认禁止下载 |
+| 数据 | PyArrow、Parquet | 冻结映射、交互、候选与评估 | 训练输入带 SHA-256 门禁 |
+| 前端 | 原生 HTML/CSS/JavaScript | 登录、画像、推荐、反馈、状态页 | 无 Node 构建步骤 |
+| 测试 | unittest、pytest、Node test | 平台、模型和浏览器网关回归 | 网络测试默认隔离 |
+
+## 项目结构
+
+```text
+OSS-Mentor-main/
+├── src/oss_mentor/       # 平台 CLI、API、画像、候选、推荐服务和存储
+├── web/                  # 无构建步骤的网页与静态资源
+├── db/                   # SQLite/PostgreSQL 迁移
+├── config/               # 试点仓库与演示画像配置
+├── fixtures/             # 脱敏演示数据库与接口 fixture
+├── tests/                # 平台与接口回归测试
+├── CODER/
+│   ├── src/coder_issue/  # 数据准备、模型、训练、评估和只读推理
+│   ├── configs/          # 冻结实验与搜索配置
+│   ├── scripts/          # Preflight、缓存、训练、评估和比较入口
+│   └── tests/            # CODER 回归测试
+├── data/                 # 本地数据库、冻结中间产物、模型与运行结果（多数忽略）
+├── docs/                 # 仅保留当前架构、数据模型、接口和运行文档
+├── PRODUCT.md            # 产品边界和体验原则
+└── README.md             # 项目总入口
+```
+
+## 配置
+
+| 变量 | 必需 | 默认值 | 用途 |
+|---|---|---|---|
+| `GITHUB_TOKEN` | 网络同步时建议 | 空 | GitHub 公共数据只读访问 |
+| `GITHUB_OAUTH_CLIENT_ID` | OAuth 时 | 空 | GitHub OAuth 应用 ID |
+| `GITHUB_OAUTH_CLIENT_SECRET` | OAuth 时 | 空 | GitHub OAuth 密钥 |
+| `OSS_MENTOR_SESSION_SECRET` | OAuth 时 | 空 | 本地会话签名密钥 |
+| `OSS_MENTOR_BASE_URL` | 否 | 当前 host/port | OAuth 回调基地址 |
+| `OSS_MENTOR_REPO_CONFIG` | 否 | `config/pilot_repositories_v0.1.csv` | 仓库清单 |
+| `OSS_MENTOR_RAW_DIR` | 否 | `data/raw` | 原始响应目录 |
+| `OSS_MENTOR_GITHUB_API_VERSION` | 否 | `2026-03-10` | GitHub REST API 版本 |
+| `OSS_MENTOR_HTTP_TIMEOUT_SECONDS` | 否 | `30` | HTTP 超时 |
+| `OSS_MENTOR_MAX_RETRIES` | 否 | `5` | 最大重试次数 |
+
+完整变量见 [.env.example](.env.example)。真实密钥不得写入仓库。
+
+## 测试
+
+```powershell
+# 平台
+$env:PYTHONPATH = 'src'
+python -m unittest discover -s tests -v
+
+# CODER
+& '.\CODER\.venv\Scripts\python.exe' -m pytest CODER\tests -q
+```
+
+测试默认不启动正式训练，也不访问 GitHub。模型与平台的定向测试命令见[运行手册](docs/operations.md)。
+
+## 重要限制
+
+- 未知登录用户尚未使用画像编码器，当前为 `cold_start_population` 总体向量回退。
+- 平台候选的离线向量使用文本与已知 Repository 路径；协同和结构分量为零。
+- 请求内模型原始点积分数经当前候选集合的 z-score 与 sigmoid 映射到 `0–1`，只能用于同次候选排序。
+- 旧 OpenAPI 快照与当前路由不一致，已移除；现行 HTTP 契约以[接口契约](docs/interfaces.md)和代码为准。
+- 当前 Dockerfile 没有复制 CODER 包和模型产物，不能直接承载默认 CODER 路径；容器化仍需补齐。
+- 仓库暂未提供 `LICENSE`，不要假定其代码可按某种开源许可证再分发。
+
+## Roadmap
+
+- [x] 候选发现、GitHub 复核、SQLite 特征和双通道画像
+- [x] CODER 8 Trial 训练、模型导出、平台候选缓存与默认评分接入
+- [x] 登录画像、反馈闭环、多样性重排和推荐快照
+- [ ] 画像感知的真正冷启动开发者编码器
+- [ ] 严格训练截止时间过滤的结构图版本与统一重训
+- [ ] 把 CODER 运行时、模型和健康检查纳入容器部署
+- [ ] 从代码生成并校验完整 OpenAPI 文档
+- [ ] 补充许可证与面向外部贡献者的发布流程
+
+## 安全原则
+
+- 默认只绑定 loopback；非本机地址必须显式 `--allow-remote`。
+- 真实 token 只从环境变量读取，Raw 文件与日志不得保存凭证。
+- OAuth 会话使用 `HttpOnly`、`SameSite=Lax` cookie；外部部署必须使用 HTTPS、受控 CORS 和独立密钥。
+- 冻结数据、映射、候选和模型版本均需哈希校验，不得为了得到更好指标覆盖原版本。

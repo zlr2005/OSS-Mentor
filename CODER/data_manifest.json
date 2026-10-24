@@ -1,0 +1,22 @@
+{
+  "chunk_size_bytes": 8388608,
+  "code_version": "dea403dd752f-dirty",
+  "dataset_version": "gfibot-raw-v1",
+  "files": [
+    {
+      "name": "dataset.bson",
+      "path": "CODER/dataset.bson",
+      "sha256": "4cde2499108a3f85b92c82f92ff850644137f54c3c8bb4c86f4cd32997192039",
+      "size_bytes": 7043563852
+    },
+    {
+      "name": "resolved_issue.bson",
+      "path": "CODER/resolved_issue.bson",
+      "sha256": "c6af28f9b7c13535dc15ae30c7b00df3ace76d15c39bae246f421e912f5d6638",
+      "size_bytes": 658228041
+    }
+  ],
+  "generated_at": "2026-10-17T11:42:15.492316+00:00",
+  "hash_algorithm": "sha256",
+  "schema_version": 1
+}

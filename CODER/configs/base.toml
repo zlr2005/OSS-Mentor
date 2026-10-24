@@ -1,0 +1,25 @@
+schema_version = 1
+config_name = "stage0-base"
+seed = 20261017
+dataset_version = "gfibot-raw-v1"
+
+[paths]
+repository_root = "../.."
+artifact_root = "data/midterm"
+normalized_dir = "normalized"
+embeddings_dir = "embeddings"
+graphs_dir = "graphs"
+models_dir = "models"
+runs_dir = "runs"
+raw_data_files = [
+  "CODER/dataset.bson",
+  "CODER/resolved_issue.bson",
+]
+
+[logging]
+level = "INFO"
+format = "json"
+
+[manifest]
+output = "CODER/data_manifest.json"
+chunk_size_bytes = 8388608

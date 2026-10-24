@@ -854,7 +854,7 @@ def command_evaluate_ranking(settings: Settings, args: argparse.Namespace) -> in
     markdown_output = (
         Path(args.markdown_output).expanduser().resolve()
         if args.markdown_output
-        else settings.repo_root / "docs" / "ranking_evaluation_v0.3.md"
+        else settings.repo_root / "data" / "reports" / "ranking_evaluation_v0.3.md"
     )
     _write_json(json_output, report)
     markdown_output.parent.mkdir(parents=True, exist_ok=True)
@@ -910,6 +910,39 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         base_url=os.environ.get("OSS_MENTOR_BASE_URL", f"http://{args.host}:{args.port}"),
     )
     auth_service = AuthService(IdentityStore(store), auth_settings)
+    recommendation_service = None
+    coder_model_dir = Path(args.coder_model_dir) if args.coder_model_dir else (
+        settings.repo_root / "data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1"
+    )
+    coder_mapping_dir = Path(args.coder_mapping_dir) if args.coder_mapping_dir else (
+        settings.repo_root / "data/midterm/normalized/gfibot-m0-v1.1/mappings"
+    )
+    coder_candidate_cache = Path(args.coder_candidate_cache) if args.coder_candidate_cache else (
+        settings.repo_root / "data/midterm/platform/coder-full-search8-v1/candidates.npz"
+    )
+    if not args.legacy_ranking:
+        for required in (
+            coder_model_dir / "model_manifest.json",
+            coder_model_dir / "embeddings.npz",
+            coder_mapping_dir / "developer_mapping.parquet",
+            coder_mapping_dir / "issue_mapping.parquet",
+            coder_candidate_cache,
+        ):
+            if not required.is_file():
+                raise ConfigError(f"CODER platform artifact is missing: {required}")
+        import sys
+        sys.path.insert(0, str(settings.repo_root / "CODER/src"))
+        from coder_issue.inference import CoderIssueScorer
+        from oss_mentor.services.recommendation_service import RecommendationService
+        recommendation_service = RecommendationService(
+            store,
+            model_scorer=CoderIssueScorer(
+                coder_model_dir,
+                coder_mapping_dir,
+                candidate_cache=coder_candidate_cache,
+            ),
+        )
+
     candidate_service = None
     if args.enable_task_refresh:
         if settings.github_token is None:
@@ -950,6 +983,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "database_path": str(store.database_path),
             "cors_origin": args.cors_origin,
             "oauth_configured": auth_settings.oauth_configured,
+            "ranking_engine": "legacy" if args.legacy_ranking else "coder_issue_repo",
             "task_refresh_enabled": candidate_service is not None,
         }
     )
@@ -960,6 +994,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         cors_origin=args.cors_origin,
         static_root=settings.repo_root / "web",
         auth_service=auth_service,
+        recommendation_service=recommendation_service,
         candidate_service=candidate_service,
     )
     return 0
@@ -1420,6 +1455,13 @@ def build_parser() -> argparse.ArgumentParser:
     serve_command.add_argument(
         "--cors-origin",
         help="Optional exact Access-Control-Allow-Origin value; disabled by default.",
+    )
+    serve_command.add_argument("--coder-model-dir")
+    serve_command.add_argument("--coder-mapping-dir")
+    serve_command.add_argument("--coder-candidate-cache")
+    serve_command.add_argument(
+        "--legacy-ranking", action="store_true",
+        help="Explicit compatibility escape hatch; CODER is the default ranking engine.",
     )
     serve_command.add_argument(
         "--allow-remote",

@@ -24,7 +24,6 @@ from oss_mentor.developer_profiles import (
 from oss_mentor.matching import (
     MATCH_VERSION_V2,
     MATCH_VERSION_V3,
-    rank_for_profile,
     recommendation_availability,
 )
 from oss_mentor.services.auth_service import (
@@ -34,15 +33,16 @@ from oss_mentor.services.auth_service import (
     SESSION_TTL_SECONDS,
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
-from oss_mentor.services.profile_service import ProfileService
-from oss_mentor.services.github_profile_source import (
-    CONSENT_VERSION, GitHubProfileError, GitHubProfileSource,
-)
+from oss_mentor.services.profile_service import ProfileService, as_developer_profile_v2
 from oss_mentor.services.recommendation_service import (
     AuthenticationRequired,
+    ModelUnavailableError,
     ProfileRequired,
     RecommendationService,
     feedback_context_for_user,
+)
+from oss_mentor.services.github_profile_source import (
+    CONSENT_VERSION, GitHubProfileError, GitHubProfileSource,
 )
 from oss_mentor.storage.profiles import SQLiteProfileStorage
 from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
@@ -69,6 +69,17 @@ class ApiResponse:
 class StaticAsset:
     body: bytes
     content_type: str
+
+
+class _RecommendationProfileAdapter:
+    """Expose the contract loader expected by RecommendationService."""
+
+    def __init__(self, profile_service: Any) -> None:
+        self.profile_service = profile_service
+
+    def profile_for_user_contract(self, user_id: int):
+        profile = self.profile_service.profile_for_user(user_id)
+        return as_developer_profile_v2(profile) if profile is not None else None
 
 
 _STATIC_ROUTES = {
@@ -157,21 +168,33 @@ class RecommendationApi:
                 SQLiteProfileStorage(store.database_path, store.migration_path)
             )
         self.github_profile_source = github_profile_source or GitHubProfileSource()
-        self.recommendation_service = recommendation_service
-        if (
-            self.recommendation_service is None
-            and self.auth_service is not None
-            and self.profile_service is not None
-            and isinstance(store, SQLiteCandidateStore)
-        ):
-            self.recommendation_service = RecommendationService(
-                candidate_store=store,
-                profile_service=self.profile_service,
-                auth_service=self.auth_service,
-                recommendation_store=SQLiteRecommendationStorage(
-                    store.database_path, store.migration_path
-                ),
+        recommendation_store = None
+        if isinstance(store, SQLiteCandidateStore):
+            recommendation_store = SQLiteRecommendationStorage(
+                store.database_path, store.migration_path
             )
+        recommendation_profile_service = self.profile_service
+        if (
+            recommendation_profile_service is not None
+            and not callable(
+                getattr(recommendation_profile_service, "profile_for_user_contract", None)
+            )
+        ):
+            recommendation_profile_service = _RecommendationProfileAdapter(
+                recommendation_profile_service
+            )
+        self.recommendation_service = recommendation_service or RecommendationService(
+            candidate_store=store,
+            profile_service=recommendation_profile_service,
+            auth_service=self.auth_service,
+            recommendation_store=recommendation_store,
+        )
+        if self.recommendation_service.auth_service is None:
+            self.recommendation_service.auth_service = self.auth_service
+        if self.recommendation_service.profile_service is None:
+            self.recommendation_service.profile_service = recommendation_profile_service
+        if self.recommendation_service.recommendation_store is None:
+            self.recommendation_service.recommendation_store = recommendation_store
 
     @staticmethod
     def _profile_body(profile: dict) -> dict:
@@ -297,7 +320,8 @@ class RecommendationApi:
                 "warnings": list(result.warnings),
                 "count": len(items),
                 "items": items,
-                "match_version": MATCH_VERSION_V3,
+                "match_version": result.match_version,
+                "rankings": list(result.rankings),
                 "api_version": API_VERSION,
             },
         )
@@ -376,17 +400,13 @@ class RecommendationApi:
         *,
         limit: int,
         feedback_context: str | None = None,
+        developer_key: str | None = None,
     ) -> ApiResponse:
-        matches = rank_for_profile(
-            profile, self.store.matchable_candidates(), limit=limit
-        )
-        feedback_states = (
-            self.store.feedback_states(
-                feedback_context,
-                [match.task_candidate_id for match in matches],
-            )
-            if feedback_context
-            else {}
+        batch = self.recommendation_service.recommend(
+            profile=as_developer_profile_v2(profile),
+            limit=limit,
+            feedback_context=feedback_context,
+            developer_key=developer_key,
         )
         return ApiResponse(
             200,
@@ -399,13 +419,32 @@ class RecommendationApi:
                 },
                 "items": [
                     {
-                        **asdict(match),
-                        "feedback_state": feedback_states.get(match.task_candidate_id),
+                        **item.to_dict(),
+                        # Additive aliases retained for the existing v0.4 web client.
+                        "track": item.service_track,
+                        "repository": item.repository_full_name,
+                        "match_score": round(item.score * 100.0, 2),
+                        "skill_coverage": (
+                            len(item.matched_skills)
+                            / max(1, len(item.matched_skills) + len(item.missing_skills))
+                        ),
+                        "maximum_skill_gap": 1 if item.missing_skills else 0,
+                        "skill_gaps": [
+                            {"skill": name, "gap": 0, "developer_level": 1, "required_level": 1}
+                            for name in item.matched_skills
+                        ] + [
+                            {"skill": name, "gap": 1, "developer_level": 0, "required_level": 1}
+                            for name in item.missing_skills
+                        ],
                     }
-                    for match in matches
+                    for item in batch.items
                 ],
-                "count": len(matches),
+                "count": len(batch.items),
                 "feedback_context": feedback_context,
+                "run_id": batch.run_id,
+                "match_version": batch.match_version,
+                "warnings": list(batch.warnings),
+                "rankings": list(batch.rankings),
                 "api_version": API_VERSION,
             },
         )
@@ -451,6 +490,8 @@ class RecommendationApi:
             response = self._dispatch(method, path, query, body, cookies or {})
         except sqlite3.Error:
             response = self._error(503, "service_not_ready", "database is unavailable or requires migration")
+        except ModelUnavailableError as exc:
+            response = self._error(503, "model_unavailable", str(exc))
         body_out = {**response.body, "request_id": request_id}
         if "error" in body_out:
             body_out["error"]["request_id"] = request_id
@@ -528,6 +569,25 @@ class RecommendationApi:
                 profile,
                 limit=limit,
                 feedback_context=f"preset:{profile_key}",
+            )
+        if method == "GET" and path == "/api/v1/me/recommendations":
+            user = self.auth_service.current_user(cookies.get(SESSION_COOKIE_NAME)) if self.auth_service else None
+            if user is None:
+                return self._error(401, "authentication_required", "login is required")
+            profile = self.profile_service.profile_for_user(int(user["user_id"])) if self.profile_service else None
+            if profile is None:
+                return self._error(404, "profile_required", "create a profile before requesting recommendations")
+            try:
+                limit = int((query.get("limit") or ["10"])[0])
+            except ValueError:
+                return self._error(400, "invalid_limit", "limit must be an integer")
+            if not 1 <= limit <= 100:
+                return self._error(400, "invalid_limit", "limit must be between 1 and 100")
+            return self._recommendations(
+                profile,
+                limit=limit,
+                feedback_context=feedback_context_for_user(int(user["user_id"]), str(profile["profile_key"])),
+                developer_key=str(user["github_login"]),
             )
         if method == "POST" and path == "/api/v1/recommendations/custom":
             if not isinstance(body, dict):
@@ -910,10 +970,14 @@ def serve(
     cors_origin: str | None = None,
     static_root: Path | None = None,
     auth_service: AuthService | None = None,
+    recommendation_service: RecommendationService | None = None,
     candidate_service: CandidateService | None = None,
 ) -> None:
     api = RecommendationApi(
-        store, auth_service=auth_service, candidate_service=candidate_service
+        store,
+        auth_service=auth_service,
+        recommendation_service=recommendation_service,
+        candidate_service=candidate_service,
     )
     server = ThreadingHTTPServer(
         (host, port),

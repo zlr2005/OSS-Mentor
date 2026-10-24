@@ -132,6 +132,9 @@ function updateQuickProfile() {
 }
 
 function translateReason(reason) {
+  if (reason && typeof reason === "object") {
+    return reason.evidence || reason.label || reason.code || "推荐模型匹配";
+  }
   if (reasonLabels[reason]) return reasonLabels[reason];
   if (reason.startsWith("skill_coverage=")) {
     const value = Math.round(Number(reason.split("=")[1]) * 100);
