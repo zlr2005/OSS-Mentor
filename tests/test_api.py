@@ -130,8 +130,12 @@ class ApiTests(unittest.TestCase):
     def test_health_and_profiles(self) -> None:
         health = self.api.handle("GET", "/health")
         profiles = self.api.handle("GET", "/api/v1/profiles")
-        self.assertEqual(200, health.status)
-        self.assertEqual("ok", health.body["status"])
+        # FakeStore has no real SQLite file, so the readiness probe must fail loudly
+        # instead of reporting a healthy process with an unusable database.
+        self.assertEqual(503, health.status)
+        self.assertEqual("not_ready", health.body["status"])
+        self.assertFalse(health.body["database_ready"])
+        self.assertEqual("database_missing", health.body["database_error"])
         self.assertEqual("demo", profiles.body["items"][0]["profile_key"])
 
     def test_recommendations_are_explainable(self) -> None:
