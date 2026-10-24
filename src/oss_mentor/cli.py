@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 from dataclasses import replace
@@ -49,11 +50,25 @@ from oss_mentor.ranking_evaluation import (
     render_ranking_evaluation_markdown,
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.storage.candidates import SQLiteCandidateStorage
 from oss_mentor.task_features import extract_task_features, infer_skill_requirements
 
 
 def _json_dump(value: object) -> None:
     print(json.dumps(value, ensure_ascii=False, sort_keys=True))
+
+
+def _env_port(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    try:
+        port = int(raw)
+    except ValueError:
+        raise ConfigError(f"{name} must be an integer port") from None
+    if not 1 <= port <= 65535:
+        raise ConfigError(f"{name} must be between 1 and 65535")
+    return port
 
 
 def _apply_path_overrides(settings: Settings, args: argparse.Namespace) -> Settings:
@@ -107,8 +122,8 @@ def _database_path(settings: Settings, args: argparse.Namespace) -> Path:
     )
 
 
-def _candidate_store(settings: Settings, args: argparse.Namespace) -> SQLiteCandidateStore:
-    return SQLiteCandidateStore(
+def _candidate_store(settings: Settings, args: argparse.Namespace) -> SQLiteCandidateStorage:
+    return SQLiteCandidateStorage(
         _database_path(settings, args),
         settings.repo_root / "db" / "sqlite" / "001_mvp.sql",
     )
@@ -884,7 +899,6 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "refusing non-loopback API binding without explicit --allow-remote"
         )
     store.initialize()
-    import os
 
     from oss_mentor.services.auth_service import AuthService, AuthSettings
     from oss_mentor.storage.identity import IdentityStore
@@ -928,6 +942,39 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
                 candidate_cache=coder_candidate_cache,
             ),
         )
+
+    candidate_service = None
+    if args.enable_task_refresh:
+        if settings.github_token is None:
+            raise ConfigError(
+                "--enable-task-refresh needs a read-only GITHUB_TOKEN to re-verify "
+                "task availability on GitHub"
+            )
+        from oss_mentor.candidate_sync import CandidateService
+
+        github_client = GitHubClient(
+            api_base=settings.github_api_base,
+            api_version=settings.github_api_version,
+            user_agent=settings.user_agent,
+            token=settings.github_token,
+            timeout_seconds=settings.http_timeout_seconds,
+            max_retries=settings.max_retries,
+            backoff_base_seconds=settings.backoff_base_seconds,
+        )
+        ecosystems_client = EcosystemsClient(
+            api_base=settings.ecosystems_issues_api_base,
+            user_agent=settings.user_agent,
+            timeout_seconds=settings.http_timeout_seconds,
+            max_retries=settings.max_retries,
+            backoff_base_seconds=settings.backoff_base_seconds,
+        )
+        candidate_service = CandidateService(
+            synchronizer=CandidateSynchronizer(ecosystems_client, github_client, store),
+            store=store,
+            repositories=load_repositories(
+                settings.repository_config_path, wave=None, enabled_only=True
+            ),
+        )
     _json_dump(
         {
             "event": "api_started",
@@ -937,6 +984,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "cors_origin": args.cors_origin,
             "oauth_configured": auth_settings.oauth_configured,
             "ranking_engine": "legacy" if args.legacy_ranking else "coder_issue_repo",
+            "task_refresh_enabled": candidate_service is not None,
         }
     )
     serve(
@@ -947,6 +995,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         static_root=settings.repo_root / "web",
         auth_service=auth_service,
         recommendation_service=recommendation_service,
+        candidate_service=candidate_service,
     )
     return 0
 
@@ -1394,8 +1443,15 @@ def build_parser() -> argparse.ArgumentParser:
         "serve-api", help="Serve the local recommendation and authenticated profile API."
     )
     serve_command.add_argument("--database", help="SQLite database path.")
-    serve_command.add_argument("--host", default="127.0.0.1")
-    serve_command.add_argument("--port", type=int, default=8765, choices=range(1, 65536))
+    serve_command.add_argument(
+        "--host", default=os.environ.get("OSS_MENTOR_HOST", "127.0.0.1")
+    )
+    serve_command.add_argument(
+        "--port",
+        type=int,
+        default=_env_port("OSS_MENTOR_PORT", 8765),
+        choices=range(1, 65536),
+    )
     serve_command.add_argument(
         "--cors-origin",
         help="Optional exact Access-Control-Allow-Origin value; disabled by default.",
@@ -1411,6 +1467,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-remote",
         action="store_true",
         help="Required to bind outside loopback; do not use without network controls.",
+    )
+    serve_command.add_argument(
+        "--enable-task-refresh",
+        action="store_true",
+        help=(
+            "Allow GET /api/v1/tasks/{id}?refresh=true to re-verify one stale task on "
+            "GitHub. Requires a read-only GITHUB_TOKEN; disabled by default."
+        ),
     )
     serve_command.set_defaults(handler=command_serve_api)
 

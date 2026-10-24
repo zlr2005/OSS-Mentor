@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from typing import ContextManager, Protocol, runtime_checkable
 
-from oss_mentor.contracts import DeveloperProfileV2, RecommendationItemV3
+from oss_mentor.contracts import (
+    DeveloperProfileV2,
+    RecommendationBatchV3,
+    RecommendationItemV3,
+)
 
 
 @runtime_checkable
@@ -123,6 +127,6 @@ class CandidateStore(Protocol):
 class RecommendationStore(Protocol):
     """Recommendation snapshot persistence (owned by member C)."""
 
-    def save_recommendation_batch(self, batch: object) -> None: ...
+    def save_recommendation_batch(self, batch: RecommendationBatchV3) -> None: ...
 
     def find_recommendation_batch(self, run_id: str) -> dict | None: ...

@@ -10,12 +10,23 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from oss_mentor.cli import main
+from oss_mentor.cli import _candidate_store, main
 from oss_mentor.collector.github_client import RateLimitExceeded
 from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.storage.candidates import SQLiteCandidateStorage
 
 
 class CliTests(unittest.TestCase):
+    def test_candidate_commands_use_v05_availability_storage(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(__file__).resolve().parents[1]
+            store = _candidate_store(
+                SimpleNamespace(repo_root=root),
+                SimpleNamespace(database=str(Path(temporary) / "candidate.sqlite3")),
+            )
+
+        self.assertIsInstance(store, SQLiteCandidateStorage)
+
     def test_init_demo_seeds_candidates_and_doctor_passes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             database = Path(temporary) / "demo.sqlite3"

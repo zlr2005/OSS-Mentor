@@ -62,6 +62,8 @@ class AuthenticatedRecommendations:
     items: tuple[RecommendationItemV3, ...]
     run_id: str | None = None
     warnings: tuple[str, ...] = ()
+    match_version: str = MATCH_VERSION_V3
+    rankings: tuple[dict[str, Any], ...] = ()
 
 
 def profile_for_matching(profile: DeveloperProfileV2) -> dict[str, Any]:
@@ -549,4 +551,6 @@ class RecommendationService:
             items=batch.items,
             run_id=batch.run_id,
             warnings=batch.warnings,
+            match_version=batch.match_version,
+            rankings=batch.rankings,
         )
