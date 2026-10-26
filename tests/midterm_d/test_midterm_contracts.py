@@ -162,9 +162,15 @@ class MidtermContractTests(unittest.TestCase):
         )
         features = EnhancedProfileFeatures.from_private(
             snapshot,
-            developer_key=preview.profile_key,
+            developer_key=None,
         )
-        self.assertEqual(preview.profile_key, features.developer_key)
+        self.assertIsNone(features.developer_key)
+        mapped = EnhancedProfileFeatures.from_private(
+            snapshot,
+            developer_key="github:dataset-developer-42",
+        )
+        self.assertEqual("github:dataset-developer-42", mapped.developer_key)
+        self.assertNotEqual(mapped.profile_key, mapped.developer_key)
         self.assertEqual(len(features.feature_names), len(features.values))
         self.assertTrue(all(
             observed or value == 0.0

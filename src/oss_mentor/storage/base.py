@@ -223,6 +223,7 @@ class MidtermProfileStore(Protocol):
         *,
         user_id: int,
         profile_version: str | None = None,
+        developer_key: str | None = None,
     ) -> EnhancedProfileFeatures | None: ...
 
 

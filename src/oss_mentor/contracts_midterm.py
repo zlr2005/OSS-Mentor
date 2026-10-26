@@ -768,7 +768,12 @@ class AssessmentConfirmation:
 
 @dataclass(frozen=True, slots=True)
 class EnhancedProfileFeatures:
-    """Confirmed feature export consumed by C."""
+    """Confirmed feature export consumed by C.
+
+    ``developer_key`` is an optional external dataset/training identity, not a
+    platform authentication or ownership field.  It must remain ``None`` when
+    no verified mapping exists and must not be inferred from ``profile_key``.
+    """
 
     profile_key: str
     profile_version: str

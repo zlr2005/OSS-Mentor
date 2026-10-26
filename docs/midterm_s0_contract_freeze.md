@@ -41,9 +41,9 @@ expanding the public identity contract.
 - `profile_key` is the stable UUID/public key stored on
   `developer_profile`; the server creates or resolves it and the browser may
   only reference it, never choose another user's key.
-- `developer_key` is not an authentication field. For the midterm adapter it is
-  derived as `developer_key = profile_key`; no separate user-entered key is
-  accepted.
+- `developer_key` is a separate, optional external dataset/training identity.
+  It is not an authentication field and must not be inferred from
+  `profile_key`. It remains `null` until a verified mapping exists.
 - Browser requests must not contain `user_id`, `developer_key`, `profile_key`
   or `base_profile_version`. Those values are injected from session and
   storage.
@@ -197,6 +197,11 @@ internally. It does not accept arbitrary owner/profile identifiers from HTTP.
 `submission_id`; reusing the key for a different payload raises
 `IdempotencyConflictError`.
 
+`get_enhanced_profile_features()` accepts an optional verified
+`developer_key`. Passing `None` is valid and expected for platform-only users
+without an external dataset mapping. 012 does not persist an inferred
+`developer_key = profile_key`; a later D-owned identity mapping can supply it.
+
 ## 5. Confirmation semantics
 
 The HTTP/API boundary accepts only:
@@ -237,3 +242,8 @@ B may now implement:
 B does not modify `api.py`, shared contracts, `storage/base.py`, OpenAPI or
 web files. D will review the migration/storage PR and wire the HTTP routes after
 the storage contract passes.
+
+The shared migration registry assertion in
+`tests/test_candidate_refresh_report.py` is owned by D for migration
+coordination. It now derives the expected set from `db/sqlite/*.sql`; A and B
+do not edit that whitelist when adding their reserved migrations.

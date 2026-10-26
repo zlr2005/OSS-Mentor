@@ -256,22 +256,9 @@ class CandidateRefreshReportTests(unittest.TestCase):
             columns = {
                 row[1] for row in connection.execute("PRAGMA table_info(repository)")
             }
-        self.assertEqual(
-            {
-                "001_mvp.sql",
-                "002_candidate_features.sql",
-                "003_personalized_matching.sql",
-                "004_recommendation_feedback.sql",
-                "005_candidate_refresh.sql",
-                "006_repository_activity.sql",
-                "007_identity_sessions.sql",
-                "008_sync_runs.sql",
-                "009_github_profile_evidence.sql",
-                "009a_profile_user_identity.sql",
-                "010_recommendation_runs.sql",
-            },
-            migrations,
-        )
+        sqlite_dir = Path(__file__).resolve().parents[1] / "db" / "sqlite"
+        expected_migrations = {path.name for path in sqlite_dir.glob("*.sql")}
+        self.assertEqual(expected_migrations, migrations)
         self.assertIn("last_candidate_refresh_at", columns)
         self.assertIn("maintenance_status", columns)
         self.assertIn("has_contributing_guide", columns)
