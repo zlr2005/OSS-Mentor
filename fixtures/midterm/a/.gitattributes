@@ -1,0 +1,2 @@
+# Snapshot checksums cover exact bytes, including on Windows checkouts.
+snapshot_v0.1/** -text
