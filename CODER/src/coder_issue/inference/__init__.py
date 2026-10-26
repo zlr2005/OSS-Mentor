@@ -1,4 +1,4 @@
-"""Reserved for stage 6 inference integration code."""
-from .scorer import CoderIssueScorer
+"""Read-only CODER scoring, including controlled profile ablations."""
+from .scorer import CoderIssueScorer, PairedModelScore, PairedModelScoreBatch
 
-__all__ = ["CoderIssueScorer"]
+__all__ = ["CoderIssueScorer", "PairedModelScore", "PairedModelScoreBatch"]
