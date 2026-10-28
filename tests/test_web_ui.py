@@ -103,6 +103,36 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("feedback-grid", text)
         self.assertIn("/assets/status.js", text)
 
+    def test_task_detail_page_is_allowlisted_and_wired(self) -> None:
+        html_asset = load_static_asset(self.root, "/task")
+        self.assertIsNotNone(html_asset)
+        self.assertEqual("text/html; charset=utf-8", html_asset.content_type)
+        script_asset = load_static_asset(self.root, "/assets/task.js")
+        css_asset = load_static_asset(self.root, "/assets/task.css")
+        self.assertEqual("text/javascript; charset=utf-8", script_asset.content_type)
+        self.assertEqual("text/css; charset=utf-8", css_asset.content_type)
+        html = html_asset.body.decode("utf-8")
+        script = script_asset.body.decode("utf-8")
+        css = css_asset.body.decode("utf-8")
+        self.assertIn('id="task-body"', html)
+        self.assertIn('id="task-availability"', html)
+        self.assertIn('id="task-message"', html)
+        self.assertIn('id="refresh-task"', html)
+        self.assertIn('id="feedback-actions"', html)
+        for state in ("interested", "not_suitable", "started", "completed"):
+            self.assertIn(f'data-feedback="{state}"', html)
+        self.assertIn("/api/v1/tasks/", script)
+        self.assertIn("refresh=true", script)
+        self.assertIn("/api/v1/feedback", script)
+        self.assertIn("url.protocol === \"https:\"", script)
+        self.assertIn("prefers-reduced-motion", css)
+
+    def test_recommendation_rows_link_to_the_task_detail_page(self) -> None:
+        script = load_static_asset(self.root, "/assets/recommendations.js").body.decode("utf-8")
+        self.assertIn("/task?", script)
+        self.assertIn("task_candidate_id", script)
+        self.assertIn("查看任务详情", script)
+
     def test_status_script_is_external(self) -> None:
         script = load_static_asset(self.root, "/assets/status.js")
         self.assertIsNotNone(script)

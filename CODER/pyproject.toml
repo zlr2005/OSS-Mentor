@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oss-mentor-coder-issue"
+version = "0.0.0"
+description = "Isolated research infrastructure for CODER-inspired issue recommendation"
+requires-python = ">=3.11"
+dependencies = [
+  "joblib==1.5.2",
+  "numpy==2.3.4",
+  "pymongo==4.15.3",
+  "pyarrow==21.0.0",
+  "scikit-learn==1.7.2",
+  "scipy==1.16.2",
+  "torch==2.9.0",
+  "tzdata==2025.2",
+]
+
+[project.optional-dependencies]
+test = ["pytest==8.4.2"]
+encoders = ["transformers==4.57.1"]
+
+[project.scripts]
+coder-data-manifest = "coder_issue.manifest:main"
+coder-prepare-data = "coder_issue.data.prepare_data:main"
+coder-validate-data = "coder_issue.data.validation:main"
+coder-run-baselines = "coder_issue.baselines.pipeline:main"
+coder-train-multigranular = "coder_issue.training.pipeline:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

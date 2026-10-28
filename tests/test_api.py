@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 
 from oss_mentor.api import RecommendationApi
+from oss_mentor.model_scoring import ModelScore, ModelScoreBatch
+from oss_mentor.services.recommendation_service import RecommendationService
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
@@ -125,13 +127,54 @@ class FakeStore:
 
 class ApiTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.api = RecommendationApi(FakeStore())
+        self.store = FakeStore()
+        self.api = RecommendationApi(self.store)
+
+    def test_authenticated_recommendation_passes_github_login_to_coder(self) -> None:
+        store = self.store
+
+        class Auth:
+            def current_user(self, session_id):
+                return {"user_id": 7, "github_login": "Known-Login"} if session_id == "session" else None
+
+        class Profiles:
+            def profile_for_user(self, user_id):
+                return store.profile_for_matching("demo") if user_id == 7 else None
+
+        class Scorer:
+            developer_key = None
+
+            def score(self, *, profile, developer_key, candidates):
+                self.developer_key = developer_key
+                return ModelScoreBatch(
+                    tuple(ModelScore(int(row["task_candidate_id"]), 0.8, "fixture") for row in candidates),
+                    "coder-test", "data-test", "graph-test", "encoder-test", "known_history",
+                )
+
+        scorer = Scorer()
+        api = RecommendationApi(
+            store,
+            auth_service=Auth(),
+            profile_service=Profiles(),
+            recommendation_service=RecommendationService(store, model_scorer=scorer),
+        )
+        response = api.handle(
+            "GET", "/api/v1/me/recommendations", {"limit": ["1"]},
+            cookies={"oss_mentor_session": "session"},
+        )
+        self.assertEqual(200, response.status)
+        self.assertEqual("Known-Login", scorer.developer_key)
+        self.assertEqual("coder-test", response.body["rankings"][0]["model_version"])
 
     def test_health_and_profiles(self) -> None:
         health = self.api.handle("GET", "/health")
         profiles = self.api.handle("GET", "/api/v1/profiles")
-        self.assertEqual(200, health.status)
-        self.assertEqual("ok", health.body["status"])
+        # FakeStore has no real SQLite file, so the readiness probe must fail loudly
+        # instead of reporting a healthy process with an unusable database.
+        self.assertEqual(503, health.status)
+        self.assertEqual("not_ready", health.body["status"])
+        self.assertFalse(health.body["database_ready"])
+        self.assertEqual("database_missing", health.body["database_error"])
         self.assertEqual("demo", profiles.body["items"][0]["profile_key"])
 
     def test_recommendations_are_explainable(self) -> None:

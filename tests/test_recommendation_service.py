@@ -16,6 +16,7 @@ from oss_mentor.services.recommendation_service import (
     AuthenticationRequired,
     RecommendationService,
 )
+from oss_mentor.model_scoring import ModelScore, ModelScoreBatch
 from oss_mentor.storage.identity import IdentityStore
 from oss_mentor.storage.profiles import SQLiteProfileStorage
 from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
@@ -65,6 +66,23 @@ class CandidateStoreFixture:
         }
 
 
+class ModelScorerFixture:
+    def __init__(self, scores):
+        self.scores = scores
+        self.developer_keys = []
+
+    def score(self, *, profile, developer_key, candidates):
+        self.developer_keys.append(developer_key)
+        return ModelScoreBatch(
+            scores=tuple(ModelScore(int(item["task_candidate_id"]), self.scores[int(item["task_candidate_id"])], "fixture_cache") for item in candidates),
+            model_version="coder-test",
+            dataset_version="dataset-test",
+            graph_version="graph-test",
+            encoder_version="encoder-test",
+            profile_mode="known_history" if developer_key else "cold_start_population",
+        )
+
+
 def profile(**overrides):
     values = {
         "profile_key": "profile-1",
@@ -83,6 +101,19 @@ def profile(**overrides):
 
 
 class RecommendationContractTests(unittest.TestCase):
+    def test_coder_score_replaces_legacy_rule_score_and_preserves_hard_filter(self):
+        scorer = ModelScorerFixture({1: 0.1, 2: 0.9})
+        batch = RecommendationService(
+            CandidateStoreFixture([candidate(1, 100), candidate(2, 10)]),
+            model_scorer=scorer,
+        ).recommend(profile=profile(), developer_key="Known-User")
+
+        self.assertEqual([2, 1], [item.task_candidate_id for item in batch.items])
+        self.assertEqual("coder_issue_repo", batch.rankings[0]["scoring_engine"])
+        self.assertEqual("coder-test", batch.rankings[0]["model_version"])
+        self.assertEqual("fixture_cache", batch.rankings[0]["coverage_state"])
+        self.assertEqual(["Known-User"], scorer.developer_keys)
+
     def test_service_accepts_profile_contract_and_maps_match_result(self):
         store = CandidateStoreFixture([candidate(1, 80)])
         item = RecommendationService(store).recommend(profile=profile()).items[0]
