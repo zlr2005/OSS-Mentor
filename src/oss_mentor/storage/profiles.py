@@ -13,6 +13,20 @@ from typing import Any
 from uuid import uuid4
 
 from oss_mentor.contracts import DeveloperProfileV2
+from oss_mentor.contracts_midterm import (
+    AssessmentConfirmation,
+    AssessmentSubmission,
+    ConfirmationDecision,
+    ConfirmationPlan,
+    ConfirmationSuggestion,
+    EnhancedProfileFeatures,
+    IdempotencyConflictError,
+    ProfileFeature,
+    ProfileFeatureState,
+    ProfileFeatureStateRow,
+    ProfilePreview,
+    StalePlanError,
+)
 from oss_mentor.developer_profiles import (
     GITHUB_PROFILE_IMPORT_VERSION,
     PROFILE_MERGE_VERSION,
@@ -54,6 +68,16 @@ def _json_dump(value: Any) -> str:
         sort_keys=True,
         separators=(",", ":"),
     )
+
+
+def _json_sha256(value: Any) -> str:
+    return hashlib.sha256(_json_dump(value).encode("utf-8")).hexdigest()
+
+
+def _required_text(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field} must be a non-empty string")
+    return value.strip()
 
 
 def _json_load(
@@ -1493,3 +1517,765 @@ class SQLiteProfileStorage(
             )
 
             return cursor.rowcount > 0
+
+
+class SQLiteMidtermProfileStore(SQLiteProfileStorage):
+    """SQLite implementation of D's frozen midterm profile protocol."""
+
+    def _owned_profile(
+        self,
+        connection: sqlite3.Connection,
+        user_id: int,
+    ) -> tuple[int, str]:
+        if isinstance(user_id, bool) or not isinstance(user_id, int) or user_id < 1:
+            raise ValueError("user_id must be a positive integer")
+        row = connection.execute(
+            """
+            SELECT p.developer_profile_id, p.profile_key
+            FROM profile_user_binding AS b
+            JOIN developer_profile AS p
+              ON p.developer_profile_id = b.developer_profile_id
+            JOIN oss_user AS u ON u.user_id = b.user_id
+            WHERE b.user_id = ? AND u.deleted_at IS NULL
+            """,
+            (user_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError("authenticated user has no owned developer profile")
+        return int(row["developer_profile_id"]), str(row["profile_key"])
+
+    def _require_transaction(self) -> sqlite3.Connection:
+        connection = getattr(self, "_transaction_connection", None)
+        if connection is None:
+            raise RuntimeError("confirmation commit requires store.transaction()")
+        return connection
+
+    def put_questionnaire(
+        self,
+        *,
+        questionnaire_id: str,
+        questionnaire_version: str,
+        schema_version: str,
+        feature_schema_version: str,
+        definition: dict,
+        definition_sha256: str,
+    ) -> None:
+        identity = (
+            _required_text(questionnaire_id, "questionnaire_id"),
+            _required_text(questionnaire_version, "questionnaire_version"),
+        )
+        if not isinstance(definition, dict):
+            raise ValueError("definition must be an object")
+        payload = _json_dump(definition)
+        digest = _required_text(definition_sha256, "definition_sha256")
+        with self.connect() as connection:
+            existing = connection.execute(
+                """
+                SELECT schema_version, feature_schema_version,
+                       definition_json, definition_sha256
+                FROM profile_questionnaire
+                WHERE questionnaire_id = ? AND questionnaire_version = ?
+                """,
+                identity,
+            ).fetchone()
+            values = (
+                _required_text(schema_version, "schema_version"),
+                _required_text(feature_schema_version, "feature_schema_version"),
+                payload,
+                digest,
+            )
+            if existing is not None:
+                current = tuple(str(existing[key]) for key in (
+                    "schema_version",
+                    "feature_schema_version",
+                    "definition_json",
+                    "definition_sha256",
+                ))
+                if current != values:
+                    raise IdempotencyConflictError(
+                        "questionnaire version already has a different definition"
+                    )
+                return
+            connection.execute(
+                """
+                INSERT INTO profile_questionnaire (
+                    questionnaire_id, questionnaire_version, schema_version,
+                    feature_schema_version, definition_json,
+                    definition_sha256, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (*identity, *values, self._now()),
+            )
+
+    def get_questionnaire(
+        self,
+        *,
+        questionnaire_id: str,
+        questionnaire_version: str,
+    ) -> dict | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM profile_questionnaire
+                WHERE questionnaire_id = ? AND questionnaire_version = ?
+                """,
+                (questionnaire_id, questionnaire_version),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "questionnaire_id": str(row["questionnaire_id"]),
+            "questionnaire_version": str(row["questionnaire_version"]),
+            "schema_version": str(row["schema_version"]),
+            "feature_schema_version": str(row["feature_schema_version"]),
+            "definition": json.loads(row["definition_json"]),
+            "definition_sha256": str(row["definition_sha256"]),
+            "created_at": str(row["created_at"]),
+        }
+
+    def create_assessment_submission(
+        self,
+        *,
+        user_id: int,
+        submission: AssessmentSubmission,
+        idempotency_key: str,
+    ) -> str:
+        key = _required_text(idempotency_key, "idempotency_key")
+        payload = submission.to_dict()
+        with self.connect() as connection:
+            profile_id, _ = self._owned_profile(connection, user_id)
+            questionnaire = connection.execute(
+                """
+                SELECT 1 FROM profile_questionnaire
+                WHERE questionnaire_id = ? AND questionnaire_version = ?
+                """,
+                (submission.questionnaire_id, submission.questionnaire_version),
+            ).fetchone()
+            if questionnaire is None:
+                raise ValueError("unknown questionnaire version")
+            existing = connection.execute(
+                """
+                SELECT * FROM profile_assessment_submission
+                WHERE user_id = ? AND idempotency_key = ?
+                """,
+                (user_id, key),
+            ).fetchone()
+            if existing is not None:
+                current = {
+                    "questionnaire_id": str(existing["questionnaire_id"]),
+                    "questionnaire_version": str(existing["questionnaire_version"]),
+                    "submitted_at": str(existing["submitted_at"]),
+                    "answers": json.loads(existing["answers_json"]),
+                }
+                if current != payload:
+                    raise IdempotencyConflictError(
+                        "submission idempotency key was reused with another payload"
+                    )
+                return str(existing["submission_id"])
+            submission_id = f"assessment-submission:{uuid4()}"
+            connection.execute(
+                """
+                INSERT INTO profile_assessment_submission (
+                    submission_id, user_id, developer_profile_id,
+                    questionnaire_id, questionnaire_version, submitted_at,
+                    answers_json, idempotency_key, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    submission_id,
+                    user_id,
+                    profile_id,
+                    submission.questionnaire_id,
+                    submission.questionnaire_version,
+                    submission.submitted_at,
+                    _json_dump(submission.answers),
+                    key,
+                    self._now(),
+                ),
+            )
+            return submission_id
+
+    def get_assessment_submission(
+        self,
+        *,
+        user_id: int,
+        submission_id: str,
+    ) -> dict | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM profile_assessment_submission
+                WHERE user_id = ? AND submission_id = ?
+                """,
+                (user_id, submission_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "submission_id": str(row["submission_id"]),
+            "questionnaire_id": str(row["questionnaire_id"]),
+            "questionnaire_version": str(row["questionnaire_version"]),
+            "submitted_at": str(row["submitted_at"]),
+            "answers": json.loads(row["answers_json"]),
+            "created_at": str(row["created_at"]),
+        }
+
+    def create_profile_preview(
+        self,
+        *,
+        user_id: int,
+        preview: ProfilePreview,
+        input_sha256: str,
+    ) -> str:
+        input_digest = _required_text(input_sha256, "input_sha256")
+        payload = preview.to_dict()
+        payload_digest = _json_sha256(payload)
+        with self.connect() as connection:
+            profile_id, profile_key = self._owned_profile(connection, user_id)
+            if preview.profile_key != profile_key:
+                raise ValueError("preview does not belong to the authenticated user")
+            submission = connection.execute(
+                """
+                SELECT submission_id FROM profile_assessment_submission
+                WHERE user_id = ? AND developer_profile_id = ?
+                  AND questionnaire_id = ? AND questionnaire_version = ?
+                  AND submitted_at = ? AND answers_json = ?
+                ORDER BY created_at DESC, submission_id DESC LIMIT 1
+                """,
+                (
+                    user_id,
+                    profile_id,
+                    preview.questionnaire_id,
+                    preview.questionnaire_version,
+                    preview.submitted_at,
+                    _json_dump(preview.answers),
+                ),
+            ).fetchone()
+            if submission is None:
+                raise ValueError("preview has no matching persisted submission")
+            existing = connection.execute(
+                """SELECT preview_json, preview_sha256, input_sha256
+                   FROM profile_assessment_preview WHERE preview_id = ?""",
+                (preview.preview_id,),
+            ).fetchone()
+            if existing is not None:
+                if (
+                    str(existing["preview_json"]) != _json_dump(payload)
+                    or str(existing["preview_sha256"]) != payload_digest
+                    or str(existing["input_sha256"]) != input_digest
+                ):
+                    raise IdempotencyConflictError(
+                        "preview id already has a different payload"
+                    )
+                return preview.preview_id
+            connection.execute(
+                """
+                INSERT INTO profile_assessment_preview (
+                    preview_id, user_id, developer_profile_id, submission_id,
+                    base_profile_version, questionnaire_id,
+                    questionnaire_version, feature_schema_version,
+                    submitted_at, input_sha256, preview_json,
+                    preview_sha256, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    preview.preview_id,
+                    user_id,
+                    profile_id,
+                    submission["submission_id"],
+                    preview.base_profile_version,
+                    preview.questionnaire_id,
+                    preview.questionnaire_version,
+                    preview.feature_schema_version,
+                    preview.submitted_at,
+                    input_digest,
+                    _json_dump(payload),
+                    payload_digest,
+                    self._now(),
+                ),
+            )
+            for feature in preview.features:
+                connection.execute(
+                    """
+                    INSERT INTO profile_assessment_preview_feature (
+                        preview_id, feature_name, value, confidence,
+                        observed, locked, conflict, source_kind,
+                        blocked_reason, evidence_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        preview.preview_id,
+                        feature.feature_name,
+                        feature.proposed_value,
+                        feature.confidence,
+                        int(feature.observed),
+                        int(
+                            feature.source_kind == "user_locked"
+                            or feature.blocked_reason == "field_locked"
+                        ),
+                        int(feature.conflict),
+                        feature.source_kind,
+                        feature.blocked_reason,
+                        _json_dump(list(feature.evidence_refs)),
+                    ),
+                )
+            return preview.preview_id
+
+    @staticmethod
+    def _preview_from_payload(payload: dict[str, Any]) -> ProfilePreview:
+        return ProfilePreview(
+            preview_id=payload["preview_id"],
+            profile_key=payload["profile_key"],
+            base_profile_version=payload["base_profile_version"],
+            questionnaire_id=payload["questionnaire_id"],
+            questionnaire_version=payload["questionnaire_version"],
+            feature_schema_version=payload["feature_schema_version"],
+            submitted_at=payload["submitted_at"],
+            answers=dict(payload["answers"]),
+            features=tuple(ProfileFeature.from_dict(row) for row in payload["features"]),
+            current_interests=tuple(payload["current_interests"]),
+            interpretation=payload["interpretation"],
+            persisted=True,
+        )
+
+    def get_profile_preview(
+        self,
+        *,
+        user_id: int,
+        preview_id: str,
+    ) -> ProfilePreview | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """SELECT preview_json, preview_sha256 FROM profile_assessment_preview
+                   WHERE user_id = ? AND preview_id = ?""",
+                (user_id, preview_id),
+            ).fetchone()
+        if row is None:
+            return None
+        payload = json.loads(row["preview_json"])
+        if _json_sha256(payload) != str(row["preview_sha256"]):
+            raise ValueError("persisted preview checksum mismatch")
+        return self._preview_from_payload(payload)
+
+    def create_confirmation_plan(
+        self,
+        *,
+        user_id: int,
+        plan: ConfirmationPlan,
+    ) -> str:
+        payload = plan.to_dict()
+        payload_digest = _json_sha256(payload)
+        with self.connect() as connection:
+            profile_id, profile_key = self._owned_profile(connection, user_id)
+            if plan.profile_key != profile_key:
+                raise ValueError("plan does not belong to the authenticated user")
+            preview = connection.execute(
+                """
+                SELECT base_profile_version, questionnaire_version,
+                       feature_schema_version
+                FROM profile_assessment_preview
+                WHERE user_id = ? AND developer_profile_id = ? AND preview_id = ?
+                """,
+                (user_id, profile_id, plan.preview_id),
+            ).fetchone()
+            if preview is None:
+                raise ValueError("plan references an unknown preview")
+            if (
+                str(preview["base_profile_version"]) != plan.base_profile_version
+                or str(preview["questionnaire_version"]) != plan.questionnaire_version
+                or str(preview["feature_schema_version"]) != plan.feature_schema_version
+            ):
+                raise ValueError("plan does not match its persisted preview")
+            existing = connection.execute(
+                "SELECT plan_json, plan_sha256 FROM profile_assessment_plan WHERE plan_id = ?",
+                (plan.plan_id,),
+            ).fetchone()
+            if existing is not None:
+                if (
+                    str(existing["plan_json"]) != _json_dump(payload)
+                    or str(existing["plan_sha256"]) != payload_digest
+                ):
+                    raise IdempotencyConflictError("plan id already has a different payload")
+                return plan.plan_id
+            connection.execute(
+                """
+                INSERT INTO profile_assessment_plan (
+                    plan_id, user_id, developer_profile_id, preview_id,
+                    profile_key, base_profile_version, questionnaire_version,
+                    feature_schema_version, plan_json, plan_sha256,
+                    status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    plan.plan_id,
+                    user_id,
+                    profile_id,
+                    plan.preview_id,
+                    profile_key,
+                    plan.base_profile_version,
+                    plan.questionnaire_version,
+                    plan.feature_schema_version,
+                    _json_dump(payload),
+                    payload_digest,
+                    plan.status,
+                    plan.created_at,
+                ),
+            )
+            for suggestion in plan.suggestions:
+                connection.execute(
+                    """
+                    INSERT INTO profile_assessment_suggestion (
+                        plan_id, suggestion_id, feature_name, current_json,
+                        proposed_json, conflict, status, blocked_reason, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        plan.plan_id,
+                        suggestion.suggestion_id,
+                        suggestion.feature_name,
+                        _json_dump(suggestion.current.to_dict()),
+                        _json_dump(suggestion.proposed.to_dict()),
+                        int(suggestion.conflict),
+                        suggestion.status,
+                        suggestion.blocked_reason,
+                        plan.created_at,
+                    ),
+                )
+            return plan.plan_id
+
+    @staticmethod
+    def _plan_from_payload(payload: dict[str, Any], status: str) -> ConfirmationPlan:
+        return ConfirmationPlan(
+            plan_id=payload["plan_id"],
+            profile_key=payload["profile_key"],
+            base_profile_version=payload["base_profile_version"],
+            preview_id=payload["preview_id"],
+            questionnaire_version=payload["questionnaire_version"],
+            feature_schema_version=payload["feature_schema_version"],
+            preview_submitted_at=payload["preview_submitted_at"],
+            suggestions=tuple(
+                ConfirmationSuggestion.from_dict(row) for row in payload["suggestions"]
+            ),
+            created_at=payload["created_at"],
+            status=status,
+            persisted=True,
+        )
+
+    def get_confirmation_plan(
+        self,
+        *,
+        user_id: int,
+        plan_id: str,
+    ) -> ConfirmationPlan | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """SELECT plan_json, plan_sha256, status FROM profile_assessment_plan
+                   WHERE user_id = ? AND plan_id = ?""",
+                (user_id, plan_id),
+            ).fetchone()
+        if row is None:
+            return None
+        payload = json.loads(row["plan_json"])
+        if _json_sha256(payload) != str(row["plan_sha256"]):
+            raise ValueError("persisted confirmation plan checksum mismatch")
+        return self._plan_from_payload(payload, str(row["status"]))
+
+    def _state_from_row(
+        self,
+        connection: sqlite3.Connection,
+        row: sqlite3.Row,
+    ) -> ProfileFeatureState:
+        features = tuple(
+            ProfileFeatureStateRow(
+                feature_name=str(item["feature_name"]),
+                observed=bool(item["observed"]),
+                value=float(item["value"]),
+                locked=bool(item["locked"]),
+                evidence_refs=tuple(json.loads(item["evidence_json"])),
+            )
+            for item in connection.execute(
+                """
+                SELECT * FROM developer_profile_feature
+                WHERE feature_state_id = ? ORDER BY feature_name
+                """,
+                (row["feature_state_id"],),
+            ).fetchall()
+        )
+        state = ProfileFeatureState(
+            profile_key=str(row["profile_key"]),
+            profile_version=str(row["profile_version"]),
+            feature_schema_version=str(row["feature_schema_version"]),
+            updated_at=str(row["created_at"]),
+            features=features,
+        )
+        if _json_sha256(state.to_dict()) != str(row["state_sha256"]):
+            raise ValueError("persisted feature state checksum mismatch")
+        return state
+
+    def get_current_feature_state(
+        self,
+        *,
+        user_id: int,
+    ) -> ProfileFeatureState | None:
+        with self.connect() as connection:
+            profile_id, _ = self._owned_profile(connection, user_id)
+            row = connection.execute(
+                """
+                SELECT s.* FROM developer_profile_current_feature AS c
+                JOIN developer_profile_feature_state AS s
+                  ON s.feature_state_id = c.feature_state_id
+                WHERE c.developer_profile_id = ?
+                """,
+                (profile_id,),
+            ).fetchone()
+            return None if row is None else self._state_from_row(connection, row)
+
+    def get_feature_state(
+        self,
+        *,
+        user_id: int,
+        profile_version: str,
+    ) -> ProfileFeatureState | None:
+        with self.connect() as connection:
+            profile_id, _ = self._owned_profile(connection, user_id)
+            row = connection.execute(
+                """
+                SELECT * FROM developer_profile_feature_state
+                WHERE developer_profile_id = ? AND profile_version = ?
+                """,
+                (profile_id, profile_version),
+            ).fetchone()
+            return None if row is None else self._state_from_row(connection, row)
+
+    def find_confirmation_by_idempotency_key(
+        self,
+        *,
+        user_id: int,
+        idempotency_key: str,
+    ) -> AssessmentConfirmation | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT result_json, result_sha256 FROM profile_assessment_confirmation
+                WHERE user_id = ? AND idempotency_key = ?
+                """,
+                (user_id, idempotency_key),
+            ).fetchone()
+        if row is None:
+            return None
+        payload = json.loads(row["result_json"])
+        if _json_sha256(payload) != str(row["result_sha256"]):
+            raise ValueError("persisted confirmation checksum mismatch")
+        return AssessmentConfirmation.from_private(payload)
+
+    def commit_assessment_confirmation(
+        self,
+        *,
+        user_id: int,
+        confirmation: AssessmentConfirmation,
+        decisions: tuple[ConfirmationDecision, ...],
+        feature_state: ProfileFeatureState,
+        idempotency_key: str,
+    ) -> AssessmentConfirmation:
+        connection = self._require_transaction()
+        key = _required_text(idempotency_key, "idempotency_key")
+        profile_id, profile_key = self._owned_profile(connection, user_id)
+        if tuple(decisions) != confirmation.decisions:
+            raise ValueError("decisions must match the confirmation result")
+        if feature_state != confirmation.profile_state:
+            raise ValueError("feature_state must match the confirmation result")
+        if confirmation.profile_key != profile_key or feature_state.profile_key != profile_key:
+            raise ValueError("confirmation does not belong to the authenticated user")
+
+        existing = self.find_confirmation_by_idempotency_key(
+            user_id=user_id,
+            idempotency_key=key,
+        )
+        if existing is not None:
+            if existing == confirmation:
+                return existing
+            raise IdempotencyConflictError(
+                "confirmation idempotency key was reused with another payload"
+            )
+
+        plan = self.get_confirmation_plan(user_id=user_id, plan_id=confirmation.plan_id)
+        if plan is None:
+            raise ValueError("confirmation references an unknown plan")
+        if plan.status != "open":
+            raise IdempotencyConflictError("confirmation plan is no longer open")
+        if (
+            plan.profile_key != profile_key
+            or plan.base_profile_version != confirmation.base_profile_version
+        ):
+            raise ValueError("confirmation does not match its persisted plan")
+        current = self.get_current_feature_state(user_id=user_id)
+        if current is not None and current.profile_version != plan.base_profile_version:
+            raise StalePlanError("confirmation plan is based on a stale profile version")
+
+        suggestions = {item.suggestion_id: item for item in plan.suggestions}
+        for decision in decisions:
+            suggestion = suggestions.get(decision.suggestion_id)
+            if suggestion is None:
+                raise ValueError("decision references an unknown suggestion")
+            if suggestion.status != "pending":
+                raise ValueError("only pending suggestions can be decided")
+            if (
+                decision.feature_name != suggestion.feature_name
+                or decision.conflict_was_visible != suggestion.conflict
+            ):
+                raise ValueError("decision does not match its persisted suggestion")
+
+        plan_confirmation = connection.execute(
+            """SELECT result_json FROM profile_assessment_confirmation
+               WHERE plan_id = ?""",
+            (plan.plan_id,),
+        ).fetchone()
+        if plan_confirmation is not None:
+            raise IdempotencyConflictError("confirmation plan was already committed")
+
+        result_payload = confirmation.to_dict()
+        state_payload = feature_state.to_dict()
+        state_id = f"feature-state:{uuid4()}"
+        now = self._now()
+        connection.execute(
+            """
+            INSERT INTO profile_assessment_confirmation (
+                confirmation_id, plan_id, user_id, developer_profile_id,
+                profile_key, base_profile_version, new_profile_version,
+                confirmed_at, result_json, result_sha256,
+                idempotency_key, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                confirmation.confirmation_id,
+                confirmation.plan_id,
+                user_id,
+                profile_id,
+                profile_key,
+                confirmation.base_profile_version,
+                confirmation.new_profile_version,
+                confirmation.confirmed_at,
+                _json_dump(result_payload),
+                _json_sha256(result_payload),
+                key,
+                now,
+            ),
+        )
+        for decision in decisions:
+            connection.execute(
+                """
+                INSERT INTO profile_assessment_decision (
+                    confirmation_id, plan_id, suggestion_id, feature_name,
+                    decision, conflict_was_visible, decided_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    confirmation.confirmation_id,
+                    confirmation.plan_id,
+                    decision.suggestion_id,
+                    decision.feature_name,
+                    decision.decision,
+                    int(decision.conflict_was_visible),
+                    decision.decided_at,
+                ),
+            )
+            connection.execute(
+                """
+                UPDATE profile_assessment_suggestion SET status = ?
+                WHERE plan_id = ? AND suggestion_id = ?
+                """,
+                (
+                    "accepted" if decision.decision == "accept" else "rejected",
+                    confirmation.plan_id,
+                    decision.suggestion_id,
+                ),
+            )
+        connection.execute(
+            """
+            INSERT INTO developer_profile_feature_state (
+                feature_state_id, developer_profile_id, profile_key,
+                profile_version, feature_schema_version, confirmation_id,
+                state_sha256, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                state_id,
+                profile_id,
+                profile_key,
+                feature_state.profile_version,
+                feature_state.feature_schema_version,
+                confirmation.confirmation_id,
+                _json_sha256(state_payload),
+                feature_state.updated_at,
+            ),
+        )
+        for feature in feature_state.features:
+            connection.execute(
+                """
+                INSERT INTO developer_profile_feature (
+                    feature_state_id, feature_name, observed,
+                    value, locked, evidence_json
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    state_id,
+                    feature.feature_name,
+                    int(feature.observed),
+                    feature.value,
+                    int(feature.locked),
+                    _json_dump(list(feature.evidence_refs)),
+                ),
+            )
+        connection.execute(
+            """
+            INSERT INTO developer_profile_current_feature (
+                developer_profile_id, feature_state_id, updated_at
+            ) VALUES (?, ?, ?)
+            ON CONFLICT(developer_profile_id) DO UPDATE SET
+                feature_state_id = excluded.feature_state_id,
+                updated_at = excluded.updated_at
+            """,
+            (profile_id, state_id, feature_state.updated_at),
+        )
+        connection.execute(
+            "UPDATE profile_assessment_plan SET status = 'completed' WHERE plan_id = ?",
+            (confirmation.plan_id,),
+        )
+        return confirmation
+
+    def get_enhanced_profile_features(
+        self,
+        *,
+        user_id: int,
+        profile_version: str | None = None,
+    ) -> EnhancedProfileFeatures | None:
+        state = (
+            self.get_current_feature_state(user_id=user_id)
+            if profile_version is None
+            else self.get_feature_state(user_id=user_id, profile_version=profile_version)
+        )
+        if state is None:
+            return None
+        names = tuple(item.feature_name for item in state.features)
+        return EnhancedProfileFeatures(
+            profile_key=state.profile_key,
+            # A platform profile UUID is not a verified training/GitHub identity.
+            # Until an explicit identity mapping is persisted, model consumers
+            # must take the cold-start path rather than receiving a false match.
+            developer_key=None,
+            profile_version=state.profile_version,
+            feature_schema_version=state.feature_schema_version,
+            as_of=state.updated_at,
+            feature_names=names,
+            values=tuple(item.value for item in state.features),
+            observed_mask=tuple(item.observed for item in state.features),
+            locked_mask=tuple(item.locked for item in state.features),
+            current_interests=tuple(
+                item.feature_name
+                for item in state.features
+                if item.feature_name.startswith("current_interest.")
+                and item.observed
+                and item.value > 0.0
+            ),
+            evidence_refs=tuple(item.evidence_refs for item in state.features),
+        )
