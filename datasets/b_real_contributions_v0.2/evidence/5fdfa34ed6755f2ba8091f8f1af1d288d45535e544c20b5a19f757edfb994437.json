@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "labstack/echo",
+    "id": 31504491,
+    "language": "Go",
+    "private": false,
+    "size": 6834
+  },
+  "observed_at": "2026-10-26T07:55:36.381379+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b11bc2158be7d74b29f2e002fdf33f5514c846addc8c58fc65544becac6013e4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8895bd7cb37e121ac5402e77c77c996af5432286561d51735b8a20f20d038fe4",
+  "source_url": "https://api.github.com/repos/labstack/echo",
+  "status_code": 200
+}

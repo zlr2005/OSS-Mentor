@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "pallets/flask",
+    "id": 596892,
+    "language": "Python",
+    "private": false,
+    "size": 12216
+  },
+  "observed_at": "2026-10-26T08:40:51.863034+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "952f1984a8dbfea3f76eb72a5dc3c7383a02a4e92236d3ca2e81a2b870e8bf20",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4ef913e7335bd0399059978e80184b96cf1b1bce0ea004da93546a1634a12821",
+  "source_url": "https://api.github.com/repos/pallets/flask",
+  "status_code": 200
+}

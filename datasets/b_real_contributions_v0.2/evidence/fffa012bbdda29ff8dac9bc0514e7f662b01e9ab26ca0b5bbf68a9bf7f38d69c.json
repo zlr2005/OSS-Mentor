@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "validatorjs/validator.js",
+    "id": 965782,
+    "language": "JavaScript",
+    "private": false,
+    "size": 5719
+  },
+  "observed_at": "2026-10-26T15:28:04.757766+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b94c485ccc3727029400f0836668c91661d8a573292cadcfc3242de6df5c650d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7fd0bceae6cf806007d6ba1efb3ba60ceeef9c9b2955594b55de0b040ef5d82a",
+  "source_url": "https://api.github.com/repos/validatorjs/validator.js",
+  "status_code": 200
+}

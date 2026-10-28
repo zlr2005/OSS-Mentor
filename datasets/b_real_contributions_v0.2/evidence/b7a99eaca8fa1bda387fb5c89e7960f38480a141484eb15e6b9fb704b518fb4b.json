@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "2562692700f7fdb47d98209b249f5c34590be90c",
+    "size": 18873
+  },
+  "observed_at": "2026-10-26T05:31:59.764191+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0618590fa2f596c568f52460c0c2d900410e67641a6ce89191247fd9fe009dc2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2d9f2059fe1d380a220a15bdd5bdfee68cd46e8409f3abb21d4daf506256d272",
+  "source_url": "https://api.github.com/repos/apache/pulsar/git/blobs/2562692700f7fdb47d98209b249f5c34590be90c",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 122968941,
+      "login": "IvanGorshechnikov",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T10:07:38Z",
+      "committer_at": "2026-10-23T10:07:38Z",
+      "tree_sha": "a9e1998fbf68fde759ddde57e62dd98082029cf8"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a0e003534a5d95b334941bf65abe60d10f6b4e1e"
+  },
+  "observed_at": "2026-10-26T06:16:30.062766+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9e390caaa3ff9bcbcf62e0db7d2bb3de8420456c882cc7ef2b9dd2de7d73f9e3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e6164a731aef2e2a22e67387a342ca8251500ea4e9cd3a02921f59c2f2aa7861",
+  "source_url": "https://api.github.com/repos/dbeaver/dbeaver/commits/a0e003534a5d95b334941bf65abe60d10f6b4e1e?per_page=100",
+  "status_code": 200
+}

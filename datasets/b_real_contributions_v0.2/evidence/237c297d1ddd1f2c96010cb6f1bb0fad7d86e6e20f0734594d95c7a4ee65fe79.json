@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 40616000,
+      "login": "A5rocks",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:54:52Z",
+      "committer_at": "2026-10-23T20:54:52Z",
+      "tree_sha": "015cbff69e4b1aa14a87eb1e4069aa00e7943ce2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "009bc2d13850738e7762fea16097c507d599c0bf"
+  },
+  "observed_at": "2026-10-27T15:22:50.511371+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b31e115774ab52f2d05747f66d5b8b9b749922b2ec5f6f7d721adc6e26b3255f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e151bd390c18b12e1b8c71c1703034d3c23d3a1eb5bebeaa41491d4ecc055275",
+  "source_url": "https://api.github.com/repos/python-trio/trio/commits/009bc2d13850738e7762fea16097c507d599c0bf?per_page=100",
+  "status_code": 200
+}

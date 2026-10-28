@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 24843196,
+      "login": "sunnysabor",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T01:08:18Z",
+      "committer_at": "2026-10-25T01:08:18Z",
+      "tree_sha": "7a27157818bb842c1bc1949f5c686db308b126db"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9063ffcb27b356782c493e38ae8d1f8593d1333e"
+  },
+  "observed_at": "2026-10-26T05:38:12.366359+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "24fa684c1a32e289a334e963626e80ab3ff113e8b70a5d521b16fbffb4fe73e0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3593e57339f38fe1a651876312fb8823c174f50848da2bfb3985f72e95b6e065",
+  "source_url": "https://api.github.com/repos/apache/shenyu/commits/9063ffcb27b356782c493e38ae8d1f8593d1333e?per_page=100",
+  "status_code": 200
+}

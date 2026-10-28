@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5834889,
+      "login": "nyan-left",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T13:35:32Z",
+      "committer_at": "2026-10-25T13:35:32Z",
+      "tree_sha": "21e800144508518356b97f81a7744536ba8f8bab"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b3eca5a15b6aaf18d5d82984233f9e538859511e"
+  },
+  "observed_at": "2026-10-26T05:50:00.918840+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "93bded0f529e9b6f1cafc8b38a7e03ed71c404d8074ef49c979c0c876bf15b7e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "52ea7b808798cb6d0227d2bc6a5ec3e9795b985b7f1c9727c6728ae3c506d8fd",
+  "source_url": "https://api.github.com/repos/babel/babel/commits/b3eca5a15b6aaf18d5d82984233f9e538859511e?per_page=100",
+  "status_code": 200
+}

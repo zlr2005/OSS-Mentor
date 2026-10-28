@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7225623,
+      "login": "laggui",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:20:31Z",
+      "committer_at": "2026-10-23T20:20:31Z",
+      "tree_sha": "f81d46c37efc4075bee62c7498e8dc87a4645dfd"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3da5d2a3ce245d7843674823e16a243d91496387"
+  },
+  "observed_at": "2026-10-26T15:16:43.708470+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4ef26f8956b2d6cfecfe7d0888a04ce85dbf4b94724515a99207183772667b1e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3b2ddbdf04b2e0880d8b042e5046593923be8612218c21c590ff454729b10635",
+  "source_url": "https://api.github.com/repos/tracel-ai/burn/commits/3da5d2a3ce245d7843674823e16a243d91496387?per_page=100",
+  "status_code": 200
+}

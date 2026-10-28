@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fc13e18c69d3d06cb002c062a6e813774418a8e9",
+    "size": 35011
+  },
+  "observed_at": "2026-10-26T05:26:22.939546+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "81dfa8c3cbffcd196a6bea12fbd8ea2aa2badda6443cfdbc651c125a725fa575",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "889e128876a1aabb6fecdeaf5c4f87d8750dc3c8b7f5f34d94bd0c33e2d0fae6",
+  "source_url": "https://api.github.com/repos/apache/maven/git/blobs/fc13e18c69d3d06cb002c062a6e813774418a8e9",
+  "status_code": 200
+}

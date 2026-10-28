@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "hashicorp/terraform",
+    "id": 17728164,
+    "language": "Go",
+    "private": false,
+    "size": 361174
+  },
+  "observed_at": "2026-10-26T07:20:38.373279+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f74b8f776bc9783078755049f436dd6711f4b16299306a3b5c5c501aaf3d4a78",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f81509a50537d52b3793643ec0c2cc30f4d317a34d473eda3be46108b48d49ec",
+  "source_url": "https://api.github.com/repos/hashicorp/terraform",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "pallets/werkzeug",
+    "id": 997338,
+    "language": "Python",
+    "private": false,
+    "size": 17988
+  },
+  "observed_at": "2026-10-26T08:41:38.522607+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "35db6918ea265cf6a38d19237f656a15624f5415abcbf5c69daf5f23e00e40c9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "73430b8b210b5a378898641b1f1b67188dbb8f763274ef41907e59a214b017aa",
+  "source_url": "https://api.github.com/repos/pallets/werkzeug",
+  "status_code": 200
+}

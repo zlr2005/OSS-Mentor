@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "AGPL-3.0",
+    "full_name": "grafana/grafana",
+    "id": 15111821,
+    "language": "TypeScript",
+    "private": false,
+    "size": 2080709
+  },
+  "observed_at": "2026-10-26T07:13:37.545591+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a52804455198ae35449d5329d70b81367666b304af3b93b9f55c6df239ae2db7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "82c2df26049195f2a2d9f04041370603615698b7f03d0c13aa6c135c630453d2",
+  "source_url": "https://api.github.com/repos/grafana/grafana",
+  "status_code": 200
+}

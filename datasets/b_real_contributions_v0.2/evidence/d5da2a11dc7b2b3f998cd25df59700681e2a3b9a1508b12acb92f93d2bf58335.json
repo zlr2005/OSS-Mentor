@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "rollup/rollup",
+    "id": 35640229,
+    "language": "JavaScript",
+    "private": false,
+    "size": 36633
+  },
+  "observed_at": "2026-10-26T13:45:36.459585+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0af716b0a5a451ae9032f44075df604cd0cdd0295d8020d688caedec9ea0c880",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2d14ca76f56c29dc939274790e524f039a63285041f65a9790be33bc8e165000",
+  "source_url": "https://api.github.com/repos/rollup/rollup",
+  "status_code": 200
+}

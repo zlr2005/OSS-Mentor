@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29139614,
+      "login": "renovate[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-06T16:19:07Z",
+      "committer_at": "2026-10-06T16:19:07Z",
+      "tree_sha": "8383edae33366875f9373fd48b44f2ebc09255ad"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ccc89b83875474399e9d9d70841163f6319d1a41"
+  },
+  "observed_at": "2026-10-26T06:09:10.595804+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "83b7d8c442d765a7af0e479c9846864d704b3eb9bf1786430a8c73459412cb1c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1054f4f4199130b09ae5f7f308914d36647c317cf345057cfb7ee6027a32142a",
+  "source_url": "https://api.github.com/repos/clap-rs/clap/commits/ccc89b83875474399e9d9d70841163f6319d1a41?per_page=100",
+  "status_code": 200
+}

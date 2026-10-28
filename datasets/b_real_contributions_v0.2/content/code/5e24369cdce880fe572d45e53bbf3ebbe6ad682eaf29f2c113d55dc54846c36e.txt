@@ -1,0 +1,795 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the "Elastic License
+ * 2.0", the "GNU Affero General Public License v3.0 only", and the "Server Side
+ * Public License v 1"; you may not use this file except in compliance with, at
+ * your election, the "Elastic License 2.0", the "GNU Affero General Public
+ * License v3.0 only", or the "Server Side Public License, v 1".
+ */
+
+package org.elasticsearch.cluster;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.FailedNodeException;
+import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
+import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsRequest;
+import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsRequestParameters;
+import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
+import org.elasticsearch.action.admin.indices.stats.IndicesStatsRequest;
+import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
+import org.elasticsearch.action.admin.indices.stats.ShardStats;
+import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.action.support.PlainActionFuture;
+import org.elasticsearch.action.support.RefCountingRunnable;
+import org.elasticsearch.action.support.ThreadedActionListener;
+import org.elasticsearch.client.internal.Client;
+import org.elasticsearch.cluster.block.ClusterBlockException;
+import org.elasticsearch.cluster.node.DiscoveryNode;
+import org.elasticsearch.cluster.routing.ShardRouting;
+import org.elasticsearch.cluster.routing.allocation.DiskThresholdSettings;
+import org.elasticsearch.cluster.routing.allocation.WriteLoadConstraintSettings;
+import org.elasticsearch.cluster.routing.allocation.WriteLoadConstraintSettings.WriteLoadDeciderShardWriteLoadType;
+import org.elasticsearch.cluster.routing.allocation.WriteLoadConstraintSettings.WriteLoadDeciderStatus;
+import org.elasticsearch.cluster.routing.allocation.decider.WriteLoadConstraintDecider;
+import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.settings.ClusterSettings;
+import org.elasticsearch.common.settings.Setting;
+import org.elasticsearch.common.settings.Setting.Property;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.common.util.concurrent.EsExecutors;
+import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.index.search.stats.SearchStats;
+import org.elasticsearch.index.shard.IndexingStats;
+import org.elasticsearch.index.shard.ShardId;
+import org.elasticsearch.index.store.StoreStats;
+import org.elasticsearch.threadpool.ThreadPool;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import static org.elasticsearch.cluster.routing.allocation.WriteLoadConstraintSettings.WRITE_LOAD_DECIDER_ENABLED_SETTING;
+import static org.elasticsearch.cluster.routing.allocation.WriteLoadConstraintSettings.WRITE_LOAD_DECIDER_SHARD_WRITE_LOAD_TYPE_SETTING;
+import static org.elasticsearch.core.Strings.format;
+
+/**
+ * InternalClusterInfoService provides the ClusterInfoService interface,
+ * routinely updated on a timer. The timer can be dynamically changed by
+ * setting the <code>cluster.info.update.interval</code> setting (defaulting
+ * to 30 seconds). The InternalClusterInfoService only runs on the master node.
+ * Listens for changes in the number of data nodes and immediately submits a
+ * ClusterInfoUpdateJob if a node has been added.
+ *
+ * Every time the timer runs, if <code>cluster.routing.allocation.disk.threshold_enabled</code>
+ * is enabled, gathers information about the disk usage and shard sizes across the cluster,
+ * computes a new cluster info and notifies the registered listeners. If disk threshold
+ * monitoring is disabled, listeners are called with an empty cluster info.
+ */
+public class InternalClusterInfoService implements ClusterInfoService, ClusterStateListener {
+
+    private static final Logger logger = LogManager.getLogger(InternalClusterInfoService.class);
+
+    public static final Setting<TimeValue> INTERNAL_CLUSTER_INFO_UPDATE_INTERVAL_SETTING = Setting.timeSetting(
+        "cluster.info.update.interval",
+        TimeValue.timeValueSeconds(30),
+        TimeValue.timeValueSeconds(10),
+        Property.Dynamic,
+        Property.NodeScope
+    );
+    public static final Setting<TimeValue> INTERNAL_CLUSTER_INFO_TIMEOUT_SETTING = Setting.positiveTimeSetting(
+        "cluster.info.update.timeout",
+        TimeValue.timeValueSeconds(15),
+        Property.Dynamic,
+        Property.NodeScope
+    );
+
+    public static final Setting<Boolean> CLUSTER_ROUTING_ALLOCATION_ESTIMATED_HEAP_THRESHOLD_DECIDER_ENABLED = Setting.boolSetting(
+        "cluster.routing.allocation.estimated_heap.threshold_enabled",
+        false,
+        Property.Dynamic,
+        Property.NodeScope
+    );
+
+    private volatile boolean diskThresholdEnabled;
+    private volatile WriteLoadDeciderStatus writeLoadConstraintEnabled;
+    private volatile WriteLoadDeciderShardWriteLoadType writeLoadDeciderShardWriteLoadType;
+    private volatile TimeValue updateFrequency;
+    private volatile TimeValue fetchTimeout;
+
+    private final ThreadPool threadPool;
+    private final Client client;
+    private final Supplier<ClusterState> clusterStateSupplier;
+    private final List<Consumer<ClusterInfo>> listeners = new CopyOnWriteArrayList<>();
+
+    private final Object mutex = new Object();
+    private final List<ActionListener<ClusterInfo>> nextRefreshListeners = new ArrayList<>();
+    private final EstimatedHeapUsageCollector estimatedHeapUsageCollector;
+    private final CacheSizesAndCommitmentCollector cacheSizesAndCommitmentCollector;
+    private final PartitionSizeCollector partitionSizeCollector;
+    private final NodeUsageStatsForThreadPoolsCollector nodeUsageStatsForThreadPoolsCollector;
+    private final SearchLaneRequirementsCollector searchLaneRequirementsCollector;
+    private final WriteLoadConstraintSettings writeLoadConstraintSettings;
+
+    private AsyncRefresh currentRefresh;
+    private RefreshScheduler refreshScheduler;
+
+    private volatile ClusterInfo currentClusterInfo = ClusterInfo.EMPTY;
+
+    @SuppressWarnings("this-escape")
+    public InternalClusterInfoService(
+        Settings settings,
+        WriteLoadConstraintSettings writeLoadConstraintSettings,
+        ClusterService clusterService,
+        ThreadPool threadPool,
+        Client client,
+        EstimatedHeapUsageCollector estimatedHeapUsageCollector,
+        CacheSizesAndCommitmentCollector cacheSizesAndCommitmentCollector,
+        PartitionSizeCollector partitionSizeCollector,
+        NodeUsageStatsForThreadPoolsCollector nodeUsageStatsForThreadPoolsCollector,
+        SearchLaneRequirementsCollector searchLaneRequirementsCollector
+    ) {
+        this.threadPool = threadPool;
+        this.client = client;
+        this.estimatedHeapUsageCollector = estimatedHeapUsageCollector;
+        this.cacheSizesAndCommitmentCollector = cacheSizesAndCommitmentCollector;
+        this.partitionSizeCollector = partitionSizeCollector;
+        this.nodeUsageStatsForThreadPoolsCollector = nodeUsageStatsForThreadPoolsCollector;
+        this.searchLaneRequirementsCollector = searchLaneRequirementsCollector;
+        this.updateFrequency = INTERNAL_CLUSTER_INFO_UPDATE_INTERVAL_SETTING.get(settings);
+        this.fetchTimeout = INTERNAL_CLUSTER_INFO_TIMEOUT_SETTING.get(settings);
+        this.diskThresholdEnabled = DiskThresholdSettings.CLUSTER_ROUTING_ALLOCATION_DISK_THRESHOLD_ENABLED_SETTING.get(settings);
+        this.clusterStateSupplier = clusterService::state;
+        this.writeLoadConstraintSettings = writeLoadConstraintSettings;
+        ClusterSettings clusterSettings = clusterService.getClusterSettings();
+        clusterSettings.addSettingsUpdateConsumer(INTERNAL_CLUSTER_INFO_TIMEOUT_SETTING, this::setFetchTimeout);
+        clusterSettings.addSettingsUpdateConsumer(INTERNAL_CLUSTER_INFO_UPDATE_INTERVAL_SETTING, this::setUpdateFrequency);
+        clusterSettings.addSettingsUpdateConsumer(
+            DiskThresholdSettings.CLUSTER_ROUTING_ALLOCATION_DISK_THRESHOLD_ENABLED_SETTING,
+            this::setDiskThresholdEnabled
+        );
+        clusterSettings.initializeAndWatch(WRITE_LOAD_DECIDER_ENABLED_SETTING, this::setWriteLoadConstraintEnabled);
+        clusterSettings.initializeAndWatch(
+            WRITE_LOAD_DECIDER_SHARD_WRITE_LOAD_TYPE_SETTING,
+            this::setWriteLoadDeciderShardLevelWriteLoadType
+        );
+    }
+
+    private void setDiskThresholdEnabled(boolean diskThresholdEnabled) {
+        this.diskThresholdEnabled = diskThresholdEnabled;
+    }
+
+    private void setWriteLoadConstraintEnabled(WriteLoadDeciderStatus writeLoadConstraintEnabled) {
+        this.writeLoadConstraintEnabled = writeLoadConstraintEnabled;
+    }
+
+    private void setWriteLoadDeciderShardLevelWriteLoadType(WriteLoadDeciderShardWriteLoadType type) {
+        this.writeLoadDeciderShardWriteLoadType = type;
+    }
+
+    private void setFetchTimeout(TimeValue fetchTimeout) {
+        this.fetchTimeout = fetchTimeout;
+    }
+
+    void setUpdateFrequency(TimeValue updateFrequency) {
+        this.updateFrequency = updateFrequency;
+    }
+
+    @Override
+    public void clusterChanged(ClusterChangedEvent event) {
+        final Runnable newRefresh;
+        synchronized (mutex) {
+            if (event.localNodeMaster() == false) {
+                refreshScheduler = null;
+                return;
+            }
+
+            if (refreshScheduler == null) {
+                logger.trace("elected as master, scheduling cluster info update tasks");
+                refreshScheduler = new RefreshScheduler();
+                nextRefreshListeners.add(refreshScheduler.getListener());
+            }
+            newRefresh = getNewRefresh();
+            assert assertRefreshInvariant();
+        }
+        newRefresh.run();
+
+        // Refresh if a data node was added
+        for (DiscoveryNode addedNode : event.nodesDelta().addedNodes()) {
+            if (addedNode.canContainData()) {
+                refreshAsync(new PlainActionFuture<>());
+                break;
+            }
+        }
+    }
+
+    private class AsyncRefresh {
+
+        private volatile Map<String, DiskUsage> leastAvailableSpaceUsages;
+        private volatile Map<String, DiskUsage> mostAvailableSpaceUsages;
+        private volatile Map<String, ByteSizeValue> maxHeapPerNode;
+        private volatile Map<String, NodeHeapEstimates> nodeHeapEstimates;
+        private volatile ShardHeapUsageEstimates estimatedShardHeapUsageEstimates = ShardHeapUsageEstimates.empty();
+        private volatile Map<String, NodeUsageStatsForThreadPools> nodeThreadPoolUsageStatsPerNode;
+        private volatile Map<ShardId, Double> averageShardWriteLoads = Map.of();
+        private volatile Map<ShardId, BoostedAndUnboostedCacheRequirements> shardCacheRequirements = Map.of();
+        private volatile Map<String, NodeCacheSizeAndCommitments> nodeCacheSizeAndCommitments = Map.of();
+        private volatile Map<String, Long> hostedShardsPartitionSizeByNodeId = Map.of();
+        private volatile Map<ShardId, Double> shardSearchLaneRequirements = Map.of();
+        private volatile IndicesStatsSummary indicesStatsSummary;
+
+        private final List<ActionListener<ClusterInfo>> thisRefreshListeners;
+        private final RefCountingRunnable fetchRefs = new RefCountingRunnable(this::callListeners);
+
+        AsyncRefresh(List<ActionListener<ClusterInfo>> thisRefreshListeners) {
+            this.thisRefreshListeners = thisRefreshListeners;
+        }
+
+        void execute() {
+            logger.trace("starting async refresh");
+
+            try (var ignoredRefs = fetchRefs) {
+                maybeFetchIndicesStats(diskThresholdEnabled || needIndicesStatsForShardWriteLoads());
+                fetchNodeStats(diskThresholdEnabled);
+                fetchEstimatedHeapUsage();
+                maybeFetchNodesUsageStatsForThreadPools(writeLoadConstraintEnabled.atLeastLowThresholdEnabled());
+                fetchCacheUsageAndCommitments();
+                fetchPartitionSizes();
+                fetchSearchLaneRequirements();
+            }
+        }
+
+        private void maybeFetchIndicesStats(boolean shouldFetch) {
+            if (shouldFetch) {
+                try (var ignored = threadPool.getThreadContext().clearTraceContext()) {
+                    fetchIndicesStats();
+                }
+            } else {
+                logger.trace("skipping collecting disk usage info from cluster, notifying listeners with empty indices stats");
+                indicesStatsSummary = IndicesStatsSummary.EMPTY;
+            }
+        }
+
+        private void maybeFetchNodesUsageStatsForThreadPools(boolean shouldFetch) {
+            if (shouldFetch) {
+                try (var ignored = threadPool.getThreadContext().clearTraceContext()) {
+                    nodeUsageStatsForThreadPoolsCollector.collectUsageStats(
+                        client,
+                        clusterStateSupplier.get(),
+                        // Per-shard write loads from this action are only needed when the write loads are not fetched via the indices
+                        // stats.
+                        writeLoadDeciderShardWriteLoadType == WriteLoadDeciderShardWriteLoadType.AVERAGE,
+                        ActionListener.releaseAfter(new ActionListener<>() {
+                            @Override
+                            public void onResponse(NodeUsageStatsForThreadPoolsCollector.CollectedUsageStats stats) {
+                                nodeThreadPoolUsageStatsPerNode = stats.nodeUsageStats();
+                                averageShardWriteLoads = stats.shardWriteLoads();
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                logger.warn("failed to fetch thread pool usage estimates for nodes", e);
+                                nodeThreadPoolUsageStatsPerNode = Map.of();
+                                averageShardWriteLoads = Map.of();
+                            }
+                        }, fetchRefs.acquire())
+                    );
+                }
+            } else {
+                logger.trace("skipping collecting shard/node write load estimates from cluster, feature currently disabled");
+                nodeThreadPoolUsageStatsPerNode = Map.of();
+            }
+        }
+
+        private void fetchCacheUsageAndCommitments() {
+            try (var ignored = threadPool.getThreadContext().clearTraceContext()) {
+                final ClusterState clusterState = clusterStateSupplier.get();
+                cacheSizesAndCommitmentCollector.collectCacheSizesAndCommitmentStats(
+                    clusterState,
+                    ActionListener.releaseAfter(new ActionListener<>() {
+                        @Override
+                        public void onResponse(CacheSizesAndCommitmentStats cacheSizesAndCommitmentStats) {
+                            final CacheSizesAndCommitmentStats adjusted = adjustCacheSizesAndCommitmentStats(cacheSizesAndCommitmentStats);
+                            shardCacheRequirements = adjusted.shardCacheRequirements();
+                            nodeCacheSizeAndCommitments = adjusted.nodeCacheSizeAndCommitments();
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            logger.warn("failed to fetch cache sizes and commitment stats", e);
+                            shardCacheRequirements = Map.of();
+                            nodeCacheSizeAndCommitments = Map.of();
+                        }
+                    }, fetchRefs.acquire())
+                );
+            }
+        }
+
+        private void fetchPartitionSizes() {
+            try (var ignored = threadPool.getThreadContext().clearTraceContext()) {
+                partitionSizeCollector.collectHostedShardsPartitionSizes(
+                    clusterStateSupplier.get(),
+                    ActionListener.releaseAfter(new ActionListener<>() {
+                        @Override
+                        public void onResponse(Map<String, Long> partitionSizes) {
+                            hostedShardsPartitionSizeByNodeId = partitionSizes;
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            logger.warn("failed to fetch partition sizes", e);
+                            hostedShardsPartitionSizeByNodeId = Map.of();
+                        }
+                    }, fetchRefs.acquire())
+                );
+            }
+        }
+
+        private void fetchSearchLaneRequirements() {
+            try (var ignored = threadPool.getThreadContext().clearTraceContext()) {
+                searchLaneRequirementsCollector.collectSearchLaneRequirements(
+                    clusterStateSupplier.get(),
+                    ActionListener.releaseAfter(new ActionListener<>() {
+                        @Override
+                        public void onResponse(Map<ShardId, Double> laneRequirements) {
+                            shardSearchLaneRequirements = laneRequirements;
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            logger.warn("failed to fetch search lane requirements", e);
+                            shardSearchLaneRequirements = Map.of();
+                        }
+                    }, fetchRefs.acquire())
+                );
+            }
+        }
+
+        private void fetchEstimatedHeapUsage() {
+            try (var ignored = threadPool.getThreadContext().clearTraceContext()) {
+                estimatedHeapUsageCollector.collectEstimatedHeapUsage(ActionListener.releaseAfter(new ActionListener<>() {
+                    @Override
+                    public void onResponse(EstimatedHeapUsageStats estimatedHeapUsageStats) {
+                        nodeHeapEstimates = estimatedHeapUsageStats.nodeHeapEstimates();
+                        estimatedShardHeapUsageEstimates = estimatedHeapUsageStats.shardHeapUsageEstimates();
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        logger.warn("failed to fetch node heap estimates and shard heap usage estimates", e);
+                        nodeHeapEstimates = Map.of();
+                        estimatedShardHeapUsageEstimates = ShardHeapUsageEstimates.empty();
+                    }
+                }, fetchRefs.acquire()));
+            }
+        }
+
+        private void fetchIndicesStats() {
+            final IndicesStatsRequest indicesStatsRequest = new IndicesStatsRequest();
+            indicesStatsRequest.clear();
+            if (diskThresholdEnabled) {
+                // This returns the shard sizes on disk
+                indicesStatsRequest.store(true);
+            }
+            if (needIndicesStatsForShardWriteLoads()) {
+                // This returns the shard write-loads
+                indicesStatsRequest.indexing(true);
+            }
+            // This returns the shard search loads
+            indicesStatsRequest.search(true);
+            indicesStatsRequest.indicesOptions(IndicesOptions.STRICT_EXPAND_OPEN_CLOSED_HIDDEN);
+            indicesStatsRequest.timeout(fetchTimeout);
+            client.admin()
+                .indices()
+                .stats(
+                    indicesStatsRequest,
+                    new ThreadedActionListener<>(
+                        threadPool.executor(ThreadPool.Names.MANAGEMENT),
+                        ActionListener.releaseAfter(new ActionListener<>() {
+                            @Override
+                            public void onResponse(IndicesStatsResponse indicesStatsResponse) {
+                                logger.trace("received indices stats response");
+
+                                if (indicesStatsResponse.getShardFailures().length > 0) {
+                                    final Set<String> failedNodeIds = new HashSet<>();
+                                    for (final var shardFailure : indicesStatsResponse.getShardFailures()) {
+                                        if (shardFailure.getCause() instanceof final FailedNodeException failedNodeException) {
+                                            if (failedNodeIds.add(failedNodeException.nodeId())) {
+                                                logger.warn(
+                                                    () -> format(
+                                                        "failed to retrieve shard stats from node [%s]",
+                                                        failedNodeException.nodeId()
+                                                    ),
+                                                    failedNodeException.getCause()
+                                                );
+                                            }
+                                            logger.trace(
+                                                () -> format(
+                                                    "failed to retrieve stats for shard [%s][%s]",
+                                                    shardFailure.index(),
+                                                    shardFailure.shardId()
+                                                ),
+                                                shardFailure.getCause()
+                                            );
+                                        } else {
+                                            logger.warn(
+                                                () -> format(
+                                                    "failed to retrieve stats for shard [%s][%s]",
+                                                    shardFailure.index(),
+                                                    shardFailure.shardId()
+                                                ),
+                                                shardFailure.getCause()
+                                            );
+                                        }
+                                    }
+                                }
+
+                                final ShardStats[] stats = indicesStatsResponse.getShards();
+                                final Map<ShardId, Double> shardWriteLoadByIdentifierBuilder = new HashMap<>();
+                                final Map<ShardId, Double> shardSearchLoadBuilder = new HashMap<>();
+                                final Map<String, Long> shardSizeByIdentifierBuilder = new HashMap<>();
+                                final Map<ShardId, Long> shardDataSetSizeBuilder = new HashMap<>();
+                                final Map<ClusterInfo.NodeAndShard, String> dataPath = new HashMap<>();
+                                final Map<ClusterInfo.NodeAndPath, ClusterInfo.ReservedSpace.Builder> reservedSpaceBuilders =
+                                    new HashMap<>();
+                                buildShardLevelInfo(
+                                    adjustShardStats(stats),
+                                    shardWriteLoadByIdentifierBuilder,
+                                    shardSearchLoadBuilder,
+                                    shardSizeByIdentifierBuilder,
+                                    shardDataSetSizeBuilder,
+                                    dataPath,
+                                    reservedSpaceBuilders,
+                                    writeLoadDeciderShardWriteLoadType
+                                );
+
+                                final Map<ClusterInfo.NodeAndPath, ClusterInfo.ReservedSpace> reservedSpace = new HashMap<>();
+                                reservedSpaceBuilders.forEach((nodeAndPath, builder) -> reservedSpace.put(nodeAndPath, builder.build()));
+
+                                indicesStatsSummary = new IndicesStatsSummary(
+                                    Map.copyOf(shardSizeByIdentifierBuilder),
+                                    Map.copyOf(shardDataSetSizeBuilder),
+                                    Map.copyOf(dataPath),
+                                    Map.copyOf(reservedSpace),
+                                    Map.copyOf(shardWriteLoadByIdentifierBuilder),
+                                    Map.copyOf(shardSearchLoadBuilder)
+                                );
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                if (e instanceof ClusterBlockException) {
+                                    logger.trace("failed to retrieve indices stats", e);
+                                } else {
+                                    logger.warn("failed to retrieve indices stats", e);
+                                }
+                                indicesStatsSummary = IndicesStatsSummary.EMPTY;
+                            }
+                        }, fetchRefs.acquire())
+                    )
+                );
+        }
+
+        private void fetchNodeStats(boolean fetchFsStats) {
+            try (var ignored = threadPool.getThreadContext().clearTraceContext()) {
+                final NodesStatsRequest nodesStatsRequest = new NodesStatsRequest("data:true");
+                nodesStatsRequest.setIncludeShardsStats(false);
+                nodesStatsRequest.clear();
+                if (fetchFsStats) {
+                    nodesStatsRequest.addMetric(NodesStatsRequestParameters.Metric.FS);
+                }
+                nodesStatsRequest.addMetric(NodesStatsRequestParameters.Metric.JVM);
+                nodesStatsRequest.setTimeout(fetchTimeout);
+                client.admin().cluster().nodesStats(nodesStatsRequest, ActionListener.releaseAfter(new ActionListener<>() {
+                    @Override
+                    public void onResponse(NodesStatsResponse nodesStatsResponse) {
+                        logger.trace("received node stats response");
+
+                        for (final FailedNodeException failure : nodesStatsResponse.failures()) {
+                            logger.warn(() -> "failed to retrieve stats for node [" + failure.nodeId() + "]", failure.getCause());
+                        }
+
+                        Map<String, DiskUsage> leastAvailableUsagesBuilder = new HashMap<>();
+                        Map<String, DiskUsage> mostAvailableUsagesBuilder = new HashMap<>();
+                        Map<String, ByteSizeValue> maxHeapPerNodeBuilder = new HashMap<>();
+                        processNodeStatsArray(
+                            adjustNodesStats(nodesStatsResponse.getNodes()),
+                            leastAvailableUsagesBuilder,
+                            mostAvailableUsagesBuilder,
+                            maxHeapPerNodeBuilder,
+                            fetchFsStats
+                        );
+                        leastAvailableSpaceUsages = Map.copyOf(leastAvailableUsagesBuilder);
+                        mostAvailableSpaceUsages = Map.copyOf(mostAvailableUsagesBuilder);
+                        maxHeapPerNode = Map.copyOf(maxHeapPerNodeBuilder);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        if (e instanceof ClusterBlockException) {
+                            logger.trace("failed to retrieve node stats", e);
+                        } else {
+                            logger.warn("failed to retrieve node stats", e);
+                        }
+                        leastAvailableSpaceUsages = Map.of();
+                        mostAvailableSpaceUsages = Map.of();
+                        maxHeapPerNode = Map.of();
+                    }
+                }, fetchRefs.acquire()));
+            }
+        }
+
+        private void callListeners() {
+            try {
+                logger.trace("stats all received, computing cluster info and notifying listeners");
+                final ClusterInfo clusterInfo = updateAndGetCurrentClusterInfo();
+                boolean anyListeners = false;
+                for (final Consumer<ClusterInfo> listener : listeners) {
+                    anyListeners = true;
+                    try {
+                        logger.trace("notifying [{}] of new cluster info", listener);
+                        listener.accept(clusterInfo);
+                    } catch (Exception e) {
+                        logger.info(() -> "failed to notify [" + listener + "] of new cluster info", e);
+                    }
+                }
+                assert anyListeners : "expected to notify at least one listener";
+
+                for (final ActionListener<ClusterInfo> listener : thisRefreshListeners) {
+                    listener.onResponse(clusterInfo);
+                }
+            } finally {
+                onRefreshComplete(this);
+            }
+        }
+
+        public boolean needIndicesStatsForShardWriteLoads() {
+            return writeLoadConstraintEnabled.atLeastLowThresholdEnabled() && writeLoadDeciderShardWriteLoadType.useIndicesStats();
+        }
+
+        private ClusterInfo updateAndGetCurrentClusterInfo() {
+            final Map<String, NodeHeapMetrics> nodeHeapMetrics = new HashMap<>(maxHeapPerNode.size());
+            maxHeapPerNode.forEach((nodeId, maxHeapSize) -> {
+                final NodeHeapEstimates currentHeapEstimates = nodeHeapEstimates.get(nodeId);
+                if (currentHeapEstimates != null) {
+                    nodeHeapMetrics.put(nodeId, new NodeHeapMetrics(nodeId, maxHeapSize.getBytes(), currentHeapEstimates));
+                }
+            });
+            final Set<String> nodeIdsWriteLoadHotspotting = buildNodeIdsWriteLoadHotspottingSet(
+                nodeThreadPoolUsageStatsPerNode,
+                writeLoadConstraintSettings.getQueueLatencyThreshold(),
+                writeLoadConstraintSettings.getHotspotUtilizationThreshold()
+            );
+
+            final var newClusterInfo = new ClusterInfo(
+                leastAvailableSpaceUsages,
+                mostAvailableSpaceUsages,
+                indicesStatsSummary.shardSizes,
+                indicesStatsSummary.shardDataSetSizes,
+                indicesStatsSummary.dataPath,
+                indicesStatsSummary.reservedSpace,
+                nodeHeapMetrics,
+                estimatedShardHeapUsageEstimates.perShard(),
+                estimatedShardHeapUsageEstimates.defaultForShardsWithoutMetrics(),
+                nodeThreadPoolUsageStatsPerNode,
+                writeLoadDeciderShardWriteLoadType.useIndicesStats() ? indicesStatsSummary.shardWriteLoads() : averageShardWriteLoads,
+                maxHeapPerNode,
+                nodeIdsWriteLoadHotspotting,
+                nodeCacheSizeAndCommitments,
+                shardCacheRequirements,
+                hostedShardsPartitionSizeByNodeId,
+                shardSearchLaneRequirements,
+                indicesStatsSummary.shardSearchLoads()
+            );
+            currentClusterInfo = newClusterInfo;
+            return newClusterInfo;
+        }
+
+        private static Set<String> buildNodeIdsWriteLoadHotspottingSet(
+            Map<String, NodeUsageStatsForThreadPools> nodeThreadPoolUsageStatsPerNode,
+            TimeValue hotspotQueueLatencyThreshold,
+            double hotspotUtilizationThreshold
+        ) {
+            final Set<String> nodeIdsWriteLoadHotspotting = new HashSet<>(nodeThreadPoolUsageStatsPerNode.size());
+            nodeThreadPoolUsageStatsPerNode.forEach((nodeId, nodeUsageStats) -> {
+                if (WriteLoadConstraintDecider.nodeIsHotspotting(
+                    nodeUsageStats,
+                    hotspotQueueLatencyThreshold,
+                    hotspotUtilizationThreshold
+                )) {
+                    nodeIdsWriteLoadHotspotting.add(nodeId);
+                }
+            });
+            return nodeIdsWriteLoadHotspotting;
+        }
+    }
+
+    private void onRefreshComplete(AsyncRefresh completedRefresh) {
+        final Runnable newRefresh;
+        synchronized (mutex) {
+            assert currentRefresh == completedRefresh;
+            currentRefresh = null;
+
+            // We only ever run one refresh at once; if another refresh was requested while this one was running then we must start another
+            // to ensure that the stats it sees are up-to-date.
+            newRefresh = getNewRefresh();
+            assert assertRefreshInvariant();
+        }
+        newRefresh.run();
+    }
+
+    private Runnable getNewRefresh() {
+        assert Thread.holdsLock(mutex) : "mutex not held";
+
+        if (currentRefresh != null) {
+            return () -> {};
+        }
+
+        if (nextRefreshListeners.isEmpty()) {
+            return () -> {};
+        }
+
+        final ArrayList<ActionListener<ClusterInfo>> thisRefreshListeners = new ArrayList<>(nextRefreshListeners);
+        nextRefreshListeners.clear();
+
+        currentRefresh = new AsyncRefresh(thisRefreshListeners);
+        return currentRefresh::execute;
+    }
+
+    private boolean assertRefreshInvariant() {
+        assert Thread.holdsLock(mutex) : "mutex not held";
+        // We never leave a refresh listener waiting unless we're already refreshing (which will pick up the waiting listener on completion)
+        assert nextRefreshListeners.isEmpty() || currentRefresh != null;
+        return true;
+    }
+
+    private class RefreshScheduler {
+
+        ActionListener<ClusterInfo> getListener() {
+            return ActionListener.running(() -> {
+                if (shouldRefresh()) {
+                    threadPool.scheduleUnlessShuttingDown(updateFrequency, EsExecutors.DIRECT_EXECUTOR_SERVICE, () -> {
+                        if (shouldRefresh()) {
+                            refreshAsync(getListener());
+                        }
+                    });
+                }
+            });
+        }
+
+        private boolean shouldRefresh() {
+            synchronized (mutex) {
+                return refreshScheduler == this;
+            }
+        }
+    }
+
+    @Override
+    public ClusterInfo getClusterInfo() {
+        return currentClusterInfo;
+    }
+
+    // allow tests to adjust the node stats on receipt
+    List<NodeStats> adjustNodesStats(List<NodeStats> nodeStats) {
+        return nodeStats;
+    }
+
+    ShardStats[] adjustShardStats(ShardStats[] shardStats) {
+        return shardStats;
+    }
+
+    // allow tests to adjust the cache sizes and commitment stats on receipt
+    CacheSizesAndCommitmentStats adjustCacheSizesAndCommitmentStats(CacheSizesAndCommitmentStats cacheSizesAndCommitmentStats) {
+        return cacheSizesAndCommitmentStats;
+    }
+
+    void refreshAsync(ActionListener<ClusterInfo> future) {
+        final Runnable newRefresh;
+        synchronized (mutex) {
+            nextRefreshListeners.add(future);
+            newRefresh = getNewRefresh();
+            assert assertRefreshInvariant();
+        }
+        newRefresh.run();
+    }
+
+    @Override
+    public void addListener(Consumer<ClusterInfo> clusterInfoConsumer) {
+        listeners.add(clusterInfoConsumer);
+    }
+
+    static void buildShardLevelInfo(
+        ShardStats[] stats,
+        Map<ShardId, Double> shardWriteLoads,
+        Map<ShardId, Double> shardSearchLoads,
+        Map<String, Long> shardSizes,
+        Map<ShardId, Long> shardDataSetSizeBuilder,
+        Map<ClusterInfo.NodeAndShard, String> dataPathByShard,
+        Map<ClusterInfo.NodeAndPath, ClusterInfo.ReservedSpace.Builder> reservedSpaceByShard,
+        WriteLoadDeciderShardWriteLoadType shardWriteLoadType
+    ) {
+        for (ShardStats s : stats) {
+            final ShardRouting shardRouting = s.getShardRouting();
+            dataPathByShard.put(ClusterInfo.NodeAndShard.from(shardRouting), s.getDataPath());
+
+            final StoreStats storeStats = s.getStats().getStore();
+            if (storeStats != null) {
+                final long size = storeStats.sizeInBytes();
+                final long dataSetSize = storeStats.totalDataSetSizeInBytes();
+                final long reserved = storeStats.reservedSizeInBytes();
+
+                final String shardIdentifier = ClusterInfo.shardIdentifierFromRouting(shardRouting);
+                logger.trace("shard: {} size: {} reserved: {}", shardIdentifier, size, reserved);
+                shardSizes.put(shardIdentifier, size);
+                if (dataSetSize > shardDataSetSizeBuilder.getOrDefault(shardRouting.shardId(), -1L)) {
+                    shardDataSetSizeBuilder.put(shardRouting.shardId(), dataSetSize);
+                }
+                if (reserved != StoreStats.UNKNOWN_RESERVED_BYTES) {
+                    final ClusterInfo.ReservedSpace.Builder reservedSpaceBuilder = reservedSpaceByShard.computeIfAbsent(
+                        new ClusterInfo.NodeAndPath(shardRouting.currentNodeId(), s.getDataPath()),
+                        t -> new ClusterInfo.ReservedSpace.Builder()
+                    );
+                    reservedSpaceBuilder.add(shardRouting.shardId(), reserved);
+                }
+            }
+            if (shardWriteLoadType.useIndicesStats()) {
+                final IndexingStats indexingStats = s.getStats().getIndexing();
+                if (indexingStats != null) {
+                    final double shardWriteLoad = shardWriteLoadType.getWriteLoad(indexingStats);
+                    if (shardWriteLoad > shardWriteLoads.getOrDefault(shardRouting.shardId(), -1.0)) {
+                        shardWriteLoads.put(shardRouting.shardId(), shardWriteLoad);
+                    }
+                }
+            }
+            final SearchStats searchStats = s.getStats().getSearch();
+            if (searchStats != null) {
+                final double shardSearchLoad = searchStats.getTotal().getSearchLoadRate();
+                if (shardSearchLoad > shardSearchLoads.getOrDefault(shardRouting.shardId(), -1.0)) {
+                    shardSearchLoads.put(shardRouting.shardId(), shardSearchLoad);
+                }
+            }
+        }
+    }
+
+    private static void processNodeStatsArray(
+        List<NodeStats> nodeStatsArray,
+        Map<String, DiskUsage> newLeastAvailableUsages,
+        Map<String, DiskUsage> newMostAvailableUsages,
+        Map<String, ByteSizeValue> maxHeapPerNodeBuilder,
+        boolean processFsStats
+    ) {
+        for (NodeStats nodeStats : nodeStatsArray) {
+            if (processFsStats) {
+                DiskUsage leastAvailableUsage = DiskUsage.findLeastAvailablePath(nodeStats);
+                if (leastAvailableUsage != null) {
+                    newLeastAvailableUsages.put(nodeStats.getNode().getId(), leastAvailableUsage);
+                }
+                DiskUsage mostAvailableUsage = DiskUsage.findMostAvailable(nodeStats);
+                if (mostAvailableUsage != null) {
+                    newMostAvailableUsages.put(nodeStats.getNode().getId(), mostAvailableUsage);
+                }
+            }
+            maxHeapPerNodeBuilder.put(nodeStats.getNode().getId(), nodeStats.getJvm().getMem().getHeapMax());
+        }
+    }
+
+    private record IndicesStatsSummary(
+        Map<String, Long> shardSizes,
+        Map<ShardId, Long> shardDataSetSizes,
+        Map<ClusterInfo.NodeAndShard, String> dataPath,
+        Map<ClusterInfo.NodeAndPath, ClusterInfo.ReservedSpace> reservedSpace,
+        Map<ShardId, Double> shardWriteLoads,
+        Map<ShardId, Double> shardSearchLoads
+    ) {
+        static final IndicesStatsSummary EMPTY = new IndicesStatsSummary(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+    }
+
+}

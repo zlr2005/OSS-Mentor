@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "92b9f0ebf8335a2f97ddfc7effc153d523dc5913",
+    "size": 957
+  },
+  "observed_at": "2026-10-26T05:57:46.297564+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7e31c4707378cc4bb86c8e7065752f1b7c0f32525dbe1cb2a1cb058ad1a574bc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "dcb73d58c2f0635909cc536eb723b154a3a50023abe757d1b3a889ea0a5c7f34",
+  "source_url": "https://api.github.com/repos/bokeh/bokeh/git/blobs/92b9f0ebf8335a2f97ddfc7effc153d523dc5913",
+  "status_code": 200
+}

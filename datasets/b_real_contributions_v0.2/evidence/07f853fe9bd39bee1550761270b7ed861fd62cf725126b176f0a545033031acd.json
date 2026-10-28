@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 240962040,
+      "login": "SAY-5",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-05-24T22:22:26Z",
+      "committer_at": "2026-05-25T05:41:37Z",
+      "tree_sha": "c91c774fd1c7ae54bec4944a932ec182a4d0ace7"
+    },
+    "committer": {
+      "id": 158471,
+      "login": "djc",
+      "type": "User"
+    },
+    "sha": "f14ead46c0feeed8d5b2471c7a55069fbc822d01"
+  },
+  "observed_at": "2026-10-27T12:55:31.124639+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "67924f6582e364718bb22df7d336e7f3ae41ffe2b98d51f0226b79824685ad1e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "30bfb6fa89680577e108c249bcd922b65eb1956b93413b0bc9c45ebac1fb2894",
+  "source_url": "https://api.github.com/repos/chronotope/chrono/commits/f14ead46c0feeed8d5b2471c7a55069fbc822d01?per_page=100",
+  "status_code": 200
+}

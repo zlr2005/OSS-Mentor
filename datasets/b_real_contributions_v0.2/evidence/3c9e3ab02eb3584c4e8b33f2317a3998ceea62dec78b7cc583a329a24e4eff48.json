@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "689ffd7d954f1248fc2dfd1980da853483ef2dfd",
+    "size": 1542
+  },
+  "observed_at": "2026-10-27T15:24:13.255287+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c4ef3ff23e2410e71975f6944c787c1867f1b5913f8808a93921337f24f984b4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3f35699ebafe00af3b83dfa04f413b11f6f32519b04734d90e4be9cad43bb808",
+  "source_url": "https://api.github.com/repos/python-trio/trio/git/blobs/689ffd7d954f1248fc2dfd1980da853483ef2dfd",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "prometheus/prometheus",
+    "id": 6838921,
+    "language": "Go",
+    "private": false,
+    "size": 295087
+  },
+  "observed_at": "2026-10-26T12:59:56.773742+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "08c9ee48f7dcdae7886615445565525bc71339433eb951362d623849cd311d12",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ccda8d9ab5bf5ac1f9bd205ebb92502f7eedd73b1a18efbcb92d1dc5ff1f0179",
+  "source_url": "https://api.github.com/repos/prometheus/prometheus",
+  "status_code": 200
+}

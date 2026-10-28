@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "sveltejs/svelte",
+    "id": 74293321,
+    "language": "JavaScript",
+    "private": false,
+    "size": 124236
+  },
+  "observed_at": "2026-10-26T14:44:54.092426+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fa3c8d5ff1d4856caedc95c6c8248deff4516fc7b72546cc64c9bac18cdeba5f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fb26f935b9b5fdd09604de176b419c9e3c742330f89c8dc1015a45527c2baf69",
+  "source_url": "https://api.github.com/repos/sveltejs/svelte",
+  "status_code": 200
+}

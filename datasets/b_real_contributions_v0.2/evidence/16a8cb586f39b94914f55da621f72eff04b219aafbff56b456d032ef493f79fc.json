@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 13810291,
+      "login": "irontaek",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-15T08:14:35Z",
+      "committer_at": "2026-10-15T08:14:35Z",
+      "tree_sha": "067806ba681bc11a74bb4fbd6215aa2c535d26b4"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "098d2e87a1f7142947418d15f63f975b58c4685b"
+  },
+  "observed_at": "2026-10-26T13:27:02.096666+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9bde83a0711f66f150ffa9c82e7c03e3baee6b5b7ce3a9ef6d9f09bbffc2429e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c8d980c02966da31db9144b0828c45cd84d1471a755baad5a8143d306ce81c6b",
+  "source_url": "https://api.github.com/repos/react/react/commits/098d2e87a1f7142947418d15f63f975b58c4685b?per_page=100",
+  "status_code": 200
+}

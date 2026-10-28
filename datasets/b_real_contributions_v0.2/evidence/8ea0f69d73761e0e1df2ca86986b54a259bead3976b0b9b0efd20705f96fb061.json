@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 784953,
+      "login": "msutkowski",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-04T19:01:04Z",
+      "committer_at": "2026-10-04T19:01:04Z",
+      "tree_sha": "8518dcceed3806cf9aa4bf101cf4faa9e7818d86"
+    },
+    "committer": {
+      "id": 784953,
+      "login": "msutkowski",
+      "type": "User"
+    },
+    "sha": "dae57f90498ea95449e104e1e7ebc1e8e3920e39"
+  },
+  "observed_at": "2026-10-26T13:38:58.731982+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "823ae01848bb00063eb918ec9f3bb189e94c97a87ba9b213c8b8f3036e9a4acb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7c6d72cdb170eef6a847592916a05f4e9cf111cab3d4187f1cf3c6436053c935",
+  "source_url": "https://api.github.com/repos/reduxjs/redux-toolkit/commits/dae57f90498ea95449e104e1e7ebc1e8e3920e39?per_page=100",
+  "status_code": 200
+}

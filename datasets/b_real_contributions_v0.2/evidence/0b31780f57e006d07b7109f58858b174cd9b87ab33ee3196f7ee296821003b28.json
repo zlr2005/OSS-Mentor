@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8d77cdd492b7fca3b06e72e7f8850a10f5401535",
+    "size": 61829
+  },
+  "observed_at": "2026-10-27T16:36:43.978221+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ccee6c0d2cc04d6f3bf2dbf2db2dc53905359e9815a1746afcb17d13ca4aab43",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b653efbc529d520938c4e7db489fd44c1b11eb48421200aa24be31de69f6221f",
+  "source_url": "https://api.github.com/repos/zed-industries/zed/git/blobs/8d77cdd492b7fca3b06e72e7f8850a10f5401535",
+  "status_code": 200
+}

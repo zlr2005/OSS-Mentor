@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 51488791,
+      "login": "lucascolley",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T17:06:09Z",
+      "committer_at": "2026-10-25T17:06:09Z",
+      "tree_sha": "d3a0a2c53be7286c0109aebcda3d3a99c7052307"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f5d04b01ed54ee27861e2aa2ed9c0e5484a79551"
+  },
+  "observed_at": "2026-10-26T13:58:05.812047+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "03544e8eb5fa854b04957070fd7cbd6f4369e4c1f82f089cc13fc12b1476a7a8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1dca553618a93844e3072715c3f7af3340f6828d111c28a1d4f90ebfb2e4f664",
+  "source_url": "https://api.github.com/repos/scipy/scipy/commits/f5d04b01ed54ee27861e2aa2ed9c0e5484a79551?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "6cf39cf4c3bd3b2f530c8dbaf23ed80e7c93418f",
+    "size": 5418
+  },
+  "observed_at": "2026-10-26T08:38:31.826785+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1c75db2eec65022435bbd1e2917b04708f04a66d47703ff3430efd3121bebf59",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "acdfa4dec31c6e67e95bda195166603a61aa018e9bf7d3e16753ee78e61a1988",
+  "source_url": "https://api.github.com/repos/OpenRefine/OpenRefine/git/blobs/6cf39cf4c3bd3b2f530c8dbaf23ed80e7c93418f",
+  "status_code": 200
+}

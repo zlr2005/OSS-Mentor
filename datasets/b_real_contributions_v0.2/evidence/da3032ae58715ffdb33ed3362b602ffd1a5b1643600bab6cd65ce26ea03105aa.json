@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "74752751d3782eb6c896684aed48a5cbba173030",
+    "size": 6660
+  },
+  "observed_at": "2026-10-26T05:23:17.529733+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d53dcd51d17a283ee0ca52cf9f4a4bdc7a950ab2a552744b5c0a6a648a5f61f4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e28b912032d2d28577eb3344d6d7d66a373c63ff4ff10cb6f6f2647c3d3d26b7",
+  "source_url": "https://api.github.com/repos/apache/logging-log4j2/git/blobs/74752751d3782eb6c896684aed48a5cbba173030",
+  "status_code": 200
+}

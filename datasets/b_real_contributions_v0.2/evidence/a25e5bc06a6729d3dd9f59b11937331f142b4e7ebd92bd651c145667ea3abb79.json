@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "spring-projects/spring-batch",
+    "id": 1089149,
+    "language": "Java",
+    "private": false,
+    "size": 111918
+  },
+  "observed_at": "2026-10-26T14:08:59.806291+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f01021642081e932d685a7fd380c2784a99222c18efb8f04eb81b2ae551db9ce",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d90236a8679a4c6413a174d2e628d7a609c48619e456def2b2de27fb0d48cdea",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-batch",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/hudi",
+    "id": 76474200,
+    "language": "Java",
+    "private": false,
+    "size": 2937087
+  },
+  "observed_at": "2026-10-26T05:14:40.926781+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f98f102f47955491a45e750715c249e7a0be280c2b89d885dd4377422f8a54ea",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "44cdb354b7c2efe6adb98f90ef8b50f5c7f7656b7325db07f730d363962741d6",
+  "source_url": "https://api.github.com/repos/apache/hudi",
+  "status_code": 200
+}

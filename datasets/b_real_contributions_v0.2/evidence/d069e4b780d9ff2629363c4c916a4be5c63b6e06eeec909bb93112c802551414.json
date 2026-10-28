@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 257,
+      "login": "robbyrussell",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T18:15:40Z",
+      "committer_at": "2026-10-21T11:00:06Z",
+      "tree_sha": "3ab160742847e3ccd4941b489d1ac9716c6b4756"
+    },
+    "committer": {
+      "id": 700826,
+      "login": "junegunn",
+      "type": "User"
+    },
+    "sha": "ac28b8c3ba273c01a3d7f91f786187873cb38838"
+  },
+  "observed_at": "2026-10-26T07:46:49.536649+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4ad368ca03941d5ca8c8f12b44d50c0864500c85c5ef8990e7b87dfa221ac23a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b9b127d8af9bafa28acf150e438f4fd85ec53a9e3c2bccbfe2804313b32d41ee",
+  "source_url": "https://api.github.com/repos/junegunn/fzf/commits/ac28b8c3ba273c01a3d7f91f786187873cb38838?per_page=100",
+  "status_code": 200
+}

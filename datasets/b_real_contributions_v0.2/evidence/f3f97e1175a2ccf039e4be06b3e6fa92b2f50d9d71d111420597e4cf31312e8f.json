@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "go-gorm/gorm",
+    "id": 13855476,
+    "language": "Go",
+    "private": false,
+    "size": 4664
+  },
+  "observed_at": "2026-10-26T06:56:44.047762+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "efb2ce460223066a198a38551897b72a9aa468385bab50b05cb9ce59314a42a8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "76b326ab2c60283d4caef2436bd49b5c0729149ccdd62c0ccbd741e61897dc18",
+  "source_url": "https://api.github.com/repos/go-gorm/gorm",
+  "status_code": 200
+}

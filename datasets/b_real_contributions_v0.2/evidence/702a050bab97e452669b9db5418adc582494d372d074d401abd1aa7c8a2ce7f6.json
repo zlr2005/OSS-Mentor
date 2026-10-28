@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "reduxjs/redux-toolkit",
+    "id": 123732482,
+    "language": "TypeScript",
+    "private": false,
+    "size": 44510
+  },
+  "observed_at": "2026-10-26T13:38:47.107147+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "30a80ff1df5577171a1c9505fccb53d1e975512f2bb81246af1d537e4eb62e12",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3c0ea9817de653764c0d0fdb425318b487cb6d1b446ee73512ba3183f0d0634c",
+  "source_url": "https://api.github.com/repos/reduxjs/redux-toolkit",
+  "status_code": 200
+}

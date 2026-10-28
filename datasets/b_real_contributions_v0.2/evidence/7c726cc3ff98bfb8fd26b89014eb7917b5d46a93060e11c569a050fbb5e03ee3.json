@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1382097,
+      "login": "elmurato",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T22:50:07Z",
+      "committer_at": "2026-10-25T22:50:07Z",
+      "tree_sha": "146b727de3ac4ccf989aba76e0bef977c380d09f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "acc65b596cb6d8f9a0a165a153845d731503bb29"
+  },
+  "observed_at": "2026-10-26T07:24:08.830861+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "01b360dcbd1021e3697f99ddf0a5deef8ec7c8c1495b6f9786b04a4f722fe21c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0b18932f9970dc70cdc03b52f522ee0885ba6e75f5b1517ff1fca20590fbf7c5",
+  "source_url": "https://api.github.com/repos/home-assistant/core/commits/acc65b596cb6d8f9a0a165a153845d731503bb29?per_page=100",
+  "status_code": 200
+}

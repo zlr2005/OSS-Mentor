@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-07-08T09:30:15Z",
+      "committer_at": "2026-07-08T09:30:15Z",
+      "tree_sha": "5304d509a60ab6eaf2662bd7f98f60591eb4e145"
+    },
+    "committer": {},
+    "sha": "84674538f1ddcf88a2e8398ef2219c54bd4ad6cb"
+  },
+  "observed_at": "2026-10-26T04:50:42.404773+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3f59609c7d2d6583869477efc39e3591fae5d1ad1aebb5674792b8b2bad3b345",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1870baec60c4d15b84751425f73fd74280b05dc6ff98fa485366383a6029be0e",
+  "source_url": "https://api.github.com/repos/Textualize/textual/commits/84674538f1ddcf88a2e8398ef2219c54bd4ad6cb?per_page=100",
+  "status_code": 200
+}

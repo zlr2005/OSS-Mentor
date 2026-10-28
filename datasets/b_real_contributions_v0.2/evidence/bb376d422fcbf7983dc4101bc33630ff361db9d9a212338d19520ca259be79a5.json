@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 67639393,
+      "login": "Prat011",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2025-11-07T13:08:42Z",
+      "committer_at": "2025-11-07T13:12:38Z",
+      "tree_sha": "d9e6ca5a7ad708235101cbd37e6dbe426093cbc7"
+    },
+    "committer": {
+      "id": 67639393,
+      "login": "Prat011",
+      "type": "User"
+    },
+    "sha": "30acfe1cbce32c98ddfb214c2f45e671ffde08d2"
+  },
+  "observed_at": "2026-10-27T13:01:11.369514+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b5bf58cb99c53ed028a86176d6a02653f4d0e7d7bb1cbe405a84da702cb250ec",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f8ed969cbd0d0f6684e65b77e7e7015839cc35ae7296adfe18fcd1093cfc8510",
+  "source_url": "https://api.github.com/repos/ComposioHQ/awesome-claude-skills/commits/30acfe1cbce32c98ddfb214c2f45e671ffde08d2?per_page=100",
+  "status_code": 200
+}

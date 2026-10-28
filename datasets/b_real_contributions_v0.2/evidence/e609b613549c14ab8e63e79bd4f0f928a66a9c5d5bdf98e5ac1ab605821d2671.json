@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "neovim/neovim",
+    "id": 16408992,
+    "language": "Vim Script",
+    "private": false,
+    "size": 404830
+  },
+  "observed_at": "2026-10-26T08:27:08.942065+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e4331c654572186d6a688ebf4c6a3888c17448affe6ee11cf219a1bf20bc7d43",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "52044a4c805d53dd34a62c1e5ef98487c353b0b9daba1d9c06ec3fb3c0a7fd71",
+  "source_url": "https://api.github.com/repos/neovim/neovim",
+  "status_code": 200
+}

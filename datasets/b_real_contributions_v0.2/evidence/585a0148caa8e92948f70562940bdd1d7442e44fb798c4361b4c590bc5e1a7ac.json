@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 64996,
+      "login": "alexcrichton",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:05:24Z",
+      "committer_at": "2026-10-23T20:05:24Z",
+      "tree_sha": "36d9c19fdde4c567f8cb362c6d916c2c60a87139"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "eeb6a8d1bd1674bebc2b78bc58e3663fbc7c1061"
+  },
+  "observed_at": "2026-10-26T05:59:57.603121+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7046528dd1ff882b9fe3405abbf15b42b57edcb828e40f202cdc52d3eb5f0285",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "67faa1e5ca5e92f4c04b0837674581a36b687a1e6d92dc91f345eacbbf116f11",
+  "source_url": "https://api.github.com/repos/bytecodealliance/wasmtime/commits/eeb6a8d1bd1674bebc2b78bc58e3663fbc7c1061?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "gin-gonic/gin",
+    "id": 20904437,
+    "language": "Go",
+    "private": false,
+    "size": 10657
+  },
+  "observed_at": "2026-10-26T06:52:18.832155+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "708355fa730f6662884af15eea10f27d80c72798679f51526eaebe29e675e426",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bb36082900b323e41f2d4f010b1d1788ed7c89f39283f3653f099b1c66178d09",
+  "source_url": "https://api.github.com/repos/gin-gonic/gin",
+  "status_code": 200
+}

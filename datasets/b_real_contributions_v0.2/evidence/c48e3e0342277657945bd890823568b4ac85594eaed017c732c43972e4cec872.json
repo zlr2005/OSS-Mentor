@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 106514313,
+      "login": "Felix-Gong",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T02:14:32Z",
+      "committer_at": "2026-10-23T02:14:32Z",
+      "tree_sha": "1f2e3cf462858b0592ccc94b4fe509bf0f186428"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8ab8191478115d5e2f5344127fba704267fdb659"
+  },
+  "observed_at": "2026-10-26T05:32:09.055594+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f01322708bc4ef49f11f69e1407b44d2a2dfbe408fb8e00ba55f5da46c646812",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ee8f103afbc39216ee0a3e9344707ee283a7d063e7c36cd0f667ee535a8adb61",
+  "source_url": "https://api.github.com/repos/apache/rocketmq/commits/8ab8191478115d5e2f5344127fba704267fdb659?per_page=100",
+  "status_code": 200
+}

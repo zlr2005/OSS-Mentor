@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "386b7b6946e47bc46f8138791049b4e6a7cef889",
+    "size": 1172
+  },
+  "observed_at": "2026-10-26T06:37:27.476124+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5d3a2ffb6da7897e485ddd5f67a2edd131e466a660104e47c1938bd897b901ff",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aaaa4a7095de3904623aabd357779b4e943c52b08c1a301b3c71f8edf5d9e1bf",
+  "source_url": "https://api.github.com/repos/expressjs/body-parser/git/blobs/386b7b6946e47bc46f8138791049b4e6a7cef889",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 80416407,
+      "login": "gorkemkaramolla",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-12T15:21:41Z",
+      "committer_at": "2026-10-12T15:21:41Z",
+      "tree_sha": "58ab5511b457e679cfee148d6dedf2bf84a2122a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3d3648f788310465e135c09fd3f803ef25a92c18"
+  },
+  "observed_at": "2026-10-26T15:04:28.989882+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b805adee0f0daad006ee2242935b538f68da357ea180bb78782325c49e43344b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a3c65fb3f5d48b38d617334f4ffc033449922d96aa2df9769086ea45f89d29e2",
+  "source_url": "https://api.github.com/repos/TanStack/table/commits/3d3648f788310465e135c09fd3f803ef25a92c18?per_page=100",
+  "status_code": 200
+}

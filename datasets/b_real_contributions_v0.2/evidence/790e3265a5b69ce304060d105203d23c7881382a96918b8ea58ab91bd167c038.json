@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c40b2934a5abfbb5c19c4f9cf740e3524f18d389",
+    "size": 43455
+  },
+  "observed_at": "2026-10-26T15:37:56.351277+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "86bd2aa43a2b2c5cb6fbb2ea1deb8684ae1be7a9605f8da7872f59c1268dc56a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0a68688234ac5b90964feb2f208e17dc9591d268582c01380266dc432e680701",
+  "source_url": "https://api.github.com/repos/vuejs/core/git/blobs/c40b2934a5abfbb5c19c4f9cf740e3524f18d389",
+  "status_code": 200
+}

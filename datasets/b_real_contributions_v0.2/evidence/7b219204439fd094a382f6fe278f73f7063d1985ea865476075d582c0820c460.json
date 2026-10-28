@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4ce2f790edf597b2abc90feecac530cc606ef717",
+    "size": 26491
+  },
+  "observed_at": "2026-10-27T12:51:24.408377+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "833203cbcc80b876d155f295084ab2ed2e586a547b77ba6ee19fe9dba50ddd57",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6b87a41d6d00074642b7e85b505105d94be4664dcf6d11270753551c2323721f",
+  "source_url": "https://api.github.com/repos/acornjs/acorn/git/blobs/4ce2f790edf597b2abc90feecac530cc606ef717",
+  "status_code": 200
+}

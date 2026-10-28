@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3084745,
+      "login": "colinhacks",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-12T14:57:39Z",
+      "committer_at": "2026-10-12T14:57:39Z",
+      "tree_sha": "31edaf250dd549eb804b9eda8237e298450604bf"
+    },
+    "committer": {
+      "id": 3084745,
+      "login": "colinhacks",
+      "type": "User"
+    },
+    "sha": "b500a2ee95134f81d74da7911d7378dd2853d042"
+  },
+  "observed_at": "2026-10-26T06:10:57.971010+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0b44ee929f76347a34af2a40567a3cd76dfe39b88879eadf1e641ad8b9685b6b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4ae20ed57e93f4085574bdd9f7f1511bac145e9b33264a2f05ddf483d6a9111e",
+  "source_url": "https://api.github.com/repos/colinhacks/zod/commits/b500a2ee95134f81d74da7911d7378dd2853d042?per_page=100",
+  "status_code": 200
+}

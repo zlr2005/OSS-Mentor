@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9ef404068ecd70429c1c1e47635eb43e2f449103",
+    "size": 2318
+  },
+  "observed_at": "2026-10-26T07:46:06.625000+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c61b69ff2ce055607b03e12d842349b745d64393ac4c2fea8c8b26f10bc744fd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4e5b42ebf6eba0e53605d2a2f8c6061c1edea571813f2d2629ccd5262f9476bb",
+  "source_url": "https://api.github.com/repos/jenkinsci/jenkins/git/blobs/9ef404068ecd70429c1c1e47635eb43e2f449103",
+  "status_code": 200
+}

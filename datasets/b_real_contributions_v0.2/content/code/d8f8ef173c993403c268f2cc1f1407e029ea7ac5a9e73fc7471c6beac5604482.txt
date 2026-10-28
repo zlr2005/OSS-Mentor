@@ -1,0 +1,174 @@
+/*
+Language: Batch file (DOS)
+Author: Alexander Makarov <sam@rmcreative.ru>
+Contributors: Anton Kochkov <anton.kochkov@gmail.com>
+Website: https://en.wikipedia.org/wiki/Batch_file
+Category: scripting
+*/
+
+/** @type LanguageFn */
+export default function(hljs) {
+  const COMMENT = hljs.COMMENT(
+    /^\s*@?rem\b/, /$/,
+    { relevance: 10 }
+  );
+  const DOUBLE_COLON_COMMENT = hljs.COMMENT(
+    /^\s*::/, /$/
+  );
+  const LABEL = {
+    className: 'symbol',
+    begin: /^\s*:[A-Za-z._?][A-Za-z0-9_$#@~.?]*/,
+    relevance: 0
+  };
+  const GOTO = {
+    match: [
+      /\bgoto\b/,
+      /\s*/,
+      /:?[A-Za-z._?][A-Za-z0-9_$#@~.?]*/
+    ],
+    scope: {
+      1: 'keyword',
+      3: 'symbol'
+    }
+  };
+  const KEYWORDS = [
+    "if",
+    "else",
+    "goto",
+    "for",
+    "in",
+    "do",
+    "call",
+    "exit",
+    "not",
+    "exist",
+    "errorlevel",
+    "defined",
+    "equ",
+    "neq",
+    "lss",
+    "leq",
+    "gtr",
+    "geq"
+  ];
+  const BUILT_INS = [
+    "prn",
+    "nul",
+    "lpt3",
+    "lpt2",
+    "lpt1",
+    "con",
+    "com4",
+    "com3",
+    "com2",
+    "com1",
+    "aux",
+    "shift",
+    "cd",
+    "dir",
+    "echo",
+    "setlocal",
+    "endlocal",
+    "set",
+    "pause",
+    "copy",
+    "append",
+    "assoc",
+    "at",
+    "attrib",
+    "break",
+    "cacls",
+    "cd",
+    "chcp",
+    "chdir",
+    "chkdsk",
+    "chkntfs",
+    "cls",
+    "cmd",
+    "color",
+    "comp",
+    "compact",
+    "convert",
+    "date",
+    "dir",
+    "diskcomp",
+    "diskcopy",
+    "doskey",
+    "erase",
+    "fs",
+    "find",
+    "findstr",
+    "format",
+    "ftype",
+    "graftabl",
+    "help",
+    "keyb",
+    "label",
+    "md",
+    "mkdir",
+    "mode",
+    "more",
+    "move",
+    "path",
+    "pause",
+    "print",
+    "popd",
+    "pushd",
+    "promt",
+    "rd",
+    "recover",
+    "rem",
+    "rename",
+    "replace",
+    "restore",
+    "rmdir",
+    "shift",
+    "sort",
+    "start",
+    "subst",
+    "time",
+    "title",
+    "tree",
+    "type",
+    "ver",
+    "verify",
+    "vol",
+    // winutils
+    "ping",
+    "net",
+    "ipconfig",
+    "taskkill",
+    "xcopy",
+    "ren",
+    "del"
+  ];
+  return {
+    name: 'Batch file (DOS)',
+    aliases: [
+      'bat',
+      'batch',
+      'cmd'
+    ],
+    case_insensitive: true,
+    illegal: /\/\*/,
+    keywords: {
+      keyword: KEYWORDS,
+      built_in: BUILT_INS
+    },
+    contains: [
+      {
+        className: 'variable',
+        begin: /%%[^ ]|%[^ ]+?%|![^ ]+?!/
+      },
+      DOUBLE_COLON_COMMENT,
+      GOTO,
+      LABEL,
+      {
+        className: 'number',
+        begin: '\\b\\d+',
+        relevance: 0
+      },
+      COMMENT
+    ]
+  };
+}

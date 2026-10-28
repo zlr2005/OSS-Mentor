@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9a85b8373c389d6dbbfe9ff6a2ac0bf60943d6a0",
+    "size": 14201
+  },
+  "observed_at": "2026-10-26T08:45:07.290482+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "468cfa7f28a39b36fae7aa892ef8fd9f24a6603ba0a9ab999ae6852f0767b02c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0850c91e078c53c44549412246e84fb4f87a60d146cb1510e9c7466148a84996",
+  "source_url": "https://api.github.com/repos/pinpoint-apm/pinpoint/git/blobs/9a85b8373c389d6dbbfe9ff6a2ac0bf60943d6a0",
+  "status_code": 200
+}

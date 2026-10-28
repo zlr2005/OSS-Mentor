@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "assertj/assertj",
+    "id": 8779606,
+    "language": "Java",
+    "private": false,
+    "size": 58109
+  },
+  "observed_at": "2026-10-26T05:43:19.306285+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cd011c36f51a558ebeebfc4b7e401bd4da62fb8588c88a61909546cd954373a6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "31751ffba472c6c4ecd37a41bcdd95c484fc27d05c05979b24ecf0593e496b07",
+  "source_url": "https://api.github.com/repos/assertj/assertj",
+  "status_code": 200
+}

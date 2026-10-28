@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 31858918,
+      "login": "Aidyn-A",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T23:02:46Z",
+      "committer_at": "2026-10-25T23:02:46Z",
+      "tree_sha": "6a6f67bf48e6fb0a26eeeb0cf3efa84529e7aaa2"
+    },
+    "committer": {
+      "id": 97764156,
+      "login": "pytorchmergebot",
+      "type": "User"
+    },
+    "sha": "8c446c7feb74fb71c5b95b3b11ab2b6cee0cffc9"
+  },
+  "observed_at": "2026-10-27T15:37:52.273414+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e0e993fdbba3d7cc4d999f90aa37d1422b926aaf2a65e7795c891601d4f2cd9c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "682dc4229f875e80e1d2fe64cf714ce3fa7a81e568e3c37c4fd97ad5b4860eb0",
+  "source_url": "https://api.github.com/repos/pytorch/pytorch/commits/8c446c7feb74fb71c5b95b3b11ab2b6cee0cffc9?per_page=100",
+  "status_code": 200
+}

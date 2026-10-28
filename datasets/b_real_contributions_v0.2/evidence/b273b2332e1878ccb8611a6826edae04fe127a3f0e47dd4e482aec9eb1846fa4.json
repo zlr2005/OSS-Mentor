@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "goreleaser/goreleaser",
+    "id": 77071454,
+    "language": "Go",
+    "private": false,
+    "size": 29904
+  },
+  "observed_at": "2026-10-26T07:09:20.486020+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "75e80126e08d1cb0a870dd1d51ea8ec33889131b5dbe5a67a381c9a168340cfc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b66d840467822a45c18ba7673c0ffa01b08c153e038d2f139d37204d02bf6827",
+  "source_url": "https://api.github.com/repos/goreleaser/goreleaser",
+  "status_code": 200
+}

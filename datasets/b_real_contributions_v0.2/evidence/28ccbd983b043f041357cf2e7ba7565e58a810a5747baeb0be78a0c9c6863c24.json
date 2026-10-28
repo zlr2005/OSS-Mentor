@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-03T04:47:32Z",
+      "committer_at": "2026-10-03T04:47:32Z",
+      "tree_sha": "e3153bff04684b31b33d3b2beedb0d1ea2b3ddb0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f1d47aff402b9e009578f4b3155b84f7d8beef9b"
+  },
+  "observed_at": "2026-10-26T06:32:58.982300+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "294688c0b2d0799510278b50747525a5aaf1d1ceaa9bdb71dbdd45b7506aa47b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6fb1fa0f973e5b6c15fac4c47e65dc7c0e2e0115fcf999be74dde3562ee05110",
+  "source_url": "https://api.github.com/repos/eslint-community/eslint-plugin-n/commits/f1d47aff402b9e009578f4b3155b84f7d8beef9b?per_page=100",
+  "status_code": 200
+}

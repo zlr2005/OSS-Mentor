@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "zellij-org/zellij",
+    "id": 292014229,
+    "language": "Rust",
+    "private": false,
+    "size": 303847
+  },
+  "observed_at": "2026-10-26T15:53:28.604381+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "03974ceab999d5b5f67afed6b30713b81897a9f5b402b8ba38d5d152f188022d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "83c255e18ab24c7f557e43678a927ed4c6deafcc183f66ab315ec8a1589dcd9f",
+  "source_url": "https://api.github.com/repos/zellij-org/zellij",
+  "status_code": 200
+}

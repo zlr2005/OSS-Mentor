@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pydantic/pydantic-settings",
+    "id": 533720106,
+    "language": "Python",
+    "private": false,
+    "size": 2300
+  },
+  "observed_at": "2026-10-26T13:05:43.305380+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3d6a91c5c4e7498c8812059cf218ed7e14a13ba0f74c09f591543fd061433b6b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3ba8dc35e43ac886804a5943628226991b9f19c478fbe0de993c8035c01ce930",
+  "source_url": "https://api.github.com/repos/pydantic/pydantic-settings",
+  "status_code": 200
+}

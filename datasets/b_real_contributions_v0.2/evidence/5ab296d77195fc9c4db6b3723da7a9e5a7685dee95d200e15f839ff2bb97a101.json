@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "55c822dc7165e8c1931bccb7a2553e6d1eadbb19",
+    "size": 4533
+  },
+  "observed_at": "2026-10-26T13:55:11.719937+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "754108e70da43b4deea87997149f5dd993a5c0393b04c19f2e380644478435da",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ab2bd6d59181080ad9817d0f1695b533b17b73c09d1bd413a56fb45502f8e973",
+  "source_url": "https://api.github.com/repos/rust-lang/rust-clippy/git/blobs/55c822dc7165e8c1931bccb7a2553e6d1eadbb19",
+  "status_code": 200
+}

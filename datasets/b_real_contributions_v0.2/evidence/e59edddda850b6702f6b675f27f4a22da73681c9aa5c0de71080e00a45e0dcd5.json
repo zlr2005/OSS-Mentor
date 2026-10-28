@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6940099,
+      "login": "ebarboni",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T08:49:11Z",
+      "committer_at": "2026-10-21T08:49:11Z",
+      "tree_sha": "5fe30a71578e752b7475afec2e1c9ba1254bdef3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f7d355317a9762b06b06763bbf3dbf85404682cf"
+  },
+  "observed_at": "2026-10-26T16:52:56.419530+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fa82f069842ff9c1e71702d2756633fe037fca09de9e264d051cfa006a60e40b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "603551d9d31312e84b5ed1798313c6006d6a19d4cbff51970c39979207280597",
+  "source_url": "https://api.github.com/repos/apache/netbeans/commits/f7d355317a9762b06b06763bbf3dbf85404682cf?per_page=100",
+  "status_code": 200
+}

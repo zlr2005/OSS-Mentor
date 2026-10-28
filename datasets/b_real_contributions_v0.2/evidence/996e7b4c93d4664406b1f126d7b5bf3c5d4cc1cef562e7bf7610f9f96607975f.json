@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4d9d4127a6ab6c07f78a0728c9f7fe02387508f3",
+    "size": 39534
+  },
+  "observed_at": "2026-10-26T08:41:21.144860+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7bbf8bf966c858754ae358243a35e9ef6e8fb5f625697814f0fd9175dc46ee47",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "de7e33defe38cb35373e7fc34aaefe81b4e2bc859670fde6cd8cfdf98c39d3bb",
+  "source_url": "https://api.github.com/repos/pallets/flask/git/blobs/4d9d4127a6ab6c07f78a0728c9f7fe02387508f3",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4fa77474641d15b3073c74f3559421575919705a",
+    "size": 16811
+  },
+  "observed_at": "2026-10-26T05:12:14.262716+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "54a9a24175b45e99d169ca329f5ed21f3be3cf58896c33ea86c11a51d13b839c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "920aca82e0f58206351e3475a91263fe70401a7b8e2d032590ced1cd822815d7",
+  "source_url": "https://api.github.com/repos/apache/dubbo/git/blobs/4fa77474641d15b3073c74f3559421575919705a",
+  "status_code": 200
+}

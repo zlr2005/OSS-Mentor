@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a96ca89eff9c1c1fd71febe89883bf270c3aade6",
+    "size": 3241
+  },
+  "observed_at": "2026-10-26T06:22:24.304055+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "044874c3d3f0159ee75bd5002605be8506ea269ca6e44ed090c69dff3a706b58",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "718609efe565e3954a04e1871a86d3fcdb3bb22247c58c7e004bc77dfc502f63",
+  "source_url": "https://api.github.com/repos/dtolnay/anyhow/git/blobs/a96ca89eff9c1c1fd71febe89883bf270c3aade6",
+  "status_code": 200
+}

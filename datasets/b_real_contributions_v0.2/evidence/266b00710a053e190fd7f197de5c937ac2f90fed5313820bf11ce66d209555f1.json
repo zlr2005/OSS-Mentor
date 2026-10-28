@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1223799,
+      "login": "Hotell",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T17:15:52Z",
+      "committer_at": "2026-10-21T17:15:52Z",
+      "tree_sha": "eeec7d17ebf5e83daeda13a1bce7ca5df5e5fc4d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "335c5de3c19538262feb63dbb9c0e2b7d3ff1b57"
+  },
+  "observed_at": "2026-10-27T14:01:16.035451+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1d076f111d85b9cb5c848716545ebfbefc140d3988ab6d5431cfb49f8b221dbc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e093f21a7d629699f551edcf404b4cd402a8c70d64ca2e465549f6f9cd6a957b",
+  "source_url": "https://api.github.com/repos/microsoft/fluentui/commits/335c5de3c19538262feb63dbb9c0e2b7d3ff1b57?per_page=100",
+  "status_code": 200
+}

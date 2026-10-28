@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "5ffbf4367a32d6d2b3b4cc684a386487551dc6e7",
+    "size": 1094
+  },
+  "observed_at": "2026-10-26T07:23:41.761380+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2947d138b1aaec4d174a4db654d1b287058972745305f7356c70804484809339",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "57563ac976a134b963bae86318f0885c26e967856ee5952b94bd8153c23a208a",
+  "source_url": "https://api.github.com/repos/highlightjs/highlight.js/git/blobs/5ffbf4367a32d6d2b3b4cc684a386487551dc6e7",
+  "status_code": 200
+}

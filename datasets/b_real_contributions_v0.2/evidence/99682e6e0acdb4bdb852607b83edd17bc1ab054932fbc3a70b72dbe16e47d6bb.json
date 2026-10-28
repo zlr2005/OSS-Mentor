@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/pinot",
+    "id": 19961085,
+    "language": "Java",
+    "private": false,
+    "size": 373570
+  },
+  "observed_at": "2026-10-26T05:28:43.883438+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "972760e22eca7ee210098ea1df8b9984ded4eea1705d4fb747d4331d2424c74f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0a8ec1b09b8000975901d3ff60b0dffe9bc68533900a44f756c2cd13d7c415cd",
+  "source_url": "https://api.github.com/repos/apache/pinot",
+  "status_code": 200
+}

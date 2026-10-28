@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 47394200,
+      "login": "BagToad",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T19:50:28Z",
+      "committer_at": "2026-10-23T19:50:28Z",
+      "tree_sha": "5bcf31e973558534c55c5cfec5bc87d7aede670a"
+    },
+    "committer": {
+      "id": 47394200,
+      "login": "BagToad",
+      "type": "User"
+    },
+    "sha": "17ac598e6afc43bb6206f074b05de9d63563a42f"
+  },
+  "observed_at": "2026-10-26T06:09:58.517332+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ac11bebb728bcb9ef492f87bd312cb7308ff33e270816c6325d46b6a22f2858f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "edae21a5ed7a08e5b6d4077bb421a80348856c174c17b05a7e0926255624f3b8",
+  "source_url": "https://api.github.com/repos/cli/cli/commits/17ac598e6afc43bb6206f074b05de9d63563a42f?per_page=100",
+  "status_code": 200
+}

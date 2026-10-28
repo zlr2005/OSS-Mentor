@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29139614,
+      "login": "renovate[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-23T23:56:53Z",
+      "committer_at": "2026-10-23T23:56:53Z",
+      "tree_sha": "29097c22f52607608e63b0fe98b29d06c2ee60be"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "60ce94e3c7249ba370a85c5b55810de33cf1bf08"
+  },
+  "observed_at": "2026-10-26T06:03:33.557113+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a8e3001acf19045fcfdb111e08f511d9fbecf461be064ca7717dcf7052f1209a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a83f5946ffd46c7eb97b426ada6577431563a157b8df57d7cc09fd8c2cae472e",
+  "source_url": "https://api.github.com/repos/cert-manager/cert-manager/commits/60ce94e3c7249ba370a85c5b55810de33cf1bf08?per_page=100",
+  "status_code": 200
+}

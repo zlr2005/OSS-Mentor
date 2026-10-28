@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "pallets/click",
+    "id": 19103692,
+    "language": "Python",
+    "private": false,
+    "size": 5091
+  },
+  "observed_at": "2026-10-26T08:39:55.192298+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3557d2698000e96a390c3776e6ee3b195afd654aabfdfc3e42c19163c1a3e94c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9aa76b076b6d8cbd59b1eb0e5da0e3fd02b3c4396d2190f4a956d2fd8c08f93a",
+  "source_url": "https://api.github.com/repos/pallets/click",
+  "status_code": 200
+}

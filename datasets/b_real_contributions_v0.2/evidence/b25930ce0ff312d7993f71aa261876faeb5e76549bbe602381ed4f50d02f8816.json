@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 72094408,
+      "login": "efegokdemir",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T23:52:30Z",
+      "committer_at": "2026-10-20T23:52:30Z",
+      "tree_sha": "f9697546676c9ccc4ebdfcd0904391b71ed5dfaa"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a8ba265d9df2ade5389a8e550153e55e17934ec1"
+  },
+  "observed_at": "2026-10-26T05:22:40.463847+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f5364b0e184ab27622552a07a353f6be275a611c18c31f14b6963fd03ce6b7c8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4515e6b2c4c10d788b36071b11122d6ecf1a3d19a14126164de405467e16aaed",
+  "source_url": "https://api.github.com/repos/apache/logging-log4j2/commits/a8ba265d9df2ade5389a8e550153e55e17934ec1?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "mockito/mockito",
+    "id": 6207167,
+    "language": "Java",
+    "private": false,
+    "size": 49794
+  },
+  "observed_at": "2026-10-26T08:23:40.610890+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "43a2d3bf9f7cbc73aa5500fd423b00aa82edbfbb5e0a5436715e19e67639ed32",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b39a9547bf640cf27e4b35126c49d33e04b4ca8ca1e8c8409974917dd33a8913",
+  "source_url": "https://api.github.com/repos/mockito/mockito",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "Textualize/rich",
+    "id": 220809393,
+    "language": "Python",
+    "private": false,
+    "size": 50632
+  },
+  "observed_at": "2026-10-26T15:09:10.124143+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b242a181075c987beb1d329a2978bebc509fe556ab3549e20fb6913ce0c8b62d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "77ed3ad99adee96848f403b18517638b3cfdbd5697b5628f21d6615528dde17b",
+  "source_url": "https://api.github.com/repos/Textualize/rich",
+  "status_code": 200
+}

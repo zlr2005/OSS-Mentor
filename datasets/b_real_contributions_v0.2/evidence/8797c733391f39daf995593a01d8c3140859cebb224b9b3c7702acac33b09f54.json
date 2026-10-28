@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 293024607,
+      "login": "nvxbug",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-18T16:24:29Z",
+      "committer_at": "2026-06-22T11:30:17Z",
+      "tree_sha": "e012d243dc5004a642e6776522b65677de2a135b"
+    },
+    "committer": {
+      "id": 158471,
+      "login": "djc",
+      "type": "User"
+    },
+    "sha": "3ffcd1b107fd3085bc184a1f5f7445b97a0d655f"
+  },
+  "observed_at": "2026-10-27T12:54:31.289515+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "88bc9e9fa85f7d3efd5d770325e6761bc572a0c0a1dd19ed7697a262091a5eb8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "527ae1be660c483e0aef2db20d462cc90976e38f2511e68a85da144dd1aadb39",
+  "source_url": "https://api.github.com/repos/chronotope/chrono/commits/3ffcd1b107fd3085bc184a1f5f7445b97a0d655f?per_page=100",
+  "status_code": 200
+}

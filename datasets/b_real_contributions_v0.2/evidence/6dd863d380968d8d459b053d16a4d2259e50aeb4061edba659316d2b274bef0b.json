@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2645794,
+      "login": "jakezwang",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-15T16:04:16Z",
+      "committer_at": "2026-10-15T16:04:16Z",
+      "tree_sha": "05bb9ddc4b4a795667e144d32684ac3713f21c8a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8d415e6af9cd50a8ae27331a53b4aaf9f7e24612"
+  },
+  "observed_at": "2026-10-26T05:49:35.786812+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8e3d4bb4acec3c195ef884168e928d31e86806d66b6b9180c46f4765e66f995a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4ae172a0da7e66cb955a88fc1e9f172b628ece8dd6fd4f0a4241d118ecb9bdfc",
+  "source_url": "https://api.github.com/repos/axios/axios/commits/8d415e6af9cd50a8ae27331a53b4aaf9f7e24612?per_page=100",
+  "status_code": 200
+}

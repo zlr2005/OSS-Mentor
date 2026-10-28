@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "python/typing",
+    "id": 24604008,
+    "language": "Python",
+    "private": false,
+    "size": 4314
+  },
+  "observed_at": "2026-10-26T13:18:26.230552+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "17a33c7012cec5b1729784a0ed4d0dc0948db0e87830f512772fd0b22bce2882",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d370b73e30665c54ec01b6cc795cd923ea9db3e0369f34dd69de120b70ca3cc7",
+  "source_url": "https://api.github.com/repos/python/typing",
+  "status_code": 200
+}

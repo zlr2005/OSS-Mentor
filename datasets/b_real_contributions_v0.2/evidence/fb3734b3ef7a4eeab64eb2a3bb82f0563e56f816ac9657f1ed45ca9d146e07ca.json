@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "77423e6e6a0d7010a9885c145356e9bc36afe39e",
+    "size": 23637
+  },
+  "observed_at": "2026-10-26T13:38:36.350464+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "583668071171fd47732842f8e057a2cf651f6450efa659c3574ba870565bd810",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4a3ff524aba76052cc1350fac6926ceed684ba7573ff77fe56133f58650018d7",
+  "source_url": "https://api.github.com/repos/redisson/redisson/git/blobs/77423e6e6a0d7010a9885c145356e9bc36afe39e",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "facebook/zstd",
+    "id": 29759715,
+    "language": "C",
+    "private": false,
+    "size": 40610
+  },
+  "observed_at": "2026-10-26T06:44:27.181384+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "31d3f4b9186f60950038d79dced40afe72b7f1a63dd0bb5c85322f44c9cadf02",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "63427b6ef502d7de2ab9a2b3d3e278c9f30c7030ca0b0ff07ec4546f3477d12a",
+  "source_url": "https://api.github.com/repos/facebook/zstd",
+  "status_code": 200
+}

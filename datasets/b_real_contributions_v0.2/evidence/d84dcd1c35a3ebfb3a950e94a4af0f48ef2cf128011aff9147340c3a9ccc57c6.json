@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "mochajs/mocha",
+    "id": 1451352,
+    "language": "JavaScript",
+    "private": false,
+    "size": 33088
+  },
+  "observed_at": "2026-10-26T08:22:48.928832+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bc10445a02d1909000cc2744c2ab9c8dc5933cb6e755d307618aafd94a4842f3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9ec0b6a73448a2d8c5d3f5db7f1894bf7bfac6b28ceb5d03e472adf6b8334a26",
+  "source_url": "https://api.github.com/repos/mochajs/mocha",
+  "status_code": 200
+}

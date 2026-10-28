@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 84006059,
+      "login": "rajwinder-dev",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-25T18:06:33Z",
+      "committer_at": "2026-06-25T18:06:33Z",
+      "tree_sha": "57bd8711a55ba736741cc1c97649f8509fc48158"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "be2b153da476d7b08ba93be4b38adea28e2c3565"
+  },
+  "observed_at": "2026-10-27T13:46:08.204432+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7358c6a285367f54b3e2f5989c89b83ab500e036738719e00c070173751f43de",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "438aeadd9373f535001ae119aaa7df52fcacf3b085b79b8ae37da0da6a592248",
+  "source_url": "https://api.github.com/repos/lodash/lodash/commits/be2b153da476d7b08ba93be4b38adea28e2c3565?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 144908638,
+      "login": "knowprasad",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T15:38:06Z",
+      "committer_at": "2026-10-24T15:38:06Z",
+      "tree_sha": "12fac6e5113dd3cced39a4d2a77f78e2f8107b6b"
+    },
+    "committer": {
+      "id": 144908638,
+      "login": "knowprasad",
+      "type": "User"
+    },
+    "sha": "ae7f317c5e07dad31927ca957f3276840783f16b"
+  },
+  "observed_at": "2026-10-27T16:21:27.833317+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2fe95d2ad62ad27d61130962e1eb2be9602003ffb6c3c7d50e6c7de8d7d3d6d2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "719b37f13fc129e6b4f50a9ee5af9304841211c18bb77aacd7d753854eb5d138",
+  "source_url": "https://api.github.com/repos/sympy/sympy/commits/ae7f317c5e07dad31927ca957f3276840783f16b?per_page=100",
+  "status_code": 200
+}

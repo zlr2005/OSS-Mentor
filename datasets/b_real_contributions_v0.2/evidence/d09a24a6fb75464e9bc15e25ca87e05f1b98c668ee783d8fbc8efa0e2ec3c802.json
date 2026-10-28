@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 52786457,
+      "login": "FalkWoldmann",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-07T14:03:50Z",
+      "committer_at": "2026-10-07T14:03:50Z",
+      "tree_sha": "edf459c54d131cb943debe0822980d24746c51b7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "618496288c41da835683ec149432c4869722779f"
+  },
+  "observed_at": "2026-10-26T15:11:05.488917+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2aeef95402a6b39f1f7c770376756663ea3b25de458080fb4610f832863897dc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cb8635b13fa3af34b75719f16f3c932121886a697e732189c2b52b87dd4c393d",
+  "source_url": "https://api.github.com/repos/tokio-rs/axum/commits/618496288c41da835683ec149432c4869722779f?per_page=100",
+  "status_code": 200
+}

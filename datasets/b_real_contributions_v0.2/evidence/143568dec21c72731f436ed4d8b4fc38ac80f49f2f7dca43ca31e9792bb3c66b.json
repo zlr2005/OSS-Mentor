@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/inlong",
+    "id": 231533573,
+    "language": "Java",
+    "private": false,
+    "size": 61113
+  },
+  "observed_at": "2026-10-26T05:17:10.804522+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9ce0ecb197f9cc70c1e0718be757f3e98415d6d36df5d25d605ba990e9a92d43",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8c4770de11d07f4323074d1e17cef7fac5016bf4d893cce910346a803ad6f9ad",
+  "source_url": "https://api.github.com/repos/apache/inlong",
+  "status_code": 200
+}

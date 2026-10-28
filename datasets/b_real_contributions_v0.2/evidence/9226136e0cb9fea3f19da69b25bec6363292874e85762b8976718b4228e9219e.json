@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 489370,
+      "login": "mrueg",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T20:48:05Z",
+      "committer_at": "2026-10-21T20:48:05Z",
+      "tree_sha": "1f11a1deac5941c2946d2ac2fc0837a5e5638a01"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2d708ed145dd4ecc802588c59df89dee440aaddb"
+  },
+  "observed_at": "2026-10-26T07:10:33.846765+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4ec487aff88a63749eff919db0b6457283fb13ca7172e8b6b18c755ebaa76cc3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5bf7e581adbcfd80eb335e30dc2b554bd66a0234d57db60945b2b1e0d2f3feb6",
+  "source_url": "https://api.github.com/repos/goreleaser/goreleaser/commits/2d708ed145dd4ecc802588c59df89dee440aaddb?per_page=100",
+  "status_code": 200
+}

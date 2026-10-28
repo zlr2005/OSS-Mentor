@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/seatunnel",
+    "id": 99412308,
+    "language": "Java",
+    "private": false,
+    "size": 78469
+  },
+  "observed_at": "2026-10-26T05:33:24.319807+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d12561f7aaae581abe8e886eecb1d823040a947fe74cb6e7f6cb8ccfe5c5ff58",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5e3ae91f1453915ff77c1a946abab3b84219ff4d1fc898f3214d3e6aea465caf",
+  "source_url": "https://api.github.com/repos/apache/seatunnel",
+  "status_code": 200
+}

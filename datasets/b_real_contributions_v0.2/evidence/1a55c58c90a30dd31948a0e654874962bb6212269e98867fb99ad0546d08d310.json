@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "486b890bd33d31d9392ab016c266b1de1b59c7b8",
+    "size": 47943
+  },
+  "observed_at": "2026-10-26T07:11:12.345787+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f01c38d7b799815dcdc6df0df137386851bce05bf1c9412643ef227eab2bf4d8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2a532f59f30f7b481496ea1049bc4362e107387f7b3f9119a1b2d07ac2612168",
+  "source_url": "https://api.github.com/repos/goreleaser/goreleaser/git/blobs/486b890bd33d31d9392ab016c266b1de1b59c7b8",
+  "status_code": 200
+}

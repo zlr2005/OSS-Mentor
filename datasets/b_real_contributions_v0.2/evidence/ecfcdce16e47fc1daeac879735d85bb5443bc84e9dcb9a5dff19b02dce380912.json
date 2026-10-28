@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1104661,
+      "login": "mrniko",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T10:43:30Z",
+      "committer_at": "2026-10-19T10:43:30Z",
+      "tree_sha": "771c184966de50fb1d87e7361fab65e24f27284c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "33b143ae20b325955f56fd43abf95bf562c49c51"
+  },
+  "observed_at": "2026-10-26T13:35:49.185588+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "acc642ed9bde28fc0daef57ef68ce6181fb816c6e6c0270909422c6b9603d573",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "313651d86c4262adbf35d07e5cc79c4ab7ee56385135680290b97d7d9fc511d9",
+  "source_url": "https://api.github.com/repos/redisson/redisson/commits/33b143ae20b325955f56fd43abf95bf562c49c51?per_page=100",
+  "status_code": 200
+}

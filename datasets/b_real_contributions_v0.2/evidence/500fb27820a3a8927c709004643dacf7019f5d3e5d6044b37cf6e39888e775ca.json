@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a612ad9813b006ce81d1ee438dd784da99a54007",
+    "size": 16725
+  },
+  "observed_at": "2026-10-26T07:21:23.781039+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b3decb3502aa9f1b2b7c46867a9968e3043d124631717837be8ffab3afc59403",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "caab9038a6ceaae1fe55dc3479e4c191714f9da3e2dbc93d40ab704b62808b53",
+  "source_url": "https://api.github.com/repos/helix-editor/helix/git/blobs/a612ad9813b006ce81d1ee438dd784da99a54007",
+  "status_code": 200
+}

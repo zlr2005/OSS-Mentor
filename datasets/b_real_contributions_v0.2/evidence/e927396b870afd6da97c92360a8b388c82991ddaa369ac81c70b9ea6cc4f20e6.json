@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 183508550,
+      "login": "ravikumar266",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-24T22:24:28Z",
+      "committer_at": "2026-09-24T22:24:28Z",
+      "tree_sha": "97fa350ebf52884d6307703cc1d485256ba40d5c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "533b7694d2004ae84e49e2cfd0bcfc5f8e562f22"
+  },
+  "observed_at": "2026-10-27T16:07:47.162788+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "50280149af5102b4785d167cce4c0f5185f8140f0183156a938bab518ba94cd2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8f0b0b7f947290859d3e4ee4bff0d7d8b299b19cb0cbf6a0baaeeec423e1f7af",
+  "source_url": "https://api.github.com/repos/scikit-image/scikit-image/commits/533b7694d2004ae84e49e2cfd0bcfc5f8e562f22?per_page=100",
+  "status_code": 200
+}

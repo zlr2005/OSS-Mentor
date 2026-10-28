@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b93be90515ccd0b9daedaa589e42bf5929693f1f",
+    "size": 1088
+  },
+  "observed_at": "2026-10-26T06:43:19.024943+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "20db7c7cd02e4f2bbcd3c7a8562f6912c78fb123512a3bf22fe7e76c7824c31c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b39d58d83a1a82e5d0340707dc2ca20b926e1b8b04619b8c7930f944ae76999d",
+  "source_url": "https://api.github.com/repos/facebook/pyrefly/git/blobs/b93be90515ccd0b9daedaa589e42bf5929693f1f",
+  "status_code": 200
+}

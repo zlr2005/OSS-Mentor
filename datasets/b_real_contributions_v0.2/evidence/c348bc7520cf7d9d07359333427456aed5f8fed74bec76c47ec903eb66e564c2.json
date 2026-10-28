@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6950331,
+      "login": "bwplotka",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T11:56:25Z",
+      "committer_at": "2026-10-23T11:56:25Z",
+      "tree_sha": "b3808a2bf061888d4c7b2990e6f2e564630ec08d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "95ea5b861424a273ed9c7abde4b217a1f5789993"
+  },
+  "observed_at": "2026-10-26T12:58:38.990360+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "21ee8ef06f69383db54dcde3660bddc127a5a015b19f889f35657af64b9811b2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aa530043a4db11f04cdfdebc4cc3668e12199a098ef74af941c609cb80abda97",
+  "source_url": "https://api.github.com/repos/prometheus/client_golang/commits/95ea5b861424a273ed9c7abde4b217a1f5789993?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 210417517,
+      "login": "bhushan4work",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T13:35:29Z",
+      "committer_at": "2026-10-23T13:35:29Z",
+      "tree_sha": "07f04413ae0919f0aed46e041963fe711c9b3d03"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "44e867b1f3e056af75fe808d10d79ad5cf8683f0"
+  },
+  "observed_at": "2026-10-26T05:51:28.128719+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "464e43bca35e5d2d33c22411338171f03c5feef3bc9b661210972a6f7daa26ef",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "724fbfe147a2876e42e12fe0a29d7982d89967adb54db5643252703a9e294d2a",
+  "source_url": "https://api.github.com/repos/babel/babel/commits/44e867b1f3e056af75fe808d10d79ad5cf8683f0?per_page=100",
+  "status_code": 200
+}

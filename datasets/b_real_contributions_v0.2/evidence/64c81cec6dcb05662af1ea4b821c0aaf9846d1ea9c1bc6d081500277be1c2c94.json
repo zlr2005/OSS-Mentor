@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-10-25T05:06:39Z",
+      "committer_at": "2026-10-25T05:06:39Z",
+      "tree_sha": "bb861b33575d2d555b03177fbd7fb9da6e07137b"
+    },
+    "committer": {
+      "id": 215208954,
+      "login": "meta-codesync[bot]",
+      "type": "Bot"
+    },
+    "sha": "cd99095f5d30c6919b07595cbb477734cfba247a"
+  },
+  "observed_at": "2026-10-26T06:43:49.561245+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1f39f809a22c79bdd7bf285c1e0b2bc37a8d136b0e5e74a86feb626a58e10c97",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "472b9fde31c9768cf8adab247e7f7cd85051fe253adbae5469d4fb19696e1a42",
+  "source_url": "https://api.github.com/repos/facebook/pyrefly/commits/cd99095f5d30c6919b07595cbb477734cfba247a?per_page=100",
+  "status_code": 200
+}

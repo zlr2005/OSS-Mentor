@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "pytorch/pytorch",
+    "id": 65600975,
+    "language": "Python",
+    "private": false,
+    "size": 1689157
+  },
+  "observed_at": "2026-10-26T13:18:28.322544+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "db9feb8e6cd0411e424bb02a87cc1a6215c834294ec5eb24489347893786a3bf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aba0460a72d3d7070b4e49da81aa5123ac958a7ecfe4376b84f52611deff743d",
+  "source_url": "https://api.github.com/repos/pytorch/pytorch",
+  "status_code": 200
+}

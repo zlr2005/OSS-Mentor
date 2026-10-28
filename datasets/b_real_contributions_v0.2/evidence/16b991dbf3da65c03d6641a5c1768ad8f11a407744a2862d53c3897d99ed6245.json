@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 74618931,
+      "login": "amitkdutta",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T18:00:07Z",
+      "committer_at": "2026-10-24T18:00:07Z",
+      "tree_sha": "2ee9a0481fe1fb1efc1256201eecbe84663399e3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "53f22a2ff8f086bae630a7937be57db7a3492750"
+  },
+  "observed_at": "2026-10-26T08:51:24.024963+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "722714fa01dff13e1be2f2d0db475cff19cfa92037eeb865a00a8ee72757889f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bf9046bd7ccf3eab4e49d58893666c4cfeb99b1bd4d73c60dcf2a6edff752094",
+  "source_url": "https://api.github.com/repos/prestodb/presto/commits/53f22a2ff8f086bae630a7937be57db7a3492750?per_page=100",
+  "status_code": 200
+}

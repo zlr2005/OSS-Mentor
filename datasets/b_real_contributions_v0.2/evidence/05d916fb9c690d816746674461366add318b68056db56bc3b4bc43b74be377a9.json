@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "airbnb/visx",
+    "id": 85095608,
+    "language": "TypeScript",
+    "private": false,
+    "size": 16763
+  },
+  "observed_at": "2026-10-26T05:01:59.749885+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "19548b4a17a29757d49b0d30ae267588459cbebd6e4da71db17c35bb5674ec29",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8b7eb65a7f532fb80f16b5b8044f67674cb8e0cd0869f06fda1d5a19b3f0236c",
+  "source_url": "https://api.github.com/repos/airbnb/visx",
+  "status_code": 200
+}

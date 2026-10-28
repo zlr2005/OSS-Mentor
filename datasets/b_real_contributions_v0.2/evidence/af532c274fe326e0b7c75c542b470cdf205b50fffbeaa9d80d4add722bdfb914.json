@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c981463e3df211fb4387600ddaa38081dc0a2e1a",
+    "size": 1991
+  },
+  "observed_at": "2026-10-27T15:31:01.789893+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2de5ad2919a2adb96aec22a21efac68d81f91ed4925adeff02a8d808ab7b3d24",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "96540b13a5dcb8ff6723eb2cbbd5be30b99fc9f818171273fd343c4b0e18dd0f",
+  "source_url": "https://api.github.com/repos/python/typeshed/git/blobs/c981463e3df211fb4387600ddaa38081dc0a2e1a",
+  "status_code": 200
+}

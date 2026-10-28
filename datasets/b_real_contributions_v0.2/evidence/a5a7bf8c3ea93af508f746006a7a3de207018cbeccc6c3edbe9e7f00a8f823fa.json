@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "01cf4c4224a98bdc6ff3569bf258fceb059317d1",
+    "size": 2025
+  },
+  "observed_at": "2026-10-27T14:35:15.921231+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d005c9634b388f93a01983165118d63b70fea2cf7745348a7e4087f98c9c842a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a5804011e355f6d0dcf1937cdefb21b23cc0e13a315ae63ae8b0364efe8e468d",
+  "source_url": "https://api.github.com/repos/nocodb/nocodb/git/blobs/01cf4c4224a98bdc6ff3569bf258fceb059317d1",
+  "status_code": 200
+}

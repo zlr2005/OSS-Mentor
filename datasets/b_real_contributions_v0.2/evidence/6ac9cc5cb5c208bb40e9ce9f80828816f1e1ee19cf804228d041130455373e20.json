@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "charmbracelet/bubbletea",
+    "id": 233130089,
+    "language": "Go",
+    "private": false,
+    "size": 5958
+  },
+  "observed_at": "2026-10-26T06:03:45.241428+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "03c1d4f94f0795579d432c7d03ce31d571c47f4f77bf9333d5e66a82bf8a4810",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bcd3fad26fd0e1a09079c325e316226468b62872c01ebc0d4f880c50575201ec",
+  "source_url": "https://api.github.com/repos/charmbracelet/bubbletea",
+  "status_code": 200
+}

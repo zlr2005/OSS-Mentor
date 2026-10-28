@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 16173870,
+      "login": "sheremet-va",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T09:11:16Z",
+      "committer_at": "2026-10-23T09:11:16Z",
+      "tree_sha": "ce87fe25dec95a0a18315de805e1143af1ff09be"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1094748921b7f9e9a959ffc2ec01a8721ad97014"
+  },
+  "observed_at": "2026-10-26T15:35:04.236724+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "50dc4e8176a6e572cd5c4102e95c1e18c0828ddf60fc9bad54ad33095f7d5a8d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ee10fe846feb0bffdbd5a5227cfc0d55d2f8f7543267355024cf977adba386db",
+  "source_url": "https://api.github.com/repos/vitest-dev/vitest/commits/1094748921b7f9e9a959ffc2ec01a8721ad97014?per_page=100",
+  "status_code": 200
+}

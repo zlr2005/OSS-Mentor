@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "containerd/containerd",
+    "id": 46089560,
+    "language": "Go",
+    "private": false,
+    "size": 143554
+  },
+  "observed_at": "2026-10-26T06:12:19.513813+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f575031748cde4e718c408498d28c5834188a3f0e356a0b66db16bbdcfa39334",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "601af1ef4f4ca862a3085fc87a6b676c9ae56ab0e216b405b5f381d7f1e7b685",
+  "source_url": "https://api.github.com/repos/containerd/containerd",
+  "status_code": 200
+}

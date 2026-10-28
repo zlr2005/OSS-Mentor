@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1d97abf284e1982cbdc6563cdae0d185cf6e1edf",
+    "size": 1958
+  },
+  "observed_at": "2026-10-26T05:01:49.817286+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f1237eb4cda608f1f8deb2983d5aea2565a3539dcdd2206dacffa72518d89fd1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "de3a95499d5939b61b2c606f3b8adb3f4145164401496d33b5e90e74f0ec09b2",
+  "source_url": "https://api.github.com/repos/aio-libs/multidict/git/blobs/1d97abf284e1982cbdc6563cdae0d185cf6e1edf",
+  "status_code": 200
+}

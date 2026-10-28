@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "EPL-2.0",
+    "full_name": "eclipse-che/che",
+    "id": 32935745,
+    "language": "TypeScript",
+    "private": false,
+    "size": 126772
+  },
+  "observed_at": "2026-10-26T06:22:32.290666+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1d949b14689134923d157120c79bc257637b74b348ffaf8924ef729ed3af100f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "393276c1268e1917ee13937c01b12a2b2fdfe6bd06d17f13107e3c17ccd043db",
+  "source_url": "https://api.github.com/repos/eclipse-che/che",
+  "status_code": 200
+}

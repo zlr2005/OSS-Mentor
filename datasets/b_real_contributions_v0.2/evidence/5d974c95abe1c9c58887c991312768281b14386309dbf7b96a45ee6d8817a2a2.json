@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "642ae562cd063e58f3b01569f51f61c80d974b1d",
+    "size": 42618
+  },
+  "observed_at": "2026-10-26T05:54:32.061809+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "15adaf6064678bb50dba9e63e20d404fbe149abff828428885f02030c1ee3bbf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5ea301afd506991be9afc242471d91a9f26448b053671c13b99419a109990e14",
+  "source_url": "https://api.github.com/repos/bevyengine/bevy/git/blobs/642ae562cd063e58f3b01569f51f61c80d974b1d",
+  "status_code": 200
+}

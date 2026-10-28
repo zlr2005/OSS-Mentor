@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2503433,
+      "login": "jvandort",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T18:38:55Z",
+      "committer_at": "2026-10-24T18:38:55Z",
+      "tree_sha": "e0a3d702e0a02f23a6e4868e9949655601ed7ea8"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "67123e85dab9efd12ce3e4228d97f997247d11aa"
+  },
+  "observed_at": "2026-10-27T13:27:09.166958+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f1cbc7696968956dfd72c596900c18bfefb67f5c50fc866181b0b491bcbab74a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "85c564bbce57690784058e4ae91b1a5f127527d419faf0c6340f30acc18a5871",
+  "source_url": "https://api.github.com/repos/gradle/gradle/commits/67123e85dab9efd12ce3e4228d97f997247d11aa?per_page=100",
+  "status_code": 200
+}

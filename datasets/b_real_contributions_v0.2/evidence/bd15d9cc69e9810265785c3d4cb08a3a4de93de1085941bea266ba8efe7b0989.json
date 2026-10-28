@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 11961962,
+      "login": "g0blinResearch",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-04-08T00:09:43Z",
+      "committer_at": "2026-04-08T00:09:43Z",
+      "tree_sha": "de91c791573e4aed722c5e1f66bd174d2885df0a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0e6b8ccabf2aca6c18fac8c574f22b7155f441fb"
+  },
+  "observed_at": "2026-10-26T07:49:18.148780+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e18b88efe513c775cf1964f3b204d2ed25330215026212d08dbab87aaaf4c1b1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6d5afc21b76c921a3791f448a37c618b0ccdd2a6d3ff215f99e303d6bc8d5a97",
+  "source_url": "https://api.github.com/repos/jupyter/nbconvert/commits/0e6b8ccabf2aca6c18fac8c574f22b7155f441fb?per_page=100",
+  "status_code": 200
+}

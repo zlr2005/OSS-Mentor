@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "LGPL-2.1",
+    "full_name": "checkstyle/checkstyle",
+    "id": 12499251,
+    "language": "Java",
+    "private": false,
+    "size": 321228
+  },
+  "observed_at": "2026-10-26T06:05:58.563659+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2afeb997a1068ec5117cea185d207bc4f36056674cd872347179aa4db6885bc2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aa828fe11160e92d4b87a09874b60ca9104cca8b66cbbb448dde49073423d689",
+  "source_url": "https://api.github.com/repos/checkstyle/checkstyle",
+  "status_code": 200
+}

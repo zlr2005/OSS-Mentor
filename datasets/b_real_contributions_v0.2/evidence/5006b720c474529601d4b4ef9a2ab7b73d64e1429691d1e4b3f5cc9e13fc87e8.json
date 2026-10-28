@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 131454720,
+      "login": "srikanth-sankaran",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T08:54:15Z",
+      "committer_at": "2026-10-21T08:54:15Z",
+      "tree_sha": "689b3dc93985c288545b2fd57cdfff0634868a8d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "40de63886f1be57748dd84283caa091117f07da9"
+  },
+  "observed_at": "2026-10-26T06:24:02.900778+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6f8c1367ed0c532db384a4eccd85f04ebf50d988812333a9e9d5e5bbdecee2c7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5514ea9743991837d91b9ac2a17b51bdb7c77e342d45d1458f27297d2627925f",
+  "source_url": "https://api.github.com/repos/eclipse-jdt/eclipse.jdt.core/commits/40de63886f1be57748dd84283caa091117f07da9?per_page=100",
+  "status_code": 200
+}

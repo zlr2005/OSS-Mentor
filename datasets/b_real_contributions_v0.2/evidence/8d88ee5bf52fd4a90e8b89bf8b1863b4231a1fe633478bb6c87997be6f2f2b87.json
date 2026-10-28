@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-09-11T10:43:35Z",
+      "committer_at": "2026-09-14T15:02:48Z",
+      "tree_sha": "47f7a8cbbed7fc11c99eae3624d8e922366fc2f5"
+    },
+    "committer": {
+      "id": 6619134,
+      "login": "terrelln",
+      "type": "User"
+    },
+    "sha": "ee650ef23636145c97ded0440ca743a54362a3ab"
+  },
+  "observed_at": "2026-10-27T13:18:45.635868+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bb0f4726d8f28ef1cee3389748eebf04a128f0206b8a047de92c791392a780de",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d860f6ecbacb796ac04f339eadeae01c0af61f7fc280018d21b8172f0808b019",
+  "source_url": "https://api.github.com/repos/facebook/zstd/commits/ee650ef23636145c97ded0440ca743a54362a3ab?per_page=100",
+  "status_code": 200
+}

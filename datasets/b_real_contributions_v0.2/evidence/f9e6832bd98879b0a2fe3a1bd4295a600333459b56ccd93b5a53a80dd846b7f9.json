@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fb4f7328f7ee8fff590a3bfd279b98a6ca5dfd5c",
+    "size": 42375
+  },
+  "observed_at": "2026-10-26T14:35:54.127545+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "194f63d8773025c6a8c23b5497f51dd3365ad5ebbf53b50d0b1dea31d65696a1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f0786ab241c55998d2c8a4fa08f11fc061068f1d52bf0c34fd0614079de6a713",
+  "source_url": "https://api.github.com/repos/starship/starship/git/blobs/fb4f7328f7ee8fff590a3bfd279b98a6ca5dfd5c",
+  "status_code": 200
+}

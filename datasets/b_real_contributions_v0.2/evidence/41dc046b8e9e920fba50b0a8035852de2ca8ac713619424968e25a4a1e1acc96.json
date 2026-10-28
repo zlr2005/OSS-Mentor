@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 86527202,
+      "login": "dstala",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T13:16:33Z",
+      "committer_at": "2026-10-24T13:16:33Z",
+      "tree_sha": "144c300e1ebebad7a655af788c789dd0a36cf1d9"
+    },
+    "committer": {
+      "id": 86527202,
+      "login": "dstala",
+      "type": "User"
+    },
+    "sha": "1e0b74e188434beb7cfeb39378a84d77b82efdb8"
+  },
+  "observed_at": "2026-10-27T14:33:27.264579+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1314b4405248fc5860eb76c2da7c95b02d163a048f12feb73554d080f914d41c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c39c32dcde41a1d107337b4cfbb724feecc726079d999a55a817ae05192aaed5",
+  "source_url": "https://api.github.com/repos/nocodb/nocodb/commits/1e0b74e188434beb7cfeb39378a84d77b82efdb8?per_page=100",
+  "status_code": 200
+}

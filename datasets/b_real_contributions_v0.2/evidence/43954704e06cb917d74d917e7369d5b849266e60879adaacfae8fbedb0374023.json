@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 299056539,
+      "login": "PaulGMardling",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T14:36:44Z",
+      "committer_at": "2026-10-22T14:36:44Z",
+      "tree_sha": "8d5a578bbc7e476b6e230084582127534ff2febf"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7b9ad65802f010e7d928f21afaac803afef02e71"
+  },
+  "observed_at": "2026-10-27T14:00:13.577577+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6eb8030f7ef528b38369996e7a6669140f96f50127f8f937754bf4f46e05bf0f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "23db01cb2885cdd51e60008e56c9af965b0ffc0b57d2ea53174da7a559a176b3",
+  "source_url": "https://api.github.com/repos/microsoft/fluentui/commits/7b9ad65802f010e7d928f21afaac803afef02e71?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 52391318,
+      "login": "ump45nose",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T20:41:40Z",
+      "committer_at": "2026-10-21T20:41:40Z",
+      "tree_sha": "329067b953d0dde1b87bfab9d33998d11cd33125"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5d6504b84f2576096a8b5b995aa9cbd77fb1b665"
+  },
+  "observed_at": "2026-10-26T06:17:57.510141+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8f042457f8df971b0b253bfa080b927237cafd24f9f8ec796eb72040730d323e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "647901294fb77c04f78cff6487e9083ced11a9b1160a9be6735389dbad93ceb9",
+  "source_url": "https://api.github.com/repos/denoland/deno/commits/5d6504b84f2576096a8b5b995aa9cbd77fb1b665?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/lucene",
+    "id": 341631350,
+    "language": "Java",
+    "private": false,
+    "size": 542448
+  },
+  "observed_at": "2026-10-26T05:23:26.968552+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ba52bf49b2539028c9f95154ad83935cc4aedc553d4fc7313de92a24144fccd5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c33d3d9149b753e8927c3cd649e9b0b29f7efbb325680a6c20849dabb87e9411",
+  "source_url": "https://api.github.com/repos/apache/lucene",
+  "status_code": 200
+}

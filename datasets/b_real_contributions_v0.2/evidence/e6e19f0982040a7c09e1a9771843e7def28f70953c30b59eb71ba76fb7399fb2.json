@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "493bcb85a741077e4eef6878d4ae875e0d9a6d61",
+    "size": 34099
+  },
+  "observed_at": "2026-10-26T13:06:44.992376+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a69a45a0ec4d528a51eb8ba8f579987c02b0819c23557ade915dab462cb6b947",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "657871d511fdd99cc597bd3a6e4f416a72d911ea501887100eac0ed42bd9bd56",
+  "source_url": "https://api.github.com/repos/pydantic/pydantic-settings/git/blobs/493bcb85a741077e4eef6878d4ae875e0d9a6d61",
+  "status_code": 200
+}

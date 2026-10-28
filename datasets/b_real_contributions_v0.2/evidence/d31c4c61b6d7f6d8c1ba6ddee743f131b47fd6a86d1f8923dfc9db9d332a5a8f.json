@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "10f1379eb2b5bff048e536ab094b470dc2e603ca",
+    "size": 89875
+  },
+  "observed_at": "2026-10-26T08:01:39.980751+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e296c757918343bd127825b549b23cf3f23ab901422bf3cabec8299fbbbee390",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2f429f9c2656d84a7d246a03bc87f1ee17b4bf3bedca3ddfac65ac3c826fea46",
+  "source_url": "https://api.github.com/repos/Leaflet/Leaflet/git/blobs/10f1379eb2b5bff048e536ab094b470dc2e603ca",
+  "status_code": 200
+}

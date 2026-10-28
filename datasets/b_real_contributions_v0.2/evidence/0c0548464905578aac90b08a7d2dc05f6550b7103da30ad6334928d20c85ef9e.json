@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 304403,
+      "login": "SignpostMarv",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-04-27T16:13:15Z",
+      "committer_at": "2026-09-11T02:35:42Z",
+      "tree_sha": "64260773d23958adf5c7e5d6947ae452de7bc619"
+    },
+    "committer": {
+      "id": 522948,
+      "login": "justinfagnani",
+      "type": "User"
+    },
+    "sha": "7bde8f08cd052733631be9bedae8b2f204641a47"
+  },
+  "observed_at": "2026-10-26T08:02:26.819981+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "178f0767f0cf9165da8e02cf9b45b46bf988017f2667205e4076513f266536b7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7da3b85c2cc60797d4b82446e8a3effd94de012ba6051a334d8d9d916087a8e9",
+  "source_url": "https://api.github.com/repos/lit/lit/commits/7bde8f08cd052733631be9bedae8b2f204641a47?per_page=100",
+  "status_code": 200
+}

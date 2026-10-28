@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "6c1d60b4673f21f1ba7a0e385f3a0a839b798f40",
+    "size": 2741
+  },
+  "observed_at": "2026-10-26T08:11:29.370176+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d4dd34829d347ef550671b32d99d42912511b80dd2ce8fdeebdf212dd5025297",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "13c5107081f1f1e8998f10d352f1561c23cfa8c6f166c047875992ecbb3518da",
+  "source_url": "https://api.github.com/repos/microsoft/monaco-editor/git/blobs/6c1d60b4673f21f1ba7a0e385f3a0a839b798f40",
+  "status_code": 200
+}

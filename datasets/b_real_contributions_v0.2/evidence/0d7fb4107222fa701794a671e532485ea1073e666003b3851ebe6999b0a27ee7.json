@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 522948,
+      "login": "justinfagnani",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2025-12-03T02:56:19Z",
+      "committer_at": "2026-09-03T18:28:13Z",
+      "tree_sha": "ddd99544d5c66565f8c7a6afb392d955af821cbc"
+    },
+    "committer": {
+      "id": 522948,
+      "login": "justinfagnani",
+      "type": "User"
+    },
+    "sha": "ac9c12563c6e5475532da8c357865d26df800a97"
+  },
+  "observed_at": "2026-10-26T08:03:47.057162+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "929ed7beaed158a22cebddf0db0b0ba17d07a0e3b14e533b55437a3e6cffd890",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "345c6b2dfa8491e4872733a8289d4887ec55ddf43f0f63295e0242d3daff2a8a",
+  "source_url": "https://api.github.com/repos/lit/lit/commits/ac9c12563c6e5475532da8c357865d26df800a97?per_page=100",
+  "status_code": 200
+}

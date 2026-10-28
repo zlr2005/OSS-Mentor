@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 13268042,
+      "login": "kaixuanliu",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-14T15:55:45Z",
+      "committer_at": "2026-10-14T15:55:45Z",
+      "tree_sha": "8ae4514068539d434321bbffd589ee2ad936baad"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b82d9cf48d536deaa15ccdcc24b11ec90f4f3c1b"
+  },
+  "observed_at": "2026-10-26T07:26:50.928085+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6a104e6ce325de894431df5f8fe5e9bfd95ec090f32d9d660bf9fdd9d674ece3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6f244904cbb55052e2eba4a871aa983f4330e53294317b88d73f8563b227b1fd",
+  "source_url": "https://api.github.com/repos/huggingface/accelerate/commits/b82d9cf48d536deaa15ccdcc24b11ec90f4f3c1b?per_page=100",
+  "status_code": 200
+}

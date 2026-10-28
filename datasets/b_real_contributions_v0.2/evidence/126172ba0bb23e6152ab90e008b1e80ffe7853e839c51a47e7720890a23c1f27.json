@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "microsoft/SandDance",
+    "id": 156293506,
+    "language": "TypeScript",
+    "private": false,
+    "size": 72358
+  },
+  "observed_at": "2026-10-26T08:14:50.970567+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "880c6d9dbbeb62a7639c1918322613ebaec26de99e693f1d5d2a7d976b7cf7be",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "542451802ed23dcaafbd1ca60c03baf86a7067ba2f353e45a4bb1aaaa043add7",
+  "source_url": "https://api.github.com/repos/microsoft/SandDance",
+  "status_code": 200
+}

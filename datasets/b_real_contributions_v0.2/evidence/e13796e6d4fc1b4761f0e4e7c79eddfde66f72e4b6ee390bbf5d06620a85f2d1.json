@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 52544,
+      "login": "neild",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T22:05:10Z",
+      "committer_at": "2026-10-25T23:52:43Z",
+      "tree_sha": "2077599c8bcea50ee14281508a601f2412d75607"
+    },
+    "committer": {
+      "id": 8566911,
+      "login": "gopherbot",
+      "type": "User"
+    },
+    "sha": "42602f0ab744f24840ebf8ba3180bd493c74ea3e"
+  },
+  "observed_at": "2026-10-26T07:00:35.456990+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "259c1c380a1666dc831409bc8f648283fed08767022bcd693ef1ad12f35d663a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "11e26ca43e7a70ebb530246f789ba5a1495af815830cc6dac439fedfc92cc8a4",
+  "source_url": "https://api.github.com/repos/golang/go/commits/42602f0ab744f24840ebf8ba3180bd493c74ea3e?per_page=100",
+  "status_code": 200
+}

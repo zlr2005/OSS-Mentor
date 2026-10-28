@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 24392180,
+      "login": "orhun",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T08:08:26Z",
+      "committer_at": "2026-10-20T08:08:26Z",
+      "tree_sha": "3b98b61da723c79bae26326ccde1d5e7727df64d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9e6e1e3430e8194fa29d0f5d96afaf26fbb3c626"
+  },
+  "observed_at": "2026-10-26T13:24:11.901494+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f2aa92ad7a001b5584290c4f6750f129235e9dafbdc9739f1596e3e738a0b930",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2f123ccc95d649fc0119a1027cc199fa6a5eee92fee7f9900e77cf84e724e39a",
+  "source_url": "https://api.github.com/repos/ratatui/ratatui/commits/9e6e1e3430e8194fa29d0f5d96afaf26fbb3c626?per_page=100",
+  "status_code": 200
+}

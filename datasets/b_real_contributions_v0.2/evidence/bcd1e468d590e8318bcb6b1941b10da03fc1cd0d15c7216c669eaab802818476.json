@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "f4a6a1bf116113e36501b85fe82ea3a10c2cca78",
+    "size": 33288
+  },
+  "observed_at": "2026-10-26T13:49:16.819878+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7a6472f539e8ed85698b4ef850cf8d21e538d008cc4e1ea5f47f3050de191a9c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "56c8d720afa0a8e2d470f231339f803bd5f439a5a6e9c36fe7aedfcb9bd1ca83",
+  "source_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/f4a6a1bf116113e36501b85fe82ea3a10c2cca78",
+  "status_code": 200
+}

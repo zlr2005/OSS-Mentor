@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1365881,
+      "login": "sokra",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T18:36:03Z",
+      "committer_at": "2026-10-24T18:36:03Z",
+      "tree_sha": "5a52c5371a77833ed31b6f3ff986d1c0b5d30f73"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2420b9f578c382e67695ac6fd525977451fe77fe"
+  },
+  "observed_at": "2026-10-27T16:22:52.007592+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c4869e4ff154483925a527d0b31a9f49d9cdcb1a8180f536a306acd3538f3d04",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d35aa742afe871dd982b9b61ae52c33910ad439257f69804663088e7500a5e01",
+  "source_url": "https://api.github.com/repos/vercel/next.js/commits/2420b9f578c382e67695ac6fd525977451fe77fe?per_page=100",
+  "status_code": 200
+}

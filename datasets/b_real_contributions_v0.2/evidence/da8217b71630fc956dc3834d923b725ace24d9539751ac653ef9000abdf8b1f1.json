@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "5bb15e6072779ae4471bce236dd3b4ba483c8a6e",
+    "size": 157682
+  },
+  "observed_at": "2026-10-26T15:56:18.692500+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "95c5307ff33696e0e623dea79413c319be4fabb28695a475365c7d9f6726c44e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "dcda6d655d8e41317fc22877ff3b669cbd540dcb2ecda21295ebc7ed96706db1",
+  "source_url": "https://api.github.com/repos/zellij-org/zellij/git/blobs/5bb15e6072779ae4471bce236dd3b4ba483c8a6e",
+  "status_code": 200
+}

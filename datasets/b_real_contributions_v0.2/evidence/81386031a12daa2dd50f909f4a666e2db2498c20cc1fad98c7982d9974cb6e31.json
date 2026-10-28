@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 27951066,
+      "login": "XiaoHongbo-Hope",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T02:45:29Z",
+      "committer_at": "2026-10-25T02:45:29Z",
+      "tree_sha": "c168ecfbfaf7d330b8f60cb19d7a29f036ebd279"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e20de7d2aca62c81bae1dfd289d74970e52b0575"
+  },
+  "observed_at": "2026-10-26T05:28:09.474627+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dc753d0d0d8a1a766d89370f17e1e5806073e7cdbf34d81c7b76a642a0498021",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "34a4478414de28de4d6ccc30471ed5612cf4c9bf97bbab4c2b24de46f3e72c52",
+  "source_url": "https://api.github.com/repos/apache/paimon/commits/e20de7d2aca62c81bae1dfd289d74970e52b0575?per_page=100",
+  "status_code": 200
+}

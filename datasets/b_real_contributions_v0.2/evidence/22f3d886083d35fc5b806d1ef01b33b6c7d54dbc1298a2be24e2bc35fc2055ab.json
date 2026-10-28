@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "nodejs/undici",
+    "id": 133092972,
+    "language": "JavaScript",
+    "private": false,
+    "size": 18597
+  },
+  "observed_at": "2026-10-26T08:28:07.321151+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ee986354e191dd4b429af217ba4304381dc96adbca053746c116231414569fe4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b445bb2b782bf84bcdccb13cf761774bd7576a67c8b0eafa81119ad3271489e0",
+  "source_url": "https://api.github.com/repos/nodejs/undici",
+  "status_code": 200
+}

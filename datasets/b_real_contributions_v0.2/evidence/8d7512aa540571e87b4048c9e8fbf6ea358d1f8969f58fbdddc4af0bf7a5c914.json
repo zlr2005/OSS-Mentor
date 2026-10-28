@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 755472,
+      "login": "HeikoKlare",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-16T13:57:19Z",
+      "committer_at": "2026-10-16T16:25:54Z",
+      "tree_sha": "e39bd8403f3ce6a044af3fbdc2d000854da30231"
+    },
+    "committer": {
+      "id": 755472,
+      "login": "HeikoKlare",
+      "type": "User"
+    },
+    "sha": "3faf11cf534becc560d93f736ec9eba9535b34f2"
+  },
+  "observed_at": "2026-10-26T06:29:09.687912+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8362dcb93f9668774912c88260eec5d44a4f1a5b9f928576f193aff07c907678",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f792024041fb7f43000f61e0302d100c5ca7c2bedc5f7cc8a8e1289edaf5fd4f",
+  "source_url": "https://api.github.com/repos/eclipse-platform/eclipse.platform.ui/commits/3faf11cf534becc560d93f736ec9eba9535b34f2?per_page=100",
+  "status_code": 200
+}

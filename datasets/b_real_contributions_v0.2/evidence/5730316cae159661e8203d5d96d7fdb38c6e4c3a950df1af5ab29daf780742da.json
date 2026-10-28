@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "166f63726cf850f905adb507fb950bbcde4e8988",
+    "size": 67679
+  },
+  "observed_at": "2026-10-26T14:43:58.844564+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "91227914d54c8ae3bfec114b8e90888cd1d927e10bee101470def6cc37ce9e08",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "63e3a3679c98c8f916ce1846729b013425f12c79a5e39d3a3cea6d71239af2b9",
+  "source_url": "https://api.github.com/repos/stretchr/testify/git/blobs/166f63726cf850f905adb507fb950bbcde4e8988",
+  "status_code": 200
+}

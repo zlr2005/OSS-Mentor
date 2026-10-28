@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 150397669,
+      "login": "Enricoftw",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T12:41:37Z",
+      "committer_at": "2026-10-25T12:41:37Z",
+      "tree_sha": "0f263eba9492c9466a87c10ccd792872050fd949"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "aea9e04d2092da03f0d1063d37a4c93f352bf047"
+  },
+  "observed_at": "2026-10-26T13:59:01.224024+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8f98e4ce031b7c690a1fc68edc1bab98f2c0985de1ef4c704b42c483651bea5f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "79d8f84775a1e14e9c030396a11df7f1e60b81bdb008a2ff9254a75b7193e517",
+  "source_url": "https://api.github.com/repos/scipy/scipy/commits/aea9e04d2092da03f0d1063d37a4c93f352bf047?per_page=100",
+  "status_code": 200
+}

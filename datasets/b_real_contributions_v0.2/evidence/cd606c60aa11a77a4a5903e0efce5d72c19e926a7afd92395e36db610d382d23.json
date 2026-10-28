@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "01dc3c351179461d7d5a74832acd2a7091a895c1",
+    "size": 44174
+  },
+  "observed_at": "2026-10-26T06:18:29.008777+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "afc6d84b19dada106dc592a581f6d4ed5421452affa81ce23517f99fb54176b7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "22bcbf5f6ee8b87cdcef047496454d408ec516609b6543c689f1f396318db515",
+  "source_url": "https://api.github.com/repos/denoland/deno/git/blobs/01dc3c351179461d7d5a74832acd2a7091a895c1",
+  "status_code": 200
+}

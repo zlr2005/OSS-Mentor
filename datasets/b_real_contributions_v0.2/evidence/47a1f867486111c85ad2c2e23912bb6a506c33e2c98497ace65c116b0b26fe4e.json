@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3050060,
+      "login": "GuillaumeGomez",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-05T12:01:54Z",
+      "committer_at": "2026-10-05T12:01:54Z",
+      "tree_sha": "114af2aa9c2186e618079237067fd2bdf0f26527"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a774700699c51be943b5e4467492e673198e1af8"
+  },
+  "observed_at": "2026-10-26T13:52:22.120905+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4d5add1e15928f400a58ad650d35e6a382c3cacba2b06b837306acdc09a3c78e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "56b345800dfccc315838b0846673cfef0f7ac7bd9b2ba4654d5c4ee5e4ff21e4",
+  "source_url": "https://api.github.com/repos/rust-lang/mdBook/commits/a774700699c51be943b5e4467492e673198e1af8?per_page=100",
+  "status_code": 200
+}

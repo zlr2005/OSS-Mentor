@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1396388,
+      "login": "mattjohnsonpint",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-01T15:03:07Z",
+      "committer_at": "2026-09-01T15:27:17Z",
+      "tree_sha": "e9ece9045bb68bf2b271537d3ac1b85421411ae6"
+    },
+    "committer": {
+      "id": 1396388,
+      "login": "mattjohnsonpint",
+      "type": "User"
+    },
+    "sha": "2e4825f00fdbe8e0be4544f38e7fef8060d26467"
+  },
+  "observed_at": "2026-10-26T14:43:32.983650+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6574680731a6300a246b62d18f33ce69e127f9980f276ccf7dc74e9a3a32de88",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "76287264f50931b2fe93bb56b5b9c87aa379db039911420c53c78cecad4286d1",
+  "source_url": "https://api.github.com/repos/stretchr/testify/commits/2e4825f00fdbe8e0be4544f38e7fef8060d26467?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 225674,
+      "login": "vietj",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T13:25:13Z",
+      "committer_at": "2026-10-20T13:50:37Z",
+      "tree_sha": "424eebc868001d8c03c84cf74fadbf88aa43cd3a"
+    },
+    "committer": {
+      "id": 225674,
+      "login": "vietj",
+      "type": "User"
+    },
+    "sha": "aa28c7b0007fbc7c20d1bc8de8d42b588e157f8e"
+  },
+  "observed_at": "2026-10-27T13:04:17.529826+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "144223f0d491da91098bf944583d704f8209484010371f576f1344d3baed1022",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "863c41ec3f27aa4d7cba42a1211e8886dfc0d16ccdb26b79605fbb22e2380380",
+  "source_url": "https://api.github.com/repos/eclipse-vertx/vert.x/commits/aa28c7b0007fbc7c20d1bc8de8d42b588e157f8e?per_page=100",
+  "status_code": 200
+}

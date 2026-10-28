@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "ChatGPTNextWeb/NextChat",
+    "id": 612344730,
+    "language": "TypeScript",
+    "private": false,
+    "size": 23969
+  },
+  "observed_at": "2026-10-26T06:05:21.845858+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bf61b607ef99fa3d40c22013f4fe4528fa55c742df4e33a26bab6380cd1e4fae",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "465a3ea46f155e65621b2c07d4786e408a6c74d28d0dfbf7bd2f4bad9e1aa49c",
+  "source_url": "https://api.github.com/repos/ChatGPTNextWeb/NextChat",
+  "status_code": 200
+}

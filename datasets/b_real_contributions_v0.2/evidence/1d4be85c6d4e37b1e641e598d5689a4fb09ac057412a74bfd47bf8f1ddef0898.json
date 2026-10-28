@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "encode/httpx",
+    "id": 179492861,
+    "language": "Python",
+    "private": false,
+    "size": 8619
+  },
+  "observed_at": "2026-10-26T06:31:50.816027+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6476442a07b2ae14e8c79c5018c7476253d6f6f2e7c59a798d37a0d9158c726b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6d3a6c7b48edb466a689755917c3514e519e10057d7c7c2266fb9fe216151de9",
+  "source_url": "https://api.github.com/repos/encode/httpx",
+  "status_code": 200
+}

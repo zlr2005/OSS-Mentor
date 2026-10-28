@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 67612,
+      "login": "matthew-brett",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-21T12:48:45Z",
+      "committer_at": "2026-09-21T12:48:45Z",
+      "tree_sha": "c497b3a0436d3b3ec5f6d5217e9b1f0fcfd02bd5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9311ab50b2e3392bb5272253b43cb4dd1ce04e31"
+  },
+  "observed_at": "2026-10-27T16:08:40.652937+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e35d3a98acf5a2132bdd6eef951665206f8ede4c89595bdc9a9a12f4789d659b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "be64fefac8bfc770a4f5b9213c27f6318d7957c70e544e7b6261ebe13dd6bf5c",
+  "source_url": "https://api.github.com/repos/scikit-image/scikit-image/commits/9311ab50b2e3392bb5272253b43cb4dd1ce04e31?per_page=100",
+  "status_code": 200
+}

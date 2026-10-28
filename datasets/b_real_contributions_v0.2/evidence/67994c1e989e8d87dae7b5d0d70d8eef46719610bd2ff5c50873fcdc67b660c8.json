@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "399519a77273d18a7ddf62112054ae1bbbc9c90e",
+    "size": 1419
+  },
+  "observed_at": "2026-10-26T08:25:46.471709+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "918e0d6acdd24b0c30ffb67cbe3b3444f02ff8a8faf438addb77cc754effd195",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "403c64b2cbad0a8fe092ef94b1eaad18c276ef91165ce8aa96a48aded69e185a",
+  "source_url": "https://api.github.com/repos/mui/material-ui/git/blobs/399519a77273d18a7ddf62112054ae1bbbc9c90e",
+  "status_code": 200
+}

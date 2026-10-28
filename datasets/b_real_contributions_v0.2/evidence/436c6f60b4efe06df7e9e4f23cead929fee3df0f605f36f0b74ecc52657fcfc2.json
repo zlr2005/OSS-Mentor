@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "cc6dac2e7979c49a352cea410af2263e4ab9635d",
+    "size": 4235
+  },
+  "observed_at": "2026-10-26T07:48:37.983835+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5def938cb0c0f0f19095fd1c7e320b98f6b2960b0c9ac1ca855117f683375ee8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "81a43b27eb6e401bcd968520a6ede17c155ec3f3a1e4fbe4cc46eaeb3b0fbc77",
+  "source_url": "https://api.github.com/repos/junit-team/junit-framework/git/blobs/cc6dac2e7979c49a352cea410af2263e4ab9635d",
+  "status_code": 200
+}

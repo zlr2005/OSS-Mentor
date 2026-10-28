@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 44439583,
+      "login": "benibenj",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T20:44:20Z",
+      "committer_at": "2026-10-25T20:44:20Z",
+      "tree_sha": "8f00ee9715a6575f6ab918171dd0b5bf0f579019"
+    },
+    "committer": {
+      "id": 44439583,
+      "login": "benibenj",
+      "type": "User"
+    },
+    "sha": "3ef5b021d19e19abc518c320701906808707df5c"
+  },
+  "observed_at": "2026-10-26T08:19:37.816940+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e61a204b7251f4817fb69a45f48466ad36fbefe0d9d1319b314b3c2c6575e384",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ee3dae37c910b1420bd15053bc36fabcaaa131f9f7612a980fe8043ec8354811",
+  "source_url": "https://api.github.com/repos/microsoft/vscode/commits/3ef5b021d19e19abc518c320701906808707df5c?per_page=100",
+  "status_code": 200
+}

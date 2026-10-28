@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ec93a5d5a19277cb9f68f5b9f9f7d1159af92f70",
+    "size": 28618
+  },
+  "observed_at": "2026-10-26T07:44:08.574792+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c4bac9e6b71841e4818a62bf5dd03e5ae55009a5995f1c090b9cfa65376ae8c0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a5233ca2f81eca7f12a4cc902447a8feed9d99a1363a1bfd715e247ad05f8ebc",
+  "source_url": "https://api.github.com/repos/jackc/pgx/git/blobs/ec93a5d5a19277cb9f68f5b9f9f7d1159af92f70",
+  "status_code": 200
+}

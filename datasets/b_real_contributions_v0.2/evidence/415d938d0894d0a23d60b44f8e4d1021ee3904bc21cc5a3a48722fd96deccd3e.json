@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1035015,
+      "login": "mp911de",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-15T09:09:41Z",
+      "committer_at": "2026-10-15T09:09:55Z",
+      "tree_sha": "5df1d204463e15797efad034d23f3937fee4d181"
+    },
+    "committer": {
+      "id": 1035015,
+      "login": "mp911de",
+      "type": "User"
+    },
+    "sha": "07e56e0364e107b0ad63b4faeee9cc5d12ab8162"
+  },
+  "observed_at": "2026-10-26T14:20:49.402313+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9965c769bb7224acb87c63f5defdc35411c39c9e02f134fb2416250ef52a2cc8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c0f2c651575cbc3c4a9c9fd6821d7db24af3326d2db2fb9c8f5d88f3513937b4",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-data-jpa/commits/07e56e0364e107b0ad63b4faeee9cc5d12ab8162?per_page=100",
+  "status_code": 200
+}

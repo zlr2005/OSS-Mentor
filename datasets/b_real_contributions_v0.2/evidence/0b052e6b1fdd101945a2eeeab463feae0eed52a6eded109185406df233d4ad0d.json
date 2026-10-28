@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 51098787,
+      "login": "IamMikeHelsel",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T17:08:38Z",
+      "committer_at": "2026-10-22T17:08:38Z",
+      "tree_sha": "77dd9d00579a31492346489a75f3e65b1b55abc6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "bac271ca40ccfa08b5a10cadbedf1c70384e0ad1"
+  },
+  "observed_at": "2026-10-26T14:35:48.608209+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d8b5f28ab66779f94161f137c1d85eed34d27e5df32e40b42a7c1a8f30f64716",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "169c971bf312cd9352578dafff3c94605a27d2148dce9955883a8f99bbe23da2",
+  "source_url": "https://api.github.com/repos/starship/starship/commits/bac271ca40ccfa08b5a10cadbedf1c70384e0ad1?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,274 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.shenyu.admin.service.impl;
+
+import com.google.common.collect.Lists;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.shenyu.admin.mapper.TagMapper;
+import org.apache.shenyu.admin.mapper.TagRelationMapper;
+import org.apache.shenyu.admin.model.dto.TagDTO;
+import org.apache.shenyu.admin.model.entity.BaseDO;
+import org.apache.shenyu.admin.model.entity.TagDO;
+import org.apache.shenyu.admin.model.query.TagQuery;
+import org.apache.shenyu.admin.model.vo.TagVO;
+import org.apache.shenyu.admin.service.TagService;
+import org.apache.shenyu.admin.utils.Assert;
+import org.apache.shenyu.common.constant.AdminConstants;
+import org.apache.shenyu.common.utils.GsonUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+/**
+ * Implementation of the {@link org.apache.shenyu.admin.service.TagService}.
+ */
+@Service
+public class TagServiceImpl implements TagService {
+
+    private final TagMapper tagMapper;
+
+    private final TagRelationMapper tagRelationMapper;
+
+    public TagServiceImpl(final TagMapper tagMapper, final TagRelationMapper tagRelationMapper) {
+        this.tagMapper = tagMapper;
+        this.tagRelationMapper = tagRelationMapper;
+    }
+
+    @Override
+    public int create(final TagDTO tagDTO) {
+        tagDTO.setParentTagId(StringUtils.isNotEmpty(tagDTO.getParentTagId()) ? tagDTO.getParentTagId() : AdminConstants.TAG_ROOT_PARENT_ID);
+        return createInner(tagDTO, null);
+    }
+
+    @Override
+    public int createRootTag(final TagDTO tagDTO, final TagDO.TagExt tagExt) {
+        Assert.notNull(tagDTO, "tagDTO is not allowed null");
+        tagDTO.setParentTagId(StringUtils.isNotEmpty(tagDTO.getParentTagId()) ? tagDTO.getParentTagId() : AdminConstants.TAG_ROOT_PARENT_ID);
+        return createInner(tagDTO, tagExt);
+    }
+
+    private int createInner(final TagDTO tagDTO, final TagDO.TagExt tagExt) {
+        Assert.notNull(tagDTO, "tagDTO is not allowed null");
+        Assert.notNull(tagDTO.getParentTagId(), "parent tag id is not allowed null");
+        String ext = "";
+        if (!tagDTO.getParentTagId().equals(AdminConstants.TAG_ROOT_PARENT_ID)) {
+            TagDO tagDO = tagMapper.selectByPrimaryKey(tagDTO.getParentTagId());
+            Assert.notNull(tagDO, "parent tag is not found");
+            ext = buildExtParamByParentTag(tagDO);
+        } else {
+            ext = GsonUtils.getInstance().toJson(Optional.ofNullable(tagExt).orElse(new TagDO.TagExt()));
+        }
+        TagDO tagDO = TagDO.buildTagDO(tagDTO);
+        tagDO.setExt(ext);
+        tagDTO.setId(tagDO.getId());
+        return tagMapper.insert(tagDO);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int update(final TagDTO tagDTO) {
+        TagDO before = tagMapper.selectByPrimaryKey(tagDTO.getId());
+        Assert.notNull(before, "the updated tag is not found");
+        String parentTagId = StringUtils.isNotEmpty(tagDTO.getParentTagId()) ? tagDTO.getParentTagId() : before.getParentTagId();
+        if (StringUtils.isEmpty(parentTagId)) {
+            parentTagId = AdminConstants.TAG_ROOT_PARENT_ID;
+        }
+        TagDO tagDO = TagDO.buildTagDO(tagDTO);
+        // Empty parent IDs retain the existing parent.
+        tagDO.setParentTagId(parentTagId);
+        // A null name/description retains the persisted value; an explicit empty string clears it.
+        tagDO.setName(Objects.isNull(tagDTO.getTagName()) ? before.getTagName() : tagDTO.getTagName());
+        tagDO.setTagDesc(Objects.isNull(tagDTO.getTagDesc()) ? before.getTagDesc() : tagDTO.getTagDesc());
+        if (AdminConstants.TAG_ROOT_PARENT_ID.equals(parentTagId)) {
+            tagDO.setExt(buildRootExt(before.getExt()));
+        } else {
+            TagDO parentTagDO = tagMapper.selectByPrimaryKey(parentTagId);
+            Assert.notNull(parentTagDO, "parent tag is not found");
+            tagDO.setExt(buildExtParamByParentTag(parentTagDO, before.getExt()));
+        }
+        updateSubTags(tagDO);
+        return tagMapper.updateByPrimaryKeySelective(tagDO);
+    }
+
+    @Override
+    public int updateTagExt(final String tagId, final TagDO.TagExt tagExt) {
+        Assert.notNull(tagId, "tagId is not null");
+        Assert.notNull(tagExt, "tagDO is not null");
+        TagDO tagDO = new TagDO();
+        tagDO.setId(tagId);
+        tagDO.setDateUpdated(new Timestamp(System.currentTimeMillis()));
+        tagDO.setExt(GsonUtils.getInstance().toJson(tagExt));
+        return tagMapper.updateByPrimaryKeySelective(tagDO);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int delete(final List<String> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return 0;
+        }
+        Assert.isTrue(tagMapper.selectByParentTagIds(ids).stream().allMatch(tag -> ids.contains(tag.getId())),
+                "cannot delete tags with remaining children");
+        tagRelationMapper.deleteByTagIds(ids);
+        return tagMapper.deleteByIds(ids);
+    }
+
+    @Override
+    public TagVO findById(final String id) {
+        TagDO tagDO = tagMapper.selectByPrimaryKey(id);
+        return TagVO.buildTagVO(tagDO);
+    }
+
+    @Override
+    public List<TagVO> findByQuery(final String tagName) {
+        return this.findByQuery(tagName, null);
+    }
+
+    @Override
+    public List<TagVO> findByQuery(final String tagName, final String parentTagId) {
+        TagQuery tagQuery = new TagQuery();
+        tagQuery.setTagName(tagName);
+        tagQuery.setParentTagId(parentTagId);
+        List<TagDO> tagDOS = Optional.ofNullable(tagMapper.selectByQuery(tagQuery)).orElse(Lists.newArrayList());
+        return tagDOS.stream().map(TagVO::buildTagVO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TagVO> findByParentTagId(final String parentTagId) {
+        TagQuery tagQuery = new TagQuery();
+        tagQuery.setParentTagId(parentTagId);
+        List<TagDO> tagDOS = tagMapper.selectByQuery(tagQuery);
+        if (CollectionUtils.isEmpty(tagDOS)) {
+            return Lists.newArrayList();
+        }
+        List<String> rootIds = tagDOS.stream().map(TagDO::getId).collect(Collectors.toList());
+        List<TagDO> tagDOList = tagMapper.selectByParentTagIds(rootIds);
+        Map<String, Boolean> map = tagDOList.stream().collect(
+                Collectors.toMap(TagDO::getParentTagId, tagDO -> true, (a, b) -> b, ConcurrentHashMap::new));
+        return tagDOS.stream().map(tag -> {
+            TagVO tagVO = TagVO.buildTagVO(tag);
+            if (Objects.nonNull(map.get(tag.getId()))) {
+                tagVO.setHasChildren(map.get(tag.getId()));
+            }
+            return tagVO;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * update sub tags.
+     *
+     * @param tagDO tagDO
+     */
+    private void updateSubTags(final TagDO tagDO) {
+        List<TagDO> allData = Optional.ofNullable(tagMapper.selectByQuery(new TagQuery())).orElseGet(Lists::newArrayList);
+        Map<String, TagDO> allDataMap = allData.stream().collect(
+                Collectors.toMap(BaseDO::getId, Function.identity(), (a, b) -> b, HashMap::new));
+        allDataMap.put(tagDO.getId(), tagDO);
+        Map<String, List<String>> relationMap = new HashMap<>();
+        allDataMap.values().forEach(item -> {
+            if (StringUtils.isNotEmpty(item.getParentTagId())) {
+                relationMap.computeIfAbsent(item.getParentTagId(), k -> Lists.newArrayList()).add(item.getId());
+            }
+        });
+        recurseUpdateTag(allDataMap, relationMap, tagDO.getId(), new HashSet<>());
+    }
+
+    /**
+     * recurseUpdateTag.
+     *
+     * @param allData     allData
+     * @param relationMap relationMap
+     * @param id          id
+     * @param visited     tags already visited during this update
+     */
+    private void recurseUpdateTag(final Map<String, TagDO> allData, final Map<String, List<String>> relationMap, final String id, final Set<String> visited) {
+        Assert.isTrue(visited.add(id), "Cyclic tag hierarchy detected at tag: " + id);
+        if (CollectionUtils.isEmpty(relationMap.get(id))) {
+            return;
+        }
+        List<String> subTagIds = relationMap.get(id);
+        subTagIds.forEach(tagId -> {
+            TagDO tagDO = allData.get(tagId);
+            TagDO parentTagDO = allData.get(id);
+            if (Objects.isNull(tagDO) || Objects.isNull(parentTagDO)) {
+                return;
+            }
+            tagDO.setExt(buildExtParamByParentTag(parentTagDO, tagDO.getExt()));
+            tagMapper.updateByPrimaryKey(tagDO);
+            recurseUpdateTag(allData, relationMap, tagId, visited);
+        });
+    }
+
+    /**
+     * buildRootExt.
+     *
+     * @param currentExt currentExt
+     * @return ext
+     */
+    private String buildRootExt(final String currentExt) {
+        final TagDO.TagExt ext = StringUtils.isNotEmpty(currentExt)
+                ? Optional.ofNullable(GsonUtils.getInstance().fromJson(currentExt, TagDO.TagExt.class)).orElse(new TagDO.TagExt())
+                : new TagDO.TagExt();
+        ext.setParent(null);
+        return GsonUtils.getInstance().toJson(ext);
+    }
+
+    /**
+     * buildExtParam.
+     *
+     * @param parentTagDO parentTagDO
+     * @return ext
+     */
+    private String buildExtParamByParentTag(final TagDO parentTagDO) {
+        return buildExtParamByParentTag(parentTagDO, null);
+    }
+
+    /**
+     * buildExtParam.
+     *
+     * @param parentTagDO parentTagDO
+     * @param currentExt  currentExt
+     * @return ext
+     */
+    private String buildExtParamByParentTag(final TagDO parentTagDO, final String currentExt) {
+        if (AdminConstants.TAG_ROOT_PARENT_ID.equals(parentTagDO.getId())) {
+            return buildRootExt(currentExt);
+        }
+        TagDO.TagExt parentTagExt = Optional.ofNullable(GsonUtils.getInstance().fromJson(parentTagDO.getExt(), TagDO.TagExt.class)).orElse(new TagDO.TagExt());
+        final TagDO.TagExt tagExt = StringUtils.isNotEmpty(currentExt)
+                ? Optional.ofNullable(GsonUtils.getInstance().fromJson(currentExt, TagDO.TagExt.class)).orElse(new TagDO.TagExt())
+                : new TagDO.TagExt();
+        parentTagExt.setDesc(parentTagDO.getTagDesc());
+        parentTagExt.setName(parentTagDO.getTagName());
+        parentTagExt.setId(parentTagDO.getId());
+        tagExt.setParent(parentTagExt);
+        return GsonUtils.getInstance().toJson(tagExt);
+    }
+}

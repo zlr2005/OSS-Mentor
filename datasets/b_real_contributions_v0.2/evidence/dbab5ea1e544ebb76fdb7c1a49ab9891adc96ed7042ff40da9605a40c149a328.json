@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "microsoft/vscode-pull-request-github",
+    "id": 134777298,
+    "language": "TypeScript",
+    "private": false,
+    "size": 92176
+  },
+  "observed_at": "2026-10-26T08:20:23.674255+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b100e3f0aa662c0a996ebbf549714df3346b02c0555b3c1ec07494cf92201913",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0d76ee1bcfc2ca8e5bdbceb5ca272b43be0c69d9661c7b0385de31f551812f50",
+  "source_url": "https://api.github.com/repos/microsoft/vscode-pull-request-github",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "d55fea4bd944960212ab5aa13fb3820ad648c884",
+    "size": 3046
+  },
+  "observed_at": "2026-10-26T06:04:27.358130+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bbc426e632ab3574cf25472c2a5d6298d388a1a048487707419bda5c5b5587ed",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e0ffda6b61267e2528e6c49320b26ae060c289891324c059ed4ddaf4caa6e21e",
+  "source_url": "https://api.github.com/repos/charmbracelet/bubbletea/git/blobs/d55fea4bd944960212ab5aa13fb3820ad648c884",
+  "status_code": 200
+}

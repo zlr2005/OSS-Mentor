@@ -1,0 +1,248 @@
+/*
+ * Copyright 2025 The Error Prone Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.errorprone.bugpatterns;
+
+import static com.google.common.base.MoreObjects.firstNonNull;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.ErrorProneFlags;
+import com.google.errorprone.matchers.InjectMatchers;
+import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.ModifiersTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
+import com.sun.source.util.SimpleTreeVisitor;
+import com.sun.tools.javac.code.Symbol.TypeSymbol;
+import com.sun.tools.javac.code.Type;
+import java.util.List;
+import javax.inject.Inject;
+
+/** A collection of annotations to treat as if they were annotated with {@code @Keep}. */
+public final class WellKnownKeep {
+
+  /**
+   * Annotations that exempt variables from being considered unused.
+   *
+   * <p>Try to avoid adding more annotations here. Annotating these annotations with {@code @Keep}
+   * has the same effect; this list is chiefly for third-party annotations which cannot be
+   * annotated.
+   */
+  private static final ImmutableSet<String> EXEMPTING_VARIABLE_ANNOTATIONS =
+      ImmutableSet.of(
+          "com.google.gson.annotations.Expose",
+          "com.google.gson.annotations.SerializedName",
+          "com.google.gwtmockito.GwtMock",
+          "com.google.inject.testing.fieldbinder.Bind",
+          "com.googlecode.objectify.v4.annotation.AlsoLoad",
+          "com.googlecode.objectify.v4.annotation.Id",
+          "com.googlecode.objectify.v4.annotation.Index",
+          "com.googlecode.objectify.v4.annotation.OnLoad",
+          "com.googlecode.objectify.v4.annotation.OnSave",
+          "com.googlecode.objectify.v4.annotation.Parent",
+          "com.googlecode.objectify.v5.annotation.AlsoLoad",
+          "com.googlecode.objectify.v5.annotation.Id",
+          "com.googlecode.objectify.v5.annotation.Index",
+          "com.googlecode.objectify.v5.annotation.Parent",
+          "jakarta.persistence.Basic",
+          "jakarta.persistence.Column",
+          "jakarta.persistence.Id",
+          "jakarta.persistence.Version",
+          "jakarta.xml.bind.annotation.XmlElement",
+          "javax.persistence.Basic",
+          "javax.persistence.Column",
+          "javax.persistence.Id",
+          "javax.persistence.Version",
+          "javax.xml.bind.annotation.XmlElement",
+          "net.starlark.java.annot.StarlarkBuiltin",
+          "org.junit.Rule",
+          "org.junit.jupiter.api.extension.RegisterExtension",
+          "org.openqa.selenium.support.FindAll",
+          "org.openqa.selenium.support.FindBy",
+          "org.openqa.selenium.support.FindBys",
+          "org.apache.beam.sdk.transforms.DoFn.TimerId",
+          "org.apache.beam.sdk.transforms.DoFn.StateId",
+          "org.springframework.boot.test.mock.mockito.MockBean",
+          "org.springframework.test.context.bean.override.mockito.MockitoBean");
+
+  /**
+   * Annotations that exempt methods from being considered unused.
+   *
+   * <p>Try to avoid adding more annotations here. Annotating these annotations with {@code @Keep}
+   * has the same effect; this list is chiefly for third-party annotations which cannot be
+   * annotated.
+   */
+  private static final ImmutableSet<String> EXEMPTING_METHOD_ANNOTATIONS =
+      ImmutableSet.<String>builder()
+          .addAll(InjectMatchers.INJECT_ANNOTATIONS)
+          .addAll(InjectMatchers.PROVIDES_ANNOTATIONS)
+          .addAll(InjectMatchers.MULTIBINDINGS_ANNOTATIONS)
+          .add(
+              "android.webkit.JavascriptInterface",
+              "com.fasterxml.jackson.annotation.JsonCreator",
+              "com.fasterxml.jackson.annotation.JsonProperty",
+              "com.fasterxml.jackson.annotation.JsonSetter",
+              "com.fasterxml.jackson.annotation.JsonValue",
+              "com.google.acai.AfterTest",
+              "com.google.acai.BeforeSuite",
+              "com.google.acai.BeforeTest",
+              "com.google.caliper.Benchmark",
+              "com.google.common.eventbus.Subscribe",
+              "com.google.inject.throwingproviders.CheckedProvides",
+              "com.googlecode.objectify.v5.annotation.OnLoad",
+              "com.googlecode.objectify.v5.annotation.OnSave",
+              "com.tngtech.java.junit.dataprovider.DataProvider",
+              "jakarta.annotation.PreDestroy",
+              "jakarta.annotation.PostConstruct",
+              "jakarta.persistence.PostLoad",
+              "jakarta.persistence.PostPersist",
+              "jakarta.persistence.PostRemove",
+              "jakarta.persistence.PostUpdate",
+              "jakarta.persistence.PrePersist",
+              "jakarta.persistence.PreRemove",
+              "jakarta.persistence.PreUpdate",
+              "jakarta.validation.constraints.AssertFalse",
+              "jakarta.validation.constraints.AssertTrue",
+              "javax.annotation.PreDestroy",
+              "javax.annotation.PostConstruct",
+              "javax.persistence.PostLoad",
+              "javax.persistence.PostPersist",
+              "javax.persistence.PostRemove",
+              "javax.persistence.PostUpdate",
+              "javax.persistence.PrePersist",
+              "javax.persistence.PreRemove",
+              "javax.persistence.PreUpdate",
+              "javax.validation.constraints.AssertFalse",
+              "javax.validation.constraints.AssertTrue",
+              "net.bytebuddy.asm.Advice.OnMethodEnter",
+              "net.bytebuddy.asm.Advice.OnMethodExit",
+              "org.apache.beam.sdk.transforms.DoFn.FinishBundle",
+              "org.apache.beam.sdk.transforms.DoFn.GetInitialRestriction",
+              "org.apache.beam.sdk.transforms.DoFn.GetInitialWatermarkEstimatorState",
+              "org.apache.beam.sdk.transforms.DoFn.GetRestrictionCoder",
+              "org.apache.beam.sdk.transforms.DoFn.GetSize",
+              "org.apache.beam.sdk.transforms.DoFn.GetWatermarkEstimatorStateCoder",
+              "org.apache.beam.sdk.transforms.DoFn.NewTracker",
+              "org.apache.beam.sdk.transforms.DoFn.NewWatermarkEstimator",
+              "org.apache.beam.sdk.transforms.DoFn.OnTimer",
+              "org.apache.beam.sdk.transforms.DoFn.OnTimerFamily",
+              "org.apache.beam.sdk.transforms.DoFn.OnWindowExpiration",
+              "org.apache.beam.sdk.transforms.DoFn.ProcessElement",
+              "org.apache.beam.sdk.transforms.DoFn.RequiresStableInput",
+              "org.apache.beam.sdk.transforms.DoFn.RequiresTimeSortedInput",
+              "org.apache.beam.sdk.transforms.DoFn.Setup",
+              "org.apache.beam.sdk.transforms.DoFn.SplitRestriction",
+              "org.apache.beam.sdk.transforms.DoFn.StartBundle",
+              "org.apache.beam.sdk.transforms.DoFn.Teardown",
+              "org.apache.beam.sdk.transforms.DoFn.TruncateRestriction",
+              "org.aspectj.lang.annotation.Pointcut",
+              "org.aspectj.lang.annotation.After",
+              "org.aspectj.lang.annotation.Before",
+              "org.springframework.context.annotation.Bean",
+              "org.testng.annotations.AfterClass",
+              "org.testng.annotations.AfterMethod",
+              "org.testng.annotations.BeforeClass",
+              "org.testng.annotations.BeforeMethod",
+              "org.testng.annotations.DataProvider",
+              "org.junit.jupiter.api.BeforeAll",
+              "org.junit.jupiter.api.AfterAll",
+              "org.junit.jupiter.api.AfterEach",
+              "org.junit.jupiter.api.BeforeEach",
+              "org.junit.jupiter.api.RepeatedTest",
+              "org.junit.jupiter.api.Test",
+              "org.junit.jupiter.params.ParameterizedTest")
+          .build();
+
+  private static final ImmutableSet<String> EXEMPTING_CLASS_ANNOTATIONS =
+      ImmutableSet.of("org.junit.jupiter.api.Nested");
+
+  private final ImmutableSet<String> exemptingMethodAnnotations;
+
+  @Inject
+  WellKnownKeep(ErrorProneFlags flags) {
+    this.exemptingMethodAnnotations =
+        ImmutableSet.<String>builder()
+            .addAll(EXEMPTING_METHOD_ANNOTATIONS)
+            .addAll(flags.getSetOrEmpty("UnusedMethod:ExemptingMethodAnnotations"))
+            .build();
+  }
+
+  public final boolean shouldKeep(VariableTree tree) {
+    return shouldKeep(tree, tree.getModifiers(), EXEMPTING_VARIABLE_ANNOTATIONS);
+  }
+
+  public final boolean shouldKeep(MethodTree tree) {
+    return shouldKeep(tree, tree.getModifiers(), exemptingMethodAnnotations);
+  }
+
+  public final boolean shouldKeep(ClassTree tree) {
+    return shouldKeep(tree, tree.getModifiers(), EXEMPTING_CLASS_ANNOTATIONS);
+  }
+
+  public final boolean shouldKeep(Tree tree) {
+    return firstNonNull(
+        new SimpleTreeVisitor<Boolean, Void>() {
+          @Override
+          public Boolean visitVariable(VariableTree tree, Void unused) {
+            return shouldKeep(tree);
+          }
+
+          @Override
+          public Boolean visitMethod(MethodTree tree, Void unused) {
+            return shouldKeep(tree);
+          }
+
+          @Override
+          public Boolean visitClass(ClassTree tree, Void unused) {
+            return shouldKeep(tree);
+          }
+        }.visit(tree, null),
+        false);
+  }
+
+  private final boolean shouldKeep(
+      Tree tree, ModifiersTree modifiers, ImmutableSet<String> exemptingAnnotations) {
+    if (ASTHelpers.shouldKeep(tree)) {
+      return true;
+    }
+    if (exemptedByAnnotation(modifiers.getAnnotations(), exemptingAnnotations)) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Looks at the list of {@code annotations} and see if there is any annotation which exists {@code
+   * exemptingAnnotations}.
+   */
+  private static boolean exemptedByAnnotation(
+      List<? extends AnnotationTree> annotations, ImmutableSet<String> exemptingAnnotations) {
+    for (AnnotationTree annotation : annotations) {
+      Type annotationType = ASTHelpers.getType(annotation);
+      if (annotationType == null) {
+        continue;
+      }
+      TypeSymbol tsym = annotationType.tsym;
+      if (exemptingAnnotations.contains(tsym.getQualifiedName().toString())) {
+        return true;
+      }
+    }
+    return false;
+  }
+}

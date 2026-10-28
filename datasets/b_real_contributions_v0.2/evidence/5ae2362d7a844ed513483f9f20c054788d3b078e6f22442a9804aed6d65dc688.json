@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 22616990,
+      "login": "nvborisenko",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T11:40:18Z",
+      "committer_at": "2026-10-24T11:40:18Z",
+      "tree_sha": "eec5471ea2d8b494846550742178de94ae4f0402"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "301eec3cb2ad2b990728a585722513d2c00697ec"
+  },
+  "observed_at": "2026-10-26T14:01:37.176678+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "81536a88b41dad8d84b602d635d4832ca586a9db76306e1aaa990e630ba8a9c6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ca7401df76255e5ee03f359e55f64aee385ab64ce75f12b56a55fd111eb36cf4",
+  "source_url": "https://api.github.com/repos/SeleniumHQ/selenium/commits/301eec3cb2ad2b990728a585722513d2c00697ec?per_page=100",
+  "status_code": 200
+}

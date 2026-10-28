@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "102402bd3c90e0f9693317bc4a40d7c3c7fdfcdf",
+    "size": 6484
+  },
+  "observed_at": "2026-10-26T07:51:50.590523+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5d0b50934d982bbbada44f31a83b8a78996acdddd9fd811e296dfc1f21c195c5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b414c789474d05f9111427bb9ffa4fff0a4208e95dcc4937ec4fa7fada49368e",
+  "source_url": "https://api.github.com/repos/kestra-io/kestra/git/blobs/102402bd3c90e0f9693317bc4a40d7c3c7fdfcdf",
+  "status_code": 200
+}

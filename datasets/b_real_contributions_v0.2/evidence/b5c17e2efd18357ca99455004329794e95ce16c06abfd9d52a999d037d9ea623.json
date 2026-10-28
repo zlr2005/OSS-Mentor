@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ce3161a3c46376e6afa1958453b2ee31cb5fbf99",
+    "size": 266
+  },
+  "observed_at": "2026-10-26T14:54:29.086461+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "732b01adda06be6d17e2120c015a3e218d6e635de5c03cc088aa6a4ed58474cb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9b2f127e346131100c193c2ae959349a33d688cc9a5bc81161b48f4bac7e6e74",
+  "source_url": "https://api.github.com/repos/syncthing/syncthing/git/blobs/ce3161a3c46376e6afa1958453b2ee31cb5fbf99",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "GPL-3.0",
+    "full_name": "Comfy-Org/ComfyUI",
+    "id": 589831718,
+    "language": "Python",
+    "private": false,
+    "size": 105292
+  },
+  "observed_at": "2026-10-26T06:11:23.759451+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b6d04d2693c48db879a97c20bf5b2b0df4809da54fecc2713838d2e7a944e39b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "027d5c38bc0f3d77721c1a0f00a03ebd2f356db5caba2b981f88f7e3101833e4",
+  "source_url": "https://api.github.com/repos/Comfy-Org/ComfyUI",
+  "status_code": 200
+}

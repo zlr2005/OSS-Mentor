@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "2ffc1b957401ca78d17ebefe5a1c2dfa3340a5c7",
+    "size": 6238
+  },
+  "observed_at": "2026-10-26T05:08:34.977921+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "809e579176513bb433b65aa9548ed86163b08dc750e3d1e7147b62bab5418f76",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "096929ff8155cf09005711fdd3df2dcfdbcfacee4e3fbfd0abd186310ddcf273",
+  "source_url": "https://api.github.com/repos/apache/beam/git/blobs/2ffc1b957401ca78d17ebefe5a1c2dfa3340a5c7",
+  "status_code": 200
+}

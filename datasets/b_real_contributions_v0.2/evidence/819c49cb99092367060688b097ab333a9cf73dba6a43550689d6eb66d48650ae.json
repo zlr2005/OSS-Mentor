@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 341801,
+      "login": "nightwing",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T15:57:48Z",
+      "committer_at": "2026-10-21T15:57:48Z",
+      "tree_sha": "5e6ef6459ff8f5ecb96edd1c7492aa3305a84f4d"
+    },
+    "committer": {
+      "id": 341801,
+      "login": "nightwing",
+      "type": "User"
+    },
+    "sha": "68d7fd1c0f5ac50cdb610bf06b86074eab3be652"
+  },
+  "observed_at": "2026-10-26T16:49:41.133374+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f16de3723f45dfee524511be7745c23f927d6618d404becd0045850eda3589c1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aba95562cebf7c5997961b24545ec76dcd4742a15afd74a9b072a81bc6fcaec0",
+  "source_url": "https://api.github.com/repos/ajaxorg/ace/commits/68d7fd1c0f5ac50cdb610bf06b86074eab3be652?per_page=100",
+  "status_code": 200
+}

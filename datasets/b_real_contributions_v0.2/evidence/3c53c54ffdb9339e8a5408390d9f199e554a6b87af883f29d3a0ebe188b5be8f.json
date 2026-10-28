@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7776010d271e61f5760ad894b9b657d54bdcd18e",
+    "size": 48309
+  },
+  "observed_at": "2026-10-26T07:50:22.472144+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "63100be987ba4e6ada075f80102c2d1c5146805c4d5233233c31f414a38ff2df",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9cc184cb84b202c3bb767255199fc03642128eb96f3f9113aba874526e306d24",
+  "source_url": "https://api.github.com/repos/jupyterlab/jupyterlab/git/blobs/7776010d271e61f5760ad894b9b657d54bdcd18e",
+  "status_code": 200
+}

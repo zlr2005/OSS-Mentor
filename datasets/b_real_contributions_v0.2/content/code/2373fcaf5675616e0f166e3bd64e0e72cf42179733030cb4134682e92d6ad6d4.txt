@@ -1,0 +1,84 @@
+import io.spring.gradle.IncludeRepoTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import trang.RncToXsd
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+buildscript {
+	dependencies {
+		classpath libs.io.spring.javaformat.spring.javaformat.gradle.plugin
+		classpath libs.io.spring.nohttp.nohttp.gradle
+		classpath libs.io.freefair.gradle.aspectj.plugin
+		classpath libs.org.jetbrains.kotlin.kotlin.gradle.plugin
+		classpath libs.com.netflix.nebula.nebula.project.plugin
+	}
+	repositories {
+		maven { url='https://plugins.gradle.org/m2/' }
+	}
+}
+
+apply plugin: 'io.spring.nohttp'
+apply plugin: 'locks'
+apply plugin: 'io.spring.convention.root'
+apply plugin: 'io.spring.security.release'
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'org.springframework.security.versions.verify-dependencies-versions'
+apply plugin: 'org.springframework.security.check-expected-branch-version'
+
+group = 'org.springframework.security'
+description = 'Spring Security'
+
+ext.snapshotBuild = version.contains("SNAPSHOT")
+ext.releaseBuild = version.contains("SNAPSHOT")
+ext.milestoneBuild = !(snapshotBuild || releaseBuild)
+
+repositories {
+	mavenCentral()
+	maven { url = "https://repo.spring.io/milestone" }
+}
+
+allprojects {
+	if (!['spring-security-bom', 'spring-security-docs'].contains(project.name)) {
+		apply plugin: 'io.spring.javaformat'
+		apply plugin: 'checkstyle'
+
+		pluginManager.withPlugin("io.spring.convention.checkstyle") {
+			dependencies {
+				checkstyle libs.io.spring.javaformat.spring.javaformat.checkstyle
+			}
+			checkstyle {
+				toolVersion = '8.34'
+			}
+		}
+
+		if (project.name.contains('sample')) {
+			tasks.whenTaskAdded { task ->
+				if (task.name.contains('format') || task.name.contains('checkFormat') || task.name.contains("checkstyle")) {
+					task.enabled = false
+				}
+			}
+		}
+	}
+}
+
+develocity {
+	buildScan {
+		termsOfUseUrl = 'https://gradle.com/help/legal-terms-of-use'
+		termsOfUseAgree = 'yes'
+	}
+}
+
+nohttp {
+	source.exclude "buildSrc/build/**", "**/build/**", "**/target/**", "javascript/.gradle/**", "javascript/package-lock.json", "javascript/node_modules/**", "javascript/build/**", "javascript/dist/**"
+	source.builtBy(project(':spring-security-config').tasks.withType(RncToXsd))
+}
+
+tasks.named('checkstyleNohttp') {
+	maxHeapSize = '1g'
+}
+
+tasks.register('cloneRepository', IncludeRepoTask) {
+	repository = project.getProperties().get("repositoryName")
+	ref = project.getProperties().get("ref")
+	var defaultDirectory = project.file("build/tmp/clone")
+	outputDirectory = project.hasProperty("cloneOutputDirectory") ? project.file("$cloneOutputDirectory") : defaultDirectory
+}

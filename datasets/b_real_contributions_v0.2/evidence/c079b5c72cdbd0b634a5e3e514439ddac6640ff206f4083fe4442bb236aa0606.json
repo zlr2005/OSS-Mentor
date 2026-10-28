@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "n8n-io/n8n",
+    "id": 193215554,
+    "language": "TypeScript",
+    "private": false,
+    "size": 751305
+  },
+  "observed_at": "2026-10-26T08:27:06.912260+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d6e8c9a55b77e7ea05694c234d32039af48dc96a450030ebe9ca2b7786a8f9a7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cb391ff98a5be7d444d8170413ce76fae9f5aa9bfe3427e28e01c684d6994d32",
+  "source_url": "https://api.github.com/repos/n8n-io/n8n",
+  "status_code": 200
+}

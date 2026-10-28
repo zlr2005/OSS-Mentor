@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a39eceaf434836ac5ff4ed6cfa7e43e9cf3caf8a",
+    "size": 1164
+  },
+  "observed_at": "2026-10-27T16:20:03.618213+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d4d386beae3356c4ee894933e0d54bb9f1cecab1d17c6e61143395f564f6fb50",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b6eb10faf7702b3eeede8baaa09fcd518035e6ea50bcc7d9396df2df45aec99c",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-integration/git/blobs/a39eceaf434836ac5ff4ed6cfa7e43e9cf3caf8a",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6898909,
+      "login": "musicinmybrain",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-02-23T10:40:42Z",
+      "committer_at": "2026-02-23T10:40:42Z",
+      "tree_sha": "31ba94512339180efacceacc0646b56ee15eba63"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254"
+  },
+  "observed_at": "2026-10-26T06:31:53.774685+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "87f1c1c98ceed0747576439cf62d17f30121b10aeabcb0be938c029e0a94a499",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "07e695ad6c0068d7e8b0861905978f2a7e28c48da2b57417596f1e3d96270684",
+  "source_url": "https://api.github.com/repos/encode/httpx/commits/b5addb64f0161ff6bfe94c124ef76f6a1fba5254?per_page=100",
+  "status_code": 200
+}

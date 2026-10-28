@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c23172f7aff0254e4f0f163fb2e6e355cbaec5f4",
+    "size": 3464
+  },
+  "observed_at": "2026-10-27T15:37:42.138729+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "279e3f6cc3b261e20b2d2eac79c877e9c7ee7fdc4b12f7b31a0df8eab7f06665",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "581329432fef9aa559c7ae9ee533f404b37973ee2e51c99c0a9f4af2bacbeaa9",
+  "source_url": "https://api.github.com/repos/pytorch/pytorch/git/blobs/c23172f7aff0254e4f0f163fb2e6e355cbaec5f4",
+  "status_code": 200
+}

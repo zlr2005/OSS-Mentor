@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6340397,
+      "login": "schiller-manuel",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T15:04:18Z",
+      "committer_at": "2026-10-17T15:04:18Z",
+      "tree_sha": "fbf3165075ee15d23804bf9f59478b32b6554917"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b1b111761bdfa7a0582f28ea78ee81fe7c59ed99"
+  },
+  "observed_at": "2026-10-26T15:02:28.854876+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "00206c2301914e6cf7f8480b4f9818ca2ecabb7744b91afee995e84734de93cb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "737aa1ff55d6f7bf00fad6411e849cf2e10861e8d59de555f01db270b9aab3c3",
+  "source_url": "https://api.github.com/repos/TanStack/router/commits/b1b111761bdfa7a0582f28ea78ee81fe7c59ed99?per_page=100",
+  "status_code": 200
+}

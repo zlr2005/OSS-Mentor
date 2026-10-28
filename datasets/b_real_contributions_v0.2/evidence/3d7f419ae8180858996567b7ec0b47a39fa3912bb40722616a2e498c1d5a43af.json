@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 85097,
+      "login": "gasman",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-01T17:04:12Z",
+      "committer_at": "2026-10-21T10:21:01Z",
+      "tree_sha": "472b75cd93d2314cb70bb242aac6fbb90126dcbf"
+    },
+    "committer": {
+      "id": 85097,
+      "login": "gasman",
+      "type": "User"
+    },
+    "sha": "c0d30151d1f9d7dba5e3449b071747498f093b3c"
+  },
+  "observed_at": "2026-10-26T15:42:36.893386+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5ed6493bdcf19bb9dab6dc5f3f3765e4ddc2b5e7c6972f5fabde7c1424c3a891",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d7b2c206ab302511ff6585738f79e994079a02c88b99a127fa693f43e0205cf7",
+  "source_url": "https://api.github.com/repos/wagtail/wagtail/commits/c0d30151d1f9d7dba5e3449b071747498f093b3c?per_page=100",
+  "status_code": 200
+}

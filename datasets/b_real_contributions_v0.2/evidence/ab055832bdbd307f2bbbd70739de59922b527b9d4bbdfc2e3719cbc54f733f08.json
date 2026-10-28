@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "aaa436e542010ba386225f1ccd329dd4c3d433b6",
+    "size": 61
+  },
+  "observed_at": "2026-10-26T16:58:40.154812+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "79051f7bf24f4b0b28255e2e7bb3eaaabe33777045d4cbbf459039cb20717bd2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "918c365c707950867d9ee0cf7e5c92c5a19b913d4feecd36f8f7f6ae7c59f5fd",
+  "source_url": "https://api.github.com/repos/avajs/ava/git/blobs/aaa436e542010ba386225f1ccd329dd4c3d433b6",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5153846,
+      "login": "dwelle",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-12T12:33:19Z",
+      "committer_at": "2026-10-12T12:33:19Z",
+      "tree_sha": "a8ea3e9705538c0ea7893d051ad961efb664f9ba"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "541653c7c9d587d463a47daacff9fb30e45a52e7"
+  },
+  "observed_at": "2026-10-26T06:36:36.909295+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2d88e25bb056cf4d3423590d54b6c01ea140407508004324712bc62c9692a64e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "49e9533e01f3c36fe37003acc7d5f79d6e3697c999b0f3a0bcf3bddc34a796fa",
+  "source_url": "https://api.github.com/repos/excalidraw/excalidraw/commits/541653c7c9d587d463a47daacff9fb30e45a52e7?per_page=100",
+  "status_code": 200
+}

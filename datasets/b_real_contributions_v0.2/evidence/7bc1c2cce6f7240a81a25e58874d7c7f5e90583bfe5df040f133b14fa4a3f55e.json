@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "mermaid-js/mermaid",
+    "id": 26066727,
+    "language": "TypeScript",
+    "private": false,
+    "size": 281935
+  },
+  "observed_at": "2026-10-26T08:04:57.391476+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "25695dacea51004441ea7309c8823d21759676e1519d933784828286362a8c81",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ca413b4f985ca4a31215cf7ba9d9f6b157bde0fa25bab73db09fbb3307ff8950",
+  "source_url": "https://api.github.com/repos/mermaid-js/mermaid",
+  "status_code": 200
+}

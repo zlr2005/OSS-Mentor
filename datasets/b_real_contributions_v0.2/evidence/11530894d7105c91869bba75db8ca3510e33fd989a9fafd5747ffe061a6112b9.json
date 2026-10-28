@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "scikit-image/scikit-image",
+    "id": 2014929,
+    "language": "Python",
+    "private": false,
+    "size": 83528
+  },
+  "observed_at": "2026-10-26T13:55:35.725070+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ea2bbb02d8906f01c2ac838b792de84ae8b9ff1eed6fbfe30971fefdaf17a2eb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6985b03bc19a0bf15aed2b28749cd6303d380009fa8ab0f3ac8a6a69f44412f9",
+  "source_url": "https://api.github.com/repos/scikit-image/scikit-image",
+  "status_code": 200
+}

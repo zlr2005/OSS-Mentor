@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 19296967,
+      "login": "lordcheng10",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T06:58:26Z",
+      "committer_at": "2026-10-24T06:58:26Z",
+      "tree_sha": "dd4449d9917fad31ee3462e2eb7ba714ef578eb6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5b53713fd09b045dfb38a5b70d6ad79d358a2406"
+  },
+  "observed_at": "2026-10-26T05:31:06.360822+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c19a426561a08efce7dd618d88f5feed51030616d28f2d2829b738f8b03af929",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "abba1d9629a512365b4de8bb59ddcffa06f3df997b57afbca3685c03267f2d87",
+  "source_url": "https://api.github.com/repos/apache/pulsar/commits/5b53713fd09b045dfb38a5b70d6ad79d358a2406?per_page=100",
+  "status_code": 200
+}

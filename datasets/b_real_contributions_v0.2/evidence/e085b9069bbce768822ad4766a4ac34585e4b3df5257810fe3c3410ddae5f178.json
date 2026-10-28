@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 237008,
+      "login": "jnbdz",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T20:03:48Z",
+      "committer_at": "2026-10-25T20:03:48Z",
+      "tree_sha": "7c7733e0ed2f85c03026f5cfed5f5a5f8512baaf"
+    },
+    "committer": {
+      "id": 237008,
+      "login": "jnbdz",
+      "type": "User"
+    },
+    "sha": "4215bef75a0e07270f0d4e1219397a5586ce217f"
+  },
+  "observed_at": "2026-10-26T13:20:22.752303+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "78d9ec73ed797e3820de6432efb4e70115205927afc0ddbd8800e70ff3df5e5b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a5e6f98eeef8fd335b1b37d97b79512a75c4aa1677b31a7d2cd7c9faad1bd6de",
+  "source_url": "https://api.github.com/repos/quarkusio/quarkus/commits/4215bef75a0e07270f0d4e1219397a5586ce217f?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fdbf9b3d7789e599f7ce2c19e33eb757f8d0d3d3",
+    "size": 12313
+  },
+  "observed_at": "2026-10-26T07:22:52.494537+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ad75b44fa9ef74d928ca62d99d1296fb30ffb16a9fb23e2bad8bd9300651ea68",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e52a96e4265b538c2e533e72e058881b73409ab9e7a923db85ee5c2945571954",
+  "source_url": "https://api.github.com/repos/helm/helm/git/blobs/fdbf9b3d7789e599f7ce2c19e33eb757f8d0d3d3",
+  "status_code": 200
+}

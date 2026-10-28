@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "qos-ch/slf4j",
+    "id": 283187,
+    "language": "Java",
+    "private": false,
+    "size": 12591
+  },
+  "observed_at": "2026-10-26T13:18:31.913926+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a4ea0730ca20ff1f8b9d50045b4eb9d521d6fd2f9e5785894e182cc543906726",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c6407f60562bd0dab5c1bb820903854a6074ca2bdb8f1e9abf6fb8578aae7bdc",
+  "source_url": "https://api.github.com/repos/qos-ch/slf4j",
+  "status_code": 200
+}

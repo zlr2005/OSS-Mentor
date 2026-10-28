@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 57066266,
+      "login": "APX403",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T05:58:07Z",
+      "committer_at": "2026-10-20T05:58:07Z",
+      "tree_sha": "a66e173a75a1f55a2789022b0f71a2dd9e65bfec"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "208fd06b383d67bd1941fae7659900c77bd48465"
+  },
+  "observed_at": "2026-10-26T06:31:08.337386+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6ff9eea9db646e822c4b1806e3d926532187fb0d3d2336071b7d3eaf71e01316",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "965270fc36687e303cd5c98b4eefa99165beecbab7dcf047953152eb611cd636",
+  "source_url": "https://api.github.com/repos/element-plus/element-plus/commits/208fd06b383d67bd1941fae7659900c77bd48465?per_page=100",
+  "status_code": 200
+}

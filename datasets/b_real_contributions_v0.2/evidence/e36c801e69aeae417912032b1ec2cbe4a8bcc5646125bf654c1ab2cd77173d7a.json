@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 542108,
+      "login": "lukekarrys",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2024-04-20T22:13:42Z",
+      "committer_at": "2024-04-21T16:38:46Z",
+      "tree_sha": "546df9305454ac4a4896d782aa528e9d3770f728"
+    },
+    "committer": {
+      "id": 542108,
+      "login": "lukekarrys",
+      "type": "User"
+    },
+    "sha": "9e1329c8c8a81495d58dc0da7d233142008c7d98"
+  },
+  "observed_at": "2026-10-27T14:48:02.049836+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1b810ddb6dffaa2c7945466651b7afc7fe0b15661cdf19b42133a3301813c243",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a1317ec6c47fa467a467285f5bacd2f75e41d6e71eba3bd4b2c0daa96be1e52c",
+  "source_url": "https://api.github.com/repos/npm/make-fetch-happen/commits/9e1329c8c8a81495d58dc0da7d233142008c7d98?per_page=100",
+  "status_code": 200
+}

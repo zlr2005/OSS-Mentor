@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 11542387,
+      "login": "Tony133",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T16:37:02Z",
+      "committer_at": "2026-10-24T16:37:02Z",
+      "tree_sha": "f3782ee5c797f94a23d9e79957def52a4db087c2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "fa8b5224fc211c970c04df24747f6482d9ff2166"
+  },
+  "observed_at": "2026-10-26T06:44:35.915557+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a301ba97aa63d41f50dafcc298a6035722ac4c6c3ced125a945b3f7b6f2ba85c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cbcdb01f0b158c3f4cd7b2c4359be6aea6c6f527c1ecbd97de9ba8e90d8e1637",
+  "source_url": "https://api.github.com/repos/fastify/fast-json-stringify/commits/fa8b5224fc211c970c04df24747f6482d9ff2166?per_page=100",
+  "status_code": 200
+}

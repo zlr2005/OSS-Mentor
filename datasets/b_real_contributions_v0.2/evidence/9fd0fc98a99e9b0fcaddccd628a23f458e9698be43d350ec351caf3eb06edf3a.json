@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 87974570,
+      "login": "GSGFs7",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-11T02:17:30Z",
+      "committer_at": "2026-09-11T02:17:30Z",
+      "tree_sha": "a8793c70e8f8a9a979910f58cf3fa647e1804598"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1b379c1b6d0522421bd1a51b77337c79af2c8670"
+  },
+  "observed_at": "2026-10-26T08:04:36.221833+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "188bfadefddf84592e7ca9c05ab4055d7a23bf929817910e204fe744f852c449",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "da75126ad69dc65e3d6449e70563883ba255b214e129896bd957b613f9c36695",
+  "source_url": "https://api.github.com/repos/markdown-it/markdown-it/commits/1b379c1b6d0522421bd1a51b77337c79af2c8670?per_page=100",
+  "status_code": 200
+}

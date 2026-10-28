@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "f4e49f58cb98a87d8d071d1eaa44ed16e2213d60",
+    "size": 14834
+  },
+  "observed_at": "2026-10-26T07:55:12.590575+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "53742798ea2134570f555626fc3061e25fb95825ac3b576eabe68baefc79b447",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "524c3ff8d0f0e0548c2e28e81efa15b39f0dd964916013bc2476a4cf467cb86a",
+  "source_url": "https://api.github.com/repos/kubernetes/kubernetes/git/blobs/f4e49f58cb98a87d8d071d1eaa44ed16e2213d60",
+  "status_code": 200
+}

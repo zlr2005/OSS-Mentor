@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "f7be2b206bee1cdcbf94663190c1849441ff5ae0",
+    "size": 36481
+  },
+  "observed_at": "2026-10-26T06:35:06.620961+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8d73ed70852e5f49aaf48e1d0159111fc4732ac40001669c0103e881f12c987f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ab6e01e10bc0629d5702a1154c6849b57685a431ced05cfdc76995dae1f0be0d",
+  "source_url": "https://api.github.com/repos/eslint/eslint/git/blobs/f7be2b206bee1cdcbf94663190c1849441ff5ae0",
+  "status_code": 200
+}

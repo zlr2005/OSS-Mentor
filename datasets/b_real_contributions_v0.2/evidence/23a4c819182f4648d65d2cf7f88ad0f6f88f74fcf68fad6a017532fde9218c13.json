@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "microsoft/rushstack",
+    "id": 69618902,
+    "language": "TypeScript",
+    "private": false,
+    "size": 249102
+  },
+  "observed_at": "2026-10-26T08:14:46.000572+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9fdb6d6b632cd3ac836831c00b911e943970b241a7907ae99ba5c98ec8b6fcce",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0e9729259599b213f3dd86c0689721a0b352f80dc9829bff6d4d94dd6edca82f",
+  "source_url": "https://api.github.com/repos/microsoft/rushstack",
+  "status_code": 200
+}

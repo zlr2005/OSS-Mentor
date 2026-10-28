@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7297b484cca04806565c2023693a5738f36987fa",
+    "size": 71062
+  },
+  "observed_at": "2026-10-26T14:55:51.046650+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b3851906ba4a603ef8bc0f79b3289d658900782faf33018ee50f09697ba7a6ad",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "137cb9b0ac3a99f26aa019e27d88f2901c801bbda4231fdb00c4a1fed27df215",
+  "source_url": "https://api.github.com/repos/tailwindlabs/tailwindcss/git/blobs/7297b484cca04806565c2023693a5738f36987fa",
+  "status_code": 200
+}

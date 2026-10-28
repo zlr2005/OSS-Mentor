@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {
+      "id": 1703908,
+      "login": "cpovirk",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T13:58:58Z",
+      "committer_at": "2026-10-22T14:00:40Z",
+      "tree_sha": "48bf58c3d1242c313208f2960199a4d2c74845f9"
+    },
+    "committer": {},
+    "sha": "4d7d3c0bdddcc73fb57e148c830619aeb14a625f"
+  },
+  "observed_at": "2026-10-26T07:04:51.573390+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "939ace9734af9d046d0db045ec769a754b0c3324099e5aaa633269fcc4243b12",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3a4205478cc74d2611fe7a00a6da3bb005932d2943555bfef4ab7a084ea78347",
+  "source_url": "https://api.github.com/repos/google/error-prone/commits/4d7d3c0bdddcc73fb57e148c830619aeb14a625f?per_page=100",
+  "status_code": 200
+}

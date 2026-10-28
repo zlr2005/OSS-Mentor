@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29689012,
+      "login": "xadips",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T15:00:37Z",
+      "committer_at": "2026-10-17T15:00:37Z",
+      "tree_sha": "7507aa87d4ef3c4ad597ad1cb5b6465422d9f171"
+    },
+    "committer": {
+      "id": 29689012,
+      "login": "xadips",
+      "type": "User"
+    },
+    "sha": "01a80f67b17e0ce7e79b9a4d93bc2fcac5999d45"
+  },
+  "observed_at": "2026-10-27T13:15:27.640124+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "89f7f36f556fc57439793e5ecdcf21e2ce767c63064a8e2d5e91025bb7b564e9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7e05284c8128f43dd4449a465e709b2a28f1192ebb4e4b027d8b8f110ee03c2f",
+  "source_url": "https://api.github.com/repos/etcd-io/etcd/commits/01a80f67b17e0ce7e79b9a4d93bc2fcac5999d45?per_page=100",
+  "status_code": 200
+}

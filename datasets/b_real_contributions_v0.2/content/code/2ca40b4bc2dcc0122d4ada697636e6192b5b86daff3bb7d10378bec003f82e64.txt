@@ -1,0 +1,397 @@
+import io
+import json
+import tarfile
+from pathlib import Path
+
+import pytest
+
+from datasets import Audio, DownloadManager, Features, Image, List, Value, Video
+from datasets.packaged_modules.webdataset.webdataset import WebDataset
+
+from ..utils import (
+    require_numpy1_on_windows,
+    require_pil,
+    require_torch,
+    require_torchcodec,
+)
+
+
+@pytest.mark.parametrize("field_name", ["txt", "metadata.json", "bin"])
+def test_webdataset_rejects_duplicate_fields(tmp_path, field_name):
+    tar_path = tmp_path / "duplicates.tar"
+    with tarfile.open(tar_path, "w") as archive:
+        for payload in [b"1", b"2"]:
+            member = tarfile.TarInfo(f"00000.{field_name}")
+            member.size = len(payload)
+            archive.addfile(member, io.BytesIO(payload))
+
+    with pytest.raises(ValueError) as error:
+        list(WebDataset._get_pipeline_from_tar(str(tar_path), DownloadManager().iter_archive(str(tar_path))))
+
+    assert "Duplicate field" in str(error.value)
+    assert field_name in str(error.value)
+    assert "00000" in str(error.value)
+    assert "duplicates.tar" in str(error.value)
+
+
+def test_webdataset_allows_same_field_in_different_samples(tmp_path):
+    tar_path = tmp_path / "samples.tar"
+    with tarfile.open(tar_path, "w") as archive:
+        for name, payload in [("00000.txt", b"first"), ("00001.txt", b"second")]:
+            member = tarfile.TarInfo(name)
+            member.size = len(payload)
+            archive.addfile(member, io.BytesIO(payload))
+
+    examples = list(WebDataset._get_pipeline_from_tar(str(tar_path), DownloadManager().iter_archive(str(tar_path))))
+    assert [example["__key__"] for example in examples] == ["00000", "00001"]
+    assert [example["txt"] for example in examples] == ["first", "second"]
+
+
+@pytest.fixture
+def gzipped_text_wds_file(tmp_path, text_gz_path):
+    filename = tmp_path / "file.tar"
+    num_examples = 3
+    with tarfile.open(str(filename), "w") as f:
+        for example_idx in range(num_examples):
+            f.add(text_gz_path, f"{example_idx:05d}.txt.gz")
+    return str(filename)
+
+
+@pytest.fixture
+def image_wds_file(tmp_path, image_file):
+    json_file = tmp_path / "data.json"
+    filename = tmp_path / "file.tar"
+    num_examples = 3
+    with json_file.open("w", encoding="utf-8") as f:
+        f.write(json.dumps({"caption": "this is an image"}))
+    with tarfile.open(str(filename), "w") as f:
+        for example_idx in range(num_examples):
+            f.add(json_file, f"{example_idx:05d}.json")
+            f.add(image_file, f"{example_idx:05d}.jpg")
+    return str(filename)
+
+
+@pytest.fixture
+def upper_lower_case_file(tmp_path):
+    tar_path = tmp_path / "file.tar"
+    num_examples = 3
+    variants = [
+        ("INFO1", "json"),
+        ("info2", "json"),
+        ("info3", "JSON"),
+        ("info3", "json"),  # should probably remove if testing on a case insensitive filesystem
+    ]
+    with tarfile.open(tar_path, "w") as tar:
+        for example_idx in range(num_examples):
+            example_name = f"{example_idx:05d}_{'a' if example_idx % 2 else 'A'}"
+            for tag, ext in variants:
+                caption_path = tmp_path / f"{example_name}.{tag}.{ext}"
+                caption_text = {"caption": f"caption for {example_name}.{tag}.{ext}"}
+                caption_path.write_text(json.dumps(caption_text), encoding="utf-8")
+                tar.add(caption_path, arcname=f"{example_name}.{tag}.{ext}")
+    return str(tar_path)
+
+
+@pytest.fixture
+def audio_wds_file(tmp_path, audio_file):
+    json_file = tmp_path / "data.json"
+    filename = tmp_path / "file.tar"
+    num_examples = 3
+    with json_file.open("w", encoding="utf-8") as f:
+        f.write(json.dumps({"transcript": "this is a transcript"}))
+    with tarfile.open(str(filename), "w") as f:
+        for example_idx in range(num_examples):
+            f.add(json_file, f"{example_idx:05d}.json")
+            f.add(audio_file, f"{example_idx:05d}.wav")
+    return str(filename)
+
+
+@pytest.fixture
+def video_wds_file(tmp_path):
+    json_file = tmp_path / "data.json"
+    filename = tmp_path / "file.tar"
+    video_file = Path(__file__).resolve().parents[1] / "features" / "data" / "test_video_66x50.mov"
+    num_examples = 3
+    with json_file.open("w", encoding="utf-8") as f:
+        f.write(json.dumps({"caption": "this is a video"}))
+    with tarfile.open(str(filename), "w") as f:
+        for example_idx in range(num_examples):
+            f.add(json_file, f"{example_idx:05d}.json")
+            f.add(video_file, f"{example_idx:05d}.mov")
+    return str(filename)
+
+
+@pytest.fixture
+def bad_wds_file(tmp_path, image_file, text_file):
+    json_file = tmp_path / "data.json"
+    filename = tmp_path / "bad_file.tar"
+    with json_file.open("w", encoding="utf-8") as f:
+        f.write(json.dumps({"caption": "this is an image"}))
+    with tarfile.open(str(filename), "w") as f:
+        f.add(image_file)
+        f.add(json_file)
+    return str(filename)
+
+
+@pytest.fixture
+def tensor_wds_file(tmp_path, tensor_file):
+    json_file = tmp_path / "data.json"
+    filename = tmp_path / "file.tar"
+    num_examples = 3
+    with json_file.open("w", encoding="utf-8") as f:
+        f.write(json.dumps({"text": "this is a text"}))
+    with tarfile.open(str(filename), "w") as f:
+        for example_idx in range(num_examples):
+            f.add(json_file, f"{example_idx:05d}.json")
+            f.add(tensor_file, f"{example_idx:05d}.pth")
+    return str(filename)
+
+
+@require_pil
+def test_gzipped_text_webdataset(gzipped_text_wds_file, text_path):
+    data_files = {"train": [gzipped_text_wds_file]}
+    webdataset = WebDataset(data_files=data_files)
+    split_generators = webdataset._split_generators(DownloadManager())
+    assert webdataset.info.features == Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            "txt.gz": Value("string"),
+        }
+    )
+    assert len(split_generators) == 1
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, examples = zip(*generator)
+    assert len(examples) == 3
+    assert isinstance(examples[0]["txt.gz"], str)
+    with open(text_path, "r") as f:
+        assert examples[0]["txt.gz"].replace("\r\n", "\n") == f.read().replace("\r\n", "\n")
+
+
+@require_pil
+def test_image_webdataset(image_wds_file):
+    import PIL.Image
+
+    data_files = {"train": [image_wds_file]}
+    webdataset = WebDataset(data_files=data_files)
+    split_generators = webdataset._split_generators(DownloadManager())
+    assert webdataset.info.features == Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            "json": {"caption": Value("string")},
+            "jpg": Image(),
+        }
+    )
+    assert len(split_generators) == 1
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, examples = zip(*generator)
+    assert len(examples) == 3
+    assert isinstance(examples[0]["json"], dict)
+    assert isinstance(examples[0]["json"]["caption"], str)
+    assert isinstance(examples[0]["jpg"], dict)  # keep encoded to avoid unecessary copies
+    encoded = webdataset.info.features.encode_example(examples[0])
+    decoded = webdataset.info.features.decode_example(encoded)
+    assert isinstance(decoded["json"], dict)
+    assert isinstance(decoded["json"]["caption"], str)
+    assert isinstance(decoded["jpg"], PIL.Image.Image)
+
+
+def test_upper_lower_case(upper_lower_case_file):
+    variants = [
+        ("INFO1", "json"),
+        ("info2", "json"),
+        ("info3", "JSON"),
+        ("info3", "json"),
+    ]
+
+    data_files = {"train": [upper_lower_case_file]}
+    webdataset = WebDataset(data_files=data_files)
+    split_generators = webdataset._split_generators(DownloadManager())
+
+    variant_keys = [f"{tag}.{ext}" for tag, ext in variants]
+    assert webdataset.info.features == Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            **{k: {"caption": Value("string")} for k in variant_keys},
+        }
+    )
+
+    assert len(split_generators) == 1
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, examples = zip(*generator)
+
+    assert len(examples) == 3
+    for example_idx, example in enumerate(examples):
+        example_name = example["__key__"]
+        expected_example_name = f"{example_idx:05d}_{'a' if example_idx % 2 else 'A'}"
+
+        assert example_name == expected_example_name
+        for key in variant_keys:
+            assert isinstance(example[key], dict)
+            assert example[key]["caption"] == f"caption for {example_name}.{key}"
+
+        encoded = webdataset.info.features.encode_example(example)
+        decoded = webdataset.info.features.decode_example(encoded)
+        for key in variant_keys:
+            assert decoded[key]["caption"] == example[key]["caption"]
+
+
+@require_pil
+def test_image_webdataset_missing_keys(image_wds_file):
+    import PIL.Image
+
+    data_files = {"train": [image_wds_file]}
+    features = Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            "json": {"caption": Value("string")},
+            "jpg": Image(),
+            "jpeg": Image(),  # additional field
+            "txt": Value("string"),  # additional field
+        }
+    )
+    webdataset = WebDataset(data_files=data_files, features=features)
+    split_generators = webdataset._split_generators(DownloadManager())
+    assert webdataset.info.features == features
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, example = next(iter(generator))
+    encoded = webdataset.info.features.encode_example(example)
+    decoded = webdataset.info.features.decode_example(encoded)
+    assert isinstance(decoded["json"], dict)
+    assert isinstance(decoded["json"]["caption"], str)
+    assert isinstance(decoded["jpg"], PIL.Image.Image)
+    assert decoded["jpeg"] is None
+    assert decoded["txt"] is None
+
+
+@require_torchcodec
+def test_audio_webdataset(audio_wds_file):
+    from torchcodec.decoders import AudioDecoder
+
+    data_files = {"train": [audio_wds_file]}
+    webdataset = WebDataset(data_files=data_files)
+    split_generators = webdataset._split_generators(DownloadManager())
+    assert webdataset.info.features == Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            "json": {"transcript": Value("string")},
+            "wav": Audio(),
+        }
+    )
+    assert len(split_generators) == 1
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, examples = zip(*generator)
+    assert len(examples) == 3
+    assert isinstance(examples[0]["json"], dict)
+    assert isinstance(examples[0]["json"]["transcript"], str)
+    assert isinstance(examples[0]["wav"], dict)
+    assert isinstance(examples[0]["wav"]["bytes"], bytes)  # keep encoded to avoid unecessary copies
+    encoded = webdataset.info.features.encode_example(examples[0])
+    decoded = webdataset.info.features.decode_example(encoded)
+    assert isinstance(decoded["json"], dict)
+    assert isinstance(decoded["json"]["transcript"], str)
+    assert isinstance(decoded["wav"], AudioDecoder)
+
+
+def test_video_webdataset(video_wds_file):
+    data_files = {"train": [video_wds_file]}
+    webdataset = WebDataset(data_files=data_files)
+    split_generators = webdataset._split_generators(DownloadManager())
+    assert webdataset.info.features == Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            "json": {"caption": Value("string")},
+            "mov": Video(),
+        }
+    )
+    assert len(split_generators) == 1
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, examples = zip(*generator)
+    assert len(examples) == 3
+    assert isinstance(examples[0]["json"], dict)
+    assert isinstance(examples[0]["json"]["caption"], str)
+    assert isinstance(examples[0]["mov"], dict)
+
+
+def test_webdataset_errors_on_bad_file(bad_wds_file):
+    data_files = {"train": [bad_wds_file]}
+    webdataset = WebDataset(data_files=data_files)
+    with pytest.raises(ValueError):
+        webdataset._split_generators(DownloadManager())
+
+
+@require_pil
+def test_webdataset_with_features(image_wds_file):
+    import PIL.Image
+
+    data_files = {"train": [image_wds_file]}
+    features = Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            "json": {"caption": Value("string"), "additional_field": Value("int64")},
+            "jpg": Image(),
+        }
+    )
+    webdataset = WebDataset(data_files=data_files, features=features)
+    split_generators = webdataset._split_generators(DownloadManager())
+    assert webdataset.info.features == features
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, example = next(iter(generator))
+    encoded = webdataset.info.features.encode_example(example)
+    decoded = webdataset.info.features.decode_example(encoded)
+    assert decoded["json"]["additional_field"] is None
+    assert isinstance(decoded["json"], dict)
+    assert isinstance(decoded["json"]["caption"], str)
+    assert isinstance(decoded["jpg"], PIL.Image.Image)
+
+
+@require_numpy1_on_windows
+@require_torch
+def test_tensor_webdataset(tensor_wds_file):
+    import torch
+
+    data_files = {"train": [tensor_wds_file]}
+    webdataset = WebDataset(data_files=data_files)
+    split_generators = webdataset._split_generators(DownloadManager())
+    assert webdataset.info.features == Features(
+        {
+            "__key__": Value("string"),
+            "__url__": Value("string"),
+            "json": {"text": Value("string")},
+            "pth": List(Value("float32")),
+        }
+    )
+    assert len(split_generators) == 1
+    split_generator = split_generators[0]
+    assert split_generator.name == "train"
+    generator = webdataset._generate_examples(**split_generator.gen_kwargs)
+    _, examples = zip(*generator)
+    assert len(examples) == 3
+    assert isinstance(examples[0]["json"], dict)
+    assert isinstance(examples[0]["json"]["text"], str)
+    assert isinstance(examples[0]["pth"], torch.Tensor)  # keep encoded to avoid unecessary copies
+    encoded = webdataset.info.features.encode_example(examples[0])
+    decoded = webdataset.info.features.decode_example(encoded)
+    assert isinstance(decoded["json"], dict)
+    assert isinstance(decoded["json"]["text"], str)
+    assert isinstance(decoded["pth"], list)

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 288066,
+      "login": "camdecoster",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T21:07:09Z",
+      "committer_at": "2026-10-22T21:07:09Z",
+      "tree_sha": "eadfc4d5648bb52a052397938a3e01294c3e3c11"
+    },
+    "committer": {
+      "id": 288066,
+      "login": "camdecoster",
+      "type": "User"
+    },
+    "sha": "84f01eaa4501945b6ee079734530697e444d3564"
+  },
+  "observed_at": "2026-10-26T08:46:22.007056+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9fb3efee2441a821370584d72bd384a6bc1a35b94f13f906e9e5049bec8af414",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8ce20aaa823ef6c71f502600c21c943c97d2c0f90d7e78b5b266e716bd78ec02",
+  "source_url": "https://api.github.com/repos/plotly/plotly.py/commits/84f01eaa4501945b6ee079734530697e444d3564?per_page=100",
+  "status_code": 200
+}

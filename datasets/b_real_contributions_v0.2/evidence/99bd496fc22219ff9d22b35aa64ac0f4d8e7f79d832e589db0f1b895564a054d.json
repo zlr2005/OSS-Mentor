@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 232985557,
+      "login": "tang-tc",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T15:03:09Z",
+      "committer_at": "2026-10-24T15:03:09Z",
+      "tree_sha": "c976025741179f1d1b1db5786399049d83a0ca83"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "c873170fa71a9fa0f9e7211b10d618b5868a181e"
+  },
+  "observed_at": "2026-10-26T08:01:11.537449+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "44ca010927184bcd76c9c40d9433a5951409657cf3d85ddc292043299f9d642e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7f08fc2f72121f522f8a3add8e393d0765c296bf79517bebe800aa2ca3d267d4",
+  "source_url": "https://api.github.com/repos/Leaflet/Leaflet/commits/c873170fa71a9fa0f9e7211b10d618b5868a181e?per_page=100",
+  "status_code": 200
+}

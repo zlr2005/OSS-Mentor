@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c0feaa07f14d08f5d37ef4ff47ba532fcb8c93c9",
+    "size": 4788
+  },
+  "observed_at": "2026-10-26T13:17:59.355463+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "09c296691e99d0e5e4632e0d4637e3ad77f46c7524532bcd659a98f1bbacd59c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "096d822d67b1ed538648c74860ab8e18db732e5bbad365e2873fc46712bc0ee1",
+  "source_url": "https://api.github.com/repos/python-poetry/poetry/git/blobs/c0feaa07f14d08f5d37ef4ff47ba532fcb8c93c9",
+  "status_code": 200
+}

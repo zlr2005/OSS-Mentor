@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "prettier/prettier",
+    "id": 75104123,
+    "language": "JavaScript",
+    "private": false,
+    "size": 182126
+  },
+  "observed_at": "2026-10-26T08:52:58.985824+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "629b235efb3149dbba6465b78942081becd531a3a2d5d54a7ddeea30b294788e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9717499ffda1a153d8d39de54331f388aa425804246a5927bc43e03e91848365",
+  "source_url": "https://api.github.com/repos/prettier/prettier",
+  "status_code": 200
+}

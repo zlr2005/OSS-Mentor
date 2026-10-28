@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "f72d466db59a6a48ecd1963509331a476eb66e31",
+    "size": 41234
+  },
+  "observed_at": "2026-10-26T15:11:27.168093+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e6cb51f53a74ca6d183c85ab40cbf238e1d820a638fe99f6e430d68ab4165ba0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b2a924f5a419afd5692f5f578c4c4c621c7451e3df04a02fd3686be9eabd4cdd",
+  "source_url": "https://api.github.com/repos/tokio-rs/axum/git/blobs/f72d466db59a6a48ecd1963509331a476eb66e31",
+  "status_code": 200
+}

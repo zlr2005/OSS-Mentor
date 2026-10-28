@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "rust-lang/rust",
+    "id": 724712,
+    "language": "Rust",
+    "private": false,
+    "size": 1030983
+  },
+  "observed_at": "2026-10-26T13:52:29.366978+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "01b6b035e4f8b04807c1cf00eb7186187a7bdb4608088178194ac120e049191c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5087259283878990b384c89e12b1e5eb215718dd8588ecf198c50640b848314c",
+  "source_url": "https://api.github.com/repos/rust-lang/rust",
+  "status_code": 200
+}

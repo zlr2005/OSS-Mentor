@@ -1,0 +1,1206 @@
+"use strict";
+/*global Uint8ClampedArray*/
+
+var dom = require("../lib/dom");
+
+var CHAR_HEIGHT = 10;
+var CHAR_WIDTH = 6;
+var WINDOW_HEIGHT = 768;
+var WINDOW_WIDTH = 1024;
+
+function Style() {
+    
+}
+Style.prototype.getPropertyValue = function() { return ""; };
+Style.prototype.__defineGetter__("cssText", function() {
+    var cssText = "";
+    Object.keys(this).forEach(function(key) {
+        if (this[key])
+            cssText += (cssText ? " " : "") +  key + ": " + this[key] + ";";
+    }, this);
+    return cssText;
+});
+Style.prototype.__defineSetter__("cssText", function(value) {
+    Object.keys(this).forEach(function(key) {
+        delete this[key];
+    }, this);
+    value.split(";").forEach(function(key) {
+        var parts = key.split(":");
+        if (parts.length == 2)
+            this[parts[0].trim()] = parts[1].trim();
+    }, this);
+});
+
+function ClassList(node) {
+    this.el = node;
+}
+(function() {
+    this.add = function(str) {
+       dom.addCssClass(this.el, str);
+    };
+    this.remove = function(str) {
+       dom.removeCssClass(this.el, str);
+    };
+    this.toggle = function(str) {
+       return dom.toggleCssClass(this.el, str);
+    };
+    this.contains = function(str) {
+       return dom.hasCssClass(this.el, str);
+    };
+}).call(ClassList.prototype);
+
+
+function Attr(name, value) {
+    this.name = name;
+    this.value = value;
+}
+(function() {
+    this.__defineGetter__("nodeValue", function() {
+        return this.value;
+    });
+}).call(Attr.prototype);
+
+var initializers = {
+    textarea: function() {
+        this.selectionStart = this.selectionEnd = 0;
+        this.setSelectionRange = function(start, end) {
+            this.selectionStart = Math.min(start, this.value.length, end);
+            this.selectionEnd = Math.min(end, this.value.length);
+        };
+        var value = "";
+        this.__defineGetter__("value", function() {
+            return value;
+        });
+        this.__defineSetter__("value", function(newValue) {
+            if (typeof newValue != "string") newValue = newValue.toString();
+            if (newValue != value) {
+                value = newValue;
+                this.selectionStart = this.selectionEnd = value.length;
+            }
+        });
+        this.oncut = this.oncopy = this.onpaste = null;
+        this.select = function() {
+            this.setSelectionRange(0, Infinity);
+        };
+    },
+    input: function() {
+        initializers.textarea.call(this);
+    },
+    style: function() {
+       this.sheet = {
+           insertRule: function() {},
+           cssRules: []
+       };
+    },
+    a: function() {
+        this.__defineGetter__("href", function() {
+            return this.getAttribute("href");
+        });
+        this.__defineSetter__("href", function(v) {
+            return this.setAttribute("href", v);
+        });
+    },
+    canvas: function() {
+        this.getContext = function (contextId, options) {
+            if (this._contextMock !== undefined) return this._contextMock;
+            return this._contextMock = new Context2d(this.width, this.height);
+        };
+    }
+};
+
+function Context2d(w, h) {
+    this.width = w;
+    this.height = h;
+    this.points = new Uint8ClampedArray(4 * this.width * this.height);
+    this.fillStyle = [0, 0, 0, 0];
+}
+(function() {
+    this.clearRect = function(x, y, w, h) {
+        var fillStyle = this.fillStyle;
+        this.fillStyle = [0, 0, 0, 0];
+        this.fillRect(x, y, w, h);
+        this.fillStyle = fillStyle;
+    };
+    this.fillRect = function(x, y, w, h) {
+        var fillStyle = this.fillStyle;
+        if (typeof fillStyle == "string")
+            fillStyle = this.fillStyle = this.$parseColor(this.fillStyle);
+        for (var i = x; i < w + x; i++) {
+            for (var j = y; j < h + y; j++) {
+                var index = (this.width * j + i) * 4;
+                for (var k = 0; k < 4; k++)
+                    this.points[index++] = fillStyle[k];
+            }
+        }
+    };
+    this.getImageData = function(sx, sy, sw, sh) {
+        var data = new Uint8ClampedArray(sw * sh * 4);
+        var newIndex = 0;
+        for (var i = sx; i < sw + sx; i++) {
+            for (var j = sy; j < sh + sy; j++) {
+                var index = (this.width * j + i) * 4;
+                for (var k = 0; k < 4; k++)
+                    data[newIndex++] = this.points[index++];
+            }
+        }
+        return {
+            data: data
+        };
+    };
+    this.$parseColor = function(str) {
+        var color = str.match(/\(([^,)]+),([^,)]+),([^,)]+)(?:,([^,)]+))?/).slice(1);
+        color[3] = Math.round((color[3] ? parseFloat(color[3]) : 1) * 255);
+        for (var i = 0; i < 3; i++) {
+            color[i] = parseInt(color[i]);
+        }
+        return color;
+    };
+}).call(Context2d.prototype);
+
+function getBoundingClientRect(target, fromChild, ignoreTransforms) {
+    function textWidth(str) {
+        return str.replace(/\t/g, "    ").replace(/[\u3041-\u9FBF]/g, "  ").length * CHAR_WIDTH * fontSize;
+    }
+
+    var node = target;
+    var blockParent, fontSize;
+    while (node) {
+        if (fontSize == null && node.style?.fontSize) {
+            fontSize = parseInt(node.style.fontSize) / CHAR_HEIGHT;
+        }
+        if (
+            !blockParent && node != target 
+            && (node.style?.display == "block" || /div|body|html/.test(node.localName))
+        ) {
+            blockParent = node;
+        }
+        node = node.parentNode;
+    }
+    if (fontSize == null) fontSize = 1;
+
+    var width = 0;
+    var height = 0;
+    var top = 0;
+    var left = 0;
+    if (target == document.documentElement) {
+        width = WINDOW_WIDTH;
+        height = WINDOW_HEIGHT;
+    }
+    else if (!document.contains(target) || target.style?.display == "none") {
+        width = height = 0;
+    }
+    else if (target.nodeType == 3 || target.localName == "span" || /^inline/.test(target.style.display)) {
+        var text = target.textContent;
+        width = textWidth(text);
+        height = fontSize * CHAR_HEIGHT;
+        if (!height) height = CHAR_HEIGHT;
+        if (target.style?.leftHint) {
+            left = target.style.leftHint;
+        } else if (blockParent && (target.localName == "span" || /^inline/.test(target.style?.display) || target.nodeType == 3)) {
+            var parentRect = getBoundingClientRect(blockParent, true, true);
+            top = parentRect.top;
+            node = target;
+            left = parentRect.left;
+            while (node && node != blockParent) {
+                if (node.previousSibling) {
+                    left += textWidth(node.previousSibling.textContent);
+                    node = node.previousSibling;
+                } else {
+                    node = node.parentNode;
+                }
+            }
+        }
+    }
+    else if (target.parentNode) {
+        var isFixed = target.style.position == "fixed" 
+            || target.style.positionHint == "fixed"
+            || target.getAttribute("role") == "tooltip";
+        var isAbsolute = target.style.position == "absolute" 
+            || target.style.positionHint == "absolute";
+        // prevent recursion by passing -1
+        var rect = fromChild == -1 || isFixed
+            ? {top: 0, left: 0, width: 0, height: 0, right: 0, bottom: 0} 
+            : getBoundingClientRect(target.parentNode, undefined, true);
+        if (isFixed) {
+            rect.height = rect.bottom = WINDOW_HEIGHT;
+            rect.width = rect.right = WINDOW_WIDTH;
+        }
+
+        left = parseCssLength(target.style.left || "0", rect.width);
+        top = parseCssLength(target.style.top || "0", rect.height);
+
+        var margin = target.style.margin;
+        if (margin) {
+            var parts = margin.trim().split(/\s+/);
+            left += parseCssLength(parts[3] || parts[1] || parts[0] || "0", 0);
+            top += parseCssLength(parts[0] || parts[1] || "0", 0);
+        }
+
+        var right = parseCssLength(target.style.right || "0", rect.width);
+        var bottom = parseCssLength(target.style.bottom || "0", rect.width);
+
+        if (target.style.width)
+            width = parseCssLength(target.style.width || "100%", rect.width);
+        else if (target.style.widthHint)
+            width = target.style.widthHint;
+        else if (target.style.right || !isAbsolute)
+            width = rect.width - right - left;
+        
+        if (target.style.height)
+            height = parseCssLength(target.style.height || "100%", rect.height);
+        else if (target.style.heightHint)
+            height = target.style.heightHint;
+        else if (target.style.bottom || !isAbsolute)
+            height = rect.height - top - bottom;
+
+        if (target.style.width == "auto") { 
+            width = textWidth(target.textContent);
+            if ((!target.style.height || target.style.height == "auto") && target.textContent.trim()) {
+                height = CHAR_HEIGHT * fontSize;
+            }
+        }
+
+        var maxWidth = target.style.maxWidth && parseCssLength(target.style.maxWidth, rect.width);
+        var maxHeight = target.style.maxHeight && parseCssLength(target.style.maxHeight, rect.height);
+        
+        if (maxWidth >= 0) width = Math.min(width, maxWidth);
+        if (maxHeight >= 0) height = Math.min(height, maxHeight);
+        
+        if (!height && !target.style.height && target.firstChild && target.firstChild.getBoundingClientRect && !fromChild) {
+            height = getBoundingClientRect(target.firstChild, -1, true).height;
+        }
+
+        if (!target.style.left &&  target.style.right) {
+            left = rect.width - right - width;
+        }
+        if (!target.style.top &&  target.style.bottom) {
+            top = rect.height - bottom - height;
+        }
+        
+        top += rect.top;
+        left += rect.left;
+    }
+
+    var rect = {top: top, left: left, width: width, height: height, right: left + width, bottom: top + height};
+    if (!ignoreTransforms)
+        rect = applyTransforms(rect, target);
+    return rect;
+}
+function applyTransforms(rect, target) {
+    var left = rect.left;
+    var top = rect.top;
+    var width = rect.width;
+    var height = rect.height;
+    // Apply CSS transforms
+    var node = target;
+    var M = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+    var points;
+    while (node) {
+        if (node.style?.transform) {
+            var match = node.style.transform.match(/matrix3d\(([^)]+)\)/);
+            if (match) {
+                if (!points) {
+                    points = [[left, top], [left + width, top], [left, top + height], [left + width, top + height]];
+                }
+                var v = match[1].split(",").map(parseFloat);
+                M = [v[0], v[1], v[3], v[4], v[5], v[7], v[12], v[13], v[15]];
+                var origin = node.style.transformOrigin || "50% 50%";
+                var parts = origin.split(" ");
+                var parentRect = node == target ? { top,left,width,height } : getBoundingClientRect(node, true, true);
+                var ox = parseCssLength(parts[0], parentRect.width) + parentRect.left;
+                var oy = parseCssLength(parts[1], parentRect.height) + parentRect.top;
+                var O = [ox, oy];
+                points = points.map(p => project(p, O));
+            }
+        }
+        node = node.parentNode;
+    }
+    function project(p, O) {
+        var x = p[0] - O[0];
+        var y = p[1] - O[1];
+        var w = M[2] * x + M[5] * y + M[8];
+        return [
+            (M[0] * x + M[3] * y + M[6]) / w + O[0],
+            (M[1] * x + M[4] * y + M[7]) / w + O[1]
+        ];
+    }
+    if (points) {
+        var xs = points.map(p => p[0]);
+        var ys = points.map(p => p[1]);
+        left = Math.min.apply(null, xs);
+        top = Math.min.apply(null, ys);
+        width = Math.max.apply(null, xs) - left;
+        height = Math.max.apply(null, ys) - top;
+    }
+
+    return {top: top, left: left, width: width, height: height, right: left + width, bottom: top + height};
+}
+function parseCssLength(styleString, parentSize) {
+    // TODO support calc
+    var size = parseFloat(styleString) || 0;
+    if (/%/.test(styleString))
+        size = parentSize * size / 100;
+    return size;
+}
+
+function getItem(i) { return this[i]; }
+
+function Node(name) {
+    this.localName = name;
+    this.value = "";
+    this.childNodes = [];
+    this.children = [];
+    this.childNodes.item = getItem;
+    this.children.item = getItem;
+    this.ownerDocument = window.document || this;
+    this.$attributes = {};
+    this.style = new Style();
+    if (initializers.hasOwnProperty(name))
+        initializers[name].call(this);
+}
+(function() {
+    this.nodeType = 1;
+    this.ELEMENT_NODE = 1;
+    this.TEXT_NODE = 3;
+    this.cloneNode = function(recursive) {
+        var clone = new Node(this.localName);
+        for (var i in this.$attributes) {
+            clone.setAttribute(i, this.$attributes[i]);
+        }
+        if (recursive) {
+            this.childNodes.forEach(function(ch) {
+                clone.appendChild(ch.cloneNode(true));
+            }, this);
+        }
+        return clone;
+    };
+    this.appendChild = function(node) {
+        return this.insertBefore(node, null);
+    };
+    this.removeChild = function(node) {
+        var i = this.childNodes.indexOf(node);
+        if (i == -1)
+            throw new Error("not a child");
+        if (node.previousSibling)
+            node.previousSibling.nextSibling = node.nextSibling;
+        if (node.nextSibling)
+            node.nextSibling.previousSibling = node.previousSibling;
+        node.parentNode = node.nextSibling = node.previousSibling = null;
+        this.childNodes.splice(i, 1);
+        if (!document.contains(document.activeElement))
+            document.activeElement = document.body;
+        i = this.children.indexOf(node);
+        if (i !== -1)
+            this.children.splice(i, 1);
+    };
+    this.remove = function() {
+        this.parentNode && this.parentNode.removeChild(this);
+    };
+    this.replaceChild = function(node, oldNode) {
+        this.insertBefore(node, oldNode);
+        this.removeChild(oldNode);
+        return oldNode;
+    };
+    this.insertBefore = function(node, before) {
+        if (node.parentNode)
+            node.parentNode.removeChild(node);
+        var i = this.childNodes.indexOf(before);
+        if (i == -1) i = this.childNodes.length + 1;
+        if (node.localName == "#fragment") {
+            var children = node.childNodes.slice();
+            for (var j = 0; j < children.length; j++)
+                this.insertBefore(children[j], before);
+        }
+        else {
+            this.childNodes.splice(i, 0, node);
+            node.nextSibling = this.childNodes[i];
+            node.previousSibling = this.childNodes[i - 2];
+            if (node.nextSibling)
+                node.nextSibling.previousSibling = node;
+            if (node.previousSibling)
+                node.previousSibling.nextSibling = node;
+            node.parentNode = this;
+            if (node.nodeType == 1) {
+                i = this.children.indexOf(before);
+                if (i == -1) i = this.children.length + 1;
+                this.children.splice(i, 0, node);
+            }
+        }
+        
+        return node;
+    };
+    this.before = function(node) {
+        if (this.parentNode) this.parentNode.insertBefore(node, this);
+    };
+    this.hasChildNodes = function() {
+        return this.childNodes.length > 0;
+    };
+    this.__defineGetter__("childElementCount", function() {
+        return this.children.length;
+    });
+    this.hasAttribute = function(x) {
+        return this.$attributes.hasOwnProperty(x);
+    };
+    this.hasAttributes = function() {
+        return Object.keys(this.$attributes).length > 0;
+    };
+    this.querySelectorAll = function(selector) {
+        return querySelector(this, selector, true);
+    };
+    this.querySelector = function(selector) {
+        return querySelector(this, selector, false)[0];
+    };
+    function querySelector(node, selector, all) {
+        var parts = parseSelector(selector);
+        
+        var nodes = [];
+        walk(node, function(node) {
+            if (node.matches && node.matches(parts)) {
+                nodes.push(node);
+                if (!all) return true;
+            }
+        });
+        return nodes;
+    }
+    this.getElementsByTagName = function(s) {
+        var nodes = [];
+        walk(this, function(node) {
+            if (node.localName == s)
+                nodes.push(node);
+        });
+        return nodes;
+    };
+    this.matches = function(selector) {
+        var parts = parseSelector(selector);
+        var node = this;
+        var operator = parts.pop();
+        var tests = parts.pop();
+        while (node && node.nodeType != 9) {
+            if (!tests) return true;
+            var isAMatch = tests.every(function(t) {return t(node);});
+            if (!isAMatch) {
+                if (!operator || operator === ">")
+                    return false;
+            } else {
+                operator = parts.pop();
+                tests = parts.pop();
+            }
+            node = node.parentNode;
+        }
+        return !tests;
+    };
+    this.closest = function(s) {
+        var el = this;
+        do {
+            if (el.matches(s)) return el;
+            el = el.parentElement || el.parentNode;
+        } while (el != null && el.nodeType === 1);
+        return null;
+    };
+    this.removeAttribute = function(a) {
+        delete this.$attributes[a];
+    };
+    this.setAttribute = function(a, v) {
+        this.$attributes[a] = v;
+    };
+    this.getAttribute = function(a, v) {
+        return String(this.$attributes[a] || "");
+    };
+    this.__defineGetter__("nodeName", function() {
+        return this.localName;
+    });
+    this.__defineGetter__("tagName", function() {
+        return this.localName;
+    });
+    this.__defineGetter__("attributes", function() {
+        var style = this.style.cssText;
+        if (style)
+            this.$attributes.style = style;
+        var attributes = Object.keys(this.$attributes).map(function(key) {
+            return new Attr(key, this.$attributes[key]);
+        }, this);
+        attributes.item = getItem;
+        return attributes;
+    });
+    this.__defineGetter__("classList", function() {
+        return this.$classList || (this.$classList = new ClassList(this));
+    });
+    this.__defineGetter__("className", function() {
+        return this.$attributes.class || "";
+    });
+    this.__defineSetter__("className", function(v) {
+        this.$attributes.class = v;
+    });
+    this.__defineGetter__("textContent", function() {
+        var v = "";
+        walk(this, function(node) {
+            if (node instanceof TextNode)
+                v += node.data;
+        });
+        return v;
+    });
+    this.__defineSetter__("textContent", function(v) {
+        removeAllChildren(this);
+        this.appendChild(new TextNode(v));
+    });
+    this.__defineGetter__("innerText", function() {
+        if (!this.documentElement)
+            throw new Error("use textContent");
+    });
+    this.__defineSetter__("innerText", function(v) {
+        throw new Error("use textContent");
+    });
+    
+    this.__defineGetter__("id", function() {
+        return this.getAttribute("id");
+    });
+    this.__defineSetter__("id", function(v) {
+        this.setAttribute("id", v);
+    });
+    this.__defineGetter__("parentElement", function() {
+        return this.parentNode == document ? null : this.parentNode;
+    });
+    this.__defineGetter__("innerHTML", function() {
+        return this.childNodes.map(function(ch) {
+            return "outerHTML" in ch ? ch.outerHTML : escapeHTML(ch.data);
+        }).join("");
+    });
+    this.__defineGetter__("outerHTML", function() {
+        var attributes = this.attributes.map(function(attr) {
+            return attr.name + "=" + JSON.stringify(attr.value + "");
+        }, this).join(" ");
+        return "<" + this.localName + (attributes ? " " + attributes : "") + ">" + this.innerHTML + "</" + this.localName + ">";
+    });
+    this.__format = function(indent) {
+        if (!indent) indent = "";
+        var attributes = this.attributes.map(function(attr) {
+            return attr.name + "=" + JSON.stringify(attr.value);
+        }, this).join(" ");
+        return indent + "<" + this.localName + (attributes ? " " + attributes : "") + ">" + 
+            this.childNodes.map(function(ch) {
+                return "__format" in ch ? "\n" + ch.__format(indent + "    ") : escapeHTML(ch.data);
+            }).join("")
+            + "\n" + indent + "</" + this.localName + ">";
+    };
+    this.__defineSetter__("innerHTML", function(v) {
+        removeAllChildren(this);
+        setInnerHTML(v, this);
+    });
+    this.insertAdjacentHTML = function(position, markup) {
+        var element = document.createDocumentFragment();
+        setInnerHTML(markup, element);
+        this.insertAdjacentElement(position, element);
+    };
+    this.insertAdjacentElement = function(position, element) {
+        position = position.toLowerCase();
+        if (position === "beforeend") this.appendChild(element);
+        if (position === "afterend") this.parentElement.insertBefore(element, this.nextSibling);
+        if (position === "afterbegin") this.insertBefore(element, this.firstChild);
+        if (position === "beforebegin") this.parentElement.insertBefore(element, this);
+    };
+    this.getClientRects = function() {
+        var rect = this.getBoundingClientRect();
+        return [rect];
+    };
+    this.getBoundingClientRect = function() {
+        return getBoundingClientRect(this);
+    };
+
+    this.__defineGetter__("clientHeight", function() {
+        return getBoundingClientRect(this, undefined, true).height;
+    });
+    this.__defineGetter__("clientWidth", function() {
+        return getBoundingClientRect(this, undefined, true).width;
+    });
+    this.__defineGetter__("offsetHeight", function() {
+        return getBoundingClientRect(this, undefined, true).height;
+    });
+    this.__defineGetter__("offsetWidth", function() {
+        return getBoundingClientRect(this, undefined, true).width;
+    });
+
+    this.__defineGetter__("lastChild", function() {
+        return this.childNodes[this.childNodes.length - 1];
+    });
+    this.__defineGetter__("firstChild", function() {
+        return this.childNodes[0];
+    });
+    // TODO this is a workaround for scrollHeight usage in virtualRenderer
+    this.scrollHeight = 1;
+
+
+    this.addEventListener = function(name, listener, capturing) {
+        if (!listener) {
+            console.trace();
+            throw new Error("attempting to add empty listener");
+        }
+        if (!this._events) this._events = {};
+        var id = capturing ? "__c__:" + name : name;
+        if (!this._events[id]) this._events[id] = [];
+        var i = this._events[id].indexOf(listener);
+        if (i == -1)
+            this._events[id].push(listener);
+    };
+    this.removeEventListener = function(name, listener, capturing) {
+        if (!this._events) return;
+        var id = capturing ? "__c__:" + name : name;
+        if (!this._events[id]) return;
+        var i = this._events[id].indexOf(listener);
+        if (i !== -1)
+            this._events[id].splice(i, 1);
+    };
+    this.createEvent = function(v) {
+        return new Event();
+    };
+    this.dispatchEvent = function(e) {
+        var parents = [];
+        var node = this.parentNode;
+        
+        while (node) {
+            parents.push(node);
+            node = node.parentNode;
+        }
+        parents.push(window);
+        
+        if (!e.target) e.target = this;
+        if (!e.timeStamp) e.timeStamp = Date.now();
+        
+        e.eventPhase = 1;
+        for (var i = parents.length - 1; i >= 0; i--) {
+            var node = parents[i];
+            if (call(node, true)) return;
+        }
+        e.eventPhase = 2;
+        if (call(this, true)) return;
+        if (call(this, false)) return;
+        e.eventPhase = 3;
+        for (var i = 0; i < parents.length; i++) {
+            var node = parents[i];
+            if (call(node, false)) return;
+        }
+        
+        function call(node, capturing) {
+            e.currentTarget = node;
+            if (!capturing && node["on" + e.type])
+                node["on" + e.type](e);
+            var id = capturing ? "__c__:" + e.type : e.type;
+            var events = node._events && node._events[id];
+            events && events.slice().forEach(function(listener) {
+                listener.call(node, e);
+            });
+            if (e.stopped) return true;
+            if (!capturing && !e.bubbles) return true;
+        }        
+    };
+    this.contains = function(node) {
+        while (node) {
+            if (node == this) return true;
+            node = node.parentNode;
+        }
+    };
+    this.focus = function() {
+        if (document.activeElement == this)
+            return;
+        var oldFocused = document.activeElement;
+        document.activeElement = this;
+        if (oldFocused)
+            oldFocused.dispatchEvent({type: "blur"});
+        this.dispatchEvent({type: "focus"});
+    };
+    this.blur = function() {
+        if (document.activeElement == this)
+            document.body.focus();
+    };
+    function removeAllChildren(node) {
+        node.childNodes.forEach(function(node) {
+            node.parentNode = null;
+        });
+        node.childNodes.length = 0;
+        node.children.length = 0;
+        if (!document.contains(document.activeElement))
+            document.activeElement = document.body;
+    }
+}).call(Node.prototype);
+
+function parseSelector(selector) {
+    if (Array.isArray(selector)) return selector.slice();
+    var parts = selector.split(/((?:[^\s>"[]|"[^"]+"?|\[[^\]]*\]?)+)/);
+    for (var i = 1; i < parts.length; i += 2) {
+        parts[i] = parseSimpleSelector(parts[i]);
+        if (/^ +$/.test(parts[i + 1])) parts[i + 1] = " ";
+    }
+    return parts;
+}
+function parseSimpleSelector(selector) {
+    var tests = [];
+    selector.replace(
+        /([#.])?([\w-]+)|\[\s*([\w-]+)\s*(?:=\s*["']?([\w-]+)["']?\s*)?\]|\*|./g,
+        function(_, hash, name, attr, attrValue) {
+            if (hash == "#") {
+                tests.push(function(node) { return node.id == name; });
+            }
+            else if (hash == ".") {
+                var re = new RegExp("(^|\\s)" + name + "($|\\s)");
+                tests.push(function(node) { return re.test(node.className); });
+            }
+            else if (name) {
+                tests.push(function(node) { return node.localName == name; });
+            }
+            else if (attr) {
+                tests.push(attrValue != undefined ? function(node) {
+                    return node.getAttribute && node.getAttribute(attr) == attrValue;
+                } : function(node) {
+                    return node.hasAttribute && node.hasAttribute(attr);
+                });
+            }
+            else if (_ == "*") {
+                tests.push(function(node) {
+                    return true;
+                });
+            }
+            else {
+                throw new Error("Error parsing selector " + selector + "|" + _);
+            }
+        }
+    );
+    return tests;
+}
+
+function setInnerHTML(markup, parent, strict) {
+    var root = parent;
+    var tagRe = /<(\/?[\w:\-]+|!)|&(?:(#?\w+);)|$/g;
+    var skipped = "";
+
+    for (var m, lastIndex = 0; m = tagRe.exec(markup);) {
+        skipped += markup.substring(lastIndex, m.index);
+        var encoded = m[2];
+        if (encoded) {
+            skipped += parseCharacterEntity(encoded);
+            lastIndex = tagRe.lastIndex;
+        } else {
+            if (m[1] == "!") {
+                skipped += parseDocType(markup, tagRe, strict);
+                lastIndex = tagRe.lastIndex;
+                continue;
+            }
+            if (skipped) {
+                root.appendChild(document.createTextNode(skipped));
+                skipped = "";
+            }
+            var end = markup.indexOf(">", tagRe.lastIndex);
+            var selfClosing = markup[end - 1] === "/" ? 1 : 0;
+            var attributes = markup.slice(tagRe.lastIndex, end - selfClosing).trim();
+            
+            tagRe.lastIndex = lastIndex = end < 0 ? markup.length : end + 1;
+        
+            if (!m[1]) {
+                if (strict && root != parent)
+                    throw new Error("Invalid XML message:");
+                return;
+            }
+            if (m[1][0] !== "/") {
+                var tagName = m[1];
+                if (/:/.test(tagName)) {
+                    var i = tagName.indexOf(":");
+                    var prefix = tagName.slice(0, i);
+                    tagName = tagName.slice(i+1);
+                    root = root.appendChild(document.createElement(tagName));
+                    root.prefix = prefix;
+                } else {
+                    root = root.appendChild(document.createElement(tagName));
+                }
+                attributes && attributes.replace(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|(\w+))/g, function(_, key, v1,v2,v3) {
+                    root.setAttribute(key, v1 || v2 || v3 || key);
+                });
+            } 
+            if (m[1][0] === "/" || selfClosing) {
+                if (root != parent)
+                    root = root.parentNode;
+            }
+        }
+    }
+    if (strict && root != parent)
+        throw new Error("Invalid XML message:");
+}
+function parseCharacterEntity(encoded) {
+    if (encoded[0] == "#") {
+        var charCode = encoded.slice(1);
+        if (charCode[0] == "x")
+            return String.fromCharCode(parseInt(charCode.slice(1), 16));
+        return String.fromCharCode(parseInt(charCode, 10));
+    }
+    if (encoded == "gt") return ">";
+    if (encoded == "lt") return "<";
+    if (encoded == "amp") return "&";
+    if (encoded == "quot") return '"';
+    
+    console.error("Skipping unsupported character entity", encoded);
+    return "";
+}
+function parseDocType(markup, tagRe, strict) {
+    var start = tagRe.lastIndex;
+    var end = -1;
+    var text = "";
+    if (markup[start] == "-" && markup[start + 1] == "-") {
+        end = markup.indexOf("-->", start + 2);
+        if (end != -1) end += 3;
+    } else if (strict && markup.substr(start, 7) == "[CDATA[") {
+        end = markup.indexOf("]]>", start);
+        text = markup.slice(start + 7, end);
+        end += 3;
+    } else {
+        end = markup.indexOf(">", start);
+        if (end != -1) end += 1;
+    }
+    if (end == -1) end = markup.length;
+    tagRe.lastIndex = end;
+    return text;
+}
+function escapeHTML(str) {
+    return str.replace(/[<>&]/g, function(char) {
+        if (char == "<") return "&lt;";
+        if (char == ">") return "&gt;";
+        if (char == "&") return "&amp;";
+    });
+}
+
+function Event(type, options) {
+    this.type = type;
+    Object.assign(this, options);
+}
+(function() {
+    this.initMouseEvent = function(
+        type, _1, _2, window,
+        detail, x, y, _x, _y,
+        ctrl, alt, shift, meta,
+        button, relatedTarget
+    ) {
+        this.bubbles = true;
+        this.type = type;
+        this.detail = detail || 0;
+        this.clientX = x;
+        this.clientY = y;
+        this.button = button;
+        this.relatedTarget = relatedTarget;
+        this.ctrlKey = ctrl;
+        this.altKey = alt;
+        this.shiftKey = shift;
+        this.metaKey = meta;
+        this.which = button + 1;
+    };
+    this.preventDefault = function() {
+        this.defaultPrevented = true;
+    };
+    this.stopPropagation = function() {
+        this.stopped = true;
+    };
+}).call(Event.prototype);
+
+function walk(node, fn) {
+    var children = node.childNodes || [];
+    for (var i = 0; i < children.length; i++) {
+        var result = fn(children[i]) || walk(children[i], fn);
+        if (result)
+            return result;
+    }
+}
+
+function TextNode(value) {
+    this.data = value || "";
+}
+(function() {
+    this.nodeType = 3;
+    this.ELEMENT_NODE = 1;
+    this.TEXT_NODE = 3;
+    this.cloneNode = function() {
+        return new TextNode(this.data);
+    };
+    this.__defineGetter__("nodeValue", function() {
+        return this.data;
+    });
+    this.__defineGetter__("textContent", function() {
+        return this.data;
+    });
+}).call(TextNode.prototype);
+
+Node.ELEMENT_NODE = TextNode.ELEMENT_NODE = 1;
+Node.TEXT_NODE = TextNode.TEXT_NODE = 3;
+
+var window = {
+    get innerHeight() {
+        return WINDOW_HEIGHT;
+    },
+    get innerWidth() {
+        return WINDOW_WIDTH;
+    }
+};
+window.navigator = {userAgent: "node", platform: "win", appName: ""};
+window.HTMLDocument = window.XMLDocument = window.Document = function() {
+    var document = this;
+    if (!window.document) window.document = document;
+    Node.call(this, "#document");
+    this.nodeType = 9;
+    document.navigator = window.navigator;
+    document.styleSheets = [];
+    document.createElementNS = function(ns, t) {
+        return new Node(t);
+    };
+    document.createElement = function(t) {
+        return new Node(t);
+    };
+    document.createComment =
+    document.createTextNode = function(v) {
+        return new TextNode(v);
+    };
+    document.createDocumentFragment = function() {
+        return new Node("#fragment");
+    };
+    document.createTreeWalker = function(root, whatToShow, filter) {
+        var nodes = [];
+        walk(root, function(node) {
+            if ((whatToShow & (1 << (node.nodeType - 1))) && (!filter || filter.acceptNode(node) == 1))
+                nodes.push(node);
+        });
+        var index = -1;
+        return {
+            nextNode: function() {
+                if (index < nodes.length - 1)
+                    return this.currentNode = nodes[++index];
+            },
+            previousNode: function() {
+                if (index > 0)
+                    return this.currentNode = nodes[--index];
+            }
+        };
+    };
+    document.createRange = function() {
+        return {
+            setStart: function(node, offset) {
+                this.startContainer = node;
+                this.startOffset = offset;
+            },
+            setEnd: function(node, offset) {
+                this.endContainer = node;
+                this.endOffset = offset;
+            },
+            getBoundingClientRect: function() {
+                var rect1 = getBoundingClientRect(this.startContainer, false, true);
+                if (this.startContainer.nodeType == 3) {
+                    rect1.left += this.startOffset * CHAR_WIDTH;
+                } else {
+                    var child = this.startContainer.childNodes[this.startOffset];
+                    if (!child) {
+                        rect1.left = rect1.right;
+                    } else {
+                        rect1.left = getBoundingClientRect(child, false, true).left;
+                    }
+                }
+                var rect2 = getBoundingClientRect(this.endContainer, false, true);
+                if (this.endContainer.nodeType == 3) {
+                    rect2.right = rect2.left + this.endOffset * CHAR_WIDTH;
+                } else {
+                    var child = this.endContainer.childNodes[this.endOffset] ||
+                        this.endContainer.childNodes[this.endOffset - 1];
+                    if (child) {
+                        rect2.right = getBoundingClientRect(child, false, true).right;
+                    }
+                }
+                var rect = {
+                    top: rect1.top,
+                    left: rect1.left,
+                    width: rect2.right - rect1.left,
+                    height: rect2.bottom - rect1.top,
+                    right: rect2.right,
+                    bottom: rect2.bottom
+                };
+                return applyTransforms(rect, this.startContainer);
+            },
+            getClientRects: function() {
+                return [this.getBoundingClientRect()];
+            },
+        };
+    };
+    document.hasFocus = function() {
+        return true;
+    };
+    document.execCommand = function() {};
+    document.documentElement = document.appendChild(new Node("html"));
+    document.body = new Node("body");
+    document.activeElement = document.body;
+    document.head = new Node("head");
+    document.documentElement.appendChild(document.head);
+    document.documentElement.appendChild(document.body);
+    return document;
+};
+window.Document.prototype = Object.create(Node.prototype);
+(function() {
+    this.getElementById = function(s) {
+        return walk(this, function(node) {
+            if (node.getAttribute && node.getAttribute("id") == s)
+                return node;
+        });
+    };
+}.call(window.Document.prototype));
+
+window.DOMParser = function() {
+    this.parseFromString = function(str, mode) {
+        var document = new window.Document({});
+        if (mode == "text/xml" || mode == "application/xml") {
+            var markup = str.replace(/<\?([^?]|\?[^>])+\?>/g, "").trim();
+            document.innerHTML = "";
+            setInnerHTML(markup, document, true);
+            document.documentElement = document.firstChild;
+        } else {
+            document.body.innerHTML = str;
+        }
+        return document;
+    };
+};
+
+window.NodeFilter = {
+    SHOW_ALL: 0xFFFFFFFF,
+    SHOW_ELEMENT: 1,
+    SHOW_TEXT: 4
+};
+
+var document = new window.Document();
+window.__defineGetter__("document", function() {return document;});
+window.document.defaultView = window;
+
+window.setTimeout = setTimeout;
+window.clearTimeout = clearTimeout;
+window.getComputedStyle = function(node) {
+    return node.style;
+};
+window.addEventListener = document.addEventListener.bind(window);
+window.removeEventListener = document.removeEventListener.bind(window);
+window.dispatchEvent = document.dispatchEvent.bind(window);
+window.name = "nodejs";
+window.focus = function() {};
+
+window.Node = window.Element = Node;
+window.Text = window.TextNode = TextNode;
+window.Attr = Attr;
+window.window = window;
+window.CustomEvent = window.Event = window.KeyboardEvent = Event;
+window.requestAnimationFrame = function(callback) {
+    return setTimeout(function() {
+        callback();
+    });
+};
+
+/*global Buffer*/
+if (typeof Buffer != "undefined") {
+    window.btoa = function(str) {
+        return Buffer.from(str.toString(), "binary").toString("base64");
+    };
+    window.atob = function(str) {
+        return Buffer.from(str, "base64").toString("binary");
+    };
+}
+
+var originalProperties = {};
+var overriddenValues = {};
+var loaded = false;
+var overridableProperties = ["setTimeout", "clearTimeout", "getComputedStyle"];
+exports.load = function() {
+    if (loaded || typeof global == "undefined") return;
+    window.window = global;
+    Object.keys(window).forEach(function(i) {
+        var desc = Object.getOwnPropertyDescriptor(global, i);
+        originalProperties[i] = desc;
+        global.__defineGetter__(i, function() {
+            return overriddenValues[i] || window[i];
+        });
+        global.__defineSetter__(i, function(value) {
+            if (!overridableProperties.includes(i)) {
+                console.log("attempt to set " + i);
+            } else if (value === window[i]) {
+                delete overriddenValues[i];
+                if (!loaded) {
+                    unloadProperty(i);
+                }
+            } else {
+                overriddenValues[i] = value;
+            }
+        });
+    });
+    loaded = true;
+};
+
+exports.loadInBrowser = function(global, $setSize) {
+    if ($setSize) {
+        WINDOW_HEIGHT = global.innerHeight;
+        WINDOW_WIDTH = global.innerWidth;
+    }
+    delete global.ResizeObserver;
+    global.__origRoot__ = global.document.documentElement;
+    global.__origBody__ = global.document.body;
+    global.document.createElementOrig = global.document.createElement;
+    global.document.createTextNodeOrig = global.document.createTextNode;
+    Object.keys(window).forEach(function(i) {
+        if (i != "document" && i != "window") {
+            delete global[i];
+            global[i] = window[i];
+        }
+    });
+    for (var i in window.document) {
+        var val = window.document[i];
+        if (typeof val == "function") {
+            if (i == "createElement") {
+                val = function(n) {
+                    if (n == "script")
+                        return global.document.createElementOrig(n);
+                    return window.document.createElement(n);
+                };
+            }
+            val = val.bind(window.document);
+            Object.defineProperty(
+                global.document, 
+                i, 
+                {
+                    value: val,
+                    enumerable: true,
+                    configurable: true
+                }
+            );
+        } else {
+            Object.defineProperty(
+                global.document, 
+                i, 
+                {
+                    get: function(name) {
+                        return window.document[name];
+                    }.bind(null, i),
+                    enumerable: true,
+                    configurable: true
+                }
+            );
+        }
+    }
+    global.__mockdom_ = exports;
+    loaded = true;
+};
+
+function unloadProperty(name) {
+    if (global[name] === window[name]) {
+        delete global[name];
+        if (originalProperties[name]) {
+            Object.defineProperty(global, name, originalProperties[name]);
+            delete originalProperties[name];
+        }
+    }
+}
+
+exports.unload = function() {
+    if (typeof global == "undefined") return;
+    var req = require;
+    var cache = req("module")._cache;
+    delete cache[__filename];
+    Object.keys(originalProperties).forEach(function(name) {
+        unloadProperty(name);
+    });
+    loaded = false;
+};
+
+exports.load();

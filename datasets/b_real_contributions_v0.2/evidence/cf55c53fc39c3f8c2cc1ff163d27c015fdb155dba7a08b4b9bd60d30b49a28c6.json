@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "ajaxorg/ace",
+    "id": 1028340,
+    "language": "JavaScript",
+    "private": false,
+    "size": 45013
+  },
+  "observed_at": "2026-10-26T05:02:51.394062+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "135946e5f2ddb2b85908edbe9b0590afa6a7ef72bc66218ee8b94f4885970557",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c693d79830d2d7c4a85d33ddb7d05f8376d0b41407f8257d67501e565c0d2e48",
+  "source_url": "https://api.github.com/repos/ajaxorg/ace",
+  "status_code": 200
+}

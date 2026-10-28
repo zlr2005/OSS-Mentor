@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "remix-run/react-router",
+    "id": 19872456,
+    "language": "TypeScript",
+    "private": false,
+    "size": 53565
+  },
+  "observed_at": "2026-10-26T13:40:21.254046+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "399de87e7dab10b4ce13bf90e078184f143de0b52da64095115f1b2557e7cd56",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0f25e54a464b23c363d69fca8569eaecd10f9af449816714b369795f0f24f7f2",
+  "source_url": "https://api.github.com/repos/remix-run/react-router",
+  "status_code": 200
+}

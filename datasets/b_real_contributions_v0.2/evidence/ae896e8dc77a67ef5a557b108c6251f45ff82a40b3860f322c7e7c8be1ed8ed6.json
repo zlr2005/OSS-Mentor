@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 11404065,
+      "login": "Eomm",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T15:28:47Z",
+      "committer_at": "2026-10-24T15:28:47Z",
+      "tree_sha": "95feb60ba9e6f0090a6a7e647bda47860d01ae19"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1a012d3b22692a616d1e91a41a2f9127e9dba494"
+  },
+  "observed_at": "2026-10-26T06:46:13.209826+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f5ce3280219ae090976faec7d921f9bd38b1f8af6e6351cfbf5283679bf3701c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "573b80020ada8b41f43129aa34a47869c65eb5ace9d04b445f88d19174a4cfae",
+  "source_url": "https://api.github.com/repos/fastify/fastify/commits/1a012d3b22692a616d1e91a41a2f9127e9dba494?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 28924511,
+      "login": "CCCLL",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T11:00:24Z",
+      "committer_at": "2026-10-19T11:00:24Z",
+      "tree_sha": "d7ba0312546748fbb375c7bb585192987890dae5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b73b9d131b31ed43869778abbbe799b8cd0d1d1b"
+  },
+  "observed_at": "2026-10-26T05:11:35.602322+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9c0956d4c3f844a0767b8093f45c8e97641becd822fb1d03b6a41f47dcfa7896",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ca9ed7fd912f00152b65c273c3d1827e3a76a890643522988122b5944a15b03a",
+  "source_url": "https://api.github.com/repos/apache/dubbo/commits/b73b9d131b31ed43869778abbbe799b8cd0d1d1b?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "d209764d20a03be35896a1ad8ebf6aba30bc7172",
+    "size": 1115
+  },
+  "observed_at": "2026-10-26T08:27:15.965807+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b1fbf1081b1976aaedf958327d0e8550aa89a2680684276c6bc1b44eb5637dd1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5395183353795025dfa48e675fab5f129ba15e273c6807843563a45eb13d5e66",
+  "source_url": "https://api.github.com/repos/nestjs/nest/git/blobs/d209764d20a03be35896a1ad8ebf6aba30bc7172",
+  "status_code": 200
+}

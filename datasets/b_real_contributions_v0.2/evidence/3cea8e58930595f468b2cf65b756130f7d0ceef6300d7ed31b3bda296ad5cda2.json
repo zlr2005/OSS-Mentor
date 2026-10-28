@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MPL-2.0",
+    "full_name": "rust-lang/mdBook",
+    "id": 38655056,
+    "language": "Rust",
+    "private": false,
+    "size": 7765
+  },
+  "observed_at": "2026-10-26T13:51:37.616495+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "35fa83514a1280e82bb2e8cc365f4d74c8a49aa8e944423e156b5dfe92d03f32",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "97663a5c7a94cd16d8a54ac0acff8845f9a062f87eb67c63a9c1f6fc5bfdc577",
+  "source_url": "https://api.github.com/repos/rust-lang/mdBook",
+  "status_code": 200
+}

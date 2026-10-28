@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ad4e34a927a8b88ecf35e22d112625721266f30c",
+    "size": 11111
+  },
+  "observed_at": "2026-10-27T13:58:11.995023+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "90b98a0a996d2f52c927bd894a131cfa4116dddbdcbf22c32a5a57b1533bfa09",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c8ca5f2f33605385c8201332c2ed720aa9e4833796d29fc5a767518f3c70d62e",
+  "source_url": "https://api.github.com/repos/matplotlib/matplotlib/git/blobs/ad4e34a927a8b88ecf35e22d112625721266f30c",
+  "status_code": 200
+}

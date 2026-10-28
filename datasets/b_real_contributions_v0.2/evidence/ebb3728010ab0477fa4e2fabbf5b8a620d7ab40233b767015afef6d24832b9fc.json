@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 159076,
+      "login": "douglascamata",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T14:37:40Z",
+      "committer_at": "2026-10-23T16:17:29Z",
+      "tree_sha": "75f62b8872e48b4054d77162c1e1d0969843d4f8"
+    },
+    "committer": {
+      "id": 2361214,
+      "login": "clason",
+      "type": "User"
+    },
+    "sha": "7b87ce822e6fd45a4d9993599c2854afdb0dc4dd"
+  },
+  "observed_at": "2026-10-27T14:27:12.573795+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aec687c0936f30a845bdc12250c5873c03d49c7d65086c36d5da9bd9ec2bb253",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4da91af77cc42db0757393fd3daa1fe3ada566806fa6ef1780d138eb0a2c9eb6",
+  "source_url": "https://api.github.com/repos/neovim/neovim/commits/7b87ce822e6fd45a4d9993599c2854afdb0dc4dd?per_page=100",
+  "status_code": 200
+}

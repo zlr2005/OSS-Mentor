@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "testcontainers/testcontainers-java",
+    "id": 33816473,
+    "language": "Java",
+    "private": false,
+    "size": 15432
+  },
+  "observed_at": "2026-10-26T15:07:58.589085+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2866798ee579954a2e29f41df879672fe8a7970af9fb06d4eeee5efa2fd09766",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "58ee8e7ee63d8d3809784f27aaa843795915014dca0643c3d228a182a84ba078",
+  "source_url": "https://api.github.com/repos/testcontainers/testcontainers-java",
+  "status_code": 200
+}

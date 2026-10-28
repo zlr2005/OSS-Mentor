@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 103002573,
+      "login": "sfc-gh-lmasuch",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T22:55:13Z",
+      "committer_at": "2026-10-25T22:55:13Z",
+      "tree_sha": "cfa636442b2d5407d669a67a8b5ecc09d2731264"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d9b6afe46adb4f069fe1af58328fa75b970e0786"
+  },
+  "observed_at": "2026-10-26T14:39:39.423866+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2704e2eb0800348afb27412b7c4f4d2e9c541e0838b23777403dd527b6c8146a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "54e71ecac6c754b56576d78aca679cd9d56e8308a284dcf73aa828eb94dc5359",
+  "source_url": "https://api.github.com/repos/streamlit/streamlit/commits/d9b6afe46adb4f069fe1af58328fa75b970e0786?per_page=100",
+  "status_code": 200
+}

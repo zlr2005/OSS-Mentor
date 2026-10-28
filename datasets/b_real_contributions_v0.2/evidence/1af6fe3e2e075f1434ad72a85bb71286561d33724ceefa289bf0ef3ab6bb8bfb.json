@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 181649645,
+      "login": "schizophrenicmaniac",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T14:06:25Z",
+      "committer_at": "2026-10-24T14:06:25Z",
+      "tree_sha": "32637dc2b7372e0b88af64e5c20b223b5606fcb9"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "4236a4231b92e7b67547c7cc245cb78322e6dd6c"
+  },
+  "observed_at": "2026-10-26T05:35:12.705904+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "10a8ff4374bbe599a24702860a1222efb84168e8407837c814095078047ed142",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e17c1430e7980015c732bb47b8ad553129b2cefadbe5c74a28ce4f9eff543054",
+  "source_url": "https://api.github.com/repos/apache/shardingsphere/commits/4236a4231b92e7b67547c7cc245cb78322e6dd6c?per_page=100",
+  "status_code": 200
+}

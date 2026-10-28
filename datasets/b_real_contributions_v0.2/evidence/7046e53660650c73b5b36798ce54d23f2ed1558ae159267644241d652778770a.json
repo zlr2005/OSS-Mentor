@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 198982749,
+      "login": "Copilot",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-20T03:05:08Z",
+      "committer_at": "2026-10-20T03:05:08Z",
+      "tree_sha": "bf28d5a84f65dff70da7f37566f21f0a2b1028d9"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f2ce963b97ed3c5bf9cdab51d10bf899aaeeb0ac"
+  },
+  "observed_at": "2026-10-26T13:57:29.519177+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "00c64af7d6adc7483e77a87f6a3389de21a8d2a801b8b5a0c1e1758024057649",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "288930cda21d059be3de3e03f44cd9bdf5af8d11a017df9651f26e3b557e723d",
+  "source_url": "https://api.github.com/repos/scikit-learn/scikit-learn/commits/f2ce963b97ed3c5bf9cdab51d10bf899aaeeb0ac?per_page=100",
+  "status_code": 200
+}

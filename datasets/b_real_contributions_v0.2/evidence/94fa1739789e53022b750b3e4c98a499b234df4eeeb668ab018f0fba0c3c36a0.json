@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 148060537,
+      "login": "akasakariko",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T23:54:48Z",
+      "committer_at": "2026-10-24T23:54:48Z",
+      "tree_sha": "4c11c3d885ca0b3c36ffec304a47fc1225a9663a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b1a32d194f6aa57caf9ac98dbd311a7c67e2b970"
+  },
+  "observed_at": "2026-10-26T08:31:54.784799+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "31586965633b0c6c26b9d5f18d3ddfd0f244b310cfcf14ee48520c19c3b04900",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "863a43e213504e98a2876df19d58d58f3e693601ef6a7d3161a2544ac0c5bfff",
+  "source_url": "https://api.github.com/repos/nushell/nushell/commits/b1a32d194f6aa57caf9ac98dbd311a7c67e2b970?per_page=100",
+  "status_code": 200
+}

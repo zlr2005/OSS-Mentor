@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 26865541,
+      "login": "jihea-park",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T07:52:55Z",
+      "committer_at": "2026-10-23T08:16:42Z",
+      "tree_sha": "b0adc41f219fb2d96ea64a30a5a89861b4063b80"
+    },
+    "committer": {
+      "id": 26865541,
+      "login": "jihea-park",
+      "type": "User"
+    },
+    "sha": "eff4886355d5c3aa58d78004e6f704581a44a3e0"
+  },
+  "observed_at": "2026-10-26T08:44:58.806741+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "538cd4e2e82e2215ea0bf3222daebd2dbe5882c29c7d9eda4f4b8939973a3255",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b4ed89b2cf8b6d5d499c009054ad442c9b2b9e6436b58381cd2f04587feb862d",
+  "source_url": "https://api.github.com/repos/pinpoint-apm/pinpoint/commits/eff4886355d5c3aa58d78004e6f704581a44a3e0?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "SeleniumHQ/selenium",
+    "id": 7613257,
+    "language": "Java",
+    "private": false,
+    "size": 2407810
+  },
+  "observed_at": "2026-10-26T14:01:18.807989+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c7c0c0787d77e4f657aaf6a0a95e93787dc814c34de635509ff01fa1346ad0cf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "50390ab05902038f95da5bbfa151da585153d7c68986f460a9f72cefa79f9fe1",
+  "source_url": "https://api.github.com/repos/SeleniumHQ/selenium",
+  "status_code": 200
+}

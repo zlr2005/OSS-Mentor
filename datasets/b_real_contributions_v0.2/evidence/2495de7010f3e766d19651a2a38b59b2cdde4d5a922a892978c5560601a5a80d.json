@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1609022,
+      "login": "brophdawg11",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T17:52:13Z",
+      "committer_at": "2026-10-22T17:52:13Z",
+      "tree_sha": "4206e86a1dc36e1151b6885d2674726ee4162f65"
+    },
+    "committer": {
+      "id": 1609022,
+      "login": "brophdawg11",
+      "type": "User"
+    },
+    "sha": "4fce12768310981a875cbe8b195db91765f33fff"
+  },
+  "observed_at": "2026-10-26T13:41:34.077045+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f1d786475b455b9425c9095d9dcc0ca6799e7b7eb33a0490b94085a3b4c382d5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c72a0a97876546bdc54cecd9961742e8d8c6ed2179c861737e97e8d67bad38ff",
+  "source_url": "https://api.github.com/repos/remix-run/react-router/commits/4fce12768310981a875cbe8b195db91765f33fff?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "hoppscotch/hoppscotch",
+    "id": 203587744,
+    "language": "TypeScript",
+    "private": false,
+    "size": 100863
+  },
+  "observed_at": "2026-10-26T07:25:32.325295+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "00111d45533e37d432d9ee0cf7816063543556eefbacf8135729ec3508548d47",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2102367deeaa7e9040e4b7e6b54398bd702cd40f6f07716b1f6eb389e6916278",
+  "source_url": "https://api.github.com/repos/hoppscotch/hoppscotch",
+  "status_code": 200
+}

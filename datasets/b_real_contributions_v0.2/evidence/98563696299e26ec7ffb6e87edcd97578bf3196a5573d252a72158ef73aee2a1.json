@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a74c47ac815db2d9c2b4d9e157db957f50359614",
+    "size": 20919
+  },
+  "observed_at": "2026-10-26T15:25:52.986620+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c82377261aedd3684fd3f7da796638146257abd6bd3eb4ec1c2e1645d850bce7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5a282ee9e6f9509b057022e7ca20e9f2fa4d27af8d67eea902421f87b6d5c51f",
+  "source_url": "https://api.github.com/repos/trinodb/trino/git/blobs/a74c47ac815db2d9c2b4d9e157db957f50359614",
+  "status_code": 200
+}

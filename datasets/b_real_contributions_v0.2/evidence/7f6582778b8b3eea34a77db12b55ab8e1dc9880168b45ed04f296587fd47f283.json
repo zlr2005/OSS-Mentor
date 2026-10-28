@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "014cf81201feccfd48fed32b224fe6aa067f3baa",
+    "size": 2373
+  },
+  "observed_at": "2026-10-26T08:43:19.296507+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "916161b5833b60d158b3efa0edaa77c3c36416be907acf180a4346731048f699",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9b7444d0da6ae467ecffdaf0a2d38dd2a82de9f10e1a25473c6a59f3c7268581",
+  "source_url": "https://api.github.com/repos/pandas-dev/pandas/git/blobs/014cf81201feccfd48fed32b224fe6aa067f3baa",
+  "status_code": 200
+}

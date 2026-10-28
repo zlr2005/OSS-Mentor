@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 229754179,
+      "login": "stackedbyaradhya",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T12:01:24Z",
+      "committer_at": "2026-10-24T12:01:24Z",
+      "tree_sha": "123a203b9ca6f7174775218458cf821e7d00f136"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b1694e7a4c4cedd3c30712a5edf3d0fbb754b06e"
+  },
+  "observed_at": "2026-10-26T06:01:31.443750+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5f06a55345d40283ea7b50bd90e6abc1c3f49bc316792161d537eac04a919534",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "24c3c353458b669c12cceccab91966b3b5e54074d01dfb46150034270f643085",
+  "source_url": "https://api.github.com/repos/caddyserver/caddy/commits/b1694e7a4c4cedd3c30712a5edf3d0fbb754b06e?per_page=100",
+  "status_code": 200
+}

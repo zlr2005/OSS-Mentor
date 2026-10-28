@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "148b847d3da927235d313d2196ebcf3c61ab668e",
+    "size": 21350
+  },
+  "observed_at": "2026-10-26T05:49:46.270196+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b09c778242f9cd9517e177028b7d8062acc01cbf2f6385c3841060cd35cf4e1f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3cd686ff6fe6202c792e46512d5bfc68bebb4fb6c74d0922de2d0a5852ef8ebc",
+  "source_url": "https://api.github.com/repos/axios/axios/git/blobs/148b847d3da927235d313d2196ebcf3c61ab668e",
+  "status_code": 200
+}

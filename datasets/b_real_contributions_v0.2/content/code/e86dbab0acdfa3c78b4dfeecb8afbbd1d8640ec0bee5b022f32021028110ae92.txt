@@ -1,0 +1,715 @@
+/*
+ * Copyright 2025 NAVER Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.navercorp.pinpoint.otlp.trace.collector.mapper;
+
+import com.navercorp.pinpoint.common.PinpointConstants;
+import com.navercorp.pinpoint.common.plugin.util.HostAndPort;
+import com.navercorp.pinpoint.common.server.bo.AnnotationBo;
+import com.navercorp.pinpoint.common.server.bo.AttributeBo;
+import com.navercorp.pinpoint.common.server.bo.ExceptionInfo;
+import com.navercorp.pinpoint.common.server.bo.ParentApplication;
+import com.navercorp.pinpoint.common.server.bo.SpanBo;
+import com.navercorp.pinpoint.common.server.bo.SpanOwner;
+import com.navercorp.pinpoint.common.server.bo.TraceSourceType;
+import com.navercorp.pinpoint.common.server.trace.OtelServerTraceId;
+import com.navercorp.pinpoint.common.trace.AnnotationKey;
+import com.navercorp.pinpoint.common.trace.ServiceType;
+import com.navercorp.pinpoint.common.trace.attribute.AttributeValue;
+import com.navercorp.pinpoint.common.util.IdValidateUtils;
+import com.navercorp.pinpoint.io.SpanVersion;
+import com.navercorp.pinpoint.otlp.trace.collector.mapper.message.MessageConsumerRecorder;
+import com.navercorp.pinpoint.otlp.trace.collector.mapper.message.MessagingAttributeUtils;
+import com.navercorp.pinpoint.otlp.trace.collector.mapper.message.OtlpMessagingConsumerResolver;
+import com.navercorp.pinpoint.otlp.trace.collector.util.AttributeUtils;
+import io.opentelemetry.proto.common.v1.InstrumentationScope;
+import io.opentelemetry.proto.trace.v1.Span;
+import io.opentelemetry.proto.trace.v1.Status;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Component;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+
+@Component
+public class OtlpTraceSpanMapper {
+    private final OtlpTraceEventMapper eventMapper;
+    private final OtlpTraceLinkMapper linkMapper;
+    private final OtlpServerTypeResolver serverTypeResolver;
+    private final OtlpEnvoyRecorder envoyRecorder;
+    private final OtlpExceptionInfoResolver exceptionInfoResolver;
+    private final OtlpMessagingConsumerResolver messagingConsumerResolver;
+    private final OtlpAttributeBoMapper attributeBoMapper;
+
+    public OtlpTraceSpanMapper(OtlpTraceEventMapper eventMapper,
+                               OtlpTraceLinkMapper linkMapper,
+                               OtlpServerTypeResolver serverTypeResolver,
+                               OtlpEnvoyRecorder envoyRecorder,
+                               OtlpExceptionInfoResolver exceptionInfoResolver,
+                               OtlpMessagingConsumerResolver messagingConsumerResolver,
+                               OtlpAttributeBoMapper attributeBoMapper) {
+        this.eventMapper = Objects.requireNonNull(eventMapper, "eventMapper");
+        this.linkMapper = Objects.requireNonNull(linkMapper, "linkMapper");
+        this.serverTypeResolver = Objects.requireNonNull(serverTypeResolver, "serverTypeResolver");
+        this.envoyRecorder = Objects.requireNonNull(envoyRecorder, "envoyRecorder");
+        this.exceptionInfoResolver = Objects.requireNonNull(exceptionInfoResolver, "exceptionInfoResolver");
+        this.messagingConsumerResolver = Objects.requireNonNull(messagingConsumerResolver, "messagingConsumerResolver");
+        this.attributeBoMapper = Objects.requireNonNull(attributeBoMapper, "attributeBoMapper");
+    }
+
+    SpanBo map(IdAndName idAndName, Span span, InstrumentationScope scope) {
+        return map(idAndName, span, scope, OtlpAgentStartTimeResolver.UNSET);
+    }
+
+    SpanBo map(IdAndName idAndName, Span span, InstrumentationScope scope, long agentStartTimeMillis) {
+        final long startTimeNanos = span.getStartTimeUnixNano();
+
+        final SpanOwner owner = new SpanOwner();
+        owner.setAgentId(idAndName.agentId());
+        if (idAndName.agentName() != null) {
+            owner.setAgentName(idAndName.agentName());
+        }
+        owner.setApplicationName(idAndName.applicationName());
+        owner.setServiceName(idAndName.serviceName());
+        owner.setServiceUid(idAndName.serviceUid());
+        // process.creation.time (resource) when provided — the actual process session start,
+        // matching the native agent's RuntimeMXBean.getStartTime(). Otherwise the span start
+        // time remains the per-span approximation for exporters that don't report it.
+        owner.setAgentStartTime(agentStartTimeMillis != OtlpAgentStartTimeResolver.UNSET
+                ? agentStartTimeMillis
+                : TimeUnit.NANOSECONDS.toMillis(startTimeNanos));
+
+        SpanBo spanBo = new SpanBo(TraceSourceType.OPENTELEMETRY, owner);
+        // Application-level type is always the generic OTel server type. The span-level
+        // serviceType assigned below may specialize (GRPC_SERVER, KAFKA_CLIENT, ...) without
+        // leaking into application-keyed storage via the applicationServiceType fallback
+        // (trace index v2 row key, server-map self vertex, application registration).
+        spanBo.setApplicationServiceType(ServiceType.OPENTELEMETRY_SERVER.getCode());
+        spanBo.setTransactionId(new OtelServerTraceId(OtlpIdValidator.validateTraceId(span.getTraceId())));
+        spanBo.setSpanId(OtlpTraceMapperUtils.getSpanId(span.getSpanId()));
+        spanBo.setParentSpanId(OtlpTraceMapperUtils.getParentSpanId(span.getParentSpanId()));
+        final long endTimeNanos = Math.max(span.getEndTimeUnixNano(), startTimeNanos);
+        final long elapsedNanos = endTimeNanos - startTimeNanos;
+        int elapsed = (int) TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
+        spanBo.setTraceTime(SpanVersion.TRACE_V3, startTimeNanos, endTimeNanos, elapsed);
+        spanBo.setCollectorAcceptTime(System.currentTimeMillis());
+        spanBo.setFlag((short) 0);
+        spanBo.setExceptionClass(null);
+        spanBo.setApiId(0);
+
+        final Map<String, AttributeValue> attributes = OtlpTraceMapperUtils.getAttributeValueMap(span.getAttributesList());
+        // Keys promoted to a 1st-class field/annotation are collected here and excluded from the
+        // raw attribute list below — "filter only what was actually consumed". Keys consumed by
+        // the messaging/db collaborators are covered by the static FILTERED_ATTRIBUTE_KEY_SET.
+        final Set<String> consumedKeys = new HashSet<>();
+        // Spring Boot micrometer-tracing bridge: Micrometer key names instead of semconv (see OtlpMicrometerAttributes).
+        final boolean micrometer = OtlpMicrometerAttributes.isMicrometerScope(scope);
+        final boolean isServerKind = span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_SERVER_VALUE;
+        // Micrometer `status` / `method` are HTTP-typed only on the HTTP observations (SERVER, and a
+        // CLIENT root when the app has no inbound span, e.g. a batch job) — on @Observed (INTERNAL)
+        // roots `method` is the Java method name. Same rule as the SpanEvent path.
+        final boolean micrometerHttp = micrometer
+                && (isServerKind || span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_CLIENT_VALUE);
+        final String messagingSystem = isConsumer(span) ? MessagingAttributeUtils.getSystem(attributes) : null;
+        final MessageConsumerRecorder messageConsumerRecorder = messagingConsumerResolver.resolve(messagingSystem);
+        if (messageConsumerRecorder != null) {
+            messageConsumerRecorder.recordMessagingConsumer(spanBo, attributes);
+        } else {
+            recordServer(spanBo, span, attributes, consumedKeys, micrometer);
+        }
+
+        // Apply Pinpoint context propagated via tracestate from an upstream OTel-traced service.
+        // Skip true trace roots (no parent span) — there is no upstream caller to record.
+        if (!span.getParentSpanId().isEmpty()) {
+            final ParentApplication parentApplication = parseTraceState(span.getTraceState());
+            if (parentApplication != null) {
+                spanBo.setParentApplication(parentApplication);
+            }
+        }
+
+        // errCode is the transaction-level error flag and is set whenever the (root) span status
+        // is ERROR, independently of whether an exceptionInfo can be built.
+        final ExceptionInfo exceptionInfo = exceptionInfoResolver.resolveErrorExceptionInfo(span, attributes);
+        if (Status.StatusCode.STATUS_CODE_ERROR.getNumber() == span.getStatus().getCodeValue()) {
+            spanBo.setErrCode(1);
+            if (exceptionInfo != null) {
+                spanBo.setExceptionInfo(exceptionInfo);
+            }
+        }
+        final boolean skipExceptionEvent = exceptionInfoResolver.isExceptionClassCaptured(exceptionInfo);
+        // response — promote the HTTP status code (int, or Envoy's numeric string) to an annotation.
+        // Only the raw attribute key actually consumed here is excluded from the attribute list below,
+        // so a non-promoted status variant (or a non-numeric value that could not be promoted) survives.
+        OtlpHttpStatusResolver.ResponseStatus responseStatus = OtlpHttpStatusResolver.resolve(attributes);
+        if (responseStatus == null && micrometerHttp) {
+            responseStatus = OtlpMicrometerAttributes.getResponseStatus(attributes);
+        }
+        if (responseStatus != null) {
+            spanBo.addAnnotation(AnnotationBo.of(AnnotationKey.HTTP_STATUS_CODE.getCode(), responseStatus.code()));
+            consumedKeys.add(responseStatus.sourceKey());
+        }
+        // http method → HTTP_METHOD annotation (surfaced as a 1st-class field in the web UI)
+        String httpMethod = getHttpMethod(attributes, consumedKeys);
+        if (httpMethod == null && micrometerHttp) {
+            httpMethod = OtlpMicrometerAttributes.getHttpMethod(attributes, consumedKeys);
+        }
+        if (httpMethod != null) {
+            spanBo.addAnnotation(AnnotationBo.of(AnnotationKey.HTTP_METHOD.getCode(), httpMethod));
+        }
+        // gRPC status → grpc.status (160) annotation. The native agent has no gRPC server
+        // plugin, so this root-span promotion is OTel-only added value (the value form mirrors
+        // the native client plugin's status-name representation).
+        final OtlpGrpcStatusResolver.GrpcStatus grpcStatus = OtlpGrpcStatusResolver.resolve(attributes);
+        if (grpcStatus != null) {
+            spanBo.addAnnotation(AnnotationBo.of(OtlpTraceConstants.ANNOTATION_KEY_GRPC_STATUS, grpcStatus.name()));
+            consumedKeys.add(grpcStatus.sourceKey());
+        }
+        // GenAI (LLM call) → gen_ai.model (409) / gen_ai.usage (410) annotations
+        OtlpGenAiRecorder.record(spanBo::addAnnotation, attributes, consumedKeys);
+        final Predicate<String> attributeFilter = OtlpTraceConstants.FILTERED_ATTRIBUTE_KEY.or(consumedKeys::contains);
+        final TruncatedCounts truncatedCounts = new TruncatedCounts();
+        // attributes
+        if (!attributes.isEmpty()) {
+            List<AttributeBo> attributeBoList = attributeBoMapper.toAttributeBoList(
+                    attributes, attributeFilter, truncatedCounts::attribute);
+            spanBo.setAttributeBoList(attributeBoList);
+        }
+
+        // event
+        for (Span.Event event : span.getEventsList()) {
+            // The exception event's class name is captured into exceptionInfo and its message/
+            // stacktrace into exception-trace metadata, so skip its (redundant) annotation.
+            if (skipExceptionEvent && OtlpTraceConstants.EVENT_NAME_EXCEPTION.equals(event.getName())) {
+                continue;
+            }
+            final AnnotationBo eventAnnotation = eventMapper.toAnnotation(event, truncatedCounts::event);
+            if (eventAnnotation != null) {
+                spanBo.addAnnotation(eventAnnotation);
+            }
+        }
+        // link
+        for (Span.Link link : span.getLinksList()) {
+            final AnnotationBo linkAnnotation = linkMapper.toAnnotation(link, truncatedCounts::link);
+            if (linkAnnotation != null) {
+                spanBo.addAnnotation(linkAnnotation);
+            }
+        }
+        final AnnotationBo truncatedAnnotation = toTruncatedAnnotation(truncatedCounts);
+        if (truncatedAnnotation != null) {
+            spanBo.addAnnotation(truncatedAnnotation);
+        }
+        // SDK-side data-loss hints (Span proto fields 10/12/14). Only emit when > 0 so
+        // well-behaved spans stay annotation-free.
+        final AnnotationBo droppedAnnotation = toDroppedAnnotation(
+                span.getDroppedAttributesCount(),
+                span.getDroppedEventsCount(),
+                span.getDroppedLinksCount());
+        if (droppedAnnotation != null) {
+            spanBo.addAnnotation(droppedAnnotation);
+        }
+        // instrumentation scope identity ("name@version") — omitted when the SDK left the
+        // scope name unset, so scope-less spans stay annotation-free.
+        final String scopeValue = OtlpTraceMapperUtils.formatScope(scope);
+        if (scopeValue != null) {
+            spanBo.addAnnotation(AnnotationBo.of(AnnotationKey.OPENTELEMETRY_SCOPE.getCode(), scopeValue));
+        }
+
+        return spanBo;
+    }
+
+    /**
+     * Builds the single OPENTELEMETRY_DROPPED annotation summarizing SDK-side drops, or
+     * {@code null} when every count is zero. Value format: space-separated {@code label=count}
+     * pairs (e.g. {@code "attributes=12 events=5 links=3"}); zero components are omitted.
+     * Shared between {@link OtlpTraceSpanMapper} (root spans) and
+     * {@link OtlpTraceSpanEventMapper} (child spans).
+     */
+    static @Nullable AnnotationBo toDroppedAnnotation(int droppedAttributes,
+                                                      int droppedEvents,
+                                                      int droppedLinks) {
+        if (droppedAttributes == 0 && droppedEvents == 0 && droppedLinks == 0) {
+            return null;
+        }
+        String label = new DroppedCounts()
+                .attributes(droppedAttributes)
+                .events(droppedEvents)
+                .links(droppedLinks)
+                .toString();
+        return AnnotationBo.of(AnnotationKey.OPENTELEMETRY_DROPPED.getCode(), label);
+    }
+
+    /**
+     * Builds the single OPENTELEMETRY_TRUNCATED annotation when the collector truncated over-long
+     * attribute values or SQL on this span. Value format mirrors OPENTELEMETRY_DROPPED:
+     * space-separated {@code label=count} pairs (e.g. {@code "attributes=3 sql=1"}); zero
+     * components are omitted and {@code null} is returned when nothing was truncated. Shared
+     * by {@link OtlpTraceSpanMapper} (root spans) and {@link OtlpTraceSpanEventMapper} (child spans).
+     */
+    static @Nullable AnnotationBo toTruncatedAnnotation(TruncatedCounts truncatedCounts) {
+        if (truncatedCounts.isEmpty()) {
+            return null;
+        }
+        return AnnotationBo.of(AnnotationKey.OPENTELEMETRY_TRUNCATED.getCode(), truncatedCounts.toString());
+    }
+
+    /**
+     * Applies an upstream Pinpoint context entry from {@code tracestate}.
+     * Mirrors the native {@code ServerRequestRecorder} behavior: parentServiceName is
+     * only meaningful when accompanied by a valid parentApplicationName, so the two
+     * fields are tied. The parent service type uses the {@code type} sub-key when
+     * present, otherwise falls back to {@link ServiceType#OPENTELEMETRY_SERVER} on the
+     * assumption that the upstream is another OTel-instrumented service. Invalid
+     * applicationName (length / pattern) is silently dropped to avoid corrupting
+     * ApplicationMap row keys. A parentServiceName no service can have is recorded as
+     * UNKNOWN ({@link OtlpTraceMapperUtils#getParentServiceName}).
+     */
+    private @Nullable ParentApplication parseTraceState(String traceState) {
+        final PinpointTraceStateParser.PinpointHeader header = PinpointTraceStateParser.parse(traceState);
+        if (header == null) {
+            return null;
+        }
+        final String parentApplicationName = header.parentApplicationName();
+        if (parentApplicationName == null
+                || !IdValidateUtils.validateId(parentApplicationName, PinpointConstants.APPLICATION_NAME_MAX_LEN_V3)) {
+            return null;
+        }
+        final Integer parentApplicationType = header.parentApplicationType();
+        final int parentServiceType = parentApplicationType != null
+                ? parentApplicationType
+                : ServiceType.OPENTELEMETRY_SERVER.getCode();
+        final String parentServiceName = OtlpTraceMapperUtils.getParentServiceName(header.parentServiceName());
+        return ParentApplication.of(parentServiceName, parentApplicationName, parentServiceType);
+    }
+
+    /**
+     * Records request-side fields and annotations for SERVER / INTERNAL spans and for
+     * CONSUMER spans whose {@code messaging.system} is unsupported (those fall through
+     * to the server-style mapping). acceptorHost is only set when the span has a parent
+     * (i.e. is not a trace root), since a root server span has no upstream caller.
+     */
+    private void recordServer(SpanBo spanBo, Span span, Map<String, AttributeValue> attributes, Set<String> consumedKeys, boolean micrometer) {
+        spanBo.setRpc(getServerSpanToRpc(span, attributes, consumedKeys, micrometer));
+        spanBo.setEndPoint(getServerSpanToEndPoint(span, attributes, consumedKeys));
+        spanBo.setRemoteAddr(getServerSpanToRemoteAddress(span, attributes, consumedKeys));
+
+        if (spanBo.getParentSpanId() != -1) {
+            spanBo.setAcceptorHost(spanBo.getEndPoint());
+        }
+
+        // SERVER kind only: dispatch ServiceType via rpc.system(.name) (grpc → GRPC_SERVER,
+        // dubbo / apache_dubbo → APACHE_DUBBO_PROVIDER). INTERNAL and unsupported-messaging
+        // consumer fallthrough stay on OPENTELEMETRY_SERVER. HTTP server framework cannot be
+        // derived from OTel attributes.
+        final boolean isServerKind = span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_SERVER_VALUE;
+        final String rpcSystem = isServerKind ? getRpcSystem(attributes, consumedKeys) : null;
+        spanBo.setServiceType(serverTypeResolver.resolveServerServiceType(rpcSystem));
+        // Envoy ingress detection → identification annotations only. The ServiceType is NOT
+        // overridden (see OtlpEnvoyRecorder Javadoc: mixing ENVOY(1550) with
+        // OPENTELEMETRY_SERVER under one applicationName caused node-type conflicts).
+        if (isServerKind && envoyRecorder.isEnvoy(attributes)) {
+            envoyRecorder.recordAnnotations(spanBo::addAnnotation, attributes, true, consumedKeys);
+        }
+
+        final String apiName = isConsumer(span) ? OtlpTraceMapper.CONSUMER_METHOD_NAME : OtlpTraceMapper.SERVER_METHOD_NAME;
+        spanBo.addAnnotation(AnnotationBo.of(AnnotationKey.API.getCode(), apiName));
+    }
+
+    String getServerSpanToEndPoint(Span span, Map<String, AttributeValue> attributes, Set<String> consumedKeys) {
+        if (span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_SERVER_VALUE || span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_INTERNAL_VALUE) {
+            // HTTP Server
+            final String serverAddress = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_SERVER_ADDRESS, null);
+            if (serverAddress != null) {
+                final long serverPort = AttributeUtils.getAttributeIntValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_SERVER_PORT, 0L);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_SERVER_ADDRESS);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_SERVER_PORT);
+                return toEndPoint(serverAddress, serverPort);
+            }
+            // legacy (semconv 1.x) equivalent of server.address/server.port — still the default of
+            // opentelemetry-go-contrib <= 0.60, opentelemetry-python-contrib and otel-js < 0.221.
+            final String netHostName = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NET_HOST_NAME, null);
+            if (netHostName != null) {
+                final long netHostPort = AttributeUtils.getAttributeIntValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NET_HOST_PORT, 0L);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NET_HOST_NAME);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NET_HOST_PORT);
+                return toEndPoint(netHostName, netHostPort);
+            }
+            // http.url is deliberately NOT collected: only host:port is consumed and the raw URL
+            // retains path/query information beyond the promoted field.
+            final String httpUrl = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_URL, null);
+            if (httpUrl != null) {
+                return extractHostAndPort(httpUrl);
+            }
+            // gRPC server without an address: 1.x rpc.service, or the service part of the RC
+            // fully-qualified rpc.method (rpc.service is deprecated there).
+            final String rpcService = OtlpRpcMethodResolver.resolveService(attributes, consumedKeys);
+            if (rpcService != null) {
+                return rpcService;
+            }
+        } else if (span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_CONSUMER_VALUE) {
+            // Consumer for an unsupported messaging.system: fall back to the client id
+            // (messaging.client.id, or the deprecated messaging.client_id).
+            // Known systems (kafka, rabbitmq) are handled in map() via the messaging dispatch.
+            return MessagingAttributeUtils.resolveClientId(attributes);
+        }
+        return null;
+    }
+
+    /**
+     * Joins the host and port attributes into {@code host:port}. Some instrumentations put the raw
+     * HTTP {@code Host} header into the address attribute (opentelemetry-python-contrib util-http:
+     * {@code server.address} / {@code net.host.name} = {@code "localhost:18120"}) while also emitting
+     * the port attribute; appending the port again would yield {@code localhost:18120:18120}, so a
+     * host that already ends in {@code :<port>} is returned as-is. A bare IPv6 literal such as
+     * {@code ::1} has more than one colon and no bracket, so it still gets the port appended.
+     */
+    static String toEndPoint(String host, long port) {
+        if (port != 0 && hasPortSuffix(host)) {
+            return host;
+        }
+        return HostAndPort.toHostAndPortString(host, (int) port, 0);
+    }
+
+    static boolean hasPortSuffix(String host) {
+        final int colon = host.lastIndexOf(':');
+        if (colon <= 0 || colon == host.length() - 1) {
+            return false;
+        }
+        for (int i = colon + 1; i < host.length(); i++) {
+            if (!Character.isDigit(host.charAt(i))) {
+                return false;
+            }
+        }
+        // "host:8080" has a single colon; "[::1]:8080" closes the IPv6 literal right before it.
+        // Anything else with more colons ("::1", "fe80::1") is a bare IPv6 address.
+        return host.indexOf(':') == colon || host.charAt(colon - 1) == ']';
+    }
+
+    /** Route-template keys count only when they carry a non-blank value. */
+    static boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    public static String extractHostAndPort(String url) {
+        if (url == null || url.isEmpty()) {
+            return null;
+        }
+
+        int start = 0;
+
+        int schemeEnd = url.indexOf("://");
+        if (schemeEnd >= 0) {
+            start = schemeEnd + 3;
+        } else if (url.startsWith("//")) {
+            // scheme-relative URL: //host[:port]/path (consistent with OtlpSensitiveAttributeFilter.stripUrl)
+            start = 2;
+        }
+
+        int end = url.length();
+        for (int i = start; i < url.length(); i++) {
+            char c = url.charAt(i);
+            if (c == '/' || c == '?' || c == '#') {
+                end = i;
+                break;
+            }
+        }
+
+        // Strip userinfo ("user:pass@") so credentials never leak into the promoted endPoint.
+        int userInfoEnd = url.lastIndexOf('@', end - 1);
+        if (userInfoEnd >= start) {
+            start = userInfoEnd + 1;
+        }
+
+        return url.substring(start, end); // "host" or "host:port"
+    }
+
+    /**
+     * Consumption-free variant for callers that only need the value — consumed keys are collected
+     * into a throwaway set.
+     */
+    String getServerSpanToRpc(Span span, Map<String, AttributeValue> attributes) {
+        return getServerSpanToRpc(span, attributes, new HashSet<>(), false);
+    }
+
+    String getServerSpanToRpc(Span span, Map<String, AttributeValue> attributes, Set<String> consumedKeys) {
+        return getServerSpanToRpc(span, attributes, consumedKeys, false);
+    }
+
+    String getServerSpanToRpc(Span span, Map<String, AttributeValue> attributes, Set<String> consumedKeys, boolean micrometer) {
+        if (span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_SERVER_VALUE || span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_INTERNAL_VALUE) {
+            final String routeTemplate = resolveRouteTemplate(span, attributes, consumedKeys, micrometer);
+            if (routeTemplate != null) {
+                return routeTemplate;
+            }
+            // Unrouted request: fall through to the raw path keys (rpc stays request-specific).
+            final String urlPath = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_URL_PATH, null);
+            if (urlPath != null) {
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_URL_PATH);
+                return urlPath;
+            }
+            // http.url is deliberately NOT collected — only the path is consumed here (and the
+            // host by getServerSpanToEndPoint); the raw URL retains the rest.
+            final String httpUrl = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_URL, null);
+            if (httpUrl != null) {
+                return extractPath(httpUrl);
+            }
+            final String httpTarget = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_TARGET, null);
+            if (httpTarget != null) {
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_TARGET);
+                return httpTarget;
+            }
+            // gRPC server: fully-qualified "<service>/<method>" (1.x rpc.service + rpc.method are
+            // composed into the RC shape so both generations share one rpc key).
+            final String rpcMethod = OtlpRpcMethodResolver.resolve(attributes, consumedKeys);
+            if (rpcMethod != null) {
+                return rpcMethod;
+            }
+        }
+        // Known messaging consumer rpc is built via OtlpMessagingConsumerResolver#buildConsumerRpc.
+        // Consumer for unsupported messaging.system / unknown kind: fall back to the OTel span name.
+        return span.getName();
+    }
+
+    /**
+     * The matched route template of a SERVER/INTERNAL span — http.route, Next.js next.route, or the
+     * Spring Boot micrometer-tracing {@code uri} — or {@code null} when the request was not routed.
+     * Shared by the rpc resolution ({@link #getServerSpanToRpc}, which then falls back to the raw
+     * path) and the exception uriTemplate ({@link #getExceptionUriTemplate}, which must not).
+     */
+    String resolveRouteTemplate(Span span, Map<String, AttributeValue> attributes, Set<String> consumedKeys, boolean micrometer) {
+        if (span.getKind().getNumber() != Span.SpanKind.SPAN_KIND_SERVER_VALUE && span.getKind().getNumber() != Span.SpanKind.SPAN_KIND_INTERNAL_VALUE) {
+            return null;
+        }
+        // http.route is the matched route template ("/users/{id}") — prefer it over the raw
+        // url.path ("/users/12345") so the rpc field stays low-cardinality, matching the agent's
+        // recordUriTemplate behavior. Callers decide what an unrouted request falls back to.
+        // A blank value is treated as absent: otelgin (Go) emits http.route="" for unmatched
+        // routes (404), which would otherwise be stored as an empty rpc. The blank key is not
+        // consumed, so it stays visible in the raw attribute list.
+        final String httpRoute = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_ROUTE, null);
+        if (hasText(httpRoute)) {
+            consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_ROUTE);
+            return httpRoute;
+        }
+        // next.route is Next.js's route template (http.route's vendor equivalent). Next.js does
+        // not emit http.route, so prefer next.route over the raw url.path/http.url/http.target
+        // to keep the rpc field low-cardinality (e.g. "/api/products/[productId]/index").
+        final String nextRoute = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NEXT_ROUTE, null);
+        if (hasText(nextRoute)) {
+            consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NEXT_ROUTE);
+            return nextRoute;
+        }
+        // Spring Boot micrometer-tracing: `uri` is the route template ("/user/{id}"). Prefer it over the raw
+        // path below; no-route placeholders ("/**", "NOT_FOUND", ...) return null and fall through to http.url.
+        if (micrometer && span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_SERVER_VALUE) {
+            final String uriTemplate = OtlpMicrometerAttributes.getUriTemplate(attributes, consumedKeys);
+            if (uriTemplate != null) {
+                return uriTemplate;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Low-cardinality operation template that groups exceptions (Error Analysis "Path") for the root
+     * span of a transaction, mirroring the native agent's {@code Shared.uriTemplate}: the agent records
+     * it only when the server framework matched a route template and leaves it empty otherwise.
+     * Unlike {@link #getServerSpanToRpc}, there is no raw url.path / http.url / http.target fallback
+     * (an unrouted request must not fan the exception groups out per request: "/users/1", "/users/2",
+     * ...) and no span-name fallback. Order: route template (http.route, next.route, micrometer uri)
+     * → fully-qualified rpc method (gRPC servers, {@link OtlpRpcMethodResolver}) → "". Never null:
+     * the agent path stores "" as well, and a null would be persisted as Pinot's STRING null
+     * sentinel and shown as the literal "null".
+     */
+    String getExceptionUriTemplate(Span span, Map<String, AttributeValue> attributes, InstrumentationScope scope) {
+        final int kind = span.getKind().getNumber();
+        if (kind == Span.SpanKind.SPAN_KIND_SERVER_VALUE || kind == Span.SpanKind.SPAN_KIND_INTERNAL_VALUE) {
+            final String routeTemplate = resolveRouteTemplate(span, attributes, new HashSet<>(), OtlpMicrometerAttributes.isMicrometerScope(scope));
+            if (routeTemplate != null) {
+                return routeTemplate;
+            }
+            final String rpcMethod = OtlpRpcMethodResolver.resolve(attributes, new HashSet<>());
+            if (rpcMethod != null) {
+                return rpcMethod;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Returns the URI stat key of an entry-point span, or null when the span must not contribute
+     * to URI stat.
+     * <ol>
+     * <li>The matched route template of a SERVER/INTERNAL span — the same one the rpc and the
+     *     exception uriTemplate use ({@link #resolveRouteTemplate}: http.route, Next.js next.route,
+     *     Spring Boot micrometer-tracing {@code uri}), so the three views agree on what "routed"
+     *     means.</li>
+     * <li>{@link OtlpTraceConstants#URI_STAT_NULL_URI} ("/NULL") for an unrouted HTTP SERVER span:
+     *     one carrying an HTTP request attribute (http.request.method / http.method, url.path,
+     *     http.url, http.target) but no template. This is the agent's behavior — a null uriTemplate
+     *     is stored under "/NULL" by AsyncQueueingUriStatStorage.cleanUri — and keeps 404s and
+     *     un-instrumented frameworks visible as a single bucket.</li>
+     * <li>null otherwise: non-HTTP entry points (gRPC rpc.method-only, messaging consumers),
+     *     CLIENT spans, and INTERNAL spans without a template. Unrouted INTERNAL spans are excluded
+     *     because internal work is not a request entry point, so counting it under "/NULL" would
+     *     inflate the bucket with non-HTTP activity.</li>
+     * </ol>
+     * URI stat never falls back to the raw url.path: unlike {@link #getServerSpanToRpc}, path
+     * variables would explode the Pinot uriStat cardinality. Consumed keys are not tracked
+     * (throwaway set): the caller's annotation filtering is decided by {@link #map} alone.
+     */
+    @Nullable
+    String getUriStatKey(Span span, Map<String, AttributeValue> attributes, InstrumentationScope scope) {
+        final String routeTemplate = resolveRouteTemplate(span, attributes, new HashSet<>(), OtlpMicrometerAttributes.isMicrometerScope(scope));
+        if (routeTemplate != null) {
+            return routeTemplate;
+        }
+        if (span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_SERVER_VALUE && isHttpRequest(attributes)) {
+            return OtlpTraceConstants.URI_STAT_NULL_URI;
+        }
+        return null;
+    }
+
+    /**
+     * Whether the span carries any HTTP request attribute, across the stable (http.request.method,
+     * url.path) and legacy 1.x (http.method, http.url, http.target) semconv keys. Presence alone
+     * counts: an instrumentation that emits any of these keys is an HTTP one.
+     */
+    private static boolean isHttpRequest(Map<String, AttributeValue> attributes) {
+        return attributes.containsKey(OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_REQUEST_METHOD)
+                || attributes.containsKey(OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_METHOD)
+                || attributes.containsKey(OtlpTraceConstants.ATTRIBUTE_KEY_URL_PATH)
+                || attributes.containsKey(OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_URL)
+                || attributes.containsKey(OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_TARGET);
+    }
+
+    public static String extractPath(String url) {
+        if (url == null || url.isEmpty()) {
+            return "/";
+        }
+
+        int start = 0;
+        int schemeEnd = url.indexOf("://");
+        if (schemeEnd >= 0) {
+            start = schemeEnd + 3;
+        }
+
+        int pathStart = url.indexOf('/', start);
+        if (pathStart < 0) {
+            return "/"; // path 없음
+        }
+
+        int pathEnd = url.length();
+        for (int i = pathStart; i < url.length(); i++) {
+            char c = url.charAt(i);
+            if (c == '?' || c == '#') {
+                pathEnd = i;
+                break;
+            }
+        }
+
+        return url.substring(pathStart, pathEnd);
+    }
+
+    static boolean isConsumer(Span span) {
+        return span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_CONSUMER_VALUE;
+    }
+
+    String getServerSpanToRemoteAddress(Span span, Map<String, AttributeValue> attributes, Set<String> consumedKeys) {
+        if (span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_SERVER_VALUE || span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_INTERNAL_VALUE) {
+            String remoteAddress = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_CLIENT_ADDRESS, null);
+            if (remoteAddress != null) {
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_CLIENT_ADDRESS);
+                return remoteAddress;
+            }
+            remoteAddress = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_PEER_ADDRESS, null);
+            if (remoteAddress != null) {
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_PEER_ADDRESS);
+                return remoteAddress;
+            }
+            remoteAddress = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NET_PEER_IP, null);
+            if (remoteAddress != null) {
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NET_PEER_IP);
+                return remoteAddress;
+            }
+            final String networkPeerIp = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NETWORK_PEER_IP, null);
+            if (networkPeerIp != null) {
+                final long networkPeerPort = AttributeUtils.getAttributeIntValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NETWORK_PEER_PORT, 0L);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NETWORK_PEER_IP);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NETWORK_PEER_PORT);
+                return HostAndPort.toHostAndPortString(networkPeerIp, (int) networkPeerPort, 0);
+            }
+            // legacy (semconv 1.x) equivalents — net.sock.peer.addr/.port is the old
+            // network.peer.address/.port (same host:port shape as above), http.client_ip the old
+            // client.address. Default output of opentelemetry-go-contrib <= 0.60 and
+            // opentelemetry-python-contrib.
+            final String netSockPeerAddr = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NET_SOCK_PEER_ADDR, null);
+            if (netSockPeerAddr != null) {
+                final long netSockPeerPort = AttributeUtils.getAttributeIntValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_NET_SOCK_PEER_PORT, 0L);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NET_SOCK_PEER_ADDR);
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_NET_SOCK_PEER_PORT);
+                return HostAndPort.toHostAndPortString(netSockPeerAddr, (int) netSockPeerPort, 0);
+            }
+            final String httpClientIp = AttributeUtils.getAttributeStringValue(attributes, OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_CLIENT_IP, null);
+            if (httpClientIp != null) {
+                consumedKeys.add(OtlpTraceConstants.ATTRIBUTE_KEY_HTTP_CLIENT_IP);
+                return httpClientIp;
+            }
+            return null;
+        } else if (span.getKind().getNumber() == Span.SpanKind.SPAN_KIND_CONSUMER_VALUE) {
+            return null;
+        }
+        return null;
+    }
+
+    /**
+     * Resolves the HTTP request method (new semconv {@code http.request.method} before legacy
+     * {@code http.method}) for promotion to the HTTP_METHOD annotation, or {@code null} when
+     * absent. Shared by the root-span and SpanEvent paths. Only the consumed variant is
+     * collected, so a non-consumed legacy/new twin stays in the raw attribute list.
+     */
+    static @Nullable String getHttpMethod(Map<String, AttributeValue> attributes, Set<String> consumedKeys) {
+        for (String key : OtlpTraceConstants.HTTP_METHOD_KEYS) {
+            final String method = AttributeUtils.getAttributeStringValue(attributes, key, null);
+            if (method != null) {
+                consumedKeys.add(key);
+                return method;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Resolves the RPC system (RC semconv {@code rpc.system.name} before the deprecated
+     * {@code rpc.system}) for ServiceType dispatch, or {@code null} when absent. Shared by the
+     * root-span and SpanEvent paths. Only the consumed variant is collected, so a non-consumed
+     * new/deprecated twin stays in the raw attribute list.
+     */
+    static @Nullable String getRpcSystem(Map<String, AttributeValue> attributes, Set<String> consumedKeys) {
+        for (String key : OtlpTraceConstants.RPC_SYSTEM_KEYS) {
+            final String system = AttributeUtils.getAttributeStringValue(attributes, key, null);
+            if (system != null) {
+                consumedKeys.add(key);
+                return system;
+            }
+        }
+        return null;
+    }
+}

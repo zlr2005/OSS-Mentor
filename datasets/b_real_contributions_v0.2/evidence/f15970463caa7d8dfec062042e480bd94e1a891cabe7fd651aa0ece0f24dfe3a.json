@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "python-trio/trio",
+    "id": 79083614,
+    "language": "Python",
+    "private": false,
+    "size": 10213
+  },
+  "observed_at": "2026-10-26T13:18:14.984391+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "add572c83d4a6e1d0e6af3958be156ef15839425490d1d4d3091f42148920f41",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ce25eb1362f7c57e5aaa9e75499a717c14db2e1bb00a8d1a4513831ce4099d34",
+  "source_url": "https://api.github.com/repos/python-trio/trio",
+  "status_code": 200
+}

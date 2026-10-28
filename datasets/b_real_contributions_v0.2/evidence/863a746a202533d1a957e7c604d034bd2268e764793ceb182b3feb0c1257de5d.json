@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "fastify/fast-json-stringify",
+    "id": 64334938,
+    "language": "JavaScript",
+    "private": false,
+    "size": 1163
+  },
+  "observed_at": "2026-10-26T06:44:28.253791+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "701b209318027669528f04b2aead9fe1ce34004510a01ada961329aa3220c619",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "eee03b1c79874101fe7c6f605fcb1fced4f13ce4f9dc698c38ad2b5084d8289a",
+  "source_url": "https://api.github.com/repos/fastify/fast-json-stringify",
+  "status_code": 200
+}

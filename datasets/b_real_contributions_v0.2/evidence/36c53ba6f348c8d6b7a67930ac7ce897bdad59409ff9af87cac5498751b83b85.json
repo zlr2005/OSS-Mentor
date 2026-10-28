@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "32e2700d67f1e7744ab9d439d0ac06f1aa1c617e",
+    "size": 3596
+  },
+  "observed_at": "2026-10-26T07:02:34.160694+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c42878e08c0437aef37aa24d8f059bca0fb7625c39e92ddde47ad377a6513e97",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5330d98208e2b5bcef05d53ce6c8a7a0530dc53bb97a26172e4cf7e984e9c657",
+  "source_url": "https://api.github.com/repos/golang/go/git/blobs/32e2700d67f1e7744ab9d439d0ac06f1aa1c617e",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 326648561,
+      "login": "kerry-berri",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T00:17:09Z",
+      "committer_at": "2026-10-25T00:17:09Z",
+      "tree_sha": "6a4c23043390477aa915d5b816b9bd0328f05f8f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5171b3fbd85051969ee4dcf512dec634fd8f472b"
+  },
+  "observed_at": "2026-10-27T12:52:37.321767+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a9a92fce5ac0bda78d07413e6b9553c734d2b6e6f06d3a0380c024b85cfc1db1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f9ff56f214c5dfcdeafb52fd34e1e9f6f80ee8fb8d373c13e90afaf11359ab2",
+  "source_url": "https://api.github.com/repos/BerriAI/litellm/commits/5171b3fbd85051969ee4dcf512dec634fd8f472b?per_page=100",
+  "status_code": 200
+}

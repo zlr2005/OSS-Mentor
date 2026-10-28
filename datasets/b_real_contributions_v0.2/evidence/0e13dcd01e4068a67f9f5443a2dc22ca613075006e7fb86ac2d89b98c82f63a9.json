@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 16618929,
+      "login": "shuaiyafei",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T15:08:13Z",
+      "committer_at": "2026-10-19T15:08:13Z",
+      "tree_sha": "9362feddfe56e489143a61b45f6635a4c3af000f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "375a2d0d2f0cbf548e9351486c2e8b047edc9410"
+  },
+  "observed_at": "2026-10-27T15:55:35.805186+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2765c96b4ff23ed3d7504650d1bfc83e396e581567e9566ec003588ed6589594",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5c326804e167cfaba636c029baf91a4fa5e361ebfac46b63f4319d0e23692bf7",
+  "source_url": "https://api.github.com/repos/rollup/rollup/commits/375a2d0d2f0cbf548e9351486c2e8b047edc9410?per_page=100",
+  "status_code": 200
+}

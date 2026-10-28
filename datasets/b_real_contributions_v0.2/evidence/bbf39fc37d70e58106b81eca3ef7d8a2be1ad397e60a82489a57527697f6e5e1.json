@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "dask/distributed",
+    "id": 42408083,
+    "language": "Python",
+    "private": false,
+    "size": 515702
+  },
+  "observed_at": "2026-10-26T06:14:57.831286+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b595f756c3183a24873223d37cd7cbd9b04485e789d929c4548ef2d866dabb46",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6c885e59d35434d5e3b7ad87ef14266a78aab042399b3f7fd5708b4e538a7f2a",
+  "source_url": "https://api.github.com/repos/dask/distributed",
+  "status_code": 200
+}

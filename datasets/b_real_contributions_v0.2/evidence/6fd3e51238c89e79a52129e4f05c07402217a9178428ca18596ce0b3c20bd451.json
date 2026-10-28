@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 47979223,
+      "login": "rustbot",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T01:26:58Z",
+      "committer_at": "2026-10-25T01:26:58Z",
+      "tree_sha": "5356af9b475ed8ed585b0aeacaaa9cf692e23c58"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b57863321f8d0a0f76fcf9ad636b6e39b024d0c0"
+  },
+  "observed_at": "2026-10-26T13:49:50.469077+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2123ec260cf44ed21a9712b0eebe8ec74c89d03490707c9be3651bf3436c0c7f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "dccbd424612b5cc949046f81d8d5c345153b8ad204449e86c3e5f25ed3687fa9",
+  "source_url": "https://api.github.com/repos/rust-lang/cargo/commits/b57863321f8d0a0f76fcf9ad636b6e39b024d0c0?per_page=100",
+  "status_code": 200
+}

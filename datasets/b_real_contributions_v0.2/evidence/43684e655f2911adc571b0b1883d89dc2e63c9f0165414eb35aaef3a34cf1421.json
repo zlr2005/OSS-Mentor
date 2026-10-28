@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 12915163,
+      "login": "jonchurch",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-03T19:48:01Z",
+      "committer_at": "2026-07-03T19:48:01Z",
+      "tree_sha": "db33bf300e327a383356d4187e7608df93242969"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a666ba591064c8011988275790ad7d625279f09c"
+  },
+  "observed_at": "2026-10-27T13:45:59.749668+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1ce4c53615bf7b1946264267916309c460ec383d8ff6181e10498295f0362d24",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fb44135d3d8c1b0ce2b7928ea89f670226633f50ab38811e6b8a6b42492b38e0",
+  "source_url": "https://api.github.com/repos/lodash/lodash/commits/a666ba591064c8011988275790ad7d625279f09c?per_page=100",
+  "status_code": 200
+}

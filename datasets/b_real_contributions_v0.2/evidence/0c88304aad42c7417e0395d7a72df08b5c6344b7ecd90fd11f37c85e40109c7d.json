@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "storybookjs/storybook",
+    "id": 54173593,
+    "language": "TypeScript",
+    "private": false,
+    "size": 1135914
+  },
+  "observed_at": "2026-10-26T14:35:56.367393+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4fe8eeec328fde51fa023be5690e710fa8403c34e12539dd9a712bfc13d1c737",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c00643f876ea3c75a4e7e7b11f9b5cc738d6e8179feef100d9241cfb2c7f12f4",
+  "source_url": "https://api.github.com/repos/storybookjs/storybook",
+  "status_code": 200
+}

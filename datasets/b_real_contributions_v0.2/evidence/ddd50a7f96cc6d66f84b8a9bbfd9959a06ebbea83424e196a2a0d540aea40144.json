@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "efbdeaad3c7004b632636f8048c46a65ac8e2fcd",
+    "size": 5843
+  },
+  "observed_at": "2026-10-26T08:22:38.581614+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b157299a87bd139cdbed9fac33e63193273c0f5f302161f9743549a8e4a0551b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "17ef6cb1a821f76cb6eb2191b38a356381f791cc1a6f233affc9281dcdbe7679",
+  "source_url": "https://api.github.com/repos/moby/moby/git/blobs/efbdeaad3c7004b632636f8048c46a65ac8e2fcd",
+  "status_code": 200
+}

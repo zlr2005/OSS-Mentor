@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "d0db99f57b02a16741a38b530c079f137200a5f9",
+    "size": 169586
+  },
+  "observed_at": "2026-10-26T07:25:09.555998+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c1847efc30811021564d231965692a7f9eecd0e38663a6481ab93ccd43f4f972",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "24996589cad719d1accbcaef00dab4c2d3651f464164cfc10a29f8a7f263ca8d",
+  "source_url": "https://api.github.com/repos/home-assistant/core/git/blobs/d0db99f57b02a16741a38b530c079f137200a5f9",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1954dcba9eb12752ea6905adcb6d55f9eb96d050",
+    "size": 18197
+  },
+  "observed_at": "2026-10-26T06:19:33.780233+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e5332121cf77b5c937630e477835fa9160c8b61070b5b41a859d0b273a78398a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c7e741401140b4467d0bb76162db74eb1e2add1a1c343b5bc2f2f4c9b8a9c3f4",
+  "source_url": "https://api.github.com/repos/derailed/k9s/git/blobs/1954dcba9eb12752ea6905adcb6d55f9eb96d050",
+  "status_code": 200
+}

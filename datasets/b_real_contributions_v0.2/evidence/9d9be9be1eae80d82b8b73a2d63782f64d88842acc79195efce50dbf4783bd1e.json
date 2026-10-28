@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/logging-log4j2",
+    "id": 10637896,
+    "language": "Java",
+    "private": false,
+    "size": 155377
+  },
+  "observed_at": "2026-10-26T05:22:10.504217+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d8be65e48634f3c0712250a4d76f7ecf070221fbbf6d22cd6c7792099b290826",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0b6baa8ddd7c2fec2d0b8c351679e83c4ff12d5d7177096f26bf9323a4d3dea8",
+  "source_url": "https://api.github.com/repos/apache/logging-log4j2",
+  "status_code": 200
+}

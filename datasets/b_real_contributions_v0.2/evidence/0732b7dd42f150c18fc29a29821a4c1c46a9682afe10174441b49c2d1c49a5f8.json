@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1facab5a49110e08ee75589ceb1e0143dc1ff571",
+    "size": 5680
+  },
+  "observed_at": "2026-10-26T13:20:16.822064+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "31b5c542b7fc9d5a7d5b8b67bba1e237aa86792a5565646a8be259d7f6c17b3a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f0f2fa3f2a5c8085e863b7bed4b59350a2b750d5573f3b845c2014ee0498d4fd",
+  "source_url": "https://api.github.com/repos/qos-ch/slf4j/git/blobs/1facab5a49110e08ee75589ceb1e0143dc1ff571",
+  "status_code": 200
+}

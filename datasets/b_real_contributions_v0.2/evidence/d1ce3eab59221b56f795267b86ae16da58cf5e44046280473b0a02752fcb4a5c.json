@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "aeb0d730bac55f4819bc79a618cd5596c77f60b6",
+    "size": 13684
+  },
+  "observed_at": "2026-10-26T06:06:54.398367+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "791fc4c23c8bbbddc9f1ae357e3adc9d79a3131a25e595a79a42c71f3eea60f8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "82455d9a161daefbdd55b4394cad3b84e11cfbdd8ad2c64d97616e2e75e46e1f",
+  "source_url": "https://api.github.com/repos/checkstyle/checkstyle/git/blobs/aeb0d730bac55f4819bc79a618cd5596c77f60b6",
+  "status_code": 200
+}

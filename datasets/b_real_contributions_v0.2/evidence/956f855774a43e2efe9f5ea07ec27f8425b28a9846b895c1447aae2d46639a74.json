@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 320934825,
+      "login": "ElliotXue-crypto",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-16T10:17:31Z",
+      "committer_at": "2026-10-16T10:17:31Z",
+      "tree_sha": "055d1af188b6e16d088c580dedeb5340c393dfba"
+    },
+    "committer": {
+      "id": 320934825,
+      "login": "ElliotXue-crypto",
+      "type": "User"
+    },
+    "sha": "51ef1a52900e4a839e189b07c116923c2be1f9a4"
+  },
+  "observed_at": "2026-10-26T13:36:01.729028+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "43d002e0c3b87f642e93cf609c5a66d7f0d5caaa7870b503f7972ba016cf6f07",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "67c608c430cb8b80277faf01ae62cc0b65c99c21fe938f1ebf9c15e8f80cfc61",
+  "source_url": "https://api.github.com/repos/redisson/redisson/commits/51ef1a52900e4a839e189b07c116923c2be1f9a4?per_page=100",
+  "status_code": 200
+}

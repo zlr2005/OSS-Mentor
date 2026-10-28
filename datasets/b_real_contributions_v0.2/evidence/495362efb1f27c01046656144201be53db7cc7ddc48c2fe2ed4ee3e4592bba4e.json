@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 356399,
+      "login": "asvetlov",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T16:03:29Z",
+      "committer_at": "2026-10-22T16:03:29Z",
+      "tree_sha": "343d61d59199f269a0e6c7c80d3c2827438f40ac"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "edfc84d0e9be4bd3ac0b63e4b6dba5eea5082f6f"
+  },
+  "observed_at": "2026-10-26T05:01:43.268672+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dfe4ffaab709670a5b864618c9c11dfb37ea11c8dcf1d0c1d4258ee5dbd13829",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "da004570fdeac72ea46d1020b453dd203c229fe1c18c7091f75e157a020c7b0a",
+  "source_url": "https://api.github.com/repos/aio-libs/multidict/commits/edfc84d0e9be4bd3ac0b63e4b6dba5eea5082f6f?per_page=100",
+  "status_code": 200
+}

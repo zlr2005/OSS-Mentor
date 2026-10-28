@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 144490671,
+      "login": "SulimanAbdulrazzaq",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-04T17:53:15Z",
+      "committer_at": "2026-10-04T17:53:15Z",
+      "tree_sha": "53b6755fac61055a0d9f5ddecf8ffb767c2e217f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3ea141dc4b2761a0a0c9e2fb436ade5e53bc7e72"
+  },
+  "observed_at": "2026-10-26T13:17:39.681143+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "352d91f2081137cccb665377fe45009a549dd11a8e382d14f1fa57f9a1f38930",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d5eae7379594168f59cfde614e37d4bf269c9f14c6cfa0062a8751b153375658",
+  "source_url": "https://api.github.com/repos/python-poetry/poetry/commits/3ea141dc4b2761a0a0c9e2fb436ade5e53bc7e72?per_page=100",
+  "status_code": 200
+}

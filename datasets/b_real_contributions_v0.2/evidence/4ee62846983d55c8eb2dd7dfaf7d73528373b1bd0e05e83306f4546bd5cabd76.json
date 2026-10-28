@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 132787602,
+      "login": "dybyte",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T16:21:48Z",
+      "committer_at": "2026-10-25T16:21:48Z",
+      "tree_sha": "6fb4570ae34a62c819e149618d6008045bba71e7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "570eb976113567efc3cbaa8160dbf8c1cab3c2ac"
+  },
+  "observed_at": "2026-10-26T05:33:27.979544+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "34cda5fc68ed5ab7d39d758070d7101b9c787aca2da491e0faf9fe673bd50069",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c5599131bced4ab41ea7994b10065895cfa2a12ada828b2d70259f29fd9a2d82",
+  "source_url": "https://api.github.com/repos/apache/seatunnel/commits/570eb976113567efc3cbaa8160dbf8c1cab3c2ac?per_page=100",
+  "status_code": 200
+}

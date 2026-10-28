@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/maven",
+    "id": 206483,
+    "language": "Java",
+    "private": false,
+    "size": 97560
+  },
+  "observed_at": "2026-10-26T05:24:54.143463+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "23cfb758f090a2168df131d52d9422a6044973cb055456ac6a478a97aec7c351",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "61599af62bf2c180153c633142e472e9fbe2ea2ca64444b43f7a252842796155",
+  "source_url": "https://api.github.com/repos/apache/maven",
+  "status_code": 200
+}

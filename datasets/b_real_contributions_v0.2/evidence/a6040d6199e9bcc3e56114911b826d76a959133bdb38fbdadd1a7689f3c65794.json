@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "langchain-ai/deepagents",
+    "id": 1027384981,
+    "language": "Python",
+    "private": false,
+    "size": 368176
+  },
+  "observed_at": "2026-10-26T07:56:34.846312+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "de1019f13426bed2f6b808b078d081324d04e1ad7c9df363ff6392142477f162",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2d16c7f240d5e230cbed57ba976b61ea88ec2bfff320b95eeb0967c4ed79bf0a",
+  "source_url": "https://api.github.com/repos/langchain-ai/deepagents",
+  "status_code": 200
+}

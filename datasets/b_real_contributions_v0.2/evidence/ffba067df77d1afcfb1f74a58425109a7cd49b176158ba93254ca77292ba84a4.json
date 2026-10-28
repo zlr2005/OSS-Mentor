@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 41266433,
+      "login": "clemyan",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-28T21:10:36Z",
+      "committer_at": "2026-07-28T21:10:36Z",
+      "tree_sha": "8c88972a4ec1c93465208a94425940bd636c3bf3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "bb3e95f13c9ddbb92ff0c3f623d40a4cb391f339"
+  },
+  "observed_at": "2026-10-26T15:52:46.038276+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e90c3ab26b0411d1de4aeaca6086cc134b9eff5bbfd398862efb3a0be11be9d7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a5e402cc8b98a170d7a8872d22d24f726acabf77098582e07ba2c8b306dd8242",
+  "source_url": "https://api.github.com/repos/yarnpkg/berry/commits/bb3e95f13c9ddbb92ff0c3f623d40a4cb391f339?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 71909624,
+      "login": "Gabrieljr42",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-18T05:58:15Z",
+      "committer_at": "2026-10-18T05:58:15Z",
+      "tree_sha": "9d0d5d900809dad816dfdbf70fc7bef7bff197e2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0276e3ae675b40e4c70388b6856f6dc6871a7a77"
+  },
+  "observed_at": "2026-10-26T15:29:26.377690+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4684915657aa2d5102095bd1055943e4b0b25aca5f67d56ca21563ef05bddffa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d962261003c0ba938b426302b4ea568f3e4fc17b97958279193ef99d73d7d317",
+  "source_url": "https://api.github.com/repos/vavr-io/vavr/commits/0276e3ae675b40e4c70388b6856f6dc6871a7a77?per_page=100",
+  "status_code": 200
+}

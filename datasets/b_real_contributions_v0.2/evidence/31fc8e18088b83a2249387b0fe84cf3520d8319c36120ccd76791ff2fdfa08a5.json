@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8cc912f4e6ec9d25906365dd4ef9d0cc43998e88",
+    "size": 489
+  },
+  "observed_at": "2026-10-26T14:08:46.597458+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0e1a565a3f03db678178407826edf4a2960230511f9c53cce393434453e018c7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "376d95e639eca212d98bbf74729d2ed866a85b73711f337726b2c0f8295054ce",
+  "source_url": "https://api.github.com/repos/spotbugs/spotbugs/git/blobs/8cc912f4e6ec9d25906365dd4ef9d0cc43998e88",
+  "status_code": 200
+}

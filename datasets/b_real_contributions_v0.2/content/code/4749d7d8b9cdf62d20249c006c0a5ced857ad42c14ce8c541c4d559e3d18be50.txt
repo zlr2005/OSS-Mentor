@@ -1,0 +1,541 @@
+/*
+ * Copyright (c) 2011-2026 Contributors to the Eclipse Foundation
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+ */
+package io.vertx.core.http;
+
+import io.netty.handler.codec.compression.CompressionOptions;
+import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.GenIgnore;
+import io.vertx.codegen.annotations.Unstable;
+import io.vertx.core.net.*;
+
+import java.time.Duration;
+import java.util.*;
+
+/**
+ * Configuration of a {@link HttpServer}
+ *
+ * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ */
+@DataObject
+@Unstable
+public class HttpServerConfig {
+
+  /**
+   * Default port the server will listen on = 443
+   */
+  public static final int DEFAULT_HTTP3_PORT = 443;
+
+  public static final Set<HttpVersion> DEFAULT_VERSIONS = Collections.unmodifiableSet(EnumSet.of(HttpVersion.HTTP_1_0, HttpVersion.HTTP_1_1, HttpVersion.HTTP_2));
+
+  public static final long DEFAULT_QUIC_INITIAL_MAX_DATA = 10_485_760L;
+  public static final long DEFAULT_QUIC_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL = 0L;
+  public static final long DEFAULT_QUIC_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE = 1_048_576L;
+  public static final long DEFAULT_QUIC_INITIAL_MAX_STREAM_DATA_UNI = 1_048_576L;
+  public static final long DEFAULT_QUIC_INITIAL_MAX_STREAM_BIDI = 256L;
+  public static final long DEFAULT_QUIC_INITIAL_MAX_STREAM_UNI = 3L;
+
+  private static QuicServerConfig defaultQuicConfig() {
+    QuicServerConfig config = new QuicServerConfig();
+    config.getTransportConfig().setInitialMaxData(DEFAULT_QUIC_INITIAL_MAX_DATA);
+    config.getTransportConfig().setInitialMaxStreamDataBidiLocal(DEFAULT_QUIC_INITIAL_MAX_STREAM_DATA_BIDI_LOCAL);
+    config.getTransportConfig().setInitialMaxStreamDataBidiRemote(DEFAULT_QUIC_INITIAL_MAX_STREAM_DATA_BIDI_REMOTE);
+    config.getTransportConfig().setInitialMaxStreamDataUni(DEFAULT_QUIC_INITIAL_MAX_STREAM_DATA_UNI);
+    config.getTransportConfig().setInitialMaxStreamsBidi(DEFAULT_QUIC_INITIAL_MAX_STREAM_BIDI);
+    config.getTransportConfig().setInitialMaxStreamsUni(DEFAULT_QUIC_INITIAL_MAX_STREAM_UNI);
+    config.setPort(DEFAULT_HTTP3_PORT);
+    return config;
+  }
+
+  private static TcpServerConfig defaultTcpServerConfig() {
+    TcpServerConfig config = new TcpServerConfig();
+    config.setPort(HttpServerOptions.DEFAULT_PORT);
+    return config;
+  }
+
+  private Set<HttpVersion> versions;
+  private FormDecoderConfig formDecoderConfig;
+  private QueryParamDecoderConfig queryParamDecoderConfig;
+  private boolean handle100ContinueAutomatically;
+  private ObservabilityConfig observabilityConfig;
+  private Http1ServerConfig http1Config;
+  private Http2ServerConfig http2Config;
+  private Http3ServerConfig http3Config;
+  private WebSocketServerConfig webSocketConfig;
+  private CompressionConfig compressionConfig;
+  private final TcpServerConfig tcpConfig;
+  private final QuicServerConfig quicConfig;
+
+  /**
+   * Copies the {@link HttpServerOptions}.
+   * @param options the options to copy
+   */
+  public HttpServerConfig(HttpServerOptions options) {
+
+    CompressionConfig compression;
+    if (options.isCompressionSupported() || options.isDecompressionSupported()) {
+      Collection<CompressionOptions> compressors = options.getCompression().getCompressors();
+      compression = new CompressionConfig();
+      if (compressors == null) {
+        int compressionLevel = options.getCompressionLevel();
+        compression.addGzip(compressionLevel);
+        compression.addDeflate(compressionLevel);
+      } else {
+        compression.setCompressors(new ArrayList<>(compressors));
+      }
+      compression.setCompressionEnabled(options.isCompressionSupported());
+      compression.setDecompressionEnabled(options.isDecompressionSupported());
+      compression.setContentSizeThreshold(options.getCompressionContentSizeThreshold());
+    } else {
+      compression = null;
+    }
+
+    Set<HttpVersion> versions;
+    if (options.isSsl()) {
+      if (options.isUseAlpn()) {
+        versions = EnumSet.copyOf(options.getAlpnVersions());
+      } else {
+        versions = EnumSet.of(HttpVersion.HTTP_1_1, HttpVersion.HTTP_1_0);
+      }
+    } else if (options.isHttp2ClearTextEnabled()) {
+      versions = EnumSet.copyOf(DEFAULT_VERSIONS);
+    } else {
+      versions = EnumSet.of(HttpVersion.HTTP_1_1, HttpVersion.HTTP_1_0);
+    }
+
+    ObservabilityConfig observabilityConfig = null;
+    if (options.getMetricsName() != null || options.getTracingPolicy() != HttpServerOptions.DEFAULT_TRACING_POLICY) {
+      observabilityConfig = new ObservabilityConfig()
+        .setMetricsName(options.getMetricsName())
+        .setTracingPolicy(options.getTracingPolicy());
+    }
+
+    FormDecoderConfig formDecoderConfig = new FormDecoderConfig()
+      .setMaxAttributeSize(options.getMaxFormAttributeSize())
+      .setMaxFields(options.getMaxFormFields())
+      .setMaxFields(options.getMaxFormFields())
+      .setMaxBufferedBytes(options.getMaxFormBufferedBytes());
+
+    QueryParamDecoderConfig queryParamDecoderConfig;
+    if (options.isUseSemicolonAsQueryParamDelimiter() == QueryParamDecoderConfig.DEFAULT_USE_SEMICOLON_AS_DELIMITER) {
+      queryParamDecoderConfig = null;
+    } else {
+      queryParamDecoderConfig = new QueryParamDecoderConfig().setUseSemicolonAsDelimiter(!QueryParamDecoderConfig.DEFAULT_USE_SEMICOLON_AS_DELIMITER);
+    }
+
+    this.versions = versions;
+    this.formDecoderConfig = formDecoderConfig;
+    this.queryParamDecoderConfig = queryParamDecoderConfig;
+    this.handle100ContinueAutomatically = options.isHandle100ContinueAutomatically();
+    this.observabilityConfig = observabilityConfig;
+    this.http1Config = new Http1ServerConfig(options.getHttp1Config());
+    this.http2Config = new Http2ServerConfig(options.getHttp2Config());
+    this.webSocketConfig = new WebSocketServerConfig(options.getWebSocketConfig());
+    this.compressionConfig = compression;
+    this.tcpConfig = new TcpServerConfig(options);
+    this.quicConfig = defaultQuicConfig();
+  }
+
+  /**
+   * Create a default configuration of a server accepting HTTP/1.0, HTTP/1.1 and HTTP/2 protocols.
+   */
+  public HttpServerConfig() {
+    this.versions = EnumSet.copyOf(DEFAULT_VERSIONS);
+    this.formDecoderConfig = null;
+    this.queryParamDecoderConfig = null;
+    this.handle100ContinueAutomatically = HttpServerOptions.DEFAULT_HANDLE_100_CONTINE_AUTOMATICALLY;
+    this.observabilityConfig = null;
+    this.http1Config = null;
+    this.http2Config = null;
+    this.http3Config = null;
+    this.webSocketConfig = null;
+    this.compressionConfig = null;
+    this.tcpConfig = defaultTcpServerConfig();
+    this.quicConfig = defaultQuicConfig();
+  }
+
+  /**
+   * Copy constructor
+   *
+   * @param other the config to be copied
+   */
+  public HttpServerConfig(HttpServerConfig other) {
+    this.versions = EnumSet.copyOf(other.versions);
+    this.formDecoderConfig = other.formDecoderConfig != null ? new FormDecoderConfig(other.formDecoderConfig) : null;
+    this.queryParamDecoderConfig = other.queryParamDecoderConfig != null ? new QueryParamDecoderConfig(other.queryParamDecoderConfig) : null;
+    this.handle100ContinueAutomatically = other.handle100ContinueAutomatically;
+    this.observabilityConfig = other.observabilityConfig != null ? new ObservabilityConfig(other.observabilityConfig) : null;
+    this.http1Config = other.http1Config != null ? new Http1ServerConfig(other.http1Config) : null;
+    this.http2Config = other.http2Config != null ? new Http2ServerConfig(other.http2Config) : null;
+    this.http3Config = other.http3Config != null ? new Http3ServerConfig(other.http3Config) : null;
+    this.webSocketConfig = other.webSocketConfig != null ? new WebSocketServerConfig(other.webSocketConfig) : new WebSocketServerConfig();
+    this.compressionConfig = other.compressionConfig != null ? new CompressionConfig(other.compressionConfig) : new CompressionConfig();
+    this.tcpConfig = other.tcpConfig != null ? new TcpServerConfig(other.tcpConfig) : defaultTcpServerConfig();
+    this.quicConfig = other.quicConfig != null ? new QuicServerConfig(other.quicConfig) : defaultQuicConfig();
+  }
+
+  /**
+   * Set the idle timeout, zero or {@code null} means don't time out.
+   * This determines if a connection will timeout and be closed if no data is received nor sent within the timeout.
+   * <p>This configures both TCP and QUIC nested configurations, you can configure each of them separately
+   * if you need to.</p>
+   *
+   * @param idleTimeout  the timeout
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setIdleTimeout(Duration idleTimeout) {
+    tcpConfig.setIdleTimeout(idleTimeout);
+    quicConfig.setIdleTimeout(idleTimeout);
+    return this;
+  }
+
+  /**
+   * <p>Set the read idle timeout, zero or {@code null} means or null means don't time out. This determines if a
+   * connection will timeout and be closed if no data is received within the timeout.</p>
+   * <p>This configures both TCP and QUIC nested configurations, you can configure each of them separately
+   * if you need to.</p>
+   *
+   * @param idleTimeout  the read timeout
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setReadIdleTimeout(Duration idleTimeout) {
+    tcpConfig.setReadIdleTimeout(idleTimeout);
+    quicConfig.setReadIdleTimeout(idleTimeout);
+    return this;
+  }
+
+  /**
+   * <p>Set the write idle timeout, zero or {@code null} means don't time out. This determines if a
+   * connection will timeout and be closed if no data is sent within the timeout.</p>
+   * <p>This configures both TCP and QUIC nested configurations, you can configure each of them separately
+   * if you need to.</p>
+   *
+   * @param idleTimeout  the write timeout
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setWriteIdleTimeout(Duration idleTimeout) {
+    tcpConfig.setWriteIdleTimeout(idleTimeout);
+    quicConfig.setWriteIdleTimeout(idleTimeout);
+    return this;
+  }
+
+  /**
+   * <p>Configure the per stream networking logging: Netty's stream pipeline is configured for logging on Netty's logger.</p>
+   * <p>This configures both TCP and QUIC nested configurations, you can configure each of them separately
+   * if you need to.</p>
+   *
+   * @param config the stream network logging config, {@code null} means disabled
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setLogConfig(LogConfig config) {
+    tcpConfig.setLogConfig(config);
+    quicConfig.setLogConfig(config);
+    return this;
+  }
+
+  /**
+   * @return the HTTP versions
+   */
+  public Set<HttpVersion> getVersions() {
+    return versions;
+  }
+
+  /**
+   * Set the HTTP versions.
+   *
+   * @param versions the versions
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setVersions(Set<HttpVersion> versions) {
+    this.versions = Objects.requireNonNull(versions);
+    return this;
+  }
+
+  /**
+   * Set the HTTP versions.
+   *
+   * @param versions the versions
+   * @return a reference to this, so the API can be used fluently
+   */
+  @GenIgnore
+  public HttpServerConfig setVersions(HttpVersion... versions) {
+    EnumSet<HttpVersion> s = EnumSet.noneOf(HttpVersion.class);
+    Collections.addAll(s, versions);
+    this.versions = s;
+    return this;
+  }
+
+  /**
+   * Set the port used to bind the server at, affecting both TCP and QUIC transports.
+   *
+   * @param port  the port
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setPort(int port) {
+    tcpConfig.setPort(port);
+    quicConfig.setPort(port);
+    return this;
+  }
+
+  /**
+   * Set the host used to bind the server at, affecting both TCP and QUIC transports.
+   *
+   * @param host  the host
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setHost(String host) {
+    tcpConfig.setHost(host);
+    quicConfig.setHost(host);
+    return this;
+  }
+
+  /**
+   * @return the port to bind the TCP server at
+   */
+  public int getTcpPort() {
+    return tcpConfig.getPort();
+  }
+
+  /**
+   * Set the port used to bind the TCP server.
+   *
+   * @param port  the port
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setTcpPort(int port) {
+    tcpConfig.setPort(port);
+    return this;
+  }
+
+  /**
+   * @return the host
+   */
+  public String getTcpHost() {
+    return tcpConfig.getHost();
+  }
+
+  /**
+   * Set the host
+   * @param host  the host
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setTcpHost(String host) {
+    tcpConfig.setHost(host);
+    return this;
+  }
+
+  /**
+   * @return the port to bind the QUIC server at
+   */
+  public int getQuicPort() {
+    return quicConfig.getPort();
+  }
+
+  /**
+   * Set the port used to bind the QUIC server.
+   *
+   * @param port  the port
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setQuicPort(int port) {
+    quicConfig.setPort(port);
+    return this;
+  }
+
+  /**
+   * @return the host
+   */
+  public String getQuicHost() {
+    return quicConfig.getHost();
+  }
+
+  /**
+   * Set the host
+   * @param host  the host
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setQuicHost(String host) {
+    quicConfig.setHost(host);
+    return this;
+  }
+
+  public FormDecoderConfig getFormDecoderConfig() {
+    return formDecoderConfig;
+  }
+
+  public HttpServerConfig setFormDecoderConfig(FormDecoderConfig formDecoderConfig) {
+    this.formDecoderConfig = formDecoderConfig;
+    return this;
+  }
+
+  /**
+   * @return the configuration for parsing HTTP request query parameters, when the configuration is {@code null}, the default configuration
+   * is used:
+   *
+   * <ul>
+   *   <li>{@link QueryParamDecoderConfig#DEFAULT_MAX_SIZE}</li>
+   *   <li>{@link QueryParamDecoderConfig#DEFAULT_CHARSET}</li>
+   *   <li>{@link QueryParamDecoderConfig#DEFAULT_USE_SEMICOLON_AS_DELIMITER}</li>
+   * </ul>
+   *
+   * @see HttpServerRequest#params()
+   */
+  public QueryParamDecoderConfig getQueryParamConfig() {
+    return queryParamDecoderConfig;
+  }
+
+  /**
+   * Set the configuration for parsing HTTP request query parameters.
+   *
+   * @param queryParamDecoderConfig the configuration
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setQueryParamConfig(QueryParamDecoderConfig queryParamDecoderConfig) {
+    this.queryParamDecoderConfig = queryParamDecoderConfig;
+    return this;
+  }
+
+  /**
+   * @return whether 100 Continue should be handled automatically
+   */
+  public boolean isHandle100ContinueAutomatically() {
+    return handle100ContinueAutomatically;
+  }
+
+  /**
+   * Set whether 100 Continue should be handled automatically
+   * @param handle100ContinueAutomatically {@code true} if it should be handled automatically
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setHandle100ContinueAutomatically(boolean handle100ContinueAutomatically) {
+    this.handle100ContinueAutomatically = handle100ContinueAutomatically;
+    return this;
+  }
+
+  /**
+   * @return the server observability config.
+   */
+  public ObservabilityConfig getObservabilityConfig() {
+    return observabilityConfig;
+  }
+
+  /**
+   * Set the server observability config.
+   * @param observabilityConfig the server observability config
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setObservabilityConfig(ObservabilityConfig observabilityConfig) {
+    this.observabilityConfig = observabilityConfig;
+    return this;
+  }
+
+  /**
+   * @return the configuration specific to the HTTP/1.x protocol.
+   */
+  public Http1ServerConfig getHttp1Config() {
+    return http1Config;
+  }
+
+  /**
+   * Set the HTTP/1.x configuration to use
+   *
+   * @param config the config
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setHttp1Config(Http1ServerConfig config) {
+    this.http1Config = config;
+    return this;
+  }
+
+  /**
+   * @return the configuration specific to the HTTP/2 protocol.
+   */
+  public Http2ServerConfig getHttp2Config() {
+    return http2Config;
+  }
+
+  /**
+   * Set the HTTP/2 configuration to use
+   *
+   * @param config the config
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setHttp2Config(Http2ServerConfig config) {
+    this.http2Config = config;
+    return this;
+  }
+
+  /**
+   * @return the configuration specific to the HTTP/1.x protocol.
+   */
+  public Http3ServerConfig getHttp3Config() {
+    return http3Config;
+  }
+
+  /**
+   * Set the HTTP/3 configuration to use
+   *
+   * @param config the config
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setHttp3Config(Http3ServerConfig config) {
+    this.http3Config = config;
+    return this;
+  }
+
+  /**
+   * @return the configuration specific to the WebSocket protocol.
+   */
+  public WebSocketServerConfig getWebSocketConfig() {
+    return webSocketConfig;
+  }
+
+  /**
+   * Set the WebSocket protocol specific configuration.
+   *
+   * @param webSocketConfig the WebSocket config
+   */
+  public HttpServerConfig setWebSocketConfig(WebSocketServerConfig webSocketConfig) {
+    this.webSocketConfig = webSocketConfig;
+    return this;
+  }
+
+  /**
+   * @return the compression configuration
+   */
+  public CompressionConfig getCompressionConfig() {
+    return compressionConfig;
+  }
+
+  /**
+   * Configure the server compression, this overwrites any previously configuration.
+   *
+   * @param compressionConfig the new configuration
+   * @return a reference to this, so the API can be used fluently
+   */
+  public HttpServerConfig setCompressionConfig(CompressionConfig compressionConfig) {
+    this.compressionConfig = compressionConfig == null ? new CompressionConfig() : compressionConfig;
+    return this;
+  }
+
+  /**
+   * @return the TCP transport config
+   */
+  public TcpServerConfig getTcpConfig() {
+    return tcpConfig;
+  }
+
+  /**
+   * @return the QUIC transport config
+   */
+  public QuicServerConfig getQuicConfig() {
+    return quicConfig;
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 36607,
+      "login": "wraithgar",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2024-04-30T14:40:23Z",
+      "committer_at": "2024-04-30T14:40:58Z",
+      "tree_sha": "529e6fbb61e512b8ee1225c8bfa943687e3cc1a7"
+    },
+    "committer": {
+      "id": 36607,
+      "login": "wraithgar",
+      "type": "User"
+    },
+    "sha": "66018e300fe39f3d3485d444a0c1fd80984c5d7d"
+  },
+  "observed_at": "2026-10-27T14:47:42.559899+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ae0da1c874905f325b01aa2ada379490051b631e624036bc262017a60017245d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "812ef16673c53d8fd5b2587f7263633caa6c50cab04f81fcc2dc36d02e45336b",
+  "source_url": "https://api.github.com/repos/npm/make-fetch-happen/commits/66018e300fe39f3d3485d444a0c1fd80984c5d7d?per_page=100",
+  "status_code": 200
+}

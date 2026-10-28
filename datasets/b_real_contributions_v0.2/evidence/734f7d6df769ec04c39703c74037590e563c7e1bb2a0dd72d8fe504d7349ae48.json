@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c89157ce1452d479eb30516a28a5f3bac49aa5b9",
+    "size": 57574
+  },
+  "observed_at": "2026-10-26T05:53:18.316829+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b7a437b1322ae1f413eab0afbe5de198713cd4cd46c679b60d180a38d38afe87",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "407d53971ac836fb92c211aa9d73a81552c645a2fcc4f0ea6ce532d84f550596",
+  "source_url": "https://api.github.com/repos/bazelbuild/bazel/git/blobs/c89157ce1452d479eb30516a28a5f3bac49aa5b9",
+  "status_code": 200
+}

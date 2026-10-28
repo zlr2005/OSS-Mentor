@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "48f67a2a379de048667d6e20ad83bf0e7b08e3c1",
+    "size": 3152
+  },
+  "observed_at": "2026-10-26T07:57:50.185245+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "232256c2bbb2c03d9eea82f0f6af57e949fc98cfbf47bc55606da1f2f62ae959",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5301cb0a7e71bc61909a069e3b66e1a47d955ebccb629d4b5b8dd22a946a5379",
+  "source_url": "https://api.github.com/repos/langchain-ai/deepagents/git/blobs/48f67a2a379de048667d6e20ad83bf0e7b08e3c1",
+  "status_code": 200
+}

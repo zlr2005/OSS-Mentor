@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "dask/dask",
+    "id": 28782747,
+    "language": "Python",
+    "private": false,
+    "size": 134106
+  },
+  "observed_at": "2026-10-26T06:14:07.832376+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a6d8f3279cfe86cb10db5b0abfd138b2fa51d0f059103357b559295fcc313b08",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "44dcc6dc834a56c9bf8d05c62aeb4a96cb4a0ac17d45f46c82c74fe9b1f1bdc8",
+  "source_url": "https://api.github.com/repos/dask/dask",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 21233013,
+      "login": "haimingZZ",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-06T18:57:44Z",
+      "committer_at": "2026-10-06T18:57:44Z",
+      "tree_sha": "885cd41a5c69519e917d890f087252024a9bc23b"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9169cbe1127ed1f9bc4f80a70b82c412467dd156"
+  },
+  "observed_at": "2026-10-26T06:38:40.510743+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aff6e0ed94511bf127b7db60ca5aed9656986ed18278a44cac7df81ea4657a1b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f46dc438c694d632b27085f0da72792425ba3f1bd0f497c0034fe89bf9b5a8ec",
+  "source_url": "https://api.github.com/repos/expressjs/express/commits/9169cbe1127ed1f9bc4f80a70b82c412467dd156?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1264305,
+      "login": "maschwenk",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-18T04:47:29Z",
+      "committer_at": "2026-10-18T04:47:29Z",
+      "tree_sha": "36a195bcd8d0d663cd2288a8598d4f0fae86fba2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5237fd46890956e4bb8177a1a05dcd69e4166560"
+  },
+  "observed_at": "2026-10-27T14:14:59.424029+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "91eaeb73f7677e64f5f91ca557ea1ac9cec7eb716e4213168b9adf5b8252a539",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f184c47e399816984d43e005a0768dc7d189b0002aa90a4ce59fa27785691995",
+  "source_url": "https://api.github.com/repos/microsoft/TypeScript/commits/5237fd46890956e4bb8177a1a05dcd69e4166560?per_page=100",
+  "status_code": 200
+}

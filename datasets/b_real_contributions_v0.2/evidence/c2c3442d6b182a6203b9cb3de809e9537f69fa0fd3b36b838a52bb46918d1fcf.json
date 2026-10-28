@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9d606e370a699a27229bf37ff5e31ec032fa894c",
+    "size": 35587
+  },
+  "observed_at": "2026-10-26T08:46:54.901510+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1fc03aa22606f6c0731879099983aee3f605de7287a27bdb157f66baf59221e9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1da35888123042445bf1c9734b173d1e26ea04b8394b7114e1e0427c99569b33",
+  "source_url": "https://api.github.com/repos/plotly/plotly.py/git/blobs/9d606e370a699a27229bf37ff5e31ec032fa894c",
+  "status_code": 200
+}

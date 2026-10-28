@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 17948602,
+      "login": "Dream95",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T06:57:05Z",
+      "committer_at": "2026-10-24T06:57:05Z",
+      "tree_sha": "a6d8f637377da1883368795bf0a964f4f89d6674"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "108d58d242da7f5d654f68f4cc3cbb16e2231ff5"
+  },
+  "observed_at": "2026-10-26T05:31:10.665706+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "289ea4639a177f985c3acf6232d33089b43dde85f590a05d279b9d25778bc165",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d70ee1fea3fac6154fd6384547d0bded8d2911d8f5be8a18301e4111e9bc4d52",
+  "source_url": "https://api.github.com/repos/apache/pulsar/commits/108d58d242da7f5d654f68f4cc3cbb16e2231ff5?per_page=100",
+  "status_code": 200
+}

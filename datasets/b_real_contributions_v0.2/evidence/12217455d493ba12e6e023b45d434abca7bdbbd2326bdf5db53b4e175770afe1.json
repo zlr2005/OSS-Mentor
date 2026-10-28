@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29139614,
+      "login": "renovate[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-25T09:15:54Z",
+      "committer_at": "2026-10-25T09:15:54Z",
+      "tree_sha": "534278b89637eabde6dca6adfcb035306bd611bd"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "83a19e74f7dc7a4627b22624f26ab878a1f3f695"
+  },
+  "observed_at": "2026-10-26T05:06:16.033865+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "07bb3014f573a1ba921569a85e7572484b35d8f6401e59279423ed53c81a1e84",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1ea027f02ca8e3031fd1ed45bb7ad4d94d11b86f86459f3790036564b72f99f2",
+  "source_url": "https://api.github.com/repos/ant-design/ant-design/commits/83a19e74f7dc7a4627b22624f26ab878a1f3f695?per_page=100",
+  "status_code": 200
+}

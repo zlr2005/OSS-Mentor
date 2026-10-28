@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5100938,
+      "login": "bmiddha",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-14T20:07:17Z",
+      "committer_at": "2026-10-14T20:07:17Z",
+      "tree_sha": "f1898069319f3c161fe03ed2815c930bfc5ca547"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9f5a08754a61b46eeb22bfb2f862f92cab9b61ef"
+  },
+  "observed_at": "2026-10-27T14:07:36.270220+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "56979aaec4c335a4ffe913bce1e2b0bcd081ce2cd445fed1afc2217067bd8f10",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4aec069511fe10820007eb5d6819008a89206d4d47637e6742d06a83ff4a10bc",
+  "source_url": "https://api.github.com/repos/microsoft/rushstack/commits/9f5a08754a61b46eeb22bfb2f862f92cab9b61ef?per_page=100",
+  "status_code": 200
+}

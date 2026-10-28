@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "d9b46fc916279d2d3bdc6eab2302c6795b3e5380",
+    "size": 3547
+  },
+  "observed_at": "2026-10-27T15:12:20.405030+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e40bfdee555003fbe6c6c3aa47dd6f35a127291b605384b9a37022e5b6695fa8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "70fbbd03721a98ab973b525ba7ec7d49dd626dc3b37d3eb987341a0b0adecbfa",
+  "source_url": "https://api.github.com/repos/pmd/pmd/git/blobs/d9b46fc916279d2d3bdc6eab2302c6795b3e5380",
+  "status_code": 200
+}

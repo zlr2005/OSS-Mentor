@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 68491,
+      "login": "gpshead",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T23:24:59Z",
+      "committer_at": "2026-10-25T23:24:59Z",
+      "tree_sha": "8cac458c64b6a338518b8dddc98ea8121d94d763"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d9cfd309f21711703d6fb4c5454f131dfbe900d3"
+  },
+  "observed_at": "2026-10-27T15:24:27.722603+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8a97ad610cff3d64b08bc09a5a021b9e8359b9a0ac574313497f8cf9b8b9808b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "36aa75410df55cadf9e7d5ea3bf44d38e68bdd5124490b16aeab43bca82209e5",
+  "source_url": "https://api.github.com/repos/python/cpython/commits/d9cfd309f21711703d6fb4c5454f131dfbe900d3?per_page=100",
+  "status_code": 200
+}

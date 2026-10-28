@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "f105c71dd54c328cbd145d9323e4ecf1eb8a2940",
+    "size": 64532
+  },
+  "observed_at": "2026-10-27T13:53:08.315206+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4d2f50f29df8531aed245333e537bea5f2cf48dd109909766df5fa37c58ff72a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bed3d9aa984c024ee2d0d0a8818e80477063400123dfb56a6c8e3af3995005be",
+  "source_url": "https://api.github.com/repos/mapstruct/mapstruct/git/blobs/f105c71dd54c328cbd145d9323e4ecf1eb8a2940",
+  "status_code": 200
+}

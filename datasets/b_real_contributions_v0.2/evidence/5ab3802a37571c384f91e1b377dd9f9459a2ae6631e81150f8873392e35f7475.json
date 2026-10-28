@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "203af505c28e2f4a10ec782b6511126a017f6bc8",
+    "size": 177
+  },
+  "observed_at": "2026-10-26T15:49:02.434128+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "719817dddd12409c53ce3d7c98a65a4b1a84ea7031d71c4e084aefd9ef3fdda0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d5a9a880bab23e0a7a75b7621ee2e7c09ba55bb0fa5df692ebc97dae2b4544c4",
+  "source_url": "https://api.github.com/repos/webpack/webpack/git/blobs/203af505c28e2f4a10ec782b6511126a017f6bc8",
+  "status_code": 200
+}

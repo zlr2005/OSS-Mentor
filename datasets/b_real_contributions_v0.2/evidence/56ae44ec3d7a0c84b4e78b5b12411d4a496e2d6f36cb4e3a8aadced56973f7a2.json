@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 25161192,
+      "login": "hysts",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T12:27:05Z",
+      "committer_at": "2026-10-20T12:27:05Z",
+      "tree_sha": "e7676f83b083289c3477ae70b68264328957592e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "68a112234da6f48df003d0de9449b455ac5d9e5b"
+  },
+  "observed_at": "2026-10-26T07:12:09.296610+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6050b2ee927c3e337a2bf34ed6aa53048af9c9b6276979048c62e86817d5929e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "16dc903422fd1470ea96be50085c05bd6a5e3af36fbbdb61fd557e47d5a6d1a2",
+  "source_url": "https://api.github.com/repos/gradio-app/gradio/commits/68a112234da6f48df003d0de9449b455ac5d9e5b?per_page=100",
+  "status_code": 200
+}

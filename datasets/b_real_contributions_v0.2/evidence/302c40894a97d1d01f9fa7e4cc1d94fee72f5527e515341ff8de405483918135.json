@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "spring-projects/spring-data-commons",
+    "id": 1072614,
+    "language": "Java",
+    "private": false,
+    "size": 22378
+  },
+  "observed_at": "2026-10-26T14:17:41.077723+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6149e74a7beb8d1dcd2c323d89d8f9472d3623126bfbeca5ce1d5b702151f216",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e61bedcde1ccc6f3eb8642e4c40792d82fded7f13d73dc162c31f918e2661b15",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-data-commons",
+  "status_code": 200
+}

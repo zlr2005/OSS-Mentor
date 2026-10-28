@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 214207,
+      "login": "marcphilipp",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T11:57:43Z",
+      "committer_at": "2026-10-23T11:57:43Z",
+      "tree_sha": "6305dfb15f0f6218cff8d371c58996baf7fbf7b7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "565a0baae8d9d3a90c606f20f325dcae66a26ee8"
+  },
+  "observed_at": "2026-10-26T07:48:09.062083+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "41e1b92f82dbe783a57aec393d2ea34e8cd26c13bdc1a72875dbd22ae9397716",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "634d1e64bc719709884ff7cd96fbb52b978a831c9b492c3332b863c1617e94b7",
+  "source_url": "https://api.github.com/repos/junit-team/junit-framework/commits/565a0baae8d9d3a90c606f20f325dcae66a26ee8?per_page=100",
+  "status_code": 200
+}

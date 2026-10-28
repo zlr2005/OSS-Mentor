@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 61551451,
+      "login": "pranavxc",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T13:51:25Z",
+      "committer_at": "2026-10-24T13:51:25Z",
+      "tree_sha": "c1d2ab6e31597952288d9588f0b6819ff10afcdb"
+    },
+    "committer": {
+      "id": 61551451,
+      "login": "pranavxc",
+      "type": "User"
+    },
+    "sha": "b64809bddfdf9fd56be7ec7fd26d5aea8970e157"
+  },
+  "observed_at": "2026-10-27T14:32:42.077698+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5ad69f2216b39be3c51a7302e99690239c55486cce517f9b63acbc87bb00bc1e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "164a8ef07693e70703d3e8fdaa69a729ec41abc5f9b33a7ad74400c140842868",
+  "source_url": "https://api.github.com/repos/nocodb/nocodb/commits/b64809bddfdf9fd56be7ec7fd26d5aea8970e157?per_page=100",
+  "status_code": 200
+}

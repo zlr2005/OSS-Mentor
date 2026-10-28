@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 4700574,
+      "login": "arturobernalg",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T20:17:45Z",
+      "committer_at": "2026-10-22T20:17:45Z",
+      "tree_sha": "696108f3d3683d84ea3fe3996e9b6b58125986ed"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "4b3d0318c67dd396a6c209ca35b8d6ae8ed77407"
+  },
+  "observed_at": "2026-10-26T05:25:29.051525+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b34f60b510c14e954be7a5f9346f0b01e446f05fd9d43a3bac24277274a1b2f1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "210535fc6aff281a084bef4a17c163fad33be21c64d6976629ca921f9530f35f",
+  "source_url": "https://api.github.com/repos/apache/maven/commits/4b3d0318c67dd396a6c209ca35b8d6ae8ed77407?per_page=100",
+  "status_code": 200
+}

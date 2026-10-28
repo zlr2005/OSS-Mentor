@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "openai/openai-python",
+    "id": 307213173,
+    "language": "Python",
+    "private": false,
+    "size": 21562
+  },
+  "observed_at": "2026-10-26T08:35:40.375291+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6e734c927ee08fbabdfd535c161bbeffdeddd1a35702e503987aeeea49a836c1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aa0d98c769e1c90c32935d256a8d864550d696f11c3d9d0f6e248d03ac33b258",
+  "source_url": "https://api.github.com/repos/openai/openai-python",
+  "status_code": 200
+}

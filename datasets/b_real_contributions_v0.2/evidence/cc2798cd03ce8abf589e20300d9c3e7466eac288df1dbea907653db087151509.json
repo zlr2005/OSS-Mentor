@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "be2cc4dfb609fb6c38f6365ec345bded3350dd63",
+    "size": 15921
+  },
+  "observed_at": "2026-10-26T13:51:46.550445+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "93e0ff801a1f5bd792c22beaf7b031e5c77d99a6e139dc8863e7dddbc44d923d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6c2196f9d173d2431b7f6f0ff7acde08d86edce1bce9cfcb7c9cb13a57184eef",
+  "source_url": "https://api.github.com/repos/rust-lang/mdBook/git/blobs/be2cc4dfb609fb6c38f6365ec345bded3350dd63",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "facebook/docusaurus",
+    "id": 94911145,
+    "language": "TypeScript",
+    "private": false,
+    "size": 1610079
+  },
+  "observed_at": "2026-10-26T06:41:28.116877+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "05e108e1a79b174d65044157625f6e595f85520deea63ea45f56bf83197e17d1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e31ad9f43be0d77c12873eb02105f30e013ceb4fc9a28344c0883d520fb9a984",
+  "source_url": "https://api.github.com/repos/facebook/docusaurus",
+  "status_code": 200
+}

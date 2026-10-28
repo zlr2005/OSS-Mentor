@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "847fc88ecf07174cb54cb2ed63f578d831cc523d",
+    "size": 9264
+  },
+  "observed_at": "2026-10-26T13:23:29.980938+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d3985b10a771e6656bc93a959286d4056bfde21de5d048c80217811928ae1746",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3dd07ae5be6429f0295901d3660a322d577f91f56610a2f719b8cadb30b3a6a5",
+  "source_url": "https://api.github.com/repos/questdb/questdb/git/blobs/847fc88ecf07174cb54cb2ed63f578d831cc523d",
+  "status_code": 200
+}

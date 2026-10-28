@@ -1,0 +1,600 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.pinot.plugin.filesystem;
+
+import com.google.api.gax.paging.Page;
+import com.google.api.gax.rpc.FixedHeaderProvider;
+import com.google.auth.Credentials;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Bucket;
+import com.google.cloud.storage.CopyWriter;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageBatch;
+import com.google.cloud.storage.StorageBatchResult;
+import com.google.cloud.storage.StorageException;
+import com.google.cloud.storage.StorageOptions;
+import com.google.common.base.Strings;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.channels.Channels;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.pinot.spi.env.PinotConfiguration;
+import org.apache.pinot.spi.filesystem.BasePinotFS;
+import org.apache.pinot.spi.filesystem.FileMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkState;
+
+
+public class GcsPinotFS extends BasePinotFS {
+  public static final String PROJECT_ID = "projectId";
+  public static final String GCP_KEY = "gcpKey";
+  public static final String JSON_KEY = "jsonKey";
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(GcsPinotFS.class);
+  // See https://cloud.google.com/storage/docs/json_api/v1/how-tos/batch
+  private static final int DELETE_BATCH_LIMIT = 100;
+  private Storage _storage;
+
+  @Override
+  public void init(PinotConfiguration config) {
+    String version = GcsPinotFS.class.getPackage().getImplementationVersion();
+    if (version == null) {
+      version = "unknown";
+    }
+    String userAgent = "apache-pinot/" + version + " (GPN:apache-pinot)";
+    Credentials credentials = null;
+    try {
+      StorageOptions.Builder storageBuilder = StorageOptions.newBuilder()
+          .setHeaderProvider(FixedHeaderProvider.create(Map.of("User-Agent", userAgent)));
+      if (!Strings.isNullOrEmpty(config.getProperty(PROJECT_ID))) {
+        LOGGER.info("Configs are: {}, {}", PROJECT_ID, config.getProperty(PROJECT_ID));
+        String projectId = config.getProperty(PROJECT_ID);
+        storageBuilder.setProjectId(projectId);
+
+        if (!Strings.isNullOrEmpty(config.getProperty(GCP_KEY))) {
+          String gcpKey = config.getProperty(GCP_KEY);
+          credentials = GoogleCredentials.fromStream(Files.newInputStream(Paths.get(gcpKey)));
+        } else if (!Strings.isNullOrEmpty(config.getProperty(JSON_KEY))) {
+          String decodedJsonKey = config.getProperty(JSON_KEY);
+          Base64.Decoder decoder = Base64.getDecoder();
+          try {
+            byte[] decodedBytes = decoder.decode(decodedJsonKey);
+            decodedJsonKey = new String(decodedBytes);
+          } catch (IllegalArgumentException e) {
+            // Ignore. Json key was not Base64 encoded.
+            LOGGER.info("Failed to decode jsonKey, using as is");
+          }
+          credentials = GoogleCredentials.fromStream(IOUtils.toInputStream(decodedJsonKey, StandardCharsets.UTF_8));
+        }
+      }
+      if (credentials == null) {
+        LOGGER.info("Configs using default credential");
+        credentials = GoogleCredentials.getApplicationDefault();
+      }
+      _storage = storageBuilder.setCredentials(credentials).build().getService();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  @Override
+  public final boolean mkdir(URI uri)
+      throws IOException {
+    LOGGER.info("mkdir {}", uri);
+    try {
+      GcsUri gcsUri = new GcsUri(uri);
+      // Prefix always returns a path with trailing /
+      String directoryPath = gcsUri.getPrefix();
+      // Do not create a bucket, different permissions are required
+      // The bucket should already exist
+      if (directoryPath.equals(GcsUri.DELIMITER)) {
+        return true;
+      }
+      if (existsDirectoryOrBucket(gcsUri)) {
+        return true;
+      }
+      _storage.create(BlobInfo.newBuilder(BlobId.of(gcsUri.getBucketName(), directoryPath)).build(), new byte[0]);
+      return true;
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public boolean delete(URI segmentUri, boolean forceDelete)
+      throws IOException {
+    LOGGER.info("Deleting uri {} force {}", segmentUri, forceDelete);
+    return delete(new GcsUri(segmentUri), forceDelete);
+  }
+
+  @Override
+  public boolean deleteBatch(List<URI> segmentUris, boolean forceDelete)
+      throws IOException {
+    boolean result = true;
+    List<BlobId> blobIds = new ArrayList<>();
+    Iterator<URI> iterator = segmentUris.iterator();
+    while (iterator.hasNext()) {
+      GcsUri gcsUri = new GcsUri(iterator.next());
+      if (existsDirectoryOrBucket(gcsUri)) {
+        result &= delete(gcsUri, forceDelete);
+      } else {
+        Blob blob = getBlob(gcsUri);
+        if (blob != null) {
+          blobIds.add(blob.getBlobId());
+        }
+        if (blobIds.size() >= DELETE_BATCH_LIMIT || (!blobIds.isEmpty() && !iterator.hasNext())) {
+          List<Boolean> deleted = _storage.delete(blobIds);
+          result &= deleted.stream().allMatch(Boolean::booleanValue);
+          blobIds.clear();
+        }
+      }
+    }
+    return result;
+  }
+
+  @Override
+  public boolean doMove(URI srcUri, URI dstUri)
+      throws IOException {
+    GcsUri srcGcsUri = new GcsUri(srcUri);
+    GcsUri dstGcsUri = new GcsUri(dstUri);
+    if (copy(srcGcsUri, dstGcsUri)) {
+      // Only delete if all files were successfully copied
+      return delete(srcGcsUri, true);
+    }
+    return false;
+  }
+
+  @Override
+  public boolean copyDir(URI srcUri, URI dstUri)
+      throws IOException {
+    LOGGER.info("Copying uri {} to uri {}", srcUri, dstUri);
+    return copy(new GcsUri(srcUri), new GcsUri(dstUri));
+  }
+
+  @Override
+  public boolean exists(URI fileUri)
+      throws IOException {
+    if (fileUri == null) {
+      return false;
+    }
+    return exists(new GcsUri(fileUri));
+  }
+
+  @Override
+  public long length(URI fileUri)
+      throws IOException {
+    try {
+      GcsUri gcsUri = new GcsUri(fileUri);
+      checkState(!isPathTerminatedByDelimiter(gcsUri), "URI is a directory");
+      Blob blob = getBlob(gcsUri);
+      checkState(existsBlob(blob), "File '%s' does not exist", fileUri);
+      return blob.getSize();
+    } catch (Exception t) {
+      throw new IOException(t);
+    }
+  }
+
+  @Override
+  public String[] listFiles(URI fileUri, boolean recursive)
+      throws IOException {
+    return listFilesFromGcsUri(new GcsUri(fileUri), recursive);
+  }
+
+  private String[] listFilesFromGcsUri(GcsUri gcsFileUri, boolean recursive)
+      throws IOException {
+    ArrayList<String> builder = new ArrayList<>();
+    String prefix = gcsFileUri.getPrefix();
+    String bucketName = gcsFileUri.getBucketName();
+    visitFiles(gcsFileUri, recursive, blob -> {
+      if (!blob.getName().equals(prefix)) {
+        builder.add(GcsUri.createGcsUri(bucketName, blob.getName()).toString());
+      }
+    });
+    String[] listedFiles = builder.toArray(new String[0]);
+    LOGGER.info("Listed {} files from URI: {}, is recursive: {}", listedFiles.length, gcsFileUri, recursive);
+    return listedFiles;
+  }
+
+  @Override
+  public List<FileMetadata> listFilesWithMetadata(URI fileUri, boolean recursive)
+      throws IOException {
+    List<FileMetadata> listBuilder = new ArrayList<>();
+    GcsUri gcsFileUri = new GcsUri(fileUri);
+    String prefix = gcsFileUri.getPrefix();
+    String bucketName = gcsFileUri.getBucketName();
+    visitFiles(gcsFileUri, recursive, blob -> {
+      if (!blob.getName().equals(prefix)) {
+        // Note: isDirectory flag is only set when listing with BlobListOption.currentDirectory() i.e non-recursively.
+        // For simplicity, we check if a path is directory by checking if it ends with '/', as done in S3PinotFS.
+        boolean isDirectory = blob.getName().endsWith(GcsUri.DELIMITER);
+        FileMetadata.Builder fileBuilder =
+            new FileMetadata.Builder().setFilePath(GcsUri.createGcsUri(bucketName, blob.getName()).toString())
+                .setLength(blob.getSize()).setIsDirectory(isDirectory);
+        if (!isDirectory) {
+          OffsetDateTime blobUpdateTime = blob.getUpdateTimeOffsetDateTime();
+          if (blobUpdateTime != null) {
+            fileBuilder.setLastModifiedTime(blobUpdateTime.toInstant().toEpochMilli());
+          }
+        }
+        listBuilder.add(fileBuilder.build());
+      }
+    });
+    List<FileMetadata> listedFiles = List.copyOf(listBuilder);
+    LOGGER.info("Listed {} files from URI: {}, is recursive: {}", listedFiles.size(), gcsFileUri, recursive);
+    return listedFiles;
+  }
+
+  @Override
+  public List<FileMetadata> listFilesWithMetadata(final URI fileUri, final boolean recursive,
+      final Predicate<String> pathFilter, final int maxResults)
+      throws IOException {
+    if (maxResults <= 0) {
+      LOGGER.warn("listFilesWithMetadata called with maxResults={}, returning empty list", maxResults);
+      return new ArrayList<>();
+    }
+    final List<FileMetadata> result = new ArrayList<>();
+    final GcsUri gcsFileUri = new GcsUri(fileUri);
+    final String prefix = gcsFileUri.getPrefix();
+    final String bucketName = gcsFileUri.getBucketName();
+    try {
+      Page<Blob> page;
+      if (recursive) {
+        page = _storage.list(bucketName, Storage.BlobListOption.prefix(prefix));
+      } else {
+        page = _storage.list(bucketName, Storage.BlobListOption.prefix(prefix),
+            Storage.BlobListOption.currentDirectory());
+      }
+      while (page != null && result.size() < maxResults) {
+        for (final Blob blob : page.getValues()) {
+          if (blob.getName().equals(prefix)) {
+            continue;
+          }
+          final boolean isDirectory = blob.getName().endsWith(GcsUri.DELIMITER);
+          if (isDirectory) {
+            continue;
+          }
+          final String filePath = GcsUri.createGcsUri(bucketName, blob.getName()).toString();
+          if (pathFilter.test(filePath)) {
+            final FileMetadata.Builder fileBuilder = new FileMetadata.Builder()
+                .setFilePath(filePath)
+                .setLength(blob.getSize())
+                .setIsDirectory(false);
+            OffsetDateTime blobUpdateTime = blob.getUpdateTimeOffsetDateTime();
+            if (blobUpdateTime != null) {
+              fileBuilder.setLastModifiedTime(blobUpdateTime.toInstant().toEpochMilli());
+            }
+            result.add(fileBuilder.build());
+            if (result.size() >= maxResults) {
+              break;
+            }
+          }
+        }
+        page = page.hasNextPage() ? page.getNextPage() : null;
+      }
+    } catch (Exception t) {
+      throw new IOException(t);
+    }
+    LOGGER.info("Listed {} files (max: {}) from URI: {}, is recursive: {}",
+        result.size(), maxResults, gcsFileUri, recursive);
+    return result;
+  }
+
+  @Override
+  public void copyToLocalFile(URI srcUri, File dstFile)
+      throws Exception {
+    LOGGER.info("Copy {} to local {}", srcUri, dstFile.getAbsolutePath());
+    checkState(!dstFile.isDirectory(), "File '%s' must not be a directory", dstFile);
+    FileUtils.forceMkdir(dstFile.getParentFile());
+    Blob blob = getBlob(new GcsUri(srcUri));
+    if (!existsBlob(blob)) {
+      throw new FileNotFoundException("File '" + srcUri + "' does not exist");
+    }
+    blob.downloadTo(dstFile.toPath());
+  }
+
+  @Override
+  public void copyFromLocalFile(File srcFile, URI dstUri)
+      throws Exception {
+    LOGGER.info("Copying file {} to uri {}", srcFile.getAbsolutePath(), dstUri);
+    GcsUri dstGcsUri = new GcsUri(dstUri);
+    checkState(!isPathTerminatedByDelimiter(dstGcsUri), "Path '%s' must be a filename", dstGcsUri);
+    BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(dstGcsUri.getBucketName(), dstGcsUri.getPath())).build();
+    _storage.createFrom(blobInfo, Files.newInputStream(srcFile.toPath()));
+  }
+
+  @Override
+  public boolean isDirectory(URI uri)
+      throws IOException {
+    return existsDirectoryOrBucket(new GcsUri(uri));
+  }
+
+  @Override
+  public long lastModified(URI uri)
+      throws IOException {
+    Blob blob = getBlob(new GcsUri(uri));
+    if (blob == null) {
+      return 0L;
+    }
+    OffsetDateTime updateTime = blob.getUpdateTimeOffsetDateTime();
+    return updateTime != null ? updateTime.toInstant().toEpochMilli() : 0L;
+  }
+
+  @Override
+  public boolean touch(URI uri)
+      throws IOException {
+    try {
+      LOGGER.info("touch {}", uri);
+      GcsUri gcsUri = new GcsUri(uri);
+      Blob blob = getBlob(gcsUri);
+      if (blob == null) {
+        // PinotFS contract: if the file does not exist, create an empty file
+        BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(gcsUri.getBucketName(), gcsUri.getPath())).build();
+        _storage.create(blobInfo, new byte[0]);
+        return true;
+      }
+      // Any successful GCS objects.patch call advances the blob's updateTime server-side,
+      // so returning true on success (and propagating StorageException on failure) is correct.
+      _storage.update(blob.toBuilder().setMetadata(blob.getMetadata()).build());
+      return true;
+    } catch (StorageException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public InputStream open(URI uri)
+      throws IOException {
+    try {
+      Blob blob = getBlob(new GcsUri(uri));
+      if (blob == null) {
+        throw new FileNotFoundException("File '" + uri + "' does not exist");
+      }
+      return Channels.newInputStream(blob.reader());
+    } catch (StorageException e) {
+      throw new IOException(e);
+    }
+  }
+
+  private Bucket getBucket(GcsUri gcsUri) {
+    return _storage.get(gcsUri.getBucketName());
+  }
+
+  private Blob getBlob(GcsUri gcsUri)
+      throws IOException {
+    try {
+      return _storage.get(BlobId.of(gcsUri.getBucketName(), gcsUri.getPath()));
+    } catch (StorageException e) {
+      throw new IOException(e);
+    }
+  }
+
+  private boolean existsBlob(Blob blob) {
+    return blob != null && blob.exists();
+  }
+
+  private boolean existsFile(GcsUri gcsUri)
+      throws IOException {
+    return existsBlob(getBlob(gcsUri));
+  }
+
+  private boolean isPathTerminatedByDelimiter(GcsUri gcsUri) {
+    return gcsUri.getPath().endsWith(GcsUri.DELIMITER);
+  }
+
+  /// Returns true if this is an existing directory
+  ///
+  /// @param gcsUri
+  /// @return true if the directory exists
+  /// @throws IOException
+  private boolean existsDirectoryOrBucket(GcsUri gcsUri)
+      throws IOException {
+    String prefix = gcsUri.getPrefix();
+    if (prefix.isEmpty()) {
+      return true;
+    }
+    Blob blob = _storage.get(BlobId.of(gcsUri.getBucketName(), prefix));
+    if (existsBlob(blob)) {
+      return true;
+    }
+
+    try {
+      // Return true if folder was not explicitly created but is a prefix of one or more files.
+      // Use lazy iterable iterateAll() and verify that the iterator has elements.
+      return _storage.list(gcsUri.getBucketName(), Storage.BlobListOption.prefix(prefix)).iterateAll().iterator()
+          .hasNext();
+    } catch (Exception t) {
+      throw new IOException(t);
+    }
+  }
+
+  private boolean isEmptyDirectory(GcsUri gcsUri)
+      throws IOException {
+    if (!existsDirectoryOrBucket(gcsUri)) {
+      return false;
+    }
+    String prefix = gcsUri.getPrefix();
+    boolean isEmpty = true;
+    Page<Blob> page;
+    if (prefix.equals(GcsUri.DELIMITER)) {
+      page = getBucket(gcsUri).list();
+    } else {
+      page = _storage.list(gcsUri.getBucketName(), Storage.BlobListOption.prefix(prefix));
+    }
+    for (Blob blob : page.iterateAll()) {
+      if (blob.getName().equals(prefix)) {
+        continue;
+      } else {
+        isEmpty = false;
+        break;
+      }
+    }
+    return isEmpty;
+  }
+
+  private void visitFiles(GcsUri fileUri, boolean recursive, Consumer<Blob> visitor)
+      throws IOException {
+    try {
+      String prefix = fileUri.getPrefix();
+      Page<Blob> page;
+      if (recursive) {
+        page = _storage.list(fileUri.getBucketName(), Storage.BlobListOption.prefix(prefix));
+      } else {
+        page = _storage.list(fileUri.getBucketName(), Storage.BlobListOption.prefix(prefix),
+            Storage.BlobListOption.currentDirectory());
+      }
+      page.iterateAll().forEach(visitor);
+    } catch (Exception t) {
+      throw new IOException(t);
+    }
+  }
+
+  private boolean exists(GcsUri gcsUri)
+      throws IOException {
+    if (existsDirectoryOrBucket(gcsUri)) {
+      return true;
+    }
+    if (isPathTerminatedByDelimiter(gcsUri)) {
+      return false;
+    }
+    return existsFile(gcsUri);
+  }
+
+  private boolean delete(GcsUri segmentUri, boolean forceDelete)
+      throws IOException {
+    try {
+      if (!exists(segmentUri)) {
+        return false;
+      }
+      if (existsDirectoryOrBucket(segmentUri)) {
+        if (!forceDelete && !isEmptyDirectory(segmentUri)) {
+          return false;
+        }
+        String prefix = segmentUri.getPrefix();
+        Page<Blob> page;
+        if (prefix.equals(GcsUri.DELIMITER)) {
+          page = getBucket(segmentUri).list();
+        } else {
+          page = _storage.list(segmentUri.getBucketName(), Storage.BlobListOption.prefix(prefix));
+        }
+        return batchDelete(page);
+      } else {
+        Blob blob = getBlob(segmentUri);
+        return blob != null && blob.delete();
+      }
+    } catch (IOException e) {
+      throw e;
+    } catch (Exception t) {
+      throw new IOException(t);
+    }
+  }
+
+  private boolean batchDelete(Page<Blob> page) {
+    boolean deleteSucceeded = true;
+    StorageBatch batch = _storage.batch();
+    int batchSize = 0;
+    List<StorageBatchResult<Boolean>> results = new ArrayList<>();
+    for (Blob blob : page.iterateAll()) {
+      results.add(batch.delete(blob.getBlobId()));
+      batchSize++;
+      if (batchSize >= DELETE_BATCH_LIMIT) {
+        batch.submit();
+        deleteSucceeded &= results.stream().allMatch(r -> r != null && r.get());
+        results = new ArrayList<>();
+        batchSize = 0;
+      }
+    }
+    if (batchSize > 0) {
+      batch.submit();
+      deleteSucceeded &= results.stream().allMatch(r -> r != null && r.get());
+    }
+    return deleteSucceeded;
+  }
+
+  private boolean copyFile(GcsUri srcUri, GcsUri dstUri)
+      throws IOException {
+    Blob blob = getBlob(srcUri);
+    if (blob == null) {
+      throw new FileNotFoundException("Source file '" + srcUri + "' does not exist");
+    }
+    BlobId dstBlobId = BlobId.of(dstUri.getBucketName(), dstUri.getPath());
+    CopyWriter copyWriter = blob.copyTo(dstBlobId);
+    copyWriter.getResult();
+    return copyWriter.isDone();
+  }
+
+  private boolean copy(GcsUri srcUri, GcsUri dstUri)
+      throws IOException {
+    if (!exists(srcUri)) {
+      throw new IOException("Source URI '" + srcUri + "' does not exist");
+    }
+    if (srcUri.equals(dstUri)) {
+      return true;
+    }
+    // copy directly if source is a single file.
+    if (!existsDirectoryOrBucket(srcUri)) {
+      return copyFile(srcUri, dstUri);
+    }
+    // copy directory
+    if (srcUri.hasSubpath(dstUri) || dstUri.hasSubpath(srcUri)) {
+      throw new IOException("Cannot copy from or to a subdirectory: '" + srcUri + "' -> '" + dstUri + "'");
+    }
+    /// If an non-empty blob exists and does not end with "/"
+    /// gcs will create a 0 length blob ending with "/".
+    /// So you can have something like a file with a subdirectory.
+    /// This is due to gcs behavior:
+    ///
+    /// @see https://cloud.google.com/storage/docs/gsutil/addlhelp/HowSubdirectoriesWork
+    if (!existsDirectoryOrBucket(dstUri)) {
+      mkdir(dstUri.getUri());
+    }
+    boolean copySucceeded = true;
+    for (String directoryEntry : listFilesFromGcsUri(srcUri, true)) {
+      GcsUri srcFile = new GcsUri(URI.create(directoryEntry));
+      String relativeSrcPath = srcUri.relativize(srcFile);
+      GcsUri dstFile = dstUri.resolve(relativeSrcPath);
+      if (isPathTerminatedByDelimiter(srcFile)) {
+        copySucceeded &= mkdir(dstFile.getUri());
+      } else {
+        copySucceeded &= copyFile(srcFile, dstFile);
+      }
+    }
+    return copySucceeded;
+  }
+}

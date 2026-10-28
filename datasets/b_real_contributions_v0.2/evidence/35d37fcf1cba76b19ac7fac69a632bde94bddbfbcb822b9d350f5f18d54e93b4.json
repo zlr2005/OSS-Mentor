@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 80947,
+      "login": "scottpersinger",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2025-08-13T23:07:11Z",
+      "committer_at": "2025-08-13T23:07:11Z",
+      "tree_sha": "63130e544e1e5c0b289e9e5dd0a9f6a18163fd2a"
+    },
+    "committer": {
+      "id": 80947,
+      "login": "scottpersinger",
+      "type": "User"
+    },
+    "sha": "a0a347abe3ff5ad2fcf4e0bf0af3878c13564dfe"
+  },
+  "observed_at": "2026-10-26T14:44:35.282269+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6861a6a0778483839e9f462a33a6c849c029dba53348b77736b4af727dd65597",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f8710fb31da939aa0d2195ed2cb523d5521f50518b6ef452a799a7a49fa9337d",
+  "source_url": "https://api.github.com/repos/supercog-ai/agentic/commits/a0a347abe3ff5ad2fcf4e0bf0af3878c13564dfe?per_page=100",
+  "status_code": 200
+}

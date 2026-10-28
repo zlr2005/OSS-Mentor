@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 12949268,
+      "login": "lukastaegert",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T10:23:56Z",
+      "committer_at": "2026-10-20T10:23:56Z",
+      "tree_sha": "2ef28f97fa3c8529c62b599a7a8e555d32a7da78"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e70c19b91442b702a6884b52c09110653a77d941"
+  },
+  "observed_at": "2026-10-27T15:55:27.865958+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1e0e6faf21952d9749ff1f0d46b1581b960ca08fc664d534f06b531ef852316a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c6f984dab886f6b8c361ff4bcd522552001a364c4af13e474854695f51a22392",
+  "source_url": "https://api.github.com/repos/rollup/rollup/commits/e70c19b91442b702a6884b52c09110653a77d941?per_page=100",
+  "status_code": 200
+}

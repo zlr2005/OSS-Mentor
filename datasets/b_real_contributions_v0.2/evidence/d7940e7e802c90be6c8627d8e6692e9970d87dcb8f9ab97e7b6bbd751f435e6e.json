@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "222444ed3fbc9dbcdd0131d3e1b58f0b01c06f40",
+    "size": 24901
+  },
+  "observed_at": "2026-10-26T05:18:59.189517+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1ce7550dde21ee4a079da650b6e85c74baa1eed78fd7bef9f3c009f84df55a0b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7a40848c3ad5bee717e459d43edd94f74698b902a7667329cb383c3b6ea54dc6",
+  "source_url": "https://api.github.com/repos/apache/iotdb/git/blobs/222444ed3fbc9dbcdd0131d3e1b58f0b01c06f40",
+  "status_code": 200
+}

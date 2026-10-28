@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1354932,
+      "login": "kevinpschaaf",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-03T18:28:56Z",
+      "committer_at": "2026-09-03T18:28:56Z",
+      "tree_sha": "140cbc1a37139ae8dd3a0c2ebe8784b957b3492b"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2485edf2fa7445081f12e052d7e800944121a58f"
+  },
+  "observed_at": "2026-10-26T08:02:48.484951+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b654834efd95500ae0bd2e7828d2785c9f29468fce9e89774c56e4cf1ae8ecb8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d564a05947c5c866860e1b03c10fa8670d3a0dc9ed9e40e996196080dfc8047c",
+  "source_url": "https://api.github.com/repos/lit/lit/commits/2485edf2fa7445081f12e052d7e800944121a58f?per_page=100",
+  "status_code": 200
+}

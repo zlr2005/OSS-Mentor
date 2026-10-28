@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "dbeaver/dbeaver",
+    "id": 44662669,
+    "language": "Java",
+    "private": false,
+    "size": 224163
+  },
+  "observed_at": "2026-10-26T06:15:51.544455+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e60801856307c2f6ff49e69690f7900183d576b3beae5a446914c5a47d28a7d5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7d31276d1973087a706ce98100100046542b19cb2c3efe77092038943cef5d6f",
+  "source_url": "https://api.github.com/repos/dbeaver/dbeaver",
+  "status_code": 200
+}

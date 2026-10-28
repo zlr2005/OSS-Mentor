@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 137362246,
+      "login": "mattref",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-12T19:26:56Z",
+      "committer_at": "2026-10-12T19:26:56Z",
+      "tree_sha": "513f0775623d76f4b0a51d534cbf57272439a572"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "07a2be72010256e58ea4664a861db80f934294ea"
+  },
+  "observed_at": "2026-10-26T13:48:10.113607+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3b458cfd7e368e6f893ad59ebf83a5bb6b59775f05cf3cba2e094df856dd616b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8b98ba01591c93a644814dd44be8c44b2f2376985e8deb24e74244be74107375",
+  "source_url": "https://api.github.com/repos/run-llama/llama_index/commits/07a2be72010256e58ea4664a861db80f934294ea?per_page=100",
+  "status_code": 200
+}

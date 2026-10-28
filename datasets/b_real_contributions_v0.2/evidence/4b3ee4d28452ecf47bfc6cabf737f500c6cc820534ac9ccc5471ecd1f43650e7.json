@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "nestjs/nest",
+    "id": 80945428,
+    "language": "TypeScript",
+    "private": false,
+    "size": 492855
+  },
+  "observed_at": "2026-10-26T08:27:10.934546+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6e05491942f03f88089d8d7702a58167574533ac64e95ad80a4463cc7cc64a5e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "64182dd6b363c382494b19947c6e38aae3d09eceb676bde9b46ad9e5f52f28fb",
+  "source_url": "https://api.github.com/repos/nestjs/nest",
+  "status_code": 200
+}

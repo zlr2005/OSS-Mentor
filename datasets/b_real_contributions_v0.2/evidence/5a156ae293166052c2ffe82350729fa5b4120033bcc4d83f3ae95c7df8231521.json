@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7679720,
+      "login": "IEvangelist",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T06:20:02Z",
+      "committer_at": "2026-10-20T06:20:02Z",
+      "tree_sha": "7119cb86a04a83281093da1c958df590223ae343"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "40b6e4a98c5b40dc999aea731f9a341f26835886"
+  },
+  "observed_at": "2026-10-27T14:17:50.330285+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0b0e268d5768bad973f67613609e68f46f331a60c66c59af0f97deb30180206a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "64746edd4920adea1d534d0987e7a5cd38f12e9ed03cac7413808377db63aaea",
+  "source_url": "https://api.github.com/repos/microsoft/vscode-mssql/commits/40b6e4a98c5b40dc999aea731f9a341f26835886?per_page=100",
+  "status_code": 200
+}

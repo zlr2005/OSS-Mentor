@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fe437c67f6a16d8d3c0cc088f2ffc1a594f9fad2",
+    "size": 8436
+  },
+  "observed_at": "2026-10-26T14:39:12.543761+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e4e2906af0ae8123b92e42e25cabdab2695ac43cb271b3f96b34f982821a6334",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6f3c00c94f95d790a2da10858587157eb4e397dd4962a83c329a92463d04fdf3",
+  "source_url": "https://api.github.com/repos/storybookjs/storybook/git/blobs/fe437c67f6a16d8d3c0cc088f2ffc1a594f9fad2",
+  "status_code": 200
+}

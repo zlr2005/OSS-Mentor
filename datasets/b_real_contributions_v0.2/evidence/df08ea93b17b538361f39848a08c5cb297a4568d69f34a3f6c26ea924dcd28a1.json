@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "3f733e78fface01718ffa3ebf28c43b2f4ac11b3",
+    "size": 36507
+  },
+  "observed_at": "2026-10-26T15:34:05.876200+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f5c470288f68347f61383e3df2c60c2340b0ad3b085e791e97868afb05fc32d0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "69dc8e4a87b15ad8c4d7bdb36b9df6d0d3e743ec93a2d084eddf883854da0b52",
+  "source_url": "https://api.github.com/repos/vitejs/vite/git/blobs/3f733e78fface01718ffa3ebf28c43b2f4ac11b3",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 186831707,
+      "login": "iloveeyjafjalla",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T01:19:19Z",
+      "committer_at": "2026-10-20T01:19:19Z",
+      "tree_sha": "04e700524fa22187aa431758c6c64c62cfe56cab"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "57c2dc04f78cc7e73e6b8c9436ee0fff0d0f46c3"
+  },
+  "observed_at": "2026-10-26T05:32:25.497874+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4c8344f8d75447b03949aa13d537e4cfc97ac215adea52fb9387eb96af50792b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3888f2539e115ecc4b2cd7cc45b3e3938655900a1ed6e223712fb7089d223763",
+  "source_url": "https://api.github.com/repos/apache/rocketmq/commits/57c2dc04f78cc7e73e6b8c9436ee0fff0d0f46c3?per_page=100",
+  "status_code": 200
+}

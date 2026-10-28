@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7833360,
+      "login": "mark-wiemer",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-18T03:51:00Z",
+      "committer_at": "2026-10-18T03:51:00Z",
+      "tree_sha": "103f23254ec7f93b74361d6f7c8a7183e13701b0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "cb21a4eba550da665fb2c3fa1ce021777a191e23"
+  },
+  "observed_at": "2026-10-26T08:22:51.090935+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c75e32ff23f1c10f8f0ff1fa2442433f5c1f4c3543d67db6dde20053cc216dcc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6dca481a6e8e83c6a32683b61fa6f3d48ad0fc4ff6ea242751c3476cd5e654e3",
+  "source_url": "https://api.github.com/repos/mochajs/mocha/commits/cb21a4eba550da665fb2c3fa1ce021777a191e23?per_page=100",
+  "status_code": 200
+}

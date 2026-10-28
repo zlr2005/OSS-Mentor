@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 749374,
+      "login": "slorber",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T18:08:09Z",
+      "committer_at": "2026-10-23T18:08:09Z",
+      "tree_sha": "c3bbe021ada571a6b95abf9fb74f05e085975fca"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "6d5433746165ee85d391c076a6bed0f5e3fbeb85"
+  },
+  "observed_at": "2026-10-26T06:41:57.358151+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "950334c51a726265f80dfdc2a2ca452c338da354f1431fd93f631adfe5739098",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a1612a53bca951fad7f08ef18762c92a795b649ca7d1a63de465a0f8a62dd684",
+  "source_url": "https://api.github.com/repos/facebook/docusaurus/commits/6d5433746165ee85d391c076a6bed0f5e3fbeb85?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c954025bf9260ca91746e020cbeec9912b9cccf3",
+    "size": 49977
+  },
+  "observed_at": "2026-10-27T14:29:02.733889+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "73a7039e7f33ab749c4bbd1d7a45bdd4493862f129657156df2ebfdd21ff8836",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fb51cc2614a7f493836305e9ced3e4ee34a32681122ecb3e202f17f5b131d8cc",
+  "source_url": "https://api.github.com/repos/neovim/neovim/git/blobs/c954025bf9260ca91746e020cbeec9912b9cccf3",
+  "status_code": 200
+}

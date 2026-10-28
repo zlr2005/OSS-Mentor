@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "bc19380205495542aeccf2e261fd762769ee664e",
+    "size": 3054
+  },
+  "observed_at": "2026-10-26T05:02:43.875428+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "79e8d63a8adc8fc7b922750dc492574005c69ef9e17e0c813fe24dcf8669b7f8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "52360bc68b89c9465508ef8cd1d36c62f2b96a60ad9cdade4288d0647417b72e",
+  "source_url": "https://api.github.com/repos/airbnb/visx/git/blobs/bc19380205495542aeccf2e261fd762769ee664e",
+  "status_code": 200
+}

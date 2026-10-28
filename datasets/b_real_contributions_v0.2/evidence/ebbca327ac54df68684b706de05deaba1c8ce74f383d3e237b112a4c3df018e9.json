@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29139614,
+      "login": "renovate[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-16T11:27:05Z",
+      "committer_at": "2026-10-16T11:27:05Z",
+      "tree_sha": "9807a5fcd07ab3cd4e355edd5ea38f9e2b89fdcc"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a8a4c28aeae4c9ce48bac27e1c1fd268d9739554"
+  },
+  "observed_at": "2026-10-26T07:46:02.724542+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b1bf2b4e818689b029c19ef3b297f481c8a0e0057f25f212fad22cec5b0b8592",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "36333603846d998f9d7072912b6bab976662005ec96661debc6998f4564195f5",
+  "source_url": "https://api.github.com/repos/jenkinsci/jenkins/commits/a8a4c28aeae4c9ce48bac27e1c1fd268d9739554?per_page=100",
+  "status_code": 200
+}

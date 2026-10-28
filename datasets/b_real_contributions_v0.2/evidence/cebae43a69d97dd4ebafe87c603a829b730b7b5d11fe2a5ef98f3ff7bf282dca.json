@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "spring-projects/spring-data-jpa",
+    "id": 1072845,
+    "language": "Java",
+    "private": false,
+    "size": 17860
+  },
+  "observed_at": "2026-10-26T14:19:37.579698+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "97a406e2f3d5b05e5b31881a1eb9fc337fbda1b08a6bb66006aed168d2c0ff60",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b2d5bf88e5a8c79c7a9a1a6085078ff71e7a9d7c13322a5287919bb0bd8fd977",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-data-jpa",
+  "status_code": 200
+}

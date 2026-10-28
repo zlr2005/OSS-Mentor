@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 148060537,
+      "login": "akasakariko",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-09T20:58:30Z",
+      "committer_at": "2026-10-09T20:58:30Z",
+      "tree_sha": "3baa703469665c1befd31ac9b55fce3d6fe8304d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "97fff93e53f9e6a993f2d6a25d50883b7b8752a7"
+  },
+  "observed_at": "2026-10-26T07:39:09.546395+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aef36315a6edb92e6c08ee618cf63c96022f0c122b1b4f93d137034109cafb50",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2b184bf149b39fd3f0ad23c079c53ba9f5939b8f51599a504d4a9857e98472da",
+  "source_url": "https://api.github.com/repos/hyperium/hyper/commits/97fff93e53f9e6a993f2d6a25d50883b7b8752a7?per_page=100",
+  "status_code": 200
+}

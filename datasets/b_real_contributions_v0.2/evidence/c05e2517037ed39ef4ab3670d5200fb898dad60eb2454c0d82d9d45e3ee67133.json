@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4eac45ec034771e0b7d0cf1e37f059b55d8c9b11",
+    "size": 148164
+  },
+  "observed_at": "2026-10-26T04:51:24.670079+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dec9c12cde7a1d6c5f3be9c637dffd29f5738aac4341936d7bbe95072b3f1e82",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "345b559824578aa5be999cb42ea03391b7e5e36ac0f02905799a05d624077a78",
+  "source_url": "https://api.github.com/repos/Textualize/textual/git/blobs/4eac45ec034771e0b7d0cf1e37f059b55d8c9b11",
+  "status_code": 200
+}

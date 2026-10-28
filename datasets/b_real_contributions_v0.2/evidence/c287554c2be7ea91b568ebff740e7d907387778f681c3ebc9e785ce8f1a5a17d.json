@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "574429c2ad84f8d5ab85a6e1f9f6baa51ac4f66d",
+    "size": 11365
+  },
+  "observed_at": "2026-10-26T14:01:30.755562+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "68b212f5f374ed50411b94cb040175db727147cf515cf4732ac2e1bfb967fc7f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fef9257248c7084152aa7b4141a0205b070d9c9ade35f68f32ef6be3d1eacc87",
+  "source_url": "https://api.github.com/repos/SeleniumHQ/selenium/git/blobs/574429c2ad84f8d5ab85a6e1f9f6baa51ac4f66d",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-22T08:45:21Z",
+      "committer_at": "2026-10-22T08:45:21Z",
+      "tree_sha": "5a76137703ad4621722458fb63eaad3f57f68a04"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "389ecf9390be2dc6fb802f699d380c81632fbdf2"
+  },
+  "observed_at": "2026-10-26T14:42:47.974664+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6293813487e617c3ecae11e5fca188b023554045b6788cefaef50fc407f69445",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "513e53c95c9922fa09dc1843cf817897f9af554a0ff534284ee2232239769775",
+  "source_url": "https://api.github.com/repos/streamlit/streamlit/commits/389ecf9390be2dc6fb802f699d380c81632fbdf2?per_page=100",
+  "status_code": 200
+}

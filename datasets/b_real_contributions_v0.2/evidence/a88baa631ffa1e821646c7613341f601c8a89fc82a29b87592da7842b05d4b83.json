@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "babel/babel",
+    "id": 24560307,
+    "language": "TypeScript",
+    "private": false,
+    "size": 147550
+  },
+  "observed_at": "2026-10-26T05:49:57.861112+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c37fc7049d97b9f0e7cbf89b226a60b119ac84f08edfb3b363b319ae53a18a4a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "838f11c547135e63903fc67311caa36f1a5874dd4be5cd309e28430a15952e59",
+  "source_url": "https://api.github.com/repos/babel/babel",
+  "status_code": 200
+}

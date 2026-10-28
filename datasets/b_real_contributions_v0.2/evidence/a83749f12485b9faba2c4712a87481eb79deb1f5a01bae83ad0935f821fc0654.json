@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 52517,
+      "login": "tetromino",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:24:20Z",
+      "committer_at": "2026-10-23T20:25:34Z",
+      "tree_sha": "2e6b26d072257e3182b948a1f424440610326ee2"
+    },
+    "committer": {
+      "id": 32201506,
+      "login": "copybara-github",
+      "type": "User"
+    },
+    "sha": "355067f206031f93b096b2657b346418dc8e72cf"
+  },
+  "observed_at": "2026-10-26T05:52:57.252436+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "29f54c4cc8735bee71e0218d286ff36a6c496b92cf32ff58e54536b374fe330c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "56d9daca492ec3a205ec8c3589c77aec86e2e5d0a709382ad080499b15b47437",
+  "source_url": "https://api.github.com/repos/bazelbuild/bazel/commits/355067f206031f93b096b2657b346418dc8e72cf?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+    "size": 11357
+  },
+  "observed_at": "2026-10-26T06:02:40.354167+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a8324e0aff1616d08db5663fd2577e6760d629ece45aa1f6f7f70e8b49344358",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "edb8f256167c5a1a4ee155300be524e940068aa7fb38f4af317b24e45eb023fa",
+  "source_url": "https://api.github.com/repos/cert-manager/cert-manager/git/blobs/261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+  "status_code": 200
+}

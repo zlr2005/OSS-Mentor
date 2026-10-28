@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 314425123,
+      "login": "Fun-Projects-Learn",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T23:13:59Z",
+      "committer_at": "2026-10-23T23:13:59Z",
+      "tree_sha": "c0e0975ee8ec114a5bb801b94bd0ff8d311c6295"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "81942756347cd500c90e289f69d23fa5435c7908"
+  },
+  "observed_at": "2026-10-27T14:51:36.629699+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "af770c09f446eb21fb53f505d7d6352efc1db48b30354e561ff78be77188a9f9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ccdba777baa08bc268825633eb73d5a6b6fabfed0a2c518af0f43e0be8bc9a4f",
+  "source_url": "https://api.github.com/repos/numpy/numpy/commits/81942756347cd500c90e289f69d23fa5435c7908?per_page=100",
+  "status_code": 200
+}

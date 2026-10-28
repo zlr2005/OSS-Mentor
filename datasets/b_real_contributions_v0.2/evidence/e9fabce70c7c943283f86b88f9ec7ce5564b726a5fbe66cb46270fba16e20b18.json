@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "edf76fe757e492acfb187d5a5d300102d5d4376c",
+    "size": 53436
+  },
+  "observed_at": "2026-10-26T08:42:12.452405+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7c618f4accdb9120c1151ada47cd752ecfbb01d7cadbbc87296e17d217f447cc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d9472eef8561942a913a61544bc3f6b6a27d618213d50ea15b2221cccf1d517e",
+  "source_url": "https://api.github.com/repos/pallets/werkzeug/git/blobs/edf76fe757e492acfb187d5a5d300102d5d4376c",
+  "status_code": 200
+}

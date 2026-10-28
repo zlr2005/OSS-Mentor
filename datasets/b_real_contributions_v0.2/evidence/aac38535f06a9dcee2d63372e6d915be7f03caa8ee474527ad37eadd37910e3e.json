@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "3a7987616083f3d55663fd3c707eaf5de1a4e026",
+    "size": 11035
+  },
+  "observed_at": "2026-10-26T06:13:14.506639+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "406ff3efe31382609d47b6109e5b285bca7c2852b913e576226867bf43eaf1a8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "101881c3c5f8b813a58b1a9b7b4639c1eb8c06bbff8fdcce71eb5e671dd7dc83",
+  "source_url": "https://api.github.com/repos/containerd/containerd/git/blobs/3a7987616083f3d55663fd3c707eaf5de1a4e026",
+  "status_code": 200
+}

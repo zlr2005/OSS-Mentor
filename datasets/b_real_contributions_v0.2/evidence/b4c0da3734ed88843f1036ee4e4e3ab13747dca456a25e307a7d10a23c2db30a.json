@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 4232207,
+      "login": "hi-ogawa",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T01:12:33Z",
+      "committer_at": "2026-10-23T01:12:33Z",
+      "tree_sha": "0997bd2a29f847ddb0ac6ca7cbbe6119998a99b5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "36a5fa1327d1b6159614e4e773c2757aab9cb671"
+  },
+  "observed_at": "2026-10-26T15:35:33.523445+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "02a991a75f5ebf7cea1ac9efe8b8a61fb06d4e1425f75a8584502400a1ebc798",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8b684a81815254e5396b76e510ef4f0337ef9d64d69b60b38a33aebe8faf9e5b",
+  "source_url": "https://api.github.com/repos/vitest-dev/vitest/commits/36a5fa1327d1b6159614e4e773c2757aab9cb671?per_page=100",
+  "status_code": 200
+}

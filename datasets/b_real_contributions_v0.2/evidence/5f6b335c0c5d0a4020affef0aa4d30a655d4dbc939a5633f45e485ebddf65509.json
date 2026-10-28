@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 4147254,
+      "login": "sim590",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T02:10:52Z",
+      "committer_at": "2026-10-17T02:10:52Z",
+      "tree_sha": "b156233a264e9f9b0168a7200d5adb7d523a0746"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "55c122f1a0e1340546c8709682bea5561fe0e8fd"
+  },
+  "observed_at": "2026-10-26T07:47:17.661165+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "07a79572a3b5954f6917e8e116d0d261594d045e9559d8cd70db05205a94102c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2110f1c6cdc8ddf3038e42a8be75d1a6044afbb7a1ea0a1f8b42f35bd5b9f930",
+  "source_url": "https://api.github.com/repos/junegunn/fzf/commits/55c122f1a0e1340546c8709682bea5561fe0e8fd?per_page=100",
+  "status_code": 200
+}

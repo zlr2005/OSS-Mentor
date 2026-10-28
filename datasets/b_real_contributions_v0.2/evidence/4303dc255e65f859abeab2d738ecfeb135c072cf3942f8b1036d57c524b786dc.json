@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ebeba1e39fc549a1e6dafc2cf74f372dc01e819c",
+    "size": 41710
+  },
+  "observed_at": "2026-10-27T15:15:14.833187+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d5ac18beb597979bd455b7f6e6a2bc5f79cadda517dd1c2d25aae2f14f0dd405",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8e4d02495d8482610c04cac3e26758b928b4e4ff6afae2289d18746a9d84717f",
+  "source_url": "https://api.github.com/repos/psf/requests/git/blobs/ebeba1e39fc549a1e6dafc2cf74f372dc01e819c",
+  "status_code": 200
+}

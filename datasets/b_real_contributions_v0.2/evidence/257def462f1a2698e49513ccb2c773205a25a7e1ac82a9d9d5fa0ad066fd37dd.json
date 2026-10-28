@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 308610,
+      "login": "jaraco",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T19:32:18Z",
+      "committer_at": "2026-10-20T20:04:18Z",
+      "tree_sha": "2dcd55b971fcb9d5377b02eb7c4b9b2de26db2c2"
+    },
+    "committer": {
+      "id": 308610,
+      "login": "jaraco",
+      "type": "User"
+    },
+    "sha": "a89bdb14ed754143215800f26e135fa5ad502d2d"
+  },
+  "observed_at": "2026-10-27T17:07:49.083994+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "23622f6ff90c395392010141137f36465f7f06f07573d3b95144cd8ddb413956",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bba264d2dca948c7b8f9aca939be009952f6beffc3606dca97fb6b63a6cc7fc0",
+  "source_url": "https://api.github.com/repos/pypa/setuptools/commits/a89bdb14ed754143215800f26e135fa5ad502d2d?per_page=100",
+  "status_code": 200
+}

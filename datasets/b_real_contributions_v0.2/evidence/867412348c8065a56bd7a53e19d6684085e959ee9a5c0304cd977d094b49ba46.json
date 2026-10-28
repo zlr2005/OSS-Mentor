@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "python-attrs/cattrs",
+    "id": 66779450,
+    "language": "Python",
+    "private": false,
+    "size": 3144
+  },
+  "observed_at": "2026-10-26T13:15:50.425264+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5b20b718e7da371ee975802933df877f0423ef74ea65126c6e44e32dc6bc5896",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5f8f3550f2486e8f85ccf99e207eb831c12849472e69c31ff59e208d62f54c71",
+  "source_url": "https://api.github.com/repos/python-attrs/cattrs",
+  "status_code": 200
+}

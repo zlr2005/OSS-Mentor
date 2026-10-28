@@ -1,0 +1,4109 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import * as events from "events";
+import * as fs from "fs";
+import * as path from "path";
+import * as vscode from "vscode";
+import type { IConnectionInfo, SchemaCompareEndpointInfo } from "vscode-mssql";
+import { DeploymentScenario } from "../enums";
+import { AzureResourceController } from "../azure/azureResourceController";
+import * as Constants from "../constants/constants";
+import * as LocalizedConstants from "../constants/locConstants";
+import { CloudDeployService } from "../cloudDeploy/cloudDeployService";
+import SqlToolsServerClient from "../languageservice/serviceclient";
+import { Perf } from "../perf/perfTelemetry";
+import * as ConnInfo from "../models/connectionInfo";
+import {
+    CompletionExtensionParams,
+    CompletionExtLoadRequest,
+    RebuildIntelliSenseNotification,
+} from "../models/contracts/languageService";
+import { SqlOutputContentProvider } from "../models/sqlOutputContentProvider";
+import * as Utils from "../models/utils";
+import { AccountSignInTreeNode } from "../objectExplorer/nodes/accountSignInTreeNode";
+import { ConnectTreeNode } from "../objectExplorer/nodes/connectTreeNode";
+import { ObjectExplorerProvider } from "../objectExplorer/objectExplorerProvider";
+import { activateObjectExplorerV2 } from "../objectExplorer/v2/activation";
+import { readMetadataCacheSettings } from "../services/metadata/cache/metadataCacheSettings";
+import { MetadataStore } from "../services/metadata/metadataStore";
+import { MetadataStoreService } from "../services/metadata/metadataStoreService";
+import {
+    prepareConnection,
+    ProfileSecretSource,
+    StoredConnectionProfile,
+} from "../services/metadata/profileAuthAdapter";
+import { SqlDataPlaneService } from "../services/sqlDataPlane/sqlDataPlaneService";
+import { ObjectExplorerUtils } from "../objectExplorer/objectExplorerUtils";
+import { TreeNodeInfo } from "../objectExplorer/nodes/treeNodeInfo";
+import CodeAdapter from "../prompts/adapter";
+import { IPrompter } from "../prompts/question";
+import { QueryHistoryNode } from "../queryHistory/queryHistoryNode";
+import { QueryHistoryProvider } from "../queryHistory/queryHistoryProvider";
+import { ScriptingService } from "../scripting/scriptingService";
+import { AzureAccountService } from "../services/azureAccountService";
+import { AzureResourceService } from "../services/azureResourceService";
+import { DacFxService } from "../services/dacFxService";
+import { SqlProjectsService } from "../services/sqlProjectsService";
+import { SqlPackageService } from "../services/sqlPackageService";
+import { SchemaCompareService } from "../services/schemaCompareService";
+import { SqlTasksService } from "../services/sqlTasksService";
+import { ObjectManagementService } from "../services/objectManagementService";
+import StatusView from "../views/statusView";
+import { IConnectionGroup, IConnectionProfile, ISelectionData } from "../models/interfaces";
+import ConnectionManager from "./connectionManager";
+import { IInstantiationService } from "extension-toolkit/base";
+import SqlDocumentService, { ConnectionStrategy } from "./sqlDocumentService";
+import { sendActionEvent, sendErrorEvent, VscodeHttpClient } from "extension-toolkit/vscode";
+import { TelemetryActions, TelemetryViews } from "../sharedInterfaces/telemetry";
+import { TableDesignerService } from "../services/tableDesignerService";
+import {
+    PrivatePreviewContextKey,
+    PrivatePreviewFeature,
+    previewService,
+} from "../previews/previewService";
+import { TableDesignerWebviewController } from "../tableDesigner/tableDesignerWebviewController";
+import { uriOwnershipCoordinator } from "../extension";
+import { ConnectionDialogWebviewController } from "../connectionconfig/connectionDialogWebviewController";
+import { DacpacDialogWebviewController } from "./dacpacDialogWebviewController";
+import { CreateDatabaseWebviewController } from "./createDatabaseWebviewController";
+import { DropDatabaseWebviewController } from "./dropDatabaseWebviewController";
+import { RenameDatabaseWebviewController } from "./renameDatabaseWebviewController";
+import {
+    DacpacDialogWebviewState,
+    DacPacDialogOperationType,
+} from "../sharedInterfaces/dacpacDialog";
+import { ObjectExplorerFilter } from "../objectExplorer/objectExplorerFilter";
+import { ExecutionPlanService } from "../services/executionPlanService";
+import { MssqlProtocolHandler } from "../mssqlProtocolHandler";
+import { getErrorMessage, getUriKey, isIConnectionInfo } from "../utils/utils";
+import { getStandardNPSQuestions, UserSurvey } from "../nps/userSurvey";
+import { ExecutionPlanOptions } from "../models/contracts/queryExecute";
+import { ObjectExplorerDragAndDropController } from "../objectExplorer/objectExplorerDragAndDropController";
+import { SchemaDesignerService } from "../services/schemaDesignerService";
+import { SchemaDesigner } from "../sharedInterfaces/schemaDesigner";
+import store from "../queryResult/singletonStore";
+import { SchemaCompareWebViewController } from "../schemaCompare/schemaCompareWebViewController";
+import { SchemaCompare } from "../constants/locConstants";
+import { SchemaDesignerWebviewManager } from "../schemaDesigner/schemaDesignerWebviewManager";
+import { PublishProjectWebViewController } from "../publishProject/publishProjectWebViewController";
+import { CodeAnalysisWebViewController } from "../codeAnalysis/codeAnalysisWebViewController";
+import { ConnectionNode } from "../objectExplorer/nodes/connectionNode";
+import { CopilotService } from "../services/copilotService";
+import * as Prompts from "../copilot/prompts";
+import {
+    CancelableLoadingNode,
+    CreateSessionResult,
+} from "../objectExplorer/objectExplorerService";
+import { SqlCodeLensProvider } from "../queryResult/sqlCodeLensProvider";
+import { ConnectionSharingService } from "../connectionSharing/connectionSharingService";
+import { SqlNotebookController } from "../notebooks/sqlNotebookController";
+import { registerNotebookCopyOutput } from "../notebooks/notebookCopyOutputProvider";
+import { ConnectTool } from "../copilot/tools/connectTool";
+import { ListServersTool } from "../copilot/tools/listServersTool";
+import { DisconnectTool } from "../copilot/tools/disconnectTool";
+import { GetConnectionDetailsTool } from "../copilot/tools/getConnectionDetailsTool";
+import { buildChatAgentConnectPrompt } from "../copilot/tools/toolsUtils";
+import { ChangeDatabaseTool } from "../copilot/tools/changeDatabaseTool";
+import { ListDatabasesTool } from "../copilot/tools/listDatabasesTool";
+import { ListTablesTool } from "../copilot/tools/listTablesTool";
+import { ListSchemasTool } from "../copilot/tools/listSchemasTool";
+import { ListViewsTool } from "../copilot/tools/listViewsTool";
+import { ListFunctionsTool } from "../copilot/tools/listFunctionsTool";
+import { RunQueryTool } from "../copilot/tools/runQueryTool";
+import { SchemaDesignerTool } from "../copilot/tools/schemaDesignerTool";
+import { DabTool } from "../copilot/tools/dabTool";
+import { ConnectionGroupNode } from "../objectExplorer/nodes/connectionGroupNode";
+import { ConnectionGroupWebviewController } from "./connectionGroupWebviewController";
+import { DeploymentWebviewController } from "../deployment/deploymentWebviewController";
+import {
+    deleteContainer,
+    prepareForDockerContainerCommand,
+    stopContainer,
+} from "../docker/dockerUtils";
+import { ProfilerController } from "../profiler/profilerController";
+import { ProfilerService } from "../services/profilerService";
+import { ProfilerSessionManager } from "../profiler/profilerSessionManager";
+import { getCloudId } from "../azure/providerSettings";
+import { openExecutionPlanWebview } from "./sharedExecutionPlanUtils";
+import { ITableExplorerService, TableExplorerService } from "../services/tableExplorerService";
+import { IMetadataService, MetadataService } from "../services/metadataService";
+import { TableExplorerWebViewController } from "../tableExplorer/tableExplorerWebViewController";
+import { SearchDatabaseWebViewController } from "../searchDatabase/searchDatabaseWebViewController";
+import { ChangelogWebviewController } from "./changelogWebviewController";
+import { OverviewOpenOptions, OverviewWebviewController } from "./overviewWebviewController";
+import {
+    AGENT_SKILL_PLUGINS,
+    AgentSkillPluginName,
+    OverviewOpenSource,
+} from "../sharedInterfaces/overview";
+import { RecentSqlFilesStore } from "../models/recentSqlFilesStore";
+import { AgentPluginsInstaller, AgentSkillsDownloads } from "../agentPlugins/agentPluginsInstaller";
+import { DeploymentType, isDeploymentType } from "../sharedInterfaces/deployment";
+import { AzureDataStudioMigrationWebviewController } from "./azureDataStudioMigrationWebviewController";
+import { ShortcutsConfigurationWebviewController } from "./shortcutsConfigurationWebviewController";
+import { ILogger } from "../sharedInterfaces/logger";
+import { logger } from "../models/logger";
+import { FileBrowserService } from "../services/fileBrowserService";
+import { BackupDatabaseWebviewController } from "./backupDatabaseWebviewController";
+import { AzureBlobService } from "../services/azureBlobService";
+import { FlatFileImportWebviewController } from "./flatFileImportWebviewController";
+import { RestoreDatabaseWebviewController } from "./restoreDatabaseWebviewController";
+import { CopilotChat } from "../sharedInterfaces/copilotChat";
+import { BackgroundTasksProvider } from "../backgroundTasks/backgroundTasksProvider";
+import { BackgroundTaskNode } from "../backgroundTasks/backgroundTaskNode";
+import { BackgroundTaskLogContentProvider } from "../backgroundTasks/backgroundTaskLogContentProvider";
+import { BackgroundTasksService } from "../backgroundTasks/backgroundTasksService";
+import { quickQueryService } from "../quickQueries/quickQueryService";
+import {
+    getQuickQueryCommandId,
+    normalizeQuickQueries,
+    quickQueryCount,
+} from "../sharedInterfaces/shortcutsConfiguration";
+import { AzureResourcesExtensionIntegration } from "../integration/azureResourcesIntegration";
+import { FabricDatabaseHubIntegration } from "../integration/fabricDatabaseHubIntegration";
+
+const overviewVisibilityStorageKey = "overviewVisibility";
+
+/**
+ * The main controller class that initializes the extension
+ */
+export default class MainController implements vscode.Disposable {
+    private _context: vscode.ExtensionContext;
+    private _event: events.EventEmitter = new events.EventEmitter();
+    private _outputContentProvider: SqlOutputContentProvider;
+    private _statusview: StatusView;
+    private _connectionMgr: ConnectionManager;
+    private _prompter: IPrompter;
+    private _initialized: boolean = false;
+    private _sqlDocumentService: SqlDocumentService;
+    private _objectExplorerProvider: ObjectExplorerProvider;
+    private _queryHistoryProvider: QueryHistoryProvider;
+    private _overviewController: OverviewWebviewController | undefined;
+    private _recentSqlFilesStore: RecentSqlFilesStore;
+    private _agentPluginsInstallers: ReadonlyMap<AgentSkillPluginName, AgentPluginsInstaller>;
+    private _backgroundTaskLogContentProvider: BackgroundTaskLogContentProvider;
+    private _backgroundTasksProvider: BackgroundTasksProvider;
+    private _scriptingService: ScriptingService;
+    private _queryHistoryRegistered: boolean = false;
+    private _availableCommands: string[] | undefined;
+    private _logger: ILogger;
+    private _lastBackgroundTaskClickTime = 0;
+    private _lastBackgroundTaskId: string | undefined;
+    private _shortcutsConfigurationController: ShortcutsConfigurationWebviewController | undefined;
+
+    public sqlTasksService: SqlTasksService;
+    public backgroundTasksService: BackgroundTasksService;
+    public dacFxService: DacFxService;
+    public objectManagementService: ObjectManagementService;
+    public schemaCompareService: SchemaCompareService;
+    public sqlPackageService: SqlPackageService;
+    public tableExplorerService: ITableExplorerService;
+    public metadataService: IMetadataService;
+    public sqlProjectsService: SqlProjectsService;
+    public azureAccountService: AzureAccountService;
+    public azureResourceService: AzureResourceService;
+    public azureBlobService: AzureBlobService;
+    public tableDesignerService: TableDesignerService;
+    public copilotService: CopilotService;
+    public configuration: vscode.WorkspaceConfiguration;
+    public objectExplorerTree: vscode.TreeView<TreeNodeInfo>;
+    public executionPlanService: ExecutionPlanService;
+    public schemaDesignerService: SchemaDesignerService;
+    public connectionSharingService: ConnectionSharingService;
+    public fileBrowserService: FileBrowserService;
+    public profilerController: ProfilerController;
+    public sqlNotebookController: SqlNotebookController;
+    public cloudDeployService: CloudDeployService;
+    public protocolHandler: MssqlProtocolHandler;
+    public azureResourcesIntegration: AzureResourcesExtensionIntegration;
+    public fabricDatabaseHubIntegration: FabricDatabaseHubIntegration;
+
+    /**
+     * The main controller constructor
+     * @constructor
+     */
+    constructor(
+        context: vscode.ExtensionContext,
+        @IInstantiationService private readonly _instantiationService: IInstantiationService,
+        connectionManager?: ConnectionManager,
+    ) {
+        this._context = context;
+        if (connectionManager) {
+            this._connectionMgr = connectionManager;
+        }
+        this._logger = logger.withPrefix("MainController");
+        this.configuration = vscode.workspace.getConfiguration();
+
+        UserSurvey.createInstance(this._context);
+        new VscodeHttpClient({
+            logger: this._logger,
+        }).warnOnInvalidProxySettings();
+    }
+
+    /**
+     * Helper method to setup command registrations
+     */
+    public registerCommand(command: string): void {
+        const self = this;
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(command, () => {
+                Perf.marker("mssql.command.invoked", "instant", { commandId: command });
+                self._event.emit(command);
+            }),
+        );
+    }
+
+    /**
+     * Helper method to setup command registrations with arguments
+     */
+    private registerCommandWithArgs(command: string): void {
+        const self = this;
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(command, (args: any) => {
+                Perf.marker("mssql.command.invoked", "instant", { commandId: command });
+                self._event.emit(command, args);
+            }),
+        );
+    }
+
+    private onConnectCommand(): void {
+        if (uriOwnershipCoordinator?.isActiveEditorOwnedByOtherExtensionWithWarning()) {
+            return;
+        }
+        void this.runAndLogErrors(this.promptToConnect());
+    }
+
+    private onRunQueryCommand(): void {
+        if (uriOwnershipCoordinator?.isActiveEditorOwnedByOtherExtensionWithWarning()) {
+            return;
+        }
+        void UserSurvey.getInstance().promptUserForNPSFeedback("runQuery");
+        void this.onRunQuery();
+    }
+
+    /**
+     * Disposes the controller
+     */
+    dispose(): void {
+        void this.deactivate();
+    }
+
+    /**
+     * Deactivates the extension
+     */
+    public async deactivate(): Promise<void> {
+        this._logger.debug("Extension de-activated.");
+        await MetadataStoreService.get().flush();
+        await this.onDisconnect();
+        this._shortcutsConfigurationController?.dispose();
+        this._shortcutsConfigurationController = undefined;
+        this._statusview.dispose();
+    }
+
+    /**
+     * Initializes the extension
+     */
+    public async activate(): Promise<boolean> {
+        // initialize the language client then register the commands
+        const didInitialize = await this.initialize();
+        if (didInitialize) {
+            // register VS Code commands
+            this.registerCommand(Constants.cmdConnect);
+            this._event.on(Constants.cmdConnect, () => this.onConnectCommand());
+            this.registerCommand(Constants.cmdConnectWithUriOwnership);
+            this._event.on(Constants.cmdConnectWithUriOwnership, () => this.onConnectCommand());
+            this.registerCommand(Constants.cmdChangeConnection);
+            this._event.on(Constants.cmdChangeConnection, () => {
+                void this.runAndLogErrors(this.promptToConnect());
+            });
+            this.registerCommand(Constants.cmdDisconnect);
+            this._event.on(Constants.cmdDisconnect, () => {
+                void this.runAndLogErrors(this.onDisconnect());
+            });
+            this.registerCommand(Constants.cmdCancelConnect);
+            this._event.on(Constants.cmdCancelConnect, () => {
+                void this.runAndLogErrors(this.onCancelConnect());
+            });
+            this.registerCommandWithArgs(Constants.cmdCancelContainerOperation);
+            this._event.on(
+                Constants.cmdCancelContainerOperation,
+                (loadingNode: CancelableLoadingNode) => {
+                    loadingNode.cancellationTokenSource.cancel();
+                },
+            );
+            this.registerCommand(Constants.cmdRunQuery);
+            this._event.on(Constants.cmdRunQuery, () => this.onRunQueryCommand());
+            this.registerCommand(Constants.cmdRunQueryWithUriOwnership);
+            this._event.on(Constants.cmdRunQueryWithUriOwnership, () => this.onRunQueryCommand());
+            this.registerCommand(Constants.cmdOpenShortcutsConfiguration);
+            this._event.on(Constants.cmdOpenShortcutsConfiguration, () => {
+                this.openShortcutsConfiguration();
+            });
+            for (let slotNumber = 1; slotNumber <= quickQueryCount; slotNumber++) {
+                const commandId = getQuickQueryCommandId(slotNumber);
+                this.registerCommand(commandId);
+                this._event.on(commandId, () => {
+                    void this.runAndLogErrors(quickQueryService.run(slotNumber));
+                });
+            }
+            this.registerCommand(Constants.cmdManageConnectionProfiles);
+            this._event.on(Constants.cmdManageConnectionProfiles, async () => {
+                await this.onManageProfiles();
+            });
+            this.registerCommand(Constants.cmdClearPooledConnections);
+            this._event.on(Constants.cmdClearPooledConnections, async () => {
+                await this.onClearPooledConnections();
+            });
+            this.registerCommandWithArgs(Constants.cmdDeployNewDatabase);
+            this._event.on(Constants.cmdDeployNewDatabase, (args?: any) => {
+                let initialConnectionGroup: string | undefined;
+                let initialDeploymentType: DeploymentType | undefined;
+                if (args instanceof ConnectionGroupNode) {
+                    initialConnectionGroup = args.connectionGroup?.id;
+                } else if (isDeploymentType(args?.deploymentType)) {
+                    // Anything else falls through to the chooser rather than being handed on: the
+                    // deployment controller keys its type-specific state off this value, so an
+                    // unknown one leaves that state undefined.
+                    initialDeploymentType = args.deploymentType;
+                }
+                this.onDeployNewDatabase(initialConnectionGroup, initialDeploymentType);
+            });
+            this.registerCommand(Constants.cmdRunCurrentStatement);
+            this._event.on(Constants.cmdRunCurrentStatement, () => {
+                void this.onRunCurrentStatement();
+            });
+            this.registerCommand(Constants.cmdChangeDatabase);
+            this._event.on(Constants.cmdChangeDatabase, () => {
+                void this.runAndLogErrors(this.onChooseDatabase());
+            });
+            this.registerCommand(Constants.cmdChooseDatabase);
+            this._event.on(Constants.cmdChooseDatabase, () => {
+                void this.runAndLogErrors(this.onChooseDatabase());
+            });
+            this.registerCommand(Constants.cmdChooseLanguageFlavor);
+            this._event.on(Constants.cmdChooseLanguageFlavor, () => {
+                void this.runAndLogErrors(this.onChooseLanguageFlavor());
+            });
+            this.registerCommand(Constants.cmdLaunchUserFeedback);
+            this._event.on(Constants.cmdLaunchUserFeedback, () => {
+                // Launch directly, bypassing checks/prompt because they explicitly requested to provide feedback
+                UserSurvey.getInstance().launchSurvey(
+                    "nps",
+                    getStandardNPSQuestions(),
+                    "commandPalette",
+                );
+            });
+            this.registerCommand(Constants.cmdCancelQuery);
+            this._event.on(Constants.cmdCancelQuery, async () => {
+                await this.onCancelQuery();
+            });
+            this.registerCommand(Constants.cmdShowGettingStarted);
+            this._event.on(Constants.cmdShowGettingStarted, async () => {
+                await this.launchGettingStartedPage();
+            });
+            this.registerCommand(Constants.cmdNewQuery);
+            this._event.on(Constants.cmdNewQuery, () =>
+                this.runAndLogErrors(this.sqlDocumentService.handleNewQueryCommand()),
+            );
+            this.registerCommand(Constants.cmdRebuildIntelliSenseCache);
+            this._event.on(Constants.cmdRebuildIntelliSenseCache, () => {
+                this.onRebuildIntelliSense();
+            });
+            this.registerCommandWithArgs(Constants.cmdLoadCompletionExtension);
+            this._event.on(
+                Constants.cmdLoadCompletionExtension,
+                (params: CompletionExtensionParams) => {
+                    this.onLoadCompletionExtension(params);
+                },
+            );
+            this.registerCommand(Constants.cmdToggleSqlCmd);
+            this._event.on(Constants.cmdToggleSqlCmd, async () => {
+                await this.onToggleSqlCmd();
+            });
+            this.registerCommand(Constants.cmdAadRemoveAccount);
+            this._event.on(Constants.cmdAadRemoveAccount, () =>
+                this.removeAadAccount(this._prompter),
+            );
+            this.registerCommand(Constants.cmdAadAddAccount);
+            this._event.on(Constants.cmdAadAddAccount, () => this.addAadAccount());
+            this.registerCommandWithArgs(Constants.cmdClearAzureTokenCache);
+            this._event.on(Constants.cmdClearAzureTokenCache, () =>
+                this.connectionManager.onClearAzureTokenCache(),
+            );
+            this.registerCommand(Constants.cmdShowEstimatedPlan);
+            this._event.on(Constants.cmdShowEstimatedPlan, () => {
+                void this.onRunQuery({
+                    includeEstimatedExecutionPlanXml: true,
+                });
+            });
+            this.registerCommand(Constants.cmdOpenChangelog);
+            this._event.on(Constants.cmdOpenChangelog, async () => {
+                const changelogController = new ChangelogWebviewController(this._context);
+                await changelogController.revealToForeground();
+            });
+            this.registerCommandWithArgs(Constants.cmdOpenOverview);
+            this._event.on(Constants.cmdOpenOverview, async (args: unknown) => {
+                // Invoked from the Getting Started node's context menu this receives the
+                // tree item, so the options are shape-checked rather than trusted.
+                const options =
+                    typeof args === "object" && args !== null ? (args as OverviewOpenOptions) : {};
+                const openWhatsNew = options.openWhatsNew === true;
+
+                if (!this._overviewController || this._overviewController.isDisposed) {
+                    this._overviewController = new OverviewWebviewController(
+                        this._context,
+                        this._recentSqlFilesStore,
+                        this._agentPluginsInstallers,
+                        { openWhatsNew, source: options.source },
+                    );
+                } else if (openWhatsNew) {
+                    this._overviewController.openWhatsNew();
+                }
+                this._overviewController.revealToForeground();
+            });
+            this.registerCommand(Constants.cmdOpenAzureDataStudioMigration);
+            this._event.on(Constants.cmdOpenAzureDataStudioMigration, async () => {
+                const migrationController = this._instantiationService.createInstance(
+                    AzureDataStudioMigrationWebviewController,
+                    this.azureAccountService,
+                );
+
+                migrationController.revealToForeground();
+            });
+
+            this._context.subscriptions.push(
+                vscode.languages.registerCodeLensProvider(
+                    { language: "sql" },
+                    new SqlCodeLensProvider(this._connectionMgr),
+                ),
+            );
+
+            await this.initializeObjectExplorer();
+
+            this.registerCommandWithArgs(Constants.cmdConnectObjectExplorerProfile);
+            this._event.on(
+                Constants.cmdConnectObjectExplorerProfile,
+                (profile: IConnectionProfile) => {
+                    this._connectionMgr.connectionUI
+                        .saveProfile(profile)
+                        .then(async () => {
+                            await this.createObjectExplorerSession(profile);
+                        })
+                        .catch((err) => {
+                            vscode.window.showErrorMessage(getErrorMessage(err));
+                        });
+                },
+            );
+
+            this.registerCommand(Constants.cmdObjectExplorerEnableGroupBySchemaCommand);
+            this._event.on(Constants.cmdObjectExplorerEnableGroupBySchemaCommand, () => {
+                vscode.workspace
+                    .getConfiguration()
+                    .update(Constants.cmdObjectExplorerGroupBySchemaFlagName, true, true);
+            });
+            this.registerCommand(Constants.cmdObjectExplorerDisableGroupBySchemaCommand);
+            this._event.on(Constants.cmdObjectExplorerDisableGroupBySchemaCommand, () => {
+                vscode.workspace
+                    .getConfiguration()
+                    .update(Constants.cmdObjectExplorerGroupBySchemaFlagName, false, true);
+            });
+
+            const launchEditorChatWithPrompt = async (
+                prompt: string,
+                selectionPrompt: string | undefined = undefined,
+            ) => {
+                const activeEditor = vscode.window.activeTextEditor;
+                const uri = activeEditor?.document.uri.toString();
+                const promptToUse =
+                    activeEditor?.selection.isEmpty || !selectionPrompt ? prompt : selectionPrompt;
+                if (!uri) {
+                    // No active editor, so don't open chat
+                    // TODO: Show a message to the user
+                    return;
+                }
+                // create new connection
+                if (!this.connectionManager.isConnected(uri)) {
+                    await this.promptToConnect();
+                    sendActionEvent(TelemetryViews.QueryEditor, TelemetryActions.CreateConnection);
+                }
+
+                // Open chat window
+                vscode.commands.executeCommand("workbench.action.chat.open", promptToUse);
+            };
+
+            this.registerCommandWithArgs(Constants.cmdChatWithDatabase);
+            this._event.on(Constants.cmdChatWithDatabase, async (treeNodeInfo: TreeNodeInfo) => {
+                sendActionEvent(TelemetryViews.MssqlCopilot, TelemetryActions.ChatWithDatabase);
+
+                const connectionCredentials = Object.assign({}, treeNodeInfo.connectionProfile);
+                const databaseName = ObjectExplorerUtils.getDatabaseName(treeNodeInfo);
+                if (
+                    databaseName !== connectionCredentials.database &&
+                    databaseName !== LocalizedConstants.defaultDatabaseLabel
+                ) {
+                    connectionCredentials.database = databaseName;
+                } else if (databaseName === LocalizedConstants.defaultDatabaseLabel) {
+                    connectionCredentials.database = "";
+                }
+
+                // Check if the active document already has this database as a connection.
+                var alreadyActive = false;
+                let activeEditor = vscode.window.activeTextEditor;
+                if (activeEditor) {
+                    const uri = activeEditor.document.uri.toString();
+                    const connection = this._connectionMgr.getConnectionInfo(uri);
+                    if (connection) {
+                        if (
+                            connection.credentials.user === connectionCredentials.user &&
+                            connection.credentials.database === connectionCredentials.database
+                        ) {
+                            alreadyActive = true;
+                        }
+                    }
+                }
+
+                if (!alreadyActive) {
+                    treeNodeInfo.updateConnectionProfile(connectionCredentials);
+                    await this.sqlDocumentService.newQuery({
+                        connectionStrategy: ConnectionStrategy.CopyConnectionFromInfo,
+                        connectionInfo: connectionCredentials,
+                    });
+
+                    // Check if the new editor was created
+                    activeEditor = vscode.window.activeTextEditor;
+                    if (activeEditor) {
+                        const documentText = activeEditor.document.getText();
+                        if (documentText.length === 0) {
+                            // The editor is empty; safe to insert text
+                            const server = connectionCredentials.server;
+                            await activeEditor.edit((editBuilder) => {
+                                editBuilder.insert(
+                                    new vscode.Position(0, 0),
+                                    `-- @${Constants.mssqlChatParticipantName} Chat Query Editor (${server}:${connectionCredentials.database}:${connectionCredentials.user})\n`,
+                                );
+                            });
+                        } else {
+                            // The editor already contains text
+                            this._logger.error("Chat with database: unable to open editor");
+                        }
+                    } else {
+                        // The editor was somehow not created
+                        vscode.window.showErrorMessage("Chat with database: unable to open editor");
+                    }
+                }
+
+                if (activeEditor) {
+                    // Open chat window
+                    vscode.commands.executeCommand(
+                        "workbench.action.chat.open",
+                        `@${Constants.mssqlChatParticipantName} Hello!`,
+                    );
+                }
+            });
+
+            this.registerCommandWithArgs(Constants.cmdChatWithDatabaseInAgentMode);
+            this._event.on(
+                Constants.cmdChatWithDatabaseInAgentMode,
+                async (treeNodeInfo: TreeNodeInfo) => {
+                    sendActionEvent(
+                        TelemetryViews.MssqlCopilot,
+                        TelemetryActions.ChatWithDatabaseInAgentMode,
+                    );
+
+                    const connectionCredentials = Object.assign({}, treeNodeInfo.connectionProfile);
+                    const databaseName = ObjectExplorerUtils.getDatabaseName(treeNodeInfo);
+                    if (
+                        databaseName &&
+                        databaseName !== connectionCredentials.database &&
+                        databaseName !== LocalizedConstants.defaultDatabaseLabel
+                    ) {
+                        connectionCredentials.database = databaseName;
+                    } else if (databaseName === LocalizedConstants.defaultDatabaseLabel) {
+                        connectionCredentials.database = "";
+                    }
+
+                    // Use the improved command detection
+                    const chatCommand = await this.findChatOpenAgentCommand();
+                    if (chatCommand) {
+                        vscode.commands.executeCommand(
+                            chatCommand,
+                            buildChatAgentConnectPrompt(connectionCredentials),
+                        );
+                    } else {
+                        // Fallback or error handling
+                        vscode.window.showErrorMessage(
+                            LocalizedConstants.MssqlChatAgent.chatCommandNotAvailable,
+                        );
+                    }
+                },
+            );
+
+            this.registerCommandWithArgs(CopilotChat.openFromUiCommand);
+            this._event.on(
+                CopilotChat.openFromUiCommand,
+                async (args?: CopilotChat.OpenFromUiArgs) => {
+                    await this.openCopilotChatFromUi(args);
+                },
+            );
+
+            // -- NEW QUERY WITH CONNECTION (Copilot) --
+            this.registerCommandWithArgs(Constants.cmdCopilotNewQueryWithConnection);
+            this._event.on(
+                Constants.cmdCopilotNewQueryWithConnection,
+                (args?: { forceNewEditor?: boolean; forceConnect?: boolean }) => {
+                    void this.runAndLogErrors(
+                        this.onNewQueryWithConnection(args?.forceNewEditor, args?.forceConnect),
+                    );
+                },
+            );
+
+            // -- PUBLISH PROJECT --
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdPublishDatabaseProject,
+                    async (projectFilePath: string) => {
+                        await this.onPublishDatabaseProject(projectFilePath);
+                    },
+                ),
+            );
+
+            // -- CODE ANALYSIS --
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdConfigureCodeAnalysisSettings,
+                    async (projectFilePath: string) => {
+                        await this.onConfigureCodeAnalysisSettings(projectFilePath);
+                    },
+                ),
+            );
+
+            // -- EXPLAIN QUERY --
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(Constants.cmdExplainQuery, async () => {
+                    sendActionEvent(TelemetryViews.MssqlCopilot, TelemetryActions.ExplainQuery);
+
+                    await launchEditorChatWithPrompt(
+                        Prompts.explainQueryPrompt,
+                        Prompts.explainQuerySelectionPrompt,
+                    );
+                }),
+            );
+
+            // -- REWRITE QUERY --
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(Constants.cmdRewriteQuery, async () => {
+                    sendActionEvent(TelemetryViews.MssqlCopilot, TelemetryActions.RewriteQuery);
+
+                    await launchEditorChatWithPrompt(
+                        Prompts.rewriteQueryPrompt,
+                        Prompts.rewriteQuerySelectionPrompt,
+                    );
+                }),
+            );
+
+            // -- ANALYZE QUERY PERFORMANCE --
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(Constants.cmdAnalyzeQueryPerformance, async () => {
+                    sendActionEvent(
+                        TelemetryViews.MssqlCopilot,
+                        TelemetryActions.AnalyzeQueryPerformance,
+                    );
+
+                    await launchEditorChatWithPrompt(Prompts.analyzeQueryPerformancePrompt);
+                }),
+            );
+
+            this.initializeQueryHistory();
+            this.initializeBackgroundTasks();
+            this.initializeRecentSqlFiles();
+            this.initializeAgentPlugins();
+
+            this.sqlTasksService = new SqlTasksService(
+                SqlToolsServerClient.instance,
+                this._sqlDocumentService,
+                this.backgroundTasksService,
+            );
+            this.dacFxService = new DacFxService(
+                SqlToolsServerClient.instance,
+                this.sqlTasksService,
+            );
+            this.objectManagementService = new ObjectManagementService(
+                SqlToolsServerClient.instance,
+            );
+            this.sqlProjectsService = new SqlProjectsService(SqlToolsServerClient.instance);
+            this.schemaCompareService = new SchemaCompareService(SqlToolsServerClient.instance);
+            this.sqlPackageService = new SqlPackageService(SqlToolsServerClient.instance);
+            this.tableExplorerService = new TableExplorerService(SqlToolsServerClient.instance);
+            this.metadataService = new MetadataService(SqlToolsServerClient.instance);
+            const azureResourceController = new AzureResourceController();
+            this.azureAccountService = new AzureAccountService(
+                this._connectionMgr.azureController,
+                this._connectionMgr.accountStore,
+            );
+            this.azureResourceService = new AzureResourceService(
+                this._connectionMgr.azureController,
+                azureResourceController,
+                this._connectionMgr.accountStore,
+            );
+            this.azureBlobService = new AzureBlobService(SqlToolsServerClient.instance);
+
+            this.tableDesignerService = new TableDesignerService(SqlToolsServerClient.instance);
+            this.copilotService = new CopilotService(SqlToolsServerClient.instance);
+            this.schemaDesignerService = new SchemaDesignerService(SqlToolsServerClient.instance);
+
+            // Initialize profiler service and session manager
+            const profilerService = new ProfilerService(this._connectionMgr.client);
+            const profilerSessionManager = new ProfilerSessionManager(profilerService);
+
+            // Initialize profiler controller
+            this.profilerController = new ProfilerController(
+                this._context,
+                this._connectionMgr,
+                profilerSessionManager,
+            );
+
+            this.connectionSharingService = new ConnectionSharingService(
+                this._context,
+                this._connectionMgr.client,
+                this._connectionMgr,
+                this._scriptingService,
+            );
+
+            // Initialize SQL Notebook controller
+            this.sqlNotebookController = new SqlNotebookController(
+                this._connectionMgr,
+                this.connectionSharingService,
+                this._context.workspaceState,
+            );
+            this._context.subscriptions.push(this.sqlNotebookController);
+
+            this.registerCommandWithArgs(Constants.cmdNotebooksCreate);
+            this._event.on(Constants.cmdNotebooksCreate, async (args: any) => {
+                const connectionInfo = args?.connectionProfile
+                    ? { ...args.connectionProfile }
+                    : undefined;
+
+                if (connectionInfo && args) {
+                    const dbName = ObjectExplorerUtils.getDatabaseName(args);
+                    if (dbName) {
+                        connectionInfo.database = dbName;
+                    }
+                }
+
+                await this.sqlNotebookController.createNotebookWithConnection(connectionInfo);
+            });
+
+            this.registerCommand(Constants.cmdNotebooksChangeDatabase);
+            this._event.on(Constants.cmdNotebooksChangeDatabase, () => {
+                void this.sqlNotebookController.changeDatabaseInteractive();
+            });
+
+            this.registerCommand(Constants.cmdNotebooksChangeConnection);
+            this._event.on(Constants.cmdNotebooksChangeConnection, () => {
+                void this.sqlNotebookController.changeConnectionInteractive();
+            });
+
+            registerNotebookCopyOutput(this._context);
+
+            const providerInstance = new this.ExecutionPlanCustomEditorProvider(
+                this._context,
+                this.executionPlanService,
+                this._sqlDocumentService,
+            );
+            vscode.window.registerCustomEditorProvider("mssql.executionPlanView", providerInstance);
+
+            // Register XEL file custom editor provider
+            const xelProviderInstance = new this.ProfilerXelCustomEditorProvider(
+                this.profilerController,
+            );
+            vscode.window.registerCustomEditorProvider(
+                "mssql.profilerXelView",
+                xelProviderInstance,
+            );
+
+            this.protocolHandler = new MssqlProtocolHandler(this, this._connectionMgr.client);
+
+            const uriHandler: vscode.UriHandler = {
+                handleUri: async (uri: vscode.Uri) => {
+                    await this.protocolHandler.handleUri(uri);
+                },
+            };
+
+            vscode.window.registerUriHandler(uriHandler);
+
+            this.azureResourcesIntegration = new AzureResourcesExtensionIntegration(
+                this.protocolHandler,
+            );
+            this.fabricDatabaseHubIntegration = new FabricDatabaseHubIntegration();
+
+            this._context.subscriptions.push(
+                this.azureResourcesIntegration.registerOpenInMssqlCommand(),
+                this.fabricDatabaseHubIntegration.registerOpenInFabricDatabaseHubCommand(),
+            );
+
+            // Register a virtual document provider once during extension activation
+            vscode.workspace.registerTextDocumentContentProvider("query-result-link", {
+                provideTextDocumentContent: (uri) => {
+                    // Attempt to decode the URI fragment
+                    try {
+                        return decodeURIComponent(uri.fragment);
+                    } catch {
+                        // If decoding fails, return the raw fragment as a fallback.  Some characters (like '%') can cause decodeURIComponent to throw an error.
+                        return uri.fragment;
+                    }
+                },
+            });
+
+            // Add handlers for VS Code generated commands
+            vscode.workspace.onDidChangeConfiguration((params) =>
+                this.onDidChangeConfiguration(params),
+            );
+
+            this.registerLanguageModelTools();
+
+            return true;
+        }
+    }
+
+    /**
+     * Helper method to register all language model tools
+     */
+    private registerLanguageModelTools(): void {
+        // Register mssql_connect tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotConnectToolName,
+                new ConnectTool(this.connectionManager),
+            ),
+        );
+
+        // Register mssql_disconnect tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotDisconnectToolName,
+                new DisconnectTool(this.connectionManager),
+            ),
+        );
+
+        // Register mssql_list_servers tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotListServersToolName,
+                new ListServersTool(this.connectionManager),
+            ),
+        );
+
+        // Register mssql_list_databases tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotListDatabasesToolName,
+                new ListDatabasesTool(this.connectionManager),
+            ),
+        );
+
+        // Register mssql_get_connection_details tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotGetConnectionDetailsToolName,
+                new GetConnectionDetailsTool(this.connectionManager),
+            ),
+        );
+
+        // Register mssql_change_database tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotChangeDatabaseToolName,
+                new ChangeDatabaseTool(this.connectionManager),
+            ),
+        );
+        // Register mssql_list_tables tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotListTablesToolName,
+                new ListTablesTool(this.connectionManager, SqlToolsServerClient.instance),
+            ),
+        );
+
+        // Register mssql_list_schemas tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotListSchemasToolName,
+                new ListSchemasTool(this.connectionManager, SqlToolsServerClient.instance),
+            ),
+        );
+
+        // Register mssql_list_views tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotListViewsToolName,
+                new ListViewsTool(this.connectionManager, SqlToolsServerClient.instance),
+            ),
+        );
+
+        // Register mssql_list_functions tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotListFunctionsToolName,
+                new ListFunctionsTool(this.connectionManager, SqlToolsServerClient.instance),
+            ),
+        );
+
+        // Register mssql_run_query tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotRunQueryToolName,
+                new RunQueryTool(this.connectionManager, SqlToolsServerClient.instance),
+            ),
+        );
+
+        // Register mssql_schema_designer tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotSchemaDesignerToolName,
+                new SchemaDesignerTool(
+                    this.connectionManager,
+                    async (connectionUri: string, database: string) =>
+                        this.openSchemaDesigner(connectionUri, database),
+                ),
+            ),
+        );
+
+        // Register mssql_dab tool
+        this._context.subscriptions.push(
+            vscode.lm.registerTool(
+                Constants.copilotDabToolName,
+                new DabTool(
+                    this.connectionManager,
+                    async (connectionUri: string, database: string) =>
+                        this.openDabDesigner(connectionUri, database),
+                ),
+            ),
+        );
+    }
+
+    private async openSchemaDesigner(connectionUri: string, database: string) {
+        const designer = await SchemaDesignerWebviewManager.getInstance().getSchemaDesigner(
+            this._context,
+            this,
+            this.schemaDesignerService,
+            database,
+            undefined,
+            connectionUri,
+        );
+        designer.showView(SchemaDesigner.SchemaDesignerActiveView.SchemaDesigner);
+        designer.revealToForeground();
+        return designer;
+    }
+
+    private async openDabDesigner(connectionUri: string, database: string) {
+        const designer = await SchemaDesignerWebviewManager.getInstance().getSchemaDesigner(
+            this._context,
+            this,
+            this.schemaDesignerService,
+            database,
+            undefined,
+            connectionUri,
+        );
+        designer.showView(SchemaDesigner.SchemaDesignerActiveView.Dab);
+        designer.revealToForeground();
+        return designer;
+    }
+
+    /**
+     * Returns a flag indicating if the extension is initialized
+     */
+    public isInitialized(): boolean {
+        return this._initialized;
+    }
+
+    /**
+     * Get available VS Code commands (cached for performance)
+     */
+    private async getAvailableCommands(): Promise<string[]> {
+        if (!this._availableCommands) {
+            this._availableCommands = await vscode.commands.getCommands();
+        }
+        return this._availableCommands;
+    }
+
+    /**
+     * Find the correct chat open agent command variant that exists in the current VS Code version
+     */
+    private async findChatOpenAgentCommand(): Promise<string | undefined> {
+        const commands = await this.getAvailableCommands();
+
+        // Try to find the correct command, checking both variants
+        const possibleCommands = [
+            Constants.vscodeWorkbenchChatOpenAgent, // Current VS Code
+            Constants.vscodeWorkbenchChatOpenAgentLegacy, // Legacy VS Code
+        ];
+
+        for (const cmd of possibleCommands) {
+            if (commands.includes(cmd)) {
+                return cmd;
+            }
+        }
+
+        return undefined;
+    }
+
+    private getCopilotChatPromptForScenario(scenario: CopilotChat.Scenario): string {
+        switch (scenario) {
+            case "dab":
+                return Prompts.dabAgentPrompt;
+            case "schemaDesigner":
+            default:
+                return Prompts.schemaDesignerAgentPrompt;
+        }
+    }
+
+    private async openCopilotChatFromUi(args?: CopilotChat.OpenFromUiArgs): Promise<void> {
+        const scenario = args?.scenario ?? "schemaDesigner";
+        const entryPoint = args?.entryPoint ?? "schemaDesignerToolbar";
+        const promptOverride = args?.prompt?.trim();
+        const sendCopilotChatEntryTelemetry = (
+            success: boolean,
+            reason?: "noActiveDesigner" | "chatCommandMissing",
+        ) => {
+            sendActionEvent(TelemetryViews.SchemaDesigner, TelemetryActions.Open, {
+                additionalProps: {
+                    entryPoint,
+                    scenario,
+                    mode: "agent",
+                    success: success.toString(),
+                    ...(reason ? { reason } : {}),
+                },
+            });
+        };
+
+        if (!SchemaDesignerWebviewManager.getInstance().getActiveDesigner()) {
+            sendCopilotChatEntryTelemetry(false, "noActiveDesigner");
+            vscode.window.showErrorMessage(
+                LocalizedConstants.MssqlChatAgent.schemaDesignerNoActiveDesigner,
+            );
+            return;
+        }
+
+        const chatCommand = await this.findChatOpenAgentCommand();
+        if (!chatCommand) {
+            sendCopilotChatEntryTelemetry(false, "chatCommandMissing");
+            vscode.window.showErrorMessage(
+                LocalizedConstants.MssqlChatAgent.chatCommandNotAvailable,
+            );
+            return;
+        }
+
+        const promptToUse =
+            promptOverride && promptOverride.length > 0
+                ? promptOverride
+                : this.getCopilotChatPromptForScenario(scenario);
+        await vscode.commands.executeCommand(chatCommand, promptToUse);
+        sendCopilotChatEntryTelemetry(true);
+    }
+
+    public get context(): vscode.ExtensionContext {
+        return this._context;
+    }
+
+    /**
+     * Initializes the extension
+     */
+    public async initialize(): Promise<boolean> {
+        // initialize language service client
+        await SqlToolsServerClient.instance.initialize(this._context);
+        // Init status bar
+        this._statusview = new StatusView();
+
+        // Init CodeAdapter for use when user response to questions is needed
+        this._prompter = new CodeAdapter();
+
+        /**
+         * TODO: aaskhan
+         * Good candidate for dependency injection.
+         */
+        this.executionPlanService = new ExecutionPlanService(SqlToolsServerClient.instance);
+
+        this.fileBrowserService = new FileBrowserService(SqlToolsServerClient.instance);
+
+        // Init content provider for results pane
+        this._outputContentProvider = new SqlOutputContentProvider(
+            this._context,
+            this._statusview,
+            this.executionPlanService,
+        );
+
+        // Init connection manager and connection MRU
+        if (!this._connectionMgr) {
+            this._connectionMgr = this._instantiationService.createInstance(
+                ConnectionManager,
+                this._context,
+                this._statusview,
+                this._prompter,
+            );
+        }
+        this.initializeMetadataStore();
+
+        this._sqlDocumentService = new SqlDocumentService(this);
+        this.configureQuickQueryService();
+
+        this._outputContentProvider.queryResultWebviewController.sqlDocumentService =
+            this._sqlDocumentService;
+
+        await this.migrateTransferActiveEditorConnectionsSetting();
+
+        void this.showOnLaunchPrompts();
+
+        // Handle case where SQL file is the 1st opened document
+        const activeTextEditor = vscode.window.activeTextEditor;
+        if (activeTextEditor && Utils.isEditingSqlFile()) {
+            await this.sqlDocumentService.onDidOpenTextDocument(activeTextEditor.document);
+        }
+        await this.sanitizeConnectionProfiles();
+        await this.loadTokenCache();
+
+        // capture basic metadata
+        sendActionEvent(TelemetryViews.General, TelemetryActions.Activated, {
+            additionalProps: {
+                experimentalFeaturesEnabled: previewService.experimentalFeaturesEnabled.toString(),
+                cloudType: getCloudId(),
+                previewFeatureOverrides: JSON.stringify(previewService.getNonDefaultOverrides()),
+                useMsalEntraMfaAuth: String(
+                    vscode.workspace
+                        .getConfiguration()
+                        .get(Constants.configUseMsalEntraMfaAuth, false) ?? false,
+                ),
+                newEditorConnectionBehavior: vscode.workspace
+                    .getConfiguration()
+                    .get<string>(
+                        Constants.configNewEditorConnectionBehavior,
+                        Constants.NewEditorConnectionBehavior.TransferActive,
+                    ),
+            },
+        });
+
+        // Set context for experimental features (used for conditional menu visibility)
+        await vscode.commands.executeCommand(
+            "setContext",
+            "mssql.experimentalFeaturesEnabled",
+            previewService.experimentalFeaturesEnabled,
+        );
+
+        await this._connectionMgr.initialized;
+
+        this._statusview.setConnectionStore(this._connectionMgr.connectionStore);
+
+        // Cloud Deploy: instantiate the service against the first workspace folder
+        // (TODO: multi-root support). Init runs fire-and-forget so a malformed
+        // environments.json can't block extension activation — errors are logged.
+        const cloudDeployFolder = vscode.workspace.workspaceFolders?.[0];
+        this.cloudDeployService = new CloudDeployService(
+            cloudDeployFolder,
+            this._context.workspaceState,
+        );
+        this._context.subscriptions.push(this.cloudDeployService);
+        void this.cloudDeployService.init().catch((err: unknown) => {
+            this._logger.error(
+                `CloudDeployService init failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+        });
+
+        this._initialized = true;
+        return true;
+    }
+
+    /**
+     * Compose the shared metadata store and its optional persistent cache.
+     * The metadata engine remains VS Code-independent; host facts and storage
+     * are injected here. Persistence is default-off and takes effect on the
+     * next extension-host start so consumers always share one configuration.
+     */
+    private initializeMetadataStore(): void {
+        const metadataStoreService = MetadataStoreService.get();
+        const sqlDataPlaneEnabled = () =>
+            previewService.isPrivatePreviewEnabled(PrivatePreviewFeature.SqlDataPlane);
+        const metadataCacheEnabled = () =>
+            previewService.isPrivatePreviewEnabled(
+                PrivatePreviewFeature.SqlDataPlane,
+                PrivatePreviewFeature.MetadataCache,
+            );
+        const metadataCacheActiveAtActivation = metadataCacheEnabled();
+        void vscode.commands.executeCommand(
+            "setContext",
+            PrivatePreviewContextKey.MetadataCacheActive,
+            metadataCacheActiveAtActivation,
+        );
+        metadataStoreService.configureHost({
+            isActive: () => vscode.window.state.focused,
+            dataPlaneEnabled: sqlDataPlaneEnabled,
+            pollSeconds: () =>
+                vscode.workspace.getConfiguration("mssql.metadata").get<number>("pollSeconds", 60),
+        });
+
+        const globalStorageUri = this._context.globalStorageUri as vscode.Uri | undefined;
+        if (globalStorageUri) {
+            const extensionVersion = this._context.extension?.packageJSON?.version;
+            const readSettings = () => {
+                const configured = readMetadataCacheSettings((key, defaultValue) =>
+                    vscode.workspace.getConfiguration("mssql.metadataCache").get(key, defaultValue),
+                );
+                const enabled = metadataCacheEnabled();
+                return {
+                    ...configured,
+                    enabled: configured.enabled && enabled,
+                    offlineMode: configured.offlineMode && enabled,
+                };
+            };
+            metadataStoreService.configureCache({
+                cacheRootPath: vscode.Uri.joinPath(globalStorageUri, "metadata-cache").fsPath,
+                settings: readSettings,
+                producer: {
+                    ...(typeof extensionVersion === "string" ? { extensionVersion } : {}),
+                    appVersion: vscode.version,
+                },
+            });
+
+            if (readSettings().enabled) {
+                const maintenanceTimer = setTimeout(() => {
+                    void metadataStoreService.maintenance().catch((error: unknown) => {
+                        this._logger.warn(
+                            `Metadata cache maintenance failed: ${getErrorMessage(error)}`,
+                        );
+                    });
+                }, 5_000);
+                maintenanceTimer.unref?.();
+                this._context.subscriptions.push({
+                    dispose: () => clearTimeout(maintenanceTimer),
+                });
+            }
+        }
+
+        this._context.subscriptions.push(metadataStoreService);
+
+        if (metadataCacheActiveAtActivation) {
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand("mssql.metadataCache.showStatus", async () => {
+                    const document = await vscode.workspace.openTextDocument({
+                        language: "json",
+                        content: JSON.stringify(
+                            metadataStoreService.store().status(),
+                            undefined,
+                            2,
+                        ),
+                    });
+                    await vscode.window.showTextDocument(document, { preview: true });
+                }),
+                vscode.commands.registerCommand("mssql.metadataCache.clearAll", async () => {
+                    const coordinator = metadataStoreService.cache();
+                    if (!coordinator) {
+                        void vscode.window.showInformationMessage(
+                            LocalizedConstants.MetadataCache.notEnabled,
+                        );
+                        return;
+                    }
+                    await coordinator.clearAll();
+                    void vscode.window.showInformationMessage(
+                        LocalizedConstants.MetadataCache.cleared,
+                    );
+                }),
+                vscode.commands.registerCommand(
+                    "mssql.metadataCache.clearForConnection",
+                    async () => {
+                        const coordinator = metadataStoreService.cache();
+                        if (!coordinator) {
+                            void vscode.window.showInformationMessage(
+                                LocalizedConstants.MetadataCache.notEnabled,
+                            );
+                            return;
+                        }
+                        const entries = await coordinator.listEntries();
+                        if (entries.length === 0) {
+                            void vscode.window.showInformationMessage(
+                                LocalizedConstants.MetadataCache.noEntries,
+                            );
+                            return;
+                        }
+                        const picked = await vscode.window.showQuickPick(
+                            entries.map((entry) => ({
+                                label: entry.key.database,
+                                description: LocalizedConstants.MetadataCache.capturedAt(
+                                    entry.capturedAtUtc,
+                                ),
+                                detail: `${entry.key.serverFingerprint.slice(0, 12)}…`,
+                                entry,
+                            })),
+                            { title: LocalizedConstants.MetadataCache.clearForConnectionTitle },
+                        );
+                        if (!picked) {
+                            return;
+                        }
+                        await coordinator.clearForConnection(picked.entry.key);
+                        void vscode.window.showInformationMessage(
+                            LocalizedConstants.MetadataCache.entryCleared,
+                        );
+                    },
+                ),
+                vscode.commands.registerCommand("mssql.metadataCache.enableOfflineMode", () =>
+                    vscode.workspace
+                        .getConfiguration("mssql.metadataCache")
+                        .update("offlineMode", true, vscode.ConfigurationTarget.Global),
+                ),
+                vscode.commands.registerCommand("mssql.metadataCache.disableOfflineMode", () =>
+                    vscode.workspace
+                        .getConfiguration("mssql.metadataCache")
+                        .update("offlineMode", false, vscode.ConfigurationTarget.Global),
+                ),
+            );
+        }
+
+        if (Perf.enabled) {
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand("mssql.perf.metadataCacheWarmAcquire", async () => {
+                    const coordinator = metadataStoreService.cache();
+                    if (!coordinator) {
+                        throw new Error(
+                            "metadata cache disabled (requires mssql.enableExperimentalFeatures, mssql.sqlDataPlane.enabled, and mssql.metadataCache.enabled)",
+                        );
+                    }
+                    const profiles =
+                        vscode.workspace
+                            .getConfiguration("mssql")
+                            .get<StoredConnectionProfile[]>("connections") ?? [];
+                    const stored = profiles[0];
+                    if (!stored?.server) {
+                        throw new Error("no saved connection profile for the probe");
+                    }
+                    const prepared = prepareConnection(
+                        stored,
+                        this._connectionMgr.connectionStore as unknown as ProfileSecretSource,
+                    );
+                    const database = stored.database ?? "";
+                    const key = { serverFingerprint: prepared.serverFingerprint, database };
+                    const dataPlane = () =>
+                        SqlDataPlaneService.get().serviceForProfile(
+                            prepared.profileRef.profileFingerprint,
+                        );
+
+                    await coordinator.clearForConnection(key);
+                    const coldStore = new MetadataStore(dataPlane, {
+                        pollSeconds: 0,
+                        cache: { coordinator },
+                    });
+                    const coldLease = await coldStore.acquireDatabase(prepared, database);
+                    try {
+                        const cold = await coldLease.ensureFresh({
+                            mode: "allowStale",
+                            reason: "startupWarm",
+                            timeoutMs: 60_000,
+                        });
+                        if (!cold.snapshot) {
+                            throw new Error("cold acquire produced no snapshot");
+                        }
+                        const saved = await coordinator.saveNow(key, cold.snapshot);
+                        if (saved.result !== "saved" && saved.result !== "manifestOnly") {
+                            throw new Error(`save-back failed: ${saved.result}`);
+                        }
+
+                        Perf.marker("mssql.metadata.cache.warmAcquire.begin", "begin");
+                        const warmStore = new MetadataStore(dataPlane, {
+                            pollSeconds: 0,
+                            cache: { coordinator, offlineMode: () => true },
+                        });
+                        const warmLease = await warmStore.acquireDatabase(prepared, database);
+                        try {
+                            const warm = await warmLease.ensureFresh({
+                                mode: "offlineSnapshot",
+                                reason: "startupWarm",
+                            });
+                            const status = warmStore.status();
+                            if (status.cache?.loadedFromDisk !== 1) {
+                                throw new Error("warm acquire did not load from disk");
+                            }
+                            if (!warm.snapshot) {
+                                throw new Error("warm acquire produced no snapshot");
+                            }
+                            if (status.databases[0]?.source !== "disk") {
+                                throw new Error(
+                                    `warm snapshot source is ${status.databases[0]?.source ?? "unknown"}, not disk`,
+                                );
+                            }
+                            Perf.marker("mssql.metadata.cache.warmAcquire.end", "end", {
+                                objects: warm.snapshot.stats.objects,
+                                waitedMs: Math.round(warm.waitedMs),
+                            });
+                            return {
+                                coldObjects: cold.snapshot.stats.objects,
+                                warmObjects: warm.snapshot.stats.objects,
+                                warmWaitedMs: warm.waitedMs,
+                            };
+                        } finally {
+                            warmLease.dispose();
+                            warmStore.dispose();
+                        }
+                    } finally {
+                        coldLease.dispose();
+                        coldStore.dispose();
+                    }
+                }),
+            );
+        }
+    }
+
+    private async loadTokenCache(): Promise<void> {
+        await this._connectionMgr.azureController.loadTokenCache();
+    }
+
+    /**
+     * Sanitize the connection profiles in the settings.
+     */
+    public async sanitizeConnectionProfiles(): Promise<void> {
+        const sanitize = async (
+            connectionProfiles: IConnectionProfile[],
+            target: vscode.ConfigurationTarget,
+        ) => {
+            let profileChanged = false;
+            for (const conn of connectionProfiles) {
+                // remove azure account token
+                if (
+                    conn &&
+                    conn.authenticationType !== "AzureMFA" &&
+                    conn.azureAccountToken !== undefined
+                ) {
+                    conn.azureAccountToken = undefined;
+                    profileChanged = true;
+                }
+                // remove password
+                if (!Utils.isEmpty(conn.password)) {
+                    // save the password in the credential store if save password is true
+                    await this.connectionManager.connectionStore.saveProfilePasswordIfNeeded(conn);
+                    conn.password = "";
+                    profileChanged = true;
+                }
+                // Fixup 'Encrypt' property if needed
+                let result = ConnInfo.updateEncrypt(conn);
+                if (result.updateStatus) {
+                    await this.connectionManager.connectionStore.saveProfile(
+                        result.connection as IConnectionProfile,
+                    );
+                }
+            }
+            if (profileChanged) {
+                await vscode.workspace
+                    .getConfiguration(Constants.extensionName)
+                    .update(Constants.connectionsArrayName, connectionProfiles, target);
+            }
+        };
+        const profileMapping = new Map<vscode.ConfigurationTarget, IConnectionProfile[]>();
+        const activeEditorUri = Utils.getActiveTextEditorUri();
+        const configuration = vscode.workspace.getConfiguration(
+            Constants.extensionName,
+            activeEditorUri ? vscode.Uri.parse(activeEditorUri) : undefined,
+        );
+        const configValue = configuration.inspect<IConnectionProfile[]>(
+            Constants.connectionsArrayName,
+        );
+        profileMapping.set(vscode.ConfigurationTarget.Global, configValue.globalValue || []);
+        profileMapping.set(vscode.ConfigurationTarget.Workspace, configValue.workspaceValue || []);
+        profileMapping.set(
+            vscode.ConfigurationTarget.WorkspaceFolder,
+            configValue.workspaceFolderValue || [],
+        );
+        for (const target of profileMapping.keys()) {
+            // sanitize the connections and save them back to their original target.
+            await sanitize(profileMapping.get(target), target);
+        }
+    }
+
+    /**
+     * Creates a new Object Explorer session
+     * @param connectionCredentials Connection credentials to use for the session
+     * @returns OE node if the session was created successfully, undefined otherwise
+     */
+    public async createObjectExplorerSession(
+        connectionCredentials?: IConnectionInfo,
+    ): Promise<TreeNodeInfo> {
+        let retry = true;
+        // There can be many reasons for the session creation to fail, so we will retry until we get a successful result or the user cancels the operation.
+        let sessionCreationResult: CreateSessionResult = undefined;
+        while (retry) {
+            retry = false;
+            sessionCreationResult =
+                await this._objectExplorerProvider.createSession(connectionCredentials);
+            if (sessionCreationResult?.shouldRetryOnFailure) {
+                retry = true;
+            }
+        }
+        if (sessionCreationResult) {
+            const newNode = await sessionCreationResult.connectionNode;
+            if (newNode) {
+                this._objectExplorerProvider.refresh(undefined);
+                return newNode;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Initializes the Object Explorer commands
+     * @param objectExplorerProvider provider settable for testing purposes
+     */
+    private async initializeObjectExplorer(
+        objectExplorerProvider?: ObjectExplorerProvider,
+    ): Promise<void> {
+        // Register the object explorer tree provider
+        this._objectExplorerProvider =
+            objectExplorerProvider ?? new ObjectExplorerProvider(this._connectionMgr);
+
+        const isOverviewVisible =
+            this._context.globalState.get<boolean>(overviewVisibilityStorageKey, true) ?? true;
+        this._objectExplorerProvider.setOverviewVisibility(isOverviewVisible);
+        await vscode.commands.executeCommand(
+            "setContext",
+            Constants.overviewVisibleContextKey,
+            isOverviewVisible,
+        );
+
+        const setOverviewVisibility = async (isVisible: boolean): Promise<void> => {
+            await this._context.globalState.update(overviewVisibilityStorageKey, isVisible);
+            await vscode.commands.executeCommand(
+                "setContext",
+                Constants.overviewVisibleContextKey,
+                isVisible,
+            );
+            this._objectExplorerProvider.setOverviewVisibility(isVisible);
+        };
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdHideOverviewInObjectExplorer, () =>
+                setOverviewVisibility(false),
+            ),
+            vscode.commands.registerCommand(Constants.cmdShowOverviewInObjectExplorer, () =>
+                setOverviewVisibility(true),
+            ),
+            vscode.commands.registerCommand(Constants.cmdOpenOverviewFromNode, () =>
+                vscode.commands.executeCommand(Constants.cmdOpenOverview, {
+                    source: OverviewOpenSource.TreeNode,
+                }),
+            ),
+        );
+
+        this.objectExplorerTree = vscode.window.createTreeView("objectExplorer", {
+            treeDataProvider: this._objectExplorerProvider,
+            canSelectMany: false,
+            showCollapseAll: true,
+            dragAndDropController: new ObjectExplorerDragAndDropController(
+                this._connectionMgr.connectionStore,
+            ),
+        });
+        this._context.subscriptions.push(this.objectExplorerTree);
+
+        const objectExplorerV2Enabled = () =>
+            previewService.isPrivatePreviewEnabled(
+                PrivatePreviewFeature.SqlDataPlane,
+                PrivatePreviewFeature.ObjectExplorerV2,
+            );
+        const objectExplorerV2ActiveAtActivation = objectExplorerV2Enabled();
+        void vscode.commands.executeCommand(
+            "setContext",
+            PrivatePreviewContextKey.ObjectExplorerV2Active,
+            objectExplorerV2ActiveAtActivation,
+        );
+        if (objectExplorerV2ActiveAtActivation) {
+            activateObjectExplorerV2(this._context, {
+                instantiationService: this._instantiationService,
+                profiles: this._connectionMgr.connectionStore,
+                legacyConnections: this._connectionMgr,
+                groupConfig: () => this._connectionMgr.connectionStore.connectionConfig,
+                isEnabled: objectExplorerV2Enabled,
+            });
+        }
+
+        // Register command for table node double-click action
+        let lastTableClickTime = 0;
+        let lastTableNode: TreeNodeInfo | undefined;
+        const doubleClickThreshold = 500; // milliseconds
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdTableNodeAction, (node: TreeNodeInfo) => {
+                const currentTime = Date.now();
+
+                // Check if this is a double-click on the same node
+                if (
+                    lastTableNode === node &&
+                    currentTime - lastTableClickTime < doubleClickThreshold
+                ) {
+                    // Double-click detected - open Table Explorer
+                    void this.onTableExplorer(node);
+                    // Reset to prevent triple-click
+                    lastTableNode = undefined;
+                    lastTableClickTime = 0;
+                } else {
+                    // Single click - just track it
+                    lastTableNode = node;
+                    lastTableClickTime = currentTime;
+                }
+            }),
+        );
+
+        // Old style Add connection when experimental features are not enabled
+
+        // Add Object Explorer Node
+        this.registerCommandWithArgs(Constants.cmdAddObjectExplorer);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this._event.on(Constants.cmdAddObjectExplorer, async (args: any) => {
+            let connectionInfo: IConnectionInfo | undefined = undefined;
+            let connectionGroup: IConnectionGroup | undefined = undefined;
+            if (args) {
+                // validate that `args` is an IConnectionInfo before assigning
+                if (isIConnectionInfo(args)) {
+                    connectionInfo = args;
+                } else {
+                    if (args instanceof ConnectionGroupNode) {
+                        connectionGroup = args.connectionGroup;
+                    }
+                }
+            }
+
+            const connDialog = new ConnectionDialogWebviewController(
+                this._context,
+                this,
+                this._objectExplorerProvider,
+                connectionInfo,
+                connectionGroup,
+            );
+            connDialog.revealToForeground();
+        });
+
+        // Object Explorer New Query
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdObjectExplorerNewQuery,
+                async (treeNodeInfo: TreeNodeInfo) => {
+                    const connectionCredentials = treeNodeInfo.connectionProfile;
+                    const databaseName = ObjectExplorerUtils.getDatabaseName(treeNodeInfo);
+
+                    if (
+                        databaseName !== connectionCredentials.database &&
+                        databaseName !== LocalizedConstants.defaultDatabaseLabel
+                    ) {
+                        connectionCredentials.database = databaseName;
+                    } else if (databaseName === LocalizedConstants.defaultDatabaseLabel) {
+                        connectionCredentials.database = "";
+                    }
+                    treeNodeInfo.updateConnectionProfile(connectionCredentials);
+                    await this.sqlDocumentService.newQuery({
+                        connectionStrategy: ConnectionStrategy.CopyConnectionFromInfo,
+                        connectionInfo: connectionCredentials,
+                    });
+                },
+            ),
+        );
+
+        // Remove Object Explorer Node
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdRemoveObjectExplorerNode,
+                async (treeNodeInfo: ConnectionNode) => {
+                    await this._objectExplorerProvider.removeNode(treeNodeInfo);
+                },
+            ),
+        );
+
+        // Refresh Object Explorer Node
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdRefreshObjectExplorerNode,
+                async (treeNodeInfo: TreeNodeInfo) => {
+                    await this._objectExplorerProvider.refreshNode(treeNodeInfo);
+                },
+            ),
+        );
+
+        const resolveSelectedNode = (node?: TreeNodeInfo): TreeNodeInfo | undefined => {
+            if (!node && this.objectExplorerTree?.selection?.length === 1) {
+                return this.objectExplorerTree.selection[0];
+            }
+            return node;
+        };
+
+        const refreshNodeChildren = async (node?: TreeNodeInfo): Promise<void> => {
+            if (!node) {
+                return;
+            }
+            await this._objectExplorerProvider.refreshNode(node);
+        };
+
+        /**
+         * Checks if the given node is a server node that is scoped to a database.
+         */
+        const isDatabaseScopedServerNode = (node: TreeNodeInfo): boolean =>
+            node.nodeType === Constants.serverLabel &&
+            (node.context.subType === Constants.databaseString ||
+                node.context.subType === Constants.dockerContainerDatabase);
+
+        const isNodeOfTypeAndSubType = (
+            node: TreeNodeInfo,
+            type: string,
+            subType?: string,
+        ): boolean =>
+            node.context.type === type &&
+            (subType === undefined || node.context.subType === subType);
+
+        const isDatabasesFolderNode = (node: TreeNodeInfo): boolean =>
+            isNodeOfTypeAndSubType(node, Constants.folderLabel, Constants.databasesSubNodeType);
+
+        const findServerNode = (node?: TreeNodeInfo): TreeNodeInfo | undefined => {
+            let current = node;
+            while (current) {
+                if (current.nodeType === Constants.serverLabel) {
+                    return current;
+                }
+                current = current.parentNode;
+            }
+            return undefined;
+        };
+
+        const findNodeInChildren = (
+            children?: vscode.TreeItem[],
+            type: string = Constants.folderLabel,
+            subType?: string,
+        ): TreeNodeInfo | undefined =>
+            children?.find(
+                (child): child is TreeNodeInfo =>
+                    child instanceof TreeNodeInfo && isNodeOfTypeAndSubType(child, type, subType),
+            );
+
+        const refreshAndExpandFolder = async (
+            parentNode: TreeNodeInfo,
+            folderSubType: string,
+            folderNode?: TreeNodeInfo,
+        ): Promise<void> => {
+            let resolvedFolderNode = folderNode;
+            if (!resolvedFolderNode && parentNode.sessionId) {
+                const parentChildren = await this._objectExplorerProvider.expandNode(
+                    parentNode,
+                    parentNode.sessionId,
+                );
+                resolvedFolderNode = findNodeInChildren(
+                    parentChildren,
+                    Constants.folderLabel,
+                    folderSubType,
+                );
+            }
+
+            if (!resolvedFolderNode) {
+                await refreshNodeChildren(parentNode);
+                return;
+            }
+
+            await refreshNodeChildren(resolvedFolderNode);
+            if (resolvedFolderNode.sessionId) {
+                await this._objectExplorerProvider.expandNode(
+                    resolvedFolderNode,
+                    resolvedFolderNode.sessionId,
+                );
+            }
+
+            if (this.objectExplorerTree) {
+                await this.objectExplorerTree.reveal(resolvedFolderNode, {
+                    expand: true,
+                });
+            }
+        };
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdCreateDatabase,
+                async (node?: TreeNodeInfo) => {
+                    const targetNode = resolveSelectedNode(node);
+                    if (!targetNode) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.msgSelectServerNodeToCreateDatabase,
+                        );
+                        return;
+                    }
+
+                    const isDatabasesFolder = isDatabasesFolderNode(targetNode);
+                    const serverNode =
+                        targetNode.nodeType === Constants.serverLabel &&
+                        !isDatabaseScopedServerNode(targetNode)
+                            ? targetNode
+                            : isDatabasesFolder
+                              ? findServerNode(targetNode)
+                              : undefined;
+
+                    if (!serverNode || serverNode.nodeType !== Constants.serverLabel) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.msgSelectServerNodeToCreateDatabase,
+                        );
+                        return;
+                    }
+
+                    const connectionProfile = serverNode.connectionProfile;
+                    const connectionUri =
+                        connectionProfile &&
+                        this._connectionMgr.getUriForConnection(connectionProfile);
+                    if (!connectionUri) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.msgChooseDatabaseNotConnected,
+                        );
+                        return;
+                    }
+
+                    const controller = new CreateDatabaseWebviewController(
+                        this._context,
+                        this.objectManagementService,
+                        connectionUri,
+                        connectionProfile.server ?? "",
+                        connectionProfile.database || Constants.defaultDatabase,
+                        serverNode.metadata?.urn ?? "Server",
+                        LocalizedConstants.createDatabaseDialogTitle,
+                    );
+                    await controller.whenWebviewReady();
+                    controller.revealToForeground();
+                    const createdDatabase = await controller.dialogResult.promise;
+                    if (createdDatabase) {
+                        if (isDatabasesFolder) {
+                            await refreshAndExpandFolder(
+                                serverNode,
+                                Constants.databasesSubNodeType,
+                                targetNode,
+                            );
+                        } else {
+                            await refreshNodeChildren(serverNode);
+                            await refreshAndExpandFolder(
+                                serverNode,
+                                Constants.databasesSubNodeType,
+                            );
+                        }
+                    }
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdDropDatabase,
+                async (node?: TreeNodeInfo) => {
+                    const targetNode = resolveSelectedNode(node);
+                    if (!targetNode || targetNode.nodeType !== Constants.databaseString) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.msgSelectDatabaseNodeToDrop,
+                        );
+                        return;
+                    }
+
+                    const connectionProfile = targetNode.connectionProfile;
+                    const connectionUri =
+                        connectionProfile &&
+                        this._connectionMgr.getUriForConnection(connectionProfile);
+                    if (!connectionUri) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.msgChooseDatabaseNotConnected,
+                        );
+                        return;
+                    }
+
+                    const databaseName = ObjectExplorerUtils.getDatabaseName(targetNode);
+                    const parentUrn = targetNode.parentNode?.metadata?.urn ?? "Server";
+                    const objectUrn = targetNode.metadata?.urn;
+                    const controller = new DropDatabaseWebviewController(
+                        this._context,
+                        this.objectManagementService,
+                        connectionUri,
+                        connectionProfile.server ?? "",
+                        databaseName,
+                        parentUrn,
+                        objectUrn,
+                        LocalizedConstants.dropDatabaseDialogTitle,
+                    );
+                    await controller.whenWebviewReady();
+                    controller.revealToForeground();
+                    const droppedDatabase = await controller.dialogResult.promise;
+                    if (droppedDatabase) {
+                        await refreshNodeChildren(targetNode.parentNode);
+                    }
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdRenameDatabase,
+                async (node?: TreeNodeInfo) => {
+                    const targetNode = resolveSelectedNode(node);
+                    if (!targetNode || targetNode.nodeType !== Constants.databaseString) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.msgSelectDatabaseNodeToRename,
+                        );
+                        return;
+                    }
+
+                    const connectionProfile = targetNode.connectionProfile;
+                    const connectionUri =
+                        connectionProfile &&
+                        this._connectionMgr.getUriForConnection(connectionProfile);
+                    if (!connectionUri) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.msgChooseDatabaseNotConnected,
+                        );
+                        return;
+                    }
+
+                    const databaseName = ObjectExplorerUtils.getDatabaseName(targetNode);
+                    const parentUrn = targetNode.parentNode?.metadata?.urn ?? "Server";
+                    const objectUrn = targetNode.metadata?.urn;
+                    const controller = new RenameDatabaseWebviewController(
+                        this._context,
+                        this.objectManagementService,
+                        connectionUri,
+                        connectionProfile.server ?? "",
+                        databaseName,
+                        parentUrn,
+                        objectUrn,
+                        LocalizedConstants.renameDatabaseDialogTitle,
+                    );
+                    await controller.whenWebviewReady();
+                    controller.revealToForeground();
+                    const renamedDatabase = await controller.dialogResult.promise;
+                    if (renamedDatabase) {
+                        await refreshNodeChildren(targetNode.parentNode);
+                    }
+                },
+            ),
+        );
+
+        const connectParentNode = async (node: AccountSignInTreeNode | ConnectTreeNode) => {
+            this._objectExplorerProvider.deleteChildrenCache(node.parentNode);
+            void this._objectExplorerProvider.refresh(node.parentNode);
+        };
+
+        // Sign In into Object Explorer Node
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdObjectExplorerNodeSignIn,
+                async (node: AccountSignInTreeNode) => {
+                    let choice = await vscode.window.showErrorMessage(
+                        LocalizedConstants.ObjectExplorer.FailedOEConnectionError,
+                        LocalizedConstants.ObjectExplorer.FailedOEConnectionErrorRetry,
+                        LocalizedConstants.ObjectExplorer.FailedOEConnectionErrorUpdate,
+                    );
+                    switch (choice) {
+                        case LocalizedConstants.ObjectExplorer.FailedOEConnectionErrorUpdate:
+                            const connDialog = new ConnectionDialogWebviewController(
+                                this._context,
+                                this,
+                                this._objectExplorerProvider,
+                                node.parentNode.connectionProfile,
+                            );
+                            connDialog.revealToForeground();
+                            break;
+                        case LocalizedConstants.ObjectExplorer.FailedOEConnectionErrorRetry:
+                            await connectParentNode(node);
+                            break;
+                        default:
+                            break;
+                    }
+                },
+            ),
+        );
+
+        // Connect to Object Explorer Node
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdConnectObjectExplorerNode,
+                async (node: ConnectTreeNode) => {
+                    await connectParentNode(node);
+                },
+            ),
+        );
+
+        // Disconnect Object Explorer Node
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdDisconnectObjectExplorerNode,
+                async (node: ConnectionNode) => {
+                    await this._objectExplorerProvider.disconnectNode(node);
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdFlatFileImport,
+                async (node: ConnectionNode) => {
+                    const connectionUri = this.connectionManager.getUriForConnection(
+                        node.connectionProfile,
+                    );
+
+                    const databases = await this.connectionManager.listDatabases(connectionUri);
+
+                    // If no databases found, show error message and return early
+                    if (databases.length === 0) {
+                        void vscode.window.showErrorMessage(
+                            LocalizedConstants.FlatFileImport.noDatabasesFoundToImportInto,
+                        );
+                        return;
+                    }
+
+                    const database = ObjectExplorerUtils.getDatabaseName(node);
+
+                    const flatFileImportDialog = new FlatFileImportWebviewController(
+                        this._context,
+                        SqlToolsServerClient.instance,
+                        this.connectionManager,
+                        node.connectionProfile,
+                        node.sessionId,
+                        database,
+                    );
+                    flatFileImportDialog.revealToForeground();
+                },
+            ),
+        );
+
+        this.registerCommand(Constants.cmdConnectionGroupCreate);
+        this._event.on(Constants.cmdConnectionGroupCreate, () => {
+            const connGroupDialog = this._instantiationService.createInstance(
+                ConnectionGroupWebviewController,
+                undefined,
+            );
+            connGroupDialog.revealToForeground();
+        });
+
+        this.registerCommandWithArgs(Constants.cmdConnectionGroupEdit);
+        this._event.on(Constants.cmdConnectionGroupEdit, (node: ConnectionGroupNode) => {
+            const connGroupDialog = this._instantiationService.createInstance(
+                ConnectionGroupWebviewController,
+                node.connectionGroup,
+            );
+            connGroupDialog.revealToForeground();
+        });
+
+        this.registerCommandWithArgs(Constants.cmdConnectionGroupDelete);
+        this._event.on(Constants.cmdConnectionGroupDelete, async (node: ConnectionGroupNode) => {
+            if (!(node instanceof ConnectionGroupNode)) {
+                return;
+            }
+
+            let result = undefined;
+
+            if (node.children.length > 0) {
+                result = await vscode.window.showInformationMessage(
+                    LocalizedConstants.ObjectExplorer.ConnectionGroupDeletionConfirmationWithContents(
+                        typeof node.label === "string" ? node.label : node.label.label,
+                    ),
+                    { modal: true },
+                    LocalizedConstants.ObjectExplorer.ConnectionGroupDeleteContents,
+                    LocalizedConstants.ObjectExplorer.ConnectionGroupMoveContents,
+                );
+            } else {
+                result = await vscode.window.showInformationMessage(
+                    LocalizedConstants.ObjectExplorer.ConnectionGroupDeletionConfirmationWithoutContents(
+                        typeof node.label === "string" ? node.label : node.label.label,
+                    ),
+                    { modal: true },
+                    LocalizedConstants.Common.delete,
+                );
+            }
+            if (
+                result === LocalizedConstants.ObjectExplorer.ConnectionGroupDeleteContents ||
+                result === LocalizedConstants.Common.delete
+            ) {
+                void this.connectionManager.connectionStore.connectionConfig.removeGroup(
+                    node.connectionGroup.id,
+                    "delete",
+                );
+            } else if (result === LocalizedConstants.ObjectExplorer.ConnectionGroupMoveContents) {
+                void this.connectionManager.connectionStore.connectionConfig.removeGroup(
+                    node.connectionGroup.id,
+                    "move",
+                );
+            }
+        });
+
+        // Register the command as async and forward all arguments
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdSchemaCompare,
+                async (
+                    ...args: (
+                        | ConnectionNode
+                        | TreeNodeInfo
+                        | SchemaCompareEndpointInfo
+                        | boolean
+                        | string
+                        | undefined
+                    )[]
+                ) => {
+                    let sourceNode = undefined;
+                    let targetNode = undefined;
+                    let runComparison: boolean | undefined;
+
+                    if (args.length >= 2) {
+                        // Positional arguments: [sourceNode, targetNode, runComparison]
+                        sourceNode = args[0];
+                        targetNode = args[1];
+                        runComparison =
+                            args.length > 2 && typeof args[2] === "boolean" ? args[2] : false;
+                    }
+
+                    await this.onSchemaCompare(sourceNode, targetNode, runComparison);
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdTableExplorer, async (node: any) =>
+                this.onTableExplorer(node),
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdSearchDatabase, async (node: any) =>
+                this.onSearchDatabase(node),
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdSchemaCompareOpenFromCommandPalette,
+                async () => {
+                    await this.onSchemaCompare();
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdEditConnection,
+                async (nodeOrProfile: TreeNodeInfo | IConnectionProfile) => {
+                    const connectionProfile =
+                        nodeOrProfile instanceof TreeNodeInfo
+                            ? nodeOrProfile.connectionProfile
+                            : (nodeOrProfile as IConnectionProfile);
+
+                    if (!connectionProfile) {
+                        this._logger.error(
+                            `Unhandled input for ${Constants.cmdEditConnection}: ${JSON.stringify(nodeOrProfile)}`,
+                        );
+
+                        return;
+                    }
+
+                    const connDialog = new ConnectionDialogWebviewController(
+                        this._context,
+                        this,
+                        this._objectExplorerProvider,
+                        connectionProfile,
+                    );
+                    connDialog.revealToForeground();
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdDesignSchema,
+                async (node: TreeNodeInfo) => {
+                    const schemaDesigner =
+                        await SchemaDesignerWebviewManager.getInstance().getSchemaDesigner(
+                            this._context,
+                            this,
+                            this.schemaDesignerService,
+                            node.metadata.name,
+                            node,
+                        );
+
+                    schemaDesigner.showView(SchemaDesigner.SchemaDesignerActiveView.SchemaDesigner);
+                    schemaDesigner.revealToForeground();
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdDesignSchemaForTable,
+                async (node: TreeNodeInfo, databaseName: string, filterTable: string) => {
+                    const schemaDesigner =
+                        await SchemaDesignerWebviewManager.getInstance().getSchemaDesigner(
+                            this._context,
+                            this,
+                            this.schemaDesignerService,
+                            databaseName,
+                            node,
+                            undefined, // connectionUri: will be obtained from treeNode
+                            true, // isReadOnly: table-diagram view from Table Explorer
+                        );
+
+                    schemaDesigner.setInitialFilterTables([filterTable]);
+                    schemaDesigner.showView(SchemaDesigner.SchemaDesignerActiveView.SchemaDesigner);
+                    schemaDesigner.revealToForeground();
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdBuildDataApi,
+                async (node: TreeNodeInfo) => {
+                    const schemaDesigner =
+                        await SchemaDesignerWebviewManager.getInstance().getSchemaDesigner(
+                            this._context,
+                            this,
+                            this.schemaDesignerService,
+                            node.metadata.name,
+                            node,
+                        );
+
+                    schemaDesigner.showView(SchemaDesigner.SchemaDesignerActiveView.Dab);
+                    schemaDesigner.revealToForeground();
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdNewTable, async (node: TreeNodeInfo) => {
+                const reactPanel = new TableDesignerWebviewController(
+                    this._context,
+                    this.tableDesignerService,
+                    this._connectionMgr,
+                    this._sqlDocumentService,
+                    node,
+                    this._objectExplorerProvider,
+                    this.objectExplorerTree,
+                );
+                reactPanel.revealToForeground();
+            }),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdEditTable, async (node: TreeNodeInfo) => {
+                const reactPanel = new TableDesignerWebviewController(
+                    this._context,
+                    this.tableDesignerService,
+                    this._connectionMgr,
+                    this._sqlDocumentService,
+                    node,
+                    this._objectExplorerProvider,
+                    this.objectExplorerTree,
+                );
+                reactPanel.revealToForeground();
+            }),
+        );
+
+        const filterNode = async (node: TreeNodeInfo) => {
+            const filters = await ObjectExplorerFilter.getFilters(this._context, node);
+            if (filters) {
+                node.filters = filters;
+                await this._objectExplorerProvider.refreshNode(node);
+                await this.objectExplorerTree.reveal(node, {
+                    select: true,
+                    focus: true,
+                    expand: true,
+                });
+            } else {
+                // User cancelled the operation. Do nothing and focus on the node
+                await this.objectExplorerTree.reveal(node, {
+                    select: true,
+                    focus: true,
+                });
+                return;
+            }
+        };
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdFilterNode, filterNode),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdFilterNodeWithExistingFilters, filterNode),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdClearFilters,
+                async (node: TreeNodeInfo) => {
+                    node.filters = [];
+                    await this._objectExplorerProvider.refreshNode(node);
+                    await this.objectExplorerTree.reveal(node, {
+                        select: true,
+                        focus: true,
+                        expand: true,
+                    });
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdBackupDatabase,
+                async (node: TreeNodeInfo) => {
+                    const databaseName = ObjectExplorerUtils.getDatabaseName(node);
+                    const reactPanel = new BackupDatabaseWebviewController(
+                        this._context,
+                        this.objectManagementService,
+                        this._connectionMgr,
+                        this.fileBrowserService,
+                        this.azureBlobService,
+                        node.connectionProfile,
+                        node.sessionId,
+                        databaseName,
+                    );
+                    reactPanel.revealToForeground();
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdRestoreDatabase,
+                async (node: TreeNodeInfo) => {
+                    const databaseName = ObjectExplorerUtils.getDatabaseName(node);
+
+                    const reactPanel = new RestoreDatabaseWebviewController(
+                        this._context,
+                        this.objectManagementService,
+                        this._connectionMgr,
+                        this.fileBrowserService,
+                        this.azureBlobService,
+                        node.connectionProfile,
+                        node.sessionId,
+                        databaseName,
+                    );
+                    reactPanel.revealToForeground();
+                },
+            ),
+        );
+
+        // Initiate the scripting service
+        this._scriptingService = new ScriptingService(
+            this._context,
+            this._connectionMgr,
+            this._sqlDocumentService,
+            this._outputContentProvider,
+            this._statusview,
+            this.objectExplorerTree,
+        );
+
+        /**
+         * Helper function to register Data-tier Application commands
+         * Reduces code duplication across Deploy, Extract, Import, and Export operations
+         */
+        const registerDacPacCommand = (
+            commandId: string,
+            operationType: DacPacDialogOperationType,
+        ): void => {
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(commandId, async (node?: TreeNodeInfo) => {
+                    const connectionProfile = node?.connectionProfile;
+                    const ownerUri = connectionProfile
+                        ? this._connectionMgr.getUriForConnection(connectionProfile)
+                        : "";
+                    const serverName = connectionProfile?.server || "";
+                    const databaseName = node ? ObjectExplorerUtils.getDatabaseName(node) : "";
+                    const profileId = connectionProfile
+                        ? connectionProfile.id ||
+                          `${connectionProfile.server}_${connectionProfile.database || ""}`
+                        : undefined;
+
+                    const initialState: DacpacDialogWebviewState = {
+                        ownerUri,
+                        serverName,
+                        databaseName,
+                        selectedProfileId: profileId,
+                        operationType,
+                    };
+
+                    const controller = new DacpacDialogWebviewController(
+                        this._context,
+                        this._connectionMgr,
+                        this.dacFxService,
+                        initialState,
+                        ownerUri,
+                    );
+                    await controller.revealToForeground();
+                }),
+            );
+        };
+
+        // Data-tier Application commands (only register if experimental features are enabled)
+        registerDacPacCommand(Constants.cmdDacpacDialog, DacPacDialogOperationType.Deploy);
+        registerDacPacCommand(Constants.cmdDeployDacpac, DacPacDialogOperationType.Deploy);
+        registerDacPacCommand(Constants.cmdExtractDacpac, DacPacDialogOperationType.Extract);
+        registerDacPacCommand(Constants.cmdImportBacpac, DacPacDialogOperationType.Import);
+        registerDacPacCommand(Constants.cmdExportBacpac, DacPacDialogOperationType.Export);
+
+        // Copy object name command
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdCopyObjectName,
+                async (node: TreeNodeInfo) => {
+                    if (!node && this.objectExplorerTree?.selection?.length === 1) {
+                        node = this.objectExplorerTree.selection[0];
+                    }
+                    if (!node) {
+                        return;
+                    }
+                    const name = ObjectExplorerUtils.getQualifiedName(node);
+                    if (name) {
+                        await vscode.env.clipboard.writeText(name);
+                    }
+                },
+            ),
+        );
+
+        // Copy connection string command
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdCopyConnectionString,
+                async (node: TreeNodeInfo) => {
+                    if (!node && this.objectExplorerTree?.selection?.length === 1) {
+                        node = this.objectExplorerTree.selection[0];
+                    }
+                    if (!node?.connectionProfile) {
+                        return;
+                    }
+                    if (
+                        node.context.type !== Constants.disconnectedServerNodeType &&
+                        node.context.type !== Constants.serverLabel
+                    ) {
+                        return;
+                    }
+
+                    const connectionDetails = this.connectionManager.createConnectionDetails(
+                        node.connectionProfile,
+                    );
+                    const connectionString = await this.connectionManager.getConnectionString(
+                        connectionDetails,
+                        true, // include password
+                        false, // Do not include application name
+                    );
+                    if (connectionString) {
+                        await vscode.env.clipboard.writeText(connectionString);
+                        await vscode.window.showInformationMessage(
+                            LocalizedConstants.ObjectExplorer.ConnectionStringCopied,
+                        );
+                    }
+                },
+            ),
+        );
+
+        // Start container command
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdStartContainer,
+                async (node: TreeNodeInfo) => {
+                    if (
+                        !node ||
+                        !node.connectionProfile ||
+                        !(await this.isContainerReadyForCommands(node))
+                    ) {
+                        return;
+                    }
+                    try {
+                        // doing it this way instead of directly calling startContainer
+                        // allows for the object explorer item loading UI to show
+                        this._objectExplorerProvider.deleteChildrenCache(node);
+                        await this._objectExplorerProvider.setNodeLoading(node);
+                        this._objectExplorerProvider.refresh(node);
+                        await this.objectExplorerTree.reveal(node, {
+                            select: true,
+                            focus: true,
+                            expand: true,
+                        });
+
+                        await this.connectionManager.connectionUI
+                            .saveProfile(node.connectionProfile as IConnectionProfile)
+                            .then(async () => {
+                                await this.createObjectExplorerSession(
+                                    node.connectionProfile as IConnectionProfile,
+                                );
+                            });
+                    } catch {
+                        vscode.window.showErrorMessage(
+                            LocalizedConstants.LocalContainers.failStartContainer(
+                                node.connectionProfile.containerName,
+                            ),
+                        );
+                    }
+                },
+            ),
+        );
+
+        // Stop container command
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdStopContainer,
+                async (node: TreeNodeInfo) => {
+                    if (
+                        !node ||
+                        !node.connectionProfile ||
+                        !(await this.isContainerReadyForCommands(node))
+                    ) {
+                        return;
+                    }
+
+                    const containerName = node.connectionProfile.containerName;
+                    node.loadingLabel =
+                        LocalizedConstants.LocalContainers.stoppingContainerLoadingLabel;
+                    await this._objectExplorerProvider.setNodeLoading(node);
+                    this._objectExplorerProvider.refresh(node);
+
+                    await stopContainer(containerName).then(async (stoppedSuccessfully) => {
+                        if (stoppedSuccessfully) {
+                            node.loadingLabel =
+                                LocalizedConstants.LocalContainers.startingContainerLoadingLabel;
+
+                            await this._objectExplorerProvider
+                                .disconnectNode(node as ConnectionNode)
+                                .then(() => this._objectExplorerProvider.refresh(undefined));
+                        }
+
+                        vscode.window.showInformationMessage(
+                            stoppedSuccessfully
+                                ? LocalizedConstants.LocalContainers.stoppedContainerSucessfully(
+                                      containerName,
+                                  )
+                                : LocalizedConstants.LocalContainers.failStopContainer(
+                                      containerName,
+                                  ),
+                        );
+                    });
+                },
+            ),
+        );
+        // Delete container command
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdDeleteContainer,
+                async (node: TreeNodeInfo) => this.deleteContainerForNode(node),
+            ),
+        );
+    }
+
+    /**
+     * Initializes the Background Tasks commands
+     */
+    private initializeBackgroundTasks(): void {
+        this._backgroundTasksProvider = new BackgroundTasksProvider();
+        this.backgroundTasksService = this._backgroundTasksProvider.backgroundTasksService;
+        this._backgroundTaskLogContentProvider = new BackgroundTaskLogContentProvider(
+            this.backgroundTasksService,
+        );
+
+        const treeView = vscode.window.createTreeView(Constants.backgroundTasks, {
+            treeDataProvider: this._backgroundTasksProvider,
+        });
+
+        this._backgroundTasksProvider.treeView = treeView;
+
+        this._context.subscriptions.push(
+            vscode.workspace.registerTextDocumentContentProvider(
+                Constants.backgroundTaskLogUriScheme,
+                this._backgroundTaskLogContentProvider,
+            ),
+        );
+        this._context.subscriptions.push(this._backgroundTaskLogContentProvider);
+        this._context.subscriptions.push(this._backgroundTasksProvider);
+        this._context.subscriptions.push(treeView);
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(Constants.cmdClearFinishedBackgroundTasks, () => {
+                this._backgroundTasksProvider.clearFinished();
+            }),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdOpenBackgroundTask,
+                async (node: BackgroundTaskNode) => {
+                    await this._backgroundTasksProvider.openTask(node.taskId);
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdViewBackgroundTaskLogs,
+                async (node: BackgroundTaskNode) => {
+                    if (!node) {
+                        return;
+                    }
+                    await this._backgroundTaskLogContentProvider.showTaskLog(node.taskId);
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdCancelBackgroundTask,
+                async (node: BackgroundTaskNode) => {
+                    await this.confirmAndCancelBackgroundTask(node);
+                },
+            ),
+        );
+
+        this._context.subscriptions.push(
+            vscode.commands.registerCommand(
+                Constants.cmdBackgroundTaskAction,
+                async (node: BackgroundTaskNode) => {
+                    await this.handleBackgroundTaskNodeAction(node);
+                },
+            ),
+        );
+    }
+
+    private async handleBackgroundTaskNodeAction(node: BackgroundTaskNode): Promise<void> {
+        const currentTime = Date.now();
+        const doubleClickThreshold = 500;
+
+        if (
+            this._lastBackgroundTaskId === node.taskId &&
+            currentTime - this._lastBackgroundTaskClickTime < doubleClickThreshold
+        ) {
+            await this._backgroundTasksProvider.openTask(node.taskId);
+            this._lastBackgroundTaskId = undefined;
+            this._lastBackgroundTaskClickTime = 0;
+        } else {
+            this._lastBackgroundTaskId = node.taskId;
+            this._lastBackgroundTaskClickTime = currentTime;
+        }
+    }
+
+    private async confirmAndCancelBackgroundTask(
+        node: BackgroundTaskNode | undefined,
+    ): Promise<void> {
+        if (!node) {
+            return;
+        }
+
+        const detail = this.getBackgroundTaskCancelConfirmationDetail(node);
+
+        const confirmation = await vscode.window.showWarningMessage(
+            LocalizedConstants.backgroundTaskCancelConfirmation,
+            {
+                modal: true,
+                detail,
+            },
+            LocalizedConstants.backgroundTaskCancelConfirm,
+        );
+
+        if (confirmation !== LocalizedConstants.backgroundTaskCancelConfirm) {
+            return;
+        }
+
+        await this._backgroundTasksProvider.cancelTask(node.taskId);
+    }
+
+    private getBackgroundTaskCancelConfirmationDetail(
+        node: BackgroundTaskNode,
+    ): string | undefined {
+        const label = typeof node.label === "string" ? node.label : node.label?.label;
+        const description = typeof node.description === "string" ? node.description : undefined;
+        const sections = [label, description].filter((value): value is string => Boolean(value));
+
+        return sections.length > 0 ? sections.join("\n") : undefined;
+    }
+
+    private initializeRecentSqlFiles(): void {
+        this._recentSqlFilesStore = new RecentSqlFilesStore(this._context);
+        this._recentSqlFilesStore.register();
+        this._context.subscriptions.push(this._recentSqlFilesStore);
+    }
+
+    /**
+     * The check is throttled to once a day inside the installer, so running it on every
+     * activation costs nothing on the activations that fall inside that window. It is deliberately
+     * not awaited: a slow or unreachable network must not hold up activation.
+     */
+    private initializeAgentPlugins(): void {
+        // One set of downloads for every plugin: they ship from the same repository, so the
+        // revision check and the archive are shared rather than fetched once per plugin.
+        const downloads = new AgentSkillsDownloads(this._context);
+        this._agentPluginsInstallers = new Map(
+            AGENT_SKILL_PLUGINS.map((plugin) => [
+                plugin,
+                new AgentPluginsInstaller(this._context, plugin, downloads),
+            ]),
+        );
+        // Best effort. An unreachable network, a bad archive or a filesystem failure leaves the
+        // installed copy alone, so it is logged rather than allowed to reject out of activation.
+        for (const [plugin, installer] of this._agentPluginsInstallers) {
+            void installer.checkForUpdates().catch((error) => {
+                this._logger.error(`Checking for ${plugin} skill updates failed`, error);
+            });
+        }
+    }
+
+    /**
+     * Initializes the Query History commands
+     */
+    private initializeQueryHistory(): void {
+        let config = vscode.workspace.getConfiguration(Constants.extensionConfigSectionName);
+        let queryHistoryFeature = config.get(Constants.configEnableQueryHistoryFeature);
+        // If the query history feature is enabled
+        if (queryHistoryFeature && !this._queryHistoryRegistered) {
+            // Register the query history tree provider
+            this._queryHistoryProvider = new QueryHistoryProvider(
+                this._connectionMgr,
+                this._outputContentProvider,
+                this._sqlDocumentService,
+                this._statusview,
+                this._prompter,
+                this._context,
+            );
+
+            this._context.subscriptions.push(
+                vscode.window.registerTreeDataProvider("queryHistory", this._queryHistoryProvider),
+            );
+
+            // Command to refresh Query History
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdRefreshQueryHistory,
+                    (ownerUri: string, hasError: boolean) => {
+                        config = vscode.workspace.getConfiguration(
+                            Constants.extensionConfigSectionName,
+                        );
+                        let queryHistoryFeatureEnabled = config.get(
+                            Constants.configEnableQueryHistoryFeature,
+                        );
+                        let queryHistoryCaptureEnabled = config.get(
+                            Constants.configEnableQueryHistoryCapture,
+                        );
+                        if (queryHistoryFeatureEnabled && queryHistoryCaptureEnabled) {
+                            const timeStamp = new Date();
+                            this._queryHistoryProvider.refresh(ownerUri, timeStamp, hasError);
+                        }
+                    },
+                ),
+            );
+
+            // Command to enable clear all entries in Query History
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(Constants.cmdClearAllQueryHistory, () => {
+                    this._queryHistoryProvider.clearAll();
+                }),
+            );
+
+            // Command to enable delete an entry in Query History
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdDeleteQueryHistory,
+                    (node: QueryHistoryNode) => {
+                        this._queryHistoryProvider.deleteQueryHistoryEntry(node);
+                    },
+                ),
+            );
+
+            // Command to enable open a query in Query History
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdOpenQueryHistory,
+                    async (node: QueryHistoryNode) => {
+                        await this._queryHistoryProvider.openQueryHistoryEntry(node);
+                    },
+                ),
+            );
+
+            // Command to enable run a query in Query History
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdRunQueryHistory,
+                    async (node: QueryHistoryNode) => {
+                        await this._queryHistoryProvider.openQueryHistoryEntry(node, true);
+                    },
+                ),
+            );
+
+            // Command to start the query history capture
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdStartQueryHistory,
+                    async (_node: QueryHistoryNode) => {
+                        await this._queryHistoryProvider.startQueryHistoryCapture();
+                    },
+                ),
+            );
+
+            // Command to pause the query history capture
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdPauseQueryHistory,
+                    async (_node: QueryHistoryNode) => {
+                        await this._queryHistoryProvider.pauseQueryHistoryCapture();
+                    },
+                ),
+            );
+
+            // Command to open the query history experience in the command palette
+            this._context.subscriptions.push(
+                vscode.commands.registerCommand(
+                    Constants.cmdCommandPaletteQueryHistory,
+                    async () => {
+                        await this._queryHistoryProvider.showQueryHistoryCommandPalette();
+                    },
+                ),
+            );
+            this._queryHistoryRegistered = true;
+        }
+    }
+
+    /**
+     * Handles the command to toggle SQLCMD mode
+     */
+    private async onToggleSqlCmd(): Promise<void> {
+        let isSqlCmd: boolean;
+        const uri = Utils.getActiveTextEditorUri();
+        if (!uri) {
+            vscode.window.showWarningMessage(LocalizedConstants.msgOpenSqlFile);
+            return;
+        }
+        const queryRunner = this._outputContentProvider.getQueryRunner(uri);
+        // if a query runner exists, use it
+        if (queryRunner) {
+            isSqlCmd = queryRunner.isSqlCmd;
+        } else {
+            // otherwise create a new query runner
+            isSqlCmd = false;
+            const editor = vscode.window.activeTextEditor;
+            const title = path.basename(editor?.document.fileName ?? uri);
+            await this._outputContentProvider.createQueryRunner(this._statusview, uri, title);
+        }
+        await this._outputContentProvider.toggleSqlCmd(uri);
+        await this._connectionMgr.onChooseLanguageFlavor(true, !isSqlCmd);
+        this._statusview.sqlCmdModeChanged(uri, !isSqlCmd);
+    }
+
+    /**
+     * Handles the command to cancel queries
+     */
+    private async onCancelQuery(): Promise<void> {
+        if (!this.canRunCommand() || !this.validateTextDocumentHasFocus()) {
+            return;
+        }
+        try {
+            let uri = Utils.getActiveTextEditorUri();
+            await this._outputContentProvider.cancelQuery(uri);
+        } catch (err) {
+            this._logger.error(`Unexpected error cancelling query: ${getErrorMessage(err)}`);
+        }
+    }
+
+    /**
+     * Choose a new database from the current server
+     */
+    public async onChooseDatabase(): Promise<boolean> {
+        if (this.canRunCommand() && this.validateTextDocumentHasFocus()) {
+            const success = await this._connectionMgr.onChooseDatabase();
+            return success;
+        }
+        return false;
+    }
+
+    /**
+     * Choose a language flavor for the SQL document. Should be either "MSSQL" or "Other"
+     * to indicate that intellisense and other services should not be provided
+     */
+    private async onChooseLanguageFlavor(): Promise<boolean> {
+        if (this.canRunCommand() && this.validateTextDocumentHasFocus()) {
+            const fileUri = Utils.getActiveTextEditorUri();
+            if (fileUri && Utils.isEditingSqlFile()) {
+                void this._connectionMgr.onChooseLanguageFlavor();
+            } else {
+                vscode.window.showWarningMessage(LocalizedConstants.msgOpenSqlFile);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Close active connection, if any
+     */
+    private async onDisconnect(): Promise<boolean> {
+        if (this.canRunCommand() && this.validateTextDocumentHasFocus()) {
+            let fileUri = Utils.getActiveTextEditorUri();
+            let queryRunner = this._outputContentProvider.getQueryRunner(fileUri);
+            if (queryRunner && queryRunner.isExecutingQuery) {
+                await this._outputContentProvider.cancelQuery(fileUri);
+            }
+            const success = await this._connectionMgr.onDisconnect();
+            if (success) {
+                vscode.commands.executeCommand("setContext", "mssql.editorConnected", false);
+            }
+            return success;
+        }
+        return false;
+    }
+
+    /**
+     * Cancel an in-progress connection, if any
+     */
+    private async onCancelConnect(): Promise<boolean> {
+        if (this.canRunCommand() && this.validateTextDocumentHasFocus()) {
+            await this._connectionMgr.onCancelConnect(false);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Manage connection profiles (create, edit, remove).
+     * Public for testing purposes
+     */
+    public async onManageProfiles(): Promise<void> {
+        if (this.canRunCommand()) {
+            await this._connectionMgr.onManageProfiles();
+            return;
+        }
+    }
+
+    /**
+     * Clears all pooled connections not in active use.
+     */
+    public async onClearPooledConnections(): Promise<void> {
+        if (this.canRunCommand()) {
+            await this._connectionMgr.onClearPooledConnections();
+            return;
+        }
+    }
+
+    /**
+     * Opens the connection dialog prepopulated with the given connection info, in "create new connection" mode
+     * (as opposed to "edit existing connection" mode). Used when an external source (e.g. protocol handler)
+     * provides connection parameters that don't match any existing saved profile.
+     */
+    public openConnectionDialogForNewProfile(connectionInfo?: IConnectionInfo): void {
+        const connDialog = new ConnectionDialogWebviewController(
+            this._context,
+            this,
+            this._objectExplorerProvider,
+            connectionInfo,
+            undefined,
+            true, // openAsNewDraft
+        );
+        connDialog.revealToForeground();
+    }
+
+    /**
+     * Let users pick from a list of connections
+     */
+    public async promptToConnect(): Promise<boolean> {
+        if (this.canRunCommand() && this.validateTextDocumentHasFocus()) {
+            let credentials = await this._connectionMgr.promptToConnect();
+            if (credentials) {
+                try {
+                    await this.createObjectExplorerSession(credentials);
+                } catch (error) {
+                    this._logger.error("Failed to create Object Explorer session", error);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Opens a new SQL editor and/or prompts for a connection based on current state and parameters
+     * @param forceNewEditor If true, always creates a new editor. If false, uses current editor if it's a SQL file
+     * @param forceConnect If true, always prompts for connection even if already connected
+     */
+    public async onNewQueryWithConnection(
+        forceNewEditor?: boolean,
+        forceConnect?: boolean,
+    ): Promise<boolean> {
+        const activeEditor = vscode.window.activeTextEditor;
+        const activeUri = activeEditor?.document.uri.toString();
+        const isSqlEditor = activeEditor?.document.languageId === Constants.languageId;
+        const isConnected = activeUri ? this.connectionManager.isConnected(activeUri) : false;
+
+        sendActionEvent(
+            TelemetryViews.MssqlCopilot,
+            TelemetryActions.CopilotNewQueryWithConnection,
+            {
+                additionalProps: {
+                    forceNewEditor: forceNewEditor?.toString() ?? "false",
+                    forceConnect: forceConnect?.toString() ?? "false",
+                    isSqlEditor: isSqlEditor.toString(),
+                    isConnected: isConnected.toString(),
+                },
+            },
+        );
+
+        // Determine if we need to open a new editor
+        const shouldOpenNewEditor = forceNewEditor || !isSqlEditor;
+
+        // Determine if we need to connect
+        const shouldConnect = forceConnect || !isConnected;
+
+        // If already connected to a SQL editor and not forcing changes, do nothing
+        if (isSqlEditor && isConnected && !forceNewEditor && !forceConnect) {
+            return true;
+        }
+
+        // Open new editor if needed
+        if (shouldOpenNewEditor) {
+            const document = await vscode.workspace.openTextDocument({
+                language: "sql",
+                content: "",
+            });
+            await vscode.window.showTextDocument(document);
+        }
+
+        // Connect if needed
+        if (shouldConnect) {
+            return await this.promptToConnect();
+        }
+
+        return true;
+    }
+
+    public onDeployNewDatabase(
+        initialConnectionGroup?: string,
+        initialDeploymentType?: DeploymentType,
+    ): void {
+        sendActionEvent(TelemetryViews.Deployment, TelemetryActions.OpenDeployment);
+
+        const reactPanel = new DeploymentWebviewController(
+            this._context,
+            this,
+            initialConnectionGroup,
+            initialDeploymentType,
+        );
+        reactPanel.revealToForeground();
+    }
+
+    /**
+     * Makes a connection and save if saveConnection is set to true
+     * @param uri The URI of the connection to list the databases for.
+     * @param connectionInfo The connection info
+     * @param connectionPromise connection promise object
+     * @param saveConnection saves the connection profile if sets to true
+     * @returns if saveConnection is set to true, returns true for successful connection and saving the profile
+     * otherwise returns true for successful connection
+     *
+     */
+    public async connect(
+        uri: string,
+        connectionInfo: IConnectionInfo,
+        saveConnection?: boolean,
+        connectionSource?: string,
+    ): Promise<boolean> {
+        if (this.canRunCommand() && uri && connectionInfo) {
+            const connectedSuccessfully = await this._connectionMgr.connect(uri, connectionInfo, {
+                connectionSource,
+            });
+            if (connectedSuccessfully) {
+                if (saveConnection) {
+                    await this.createObjectExplorerSession(connectionInfo);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Clear and rebuild the IntelliSense cache
+     */
+    public onRebuildIntelliSense(): void {
+        if (this.canRunCommand() && this.validateTextDocumentHasFocus()) {
+            const fileUri = Utils.getActiveTextEditorUri();
+            if (fileUri && Utils.isEditingSqlFile()) {
+                this._statusview.languageServiceStatusChanged(
+                    fileUri,
+                    LocalizedConstants.updatingIntelliSenseStatus,
+                );
+                SqlToolsServerClient.instance.sendNotification(
+                    RebuildIntelliSenseNotification.type,
+                    {
+                        ownerUri: fileUri,
+                    },
+                );
+            } else {
+                vscode.window.showWarningMessage(LocalizedConstants.msgOpenSqlFile);
+            }
+        }
+    }
+
+    /**
+     * Send completion extension load request to language service
+     */
+    public onLoadCompletionExtension(params: CompletionExtensionParams): void {
+        SqlToolsServerClient.instance.sendRequest(CompletionExtLoadRequest.type, params);
+    }
+
+    /**
+     * execute the SQL statement for the current cursor position
+     */
+    public async onRunCurrentStatement(callbackThis?: MainController): Promise<void> {
+        // the 'this' context is lost in retry callback, so capture it here
+        let self: MainController = callbackThis ? callbackThis : this;
+        try {
+            if (!self.canRunCommand()) {
+                return;
+            }
+
+            if (!self.validateTextDocumentHasFocus()) {
+                return;
+            }
+
+            let editor = vscode.window.activeTextEditor;
+            let uri = Utils.getActiveTextEditorUri();
+            let title = path.basename(editor.document.fileName);
+
+            // Return early if the document does not contain any query text.
+            if (editor.document.getText(undefined).trim().length === 0) {
+                void vscode.window.showInformationMessage(
+                    LocalizedConstants.msgNoQueryTextToExecute,
+                );
+                return;
+            }
+
+            // Do not execute when there are multiple selections in the editor until it can be properly handled.
+            // Otherwise only the first selection will be executed and cause unexpected issues.
+            if (editor.selections?.length > 1) {
+                vscode.window.showErrorMessage(
+                    LocalizedConstants.msgMultipleSelectionModeNotSupported,
+                );
+                return;
+            }
+
+            let querySelection: ISelectionData;
+            let shouldRunSelection = false;
+            if (!editor.selection.isEmpty) {
+                if (editor.document.getText(editor.selection).trim().length === 0) {
+                    void vscode.window.showInformationMessage(
+                        LocalizedConstants.msgNoQueryTextToExecute,
+                    );
+                    return;
+                }
+
+                let selection = editor.selection;
+                querySelection = {
+                    startLine: selection.start.line,
+                    startColumn: selection.start.character,
+                    endLine: selection.end.line,
+                    endColumn: selection.end.character,
+                };
+                shouldRunSelection = true;
+            } else {
+                // only the start line and column are used to determine the current statement
+                querySelection = {
+                    startLine: editor.selection.start.line,
+                    startColumn: editor.selection.start.character,
+                    endLine: 0,
+                    endColumn: 0,
+                };
+            }
+
+            // check if we're connected and editing a SQL file
+            if (!(await this.ensureReadyToExecuteQuery())) {
+                return;
+            }
+
+            if (shouldRunSelection) {
+                await self._outputContentProvider.runQuery(
+                    self._statusview,
+                    uri,
+                    querySelection,
+                    title,
+                );
+                return;
+            }
+
+            await self._outputContentProvider.runCurrentStatement(
+                self._statusview,
+                uri,
+                querySelection,
+                title,
+            );
+        } catch (err) {
+            self._logger.error(
+                `Unexpected error running current statement: ${getErrorMessage(err)}`,
+            );
+        }
+    }
+
+    /**
+     * get the T-SQL query from the editor, run it and show output
+     */
+    public async onRunQuery(executionPlanOptions?: ExecutionPlanOptions): Promise<void> {
+        try {
+            if (!this.canRunCommand() || !this.validateTextDocumentHasFocus()) {
+                return;
+            }
+
+            let editor = vscode.window.activeTextEditor;
+            let uri = Utils.getActiveTextEditorUri();
+
+            // Do not execute when there are multiple selections in the editor until it can be properly handled.
+            // Otherwise only the first selection will be executed and cause unexpected issues.
+            if (editor.selections?.length > 1) {
+                vscode.window.showErrorMessage(
+                    LocalizedConstants.msgMultipleSelectionModeNotSupported,
+                );
+                return;
+            }
+
+            // Trim down the selection. If it is empty after selecting, then we don't execute
+            let selectionToTrim = editor.selection.isEmpty ? undefined : editor.selection;
+            if (editor.document.getText(selectionToTrim).trim().length === 0) {
+                void vscode.window.showInformationMessage(
+                    LocalizedConstants.msgNoQueryTextToExecute,
+                );
+                return;
+            }
+
+            // Save the query selection, so that we request execution for the right block
+            let title = path.basename(editor.document.fileName);
+            let querySelection: ISelectionData;
+            // Calculate the selection if we have a selection, otherwise we'll treat null as
+            // the entire document's selection
+            if (!editor.selection.isEmpty) {
+                let selection = editor.selection;
+                querySelection = {
+                    startLine: selection.start.line,
+                    startColumn: selection.start.character,
+                    endLine: selection.end.line,
+                    endColumn: selection.end.character,
+                };
+            }
+
+            // check if we're connected and editing a SQL file
+            if (!(await this.ensureReadyToExecuteQuery())) {
+                return;
+            }
+
+            // check if current connection is still valid / active - if not, refresh azure account token
+            await this._connectionMgr.refreshAzureAccountToken(uri);
+
+            // Delete stored filters and dimension states for result grid when a new query is executed
+            store.deleteUriState(uri);
+
+            await this._outputContentProvider.runQuery(
+                this._statusview,
+                uri,
+                querySelection,
+                title,
+                executionPlanOptions,
+            );
+        } catch (err) {
+            this._logger.error(`Unexpected error running query: ${getErrorMessage(err)}`);
+        }
+    }
+
+    public openShortcutsConfiguration(focusedQuickQuerySlot?: number): void {
+        if (
+            this._shortcutsConfigurationController &&
+            !this._shortcutsConfigurationController.isDisposed
+        ) {
+            this._shortcutsConfigurationController.focusQuickQuerySlot(focusedQuickQuerySlot);
+            this._shortcutsConfigurationController.revealToForeground();
+            return;
+        }
+
+        const controller = new ShortcutsConfigurationWebviewController(
+            this._context,
+            focusedQuickQuerySlot,
+        );
+        controller.onDisposed(() => {
+            if (this._shortcutsConfigurationController === controller) {
+                this._shortcutsConfigurationController = undefined;
+            }
+        });
+        this._shortcutsConfigurationController = controller;
+        controller.revealToForeground();
+    }
+
+    private configureQuickQueryService(): void {
+        quickQueryService.configure({
+            readQuickQueries: () =>
+                normalizeQuickQueries(
+                    vscode.workspace.getConfiguration().get(Constants.configQuickQueries),
+                ),
+            openConfiguration: (focusedQuickQuerySlot) =>
+                this.openShortcutsConfiguration(focusedQuickQuerySlot),
+            getActiveSqlEditor: () => {
+                const editor = vscode.window.activeTextEditor;
+                return editor?.document.languageId === Constants.languageId ? editor : undefined;
+            },
+            ensureSqlEditorConnected: async (editor) => {
+                const uri = getUriKey(editor.document.uri);
+                return (
+                    (await this.ensureReadyToExecuteQuery()) && this._connectionMgr.isConnected(uri)
+                );
+            },
+            runSqlEditorQueryString: async (editor, query) => {
+                const uri = getUriKey(editor.document.uri);
+                if (!this._connectionMgr.isConnected(uri)) {
+                    return;
+                }
+
+                await this._connectionMgr.refreshAzureAccountToken(uri);
+                store.deleteUriState(uri);
+                await this._outputContentProvider.runQueryString(
+                    this._statusview,
+                    uri,
+                    query,
+                    path.basename(editor.document.fileName),
+                );
+            },
+            showMultipleSelectionsError: () =>
+                vscode.window.showErrorMessage(
+                    LocalizedConstants.msgMultipleSelectionModeNotSupported,
+                ),
+            showSelectedTextRequiredError: () => {
+                void vscode.window.showErrorMessage(
+                    LocalizedConstants.quickQuerySelectedTextRequired,
+                );
+            },
+            createSqlEditor: async (options) => await this.sqlDocumentService.newQuery(options),
+            isSqlEditorConnected: (editor) =>
+                this._connectionMgr.isConnected(getUriKey(editor.document.uri)),
+            runSqlEditorQuery: async (editor) => {
+                const uri = getUriKey(editor.document.uri);
+                if (!this._connectionMgr.isConnected(uri)) {
+                    return;
+                }
+
+                await this._connectionMgr.refreshAzureAccountToken(uri);
+                store.deleteUriState(uri);
+                await this._outputContentProvider.runQuery(
+                    this._statusview,
+                    uri,
+                    undefined,
+                    path.basename(editor.document.fileName),
+                    {},
+                );
+            },
+        });
+    }
+
+    /**
+     * Ensures the active editor is a connected SQL file, prompting the user to
+     * change the language mode or pick a connection if needed.
+     * @returns true if the editor is ready to execute queries, false if the user canceled
+     */
+    public async ensureReadyToExecuteQuery(): Promise<boolean> {
+        if (!(await this.ensureActiveSqlFile())) {
+            return false;
+        }
+
+        const uri = Utils.getActiveTextEditorUri();
+        if (this._connectionMgr.isConnected(uri)) {
+            return true;
+        }
+
+        if (this._connectionMgr.isConnecting(uri)) {
+            vscode.window.showInformationMessage(LocalizedConstants.msgConnectionInProgress);
+            return false;
+        }
+
+        const result = await this.promptToConnect();
+        if (result) {
+            sendActionEvent(TelemetryViews.QueryEditor, TelemetryActions.CreateConnection);
+        }
+        return result;
+    }
+
+    /**
+     * Executes a callback and logs any errors raised
+     */
+    private runAndLogErrors<T>(promise: Promise<T>): Promise<T> {
+        return promise.catch((err) => {
+            vscode.window.showErrorMessage(LocalizedConstants.msgError + err);
+            return undefined;
+        });
+    }
+
+    /**
+     * Access the connection manager for testing
+     */
+    public get connectionManager(): ConnectionManager {
+        return this._connectionMgr;
+    }
+
+    public get scriptingService(): ScriptingService {
+        return this._scriptingService;
+    }
+
+    public set connectionManager(connectionManager: ConnectionManager) {
+        this._connectionMgr = connectionManager;
+    }
+
+    public get outputContentProvider(): SqlOutputContentProvider {
+        return this._outputContentProvider;
+    }
+
+    public get statusview(): StatusView {
+        return this._statusview;
+    }
+
+    public get sqlDocumentService(): SqlDocumentService {
+        return this._sqlDocumentService;
+    }
+
+    public set sqlDocumentService(sqlDocumentService: SqlDocumentService) {
+        this._sqlDocumentService = sqlDocumentService;
+    }
+
+    public get objectEpxplorerProvider(): ObjectExplorerProvider {
+        return this._objectExplorerProvider;
+    }
+
+    /**
+     * Verifies the extension is initilized and if not shows an error message
+     */
+    private canRunCommand(): boolean {
+        if (this._connectionMgr === undefined) {
+            Utils.showErrorMsg(LocalizedConstants.extensionNotInitializedError);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Return whether or not some text document currently has focus, and display an error message if not
+     */
+    private validateTextDocumentHasFocus(): boolean {
+        if (Utils.getActiveTextEditorUri() === undefined) {
+            Utils.showErrorMsg(LocalizedConstants.noActiveEditorMsg);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Ensures the active document is a SQL file, prompting the user to change
+     * the language mode if it isn't.
+     * @returns true if the active document is (now) a SQL file, false if there's no active document or the user declined
+     */
+    private async ensureActiveSqlFile(): Promise<boolean> {
+        if (!this.validateTextDocumentHasFocus()) {
+            return false;
+        }
+
+        if (Utils.isEditingSqlFile()) {
+            return true;
+        }
+
+        return await this._connectionMgr.connectionUI.promptToChangeLanguageMode();
+    }
+
+    private async showOnLaunchPrompts(): Promise<void> {
+        // All prompts should be async and _not_ awaited so that we don't block the rest of the extension
+        void this.showFirstLaunchPrompts();
+    }
+
+    /**
+     * Prompts the user to view release notes, if this is a new extension install
+     */
+    private async showFirstLaunchPrompts(): Promise<void> {
+        let self = this;
+        if (!this.doesExtensionLaunchedFileExist()) {
+            // ask the user to view release notes document
+            let confirmText = LocalizedConstants.viewMore;
+            let promiseReleaseNotes = vscode.window
+                .showInformationMessage(
+                    LocalizedConstants.releaseNotesPromptDescription,
+                    confirmText,
+                )
+                .then(async (result) => {
+                    if (result === confirmText) {
+                        await self.launchReleaseNotesPage();
+                    }
+                });
+
+            await Promise.all([promiseReleaseNotes]);
+        }
+    }
+
+    /**
+     * Shows the release notes page in the preview browser
+     */
+    private async launchReleaseNotesPage(): Promise<void> {
+        await vscode.env.openExternal(vscode.Uri.parse(Constants.changelogLink));
+    }
+
+    /**
+     * Shows the Getting Started page in the preview browser
+     */
+    private async launchGettingStartedPage(): Promise<void> {
+        await vscode.env.openExternal(vscode.Uri.parse(Constants.gettingStartedGuideLink));
+    }
+
+    /**
+     * Handler for the Schema Compare command.
+     * Accepts variable arguments, typically:
+     *   - [sourceNode, targetNode, runComparison] when invoked from update Project SC or programmatically,
+     *   - [sourceNode, undefined] when invoked from a project tree node/ server / database node,
+     *   - [] when invoked from the command palette.
+     * This method normalizes the arguments and launches the Schema Compare UI.
+     */
+    public async onSchemaCompare(
+        sourceNode?: ConnectionNode | TreeNodeInfo | SchemaCompareEndpointInfo | string | undefined,
+        targetNode?: ConnectionNode | TreeNodeInfo | SchemaCompareEndpointInfo | string | undefined,
+        runComparison: boolean = false,
+    ): Promise<void> {
+        const schemaCompareOptionsResult = await this.dacFxService.getDeploymentOptions(
+            DeploymentScenario.SchemaCompare,
+        );
+        const schemaCompareWebView = new SchemaCompareWebViewController(
+            this._context,
+            sourceNode,
+            targetNode,
+            runComparison,
+            this.schemaCompareService,
+            this._connectionMgr,
+            schemaCompareOptionsResult,
+            SchemaCompare.Title,
+        );
+
+        schemaCompareWebView.revealToForeground();
+    }
+
+    public async onTableExplorer(node?: any): Promise<void> {
+        const tableExplorerWebView = new TableExplorerWebViewController(
+            this._context,
+            this.tableExplorerService,
+            this._connectionMgr,
+            node,
+        );
+
+        tableExplorerWebView.revealToForeground();
+    }
+
+    public async onSearchDatabase(node?: TreeNodeInfo): Promise<void> {
+        const connectionCredentials = this.getSearchDatabaseConnection(node);
+        if (!connectionCredentials) {
+            void vscode.window.showErrorMessage(
+                LocalizedConstants.SearchDatabase.noConnectionAvailable,
+            );
+            return;
+        }
+
+        const searchDatabaseWebView = new SearchDatabaseWebViewController(
+            this._context,
+            this.metadataService,
+            this._connectionMgr,
+            connectionCredentials,
+            this._scriptingService,
+        );
+
+        searchDatabaseWebView.revealToForeground();
+    }
+
+    /**
+     * Resolves the connection to search against: the Object Explorer node's connection when the
+     * command is invoked from the tree, otherwise the active editor's connection (for example
+     * when invoked from a keyboard shortcut or the command palette).
+     */
+    private getSearchDatabaseConnection(node?: TreeNodeInfo): IConnectionInfo | undefined {
+        if (node?.connectionProfile) {
+            const databaseName = ObjectExplorerUtils.getDatabaseName(node);
+            return {
+                ...node.connectionProfile,
+                database:
+                    databaseName && databaseName !== LocalizedConstants.defaultDatabaseLabel
+                        ? databaseName
+                        : node.connectionProfile.database,
+            };
+        }
+
+        const activeEditorUri = Utils.getActiveTextEditorUri();
+        return activeEditorUri
+            ? this._connectionMgr.getConnectionInfo(activeEditorUri)?.credentials
+            : undefined;
+    }
+
+    /**
+     * Handler for the Publish Database Project command.
+     * Accepts the project file path as an argument.
+     * This method launches the Publish Project UI for the specified database project.
+     * @param projectFilePath The file path of the database project to publish.
+     */
+    public async onPublishDatabaseProject(projectFilePath: string): Promise<void> {
+        const publishProjectWebView = new PublishProjectWebViewController(
+            this._context,
+            this.connectionManager,
+            projectFilePath,
+            this,
+            this.sqlProjectsService,
+            this.dacFxService,
+            this.sqlPackageService,
+        );
+
+        publishProjectWebView.revealToForeground();
+    }
+
+    /**
+     * Handler for the Open Code Analysis command.
+     * Accepts the project file path as an argument.
+     * This method launches the Code Analysis UI for the specified database project.
+     * @param projectFilePath The file path of the database project.
+     */
+    public async onConfigureCodeAnalysisSettings(projectFilePath: string): Promise<void> {
+        const codeAnalysisWebView = new CodeAnalysisWebViewController(
+            this._context,
+            projectFilePath,
+            this.dacFxService,
+            this.sqlProjectsService,
+        );
+
+        codeAnalysisWebView.revealToForeground();
+    }
+
+    /**
+     * Check if the extension launched file exists.
+     * This is to detect when we are running in a clean install scenario.
+     */
+    private doesExtensionLaunchedFileExist(): boolean {
+        // check if file already exists on disk
+        let filePath = this._context.asAbsolutePath("extensionlaunched.dat");
+        try {
+            // this will throw if the file does not exist
+            fs.statSync(filePath);
+            return true;
+        } catch {
+            try {
+                // write out the "first launch" file if it doesn't exist
+                fs.writeFile(filePath, "launched", (_err) => {
+                    return;
+                });
+            } catch {
+                // ignore errors writing first launch file since there isn't really
+                // anything we can do to recover in this situation.
+            }
+            return false;
+        }
+    }
+
+    private onChangeQueryHistoryConfig(): void {
+        let queryHistoryFeatureEnabled = vscode.workspace
+            .getConfiguration(Constants.extensionConfigSectionName)
+            .get(Constants.configEnableQueryHistoryFeature);
+        if (queryHistoryFeatureEnabled) {
+            this.initializeQueryHistory();
+        }
+    }
+
+    /**
+     * Called by VS Code when user settings are changed
+     * @param ConfigurationChangeEvent event that is fired when config is changed
+     */
+    public async onDidChangeConfiguration(e: vscode.ConfigurationChangeEvent): Promise<void> {
+        if (
+            !e.affectsConfiguration(Constants.extensionName) &&
+            !e.affectsConfiguration(Constants.sovereignCloudSectionName)
+        ) {
+            return;
+        }
+
+        this.onChangeQueryHistoryConfig();
+        const needsRefresh = await this.onChangeConnectionConfig(e);
+        await this.onChangeGroupBySchemaConfig(e);
+
+        if (needsRefresh) {
+            this._objectExplorerProvider.refresh(undefined);
+        }
+        if (e.affectsConfiguration(Constants.mssqlPiiLogging)) {
+            this.updatePiiLoggingLevel();
+        }
+
+        // Prompt to reload VS Code when any of these settings are updated.
+        const configSettingsRequiringReload = [
+            Constants.enableConnectionPooling,
+            Constants.configEnableExperimentalFeatures,
+            Constants.configSovereignCloudEnvironment,
+            Constants.configSovereignCloudCustomEnvironment,
+            Constants.configCustomEnvironment,
+            Constants.configUseMsalEntraMfaAuth,
+        ];
+
+        if (configSettingsRequiringReload.some((setting) => e.affectsConfiguration(setting))) {
+            await this.displayReloadMessage(LocalizedConstants.reloadPromptGeneric);
+        }
+    }
+
+    private async onChangeGroupBySchemaConfig(e: vscode.ConfigurationChangeEvent): Promise<void> {
+        if (!e.affectsConfiguration(Constants.cmdObjectExplorerGroupBySchemaFlagName)) {
+            return;
+        }
+
+        this._objectExplorerProvider.refreshConnectedNodes();
+    }
+
+    /**
+     * Updates the Object Explorer connections based on the user settings, removing stale connections and adding new ones.
+     * @returns true if the Object Explorer should be refreshed, false otherwise.
+     */
+    private async onChangeConnectionConfig(e: vscode.ConfigurationChangeEvent): Promise<boolean> {
+        if (
+            !e.affectsConfiguration(`mssql.${Constants.connectionsArrayName}`) &&
+            !e.affectsConfiguration(`mssql.${Constants.connectionGroupsArrayName}`)
+        ) {
+            return false;
+        }
+
+        let needsRefresh = false;
+
+        // 1. If the connectionsGroup setting has changed, Object Explorer always needs to be refreshed
+        if (e.affectsConfiguration(`mssql.${Constants.connectionGroupsArrayName}`)) {
+            needsRefresh = true;
+        }
+
+        // 2. Handle connections that have been added, removed, or reparented in OE
+        let configConnections =
+            await this.connectionManager.connectionStore.connectionConfig.getConnections();
+        let objectExplorerConnections = this._objectExplorerProvider.connections;
+
+        let result = await this.handleRemovedConns(objectExplorerConnections, configConnections);
+        needsRefresh ||= result;
+
+        result = await this.handleAddedConns(objectExplorerConnections, configConnections);
+        needsRefresh ||= result;
+
+        // no side-effects, so can be skipped if OE refresh is already needed
+        needsRefresh ||= await this.checkForMovedConns(configConnections);
+
+        // 3. Ensure passwords have been saved to the credential store instead of to config JSON
+        await this.sanitizeConnectionProfiles();
+
+        if (
+            needsRefresh &&
+            vscode.workspace
+                .getConfiguration()
+                .get<boolean>(Constants.configStatusBarEnableConnectionColor)
+        ) {
+            // update status bar connection colors
+            void this._statusview.updateConnectionColors();
+        }
+
+        return needsRefresh;
+    }
+
+    /** Determine if any connections have had their groupId changed.
+     * This function has no side-effects, so it can be skipped if an OE refresh is already needed.
+     */
+    private async checkForMovedConns(configConnections: IConnectionProfile[]): Promise<boolean> {
+        for (const connProfile of configConnections) {
+            if (
+                connProfile.groupId !==
+                this._objectExplorerProvider.objectExplorerService.getConnectionNodeById(
+                    connProfile.id,
+                )?.connectionProfile.groupId
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async handleAddedConns(
+        oeConnections: IConnectionProfile[],
+        configConnections: IConnectionProfile[],
+    ): Promise<boolean> {
+        let needsRefresh = false;
+
+        // if a connection was manually added
+        let newConnections = configConnections.filter((userConn) => {
+            return !oeConnections.some((oeConn) => Utils.isSameConnectionInfo(userConn, oeConn));
+        });
+        for (let conn of newConnections) {
+            // if a connection is not connected, that means it was added manually
+            const newConnectionProfile = <IConnectionProfile>conn;
+            const uri = ObjectExplorerUtils.getNodeUriFromProfile(newConnectionProfile);
+            if (
+                !this.connectionManager.isActiveConnection(conn) &&
+                !this.connectionManager.isConnecting(uri)
+            ) {
+                // add a disconnected node for the connection
+                this._objectExplorerProvider.addDisconnectedNode(conn);
+                needsRefresh = true;
+            }
+        }
+
+        return needsRefresh;
+    }
+
+    private async handleRemovedConns(
+        oeConnections: IConnectionProfile[],
+        configConnections: IConnectionProfile[],
+    ): Promise<boolean> {
+        let needsRefresh = false;
+
+        // if a connection was manually removed...
+        let staleConnections = oeConnections.filter((oeConn) => {
+            return !configConnections.some((configConn) =>
+                Utils.isSameConnectionInfo(oeConn, configConn),
+            );
+        });
+        // ...disconnect that connection and remove its creds from the credential store and MRU
+        for (let conn of staleConnections) {
+            let profile = <IConnectionProfile>conn;
+            if (this.connectionManager.isActiveConnection(conn)) {
+                const uri = this.connectionManager.getUriForConnection(conn);
+                await this.connectionManager.disconnect(uri);
+            }
+            await this.connectionManager.connectionStore.removeRecentlyUsed(profile);
+            if (
+                profile.authenticationType === Constants.sqlAuthentication &&
+                profile.savePassword
+            ) {
+                await this.connectionManager.deleteCredential(profile);
+            }
+        }
+        // remove them from object explorer
+        await this._objectExplorerProvider.removeConnectionNodes(staleConnections);
+        needsRefresh ||= staleConnections.length > 0;
+
+        return needsRefresh;
+    }
+
+    /**
+     * PII logging is read from configuration at log time by ILogger.
+     */
+    private updatePiiLoggingLevel(): void {
+        // no-op
+    }
+
+    /**
+     * Display notification with button to reload
+     * return true if button clicked
+     * return false if button not clicked
+     */
+    private async displayReloadMessage(reloadPrompt: string): Promise<boolean> {
+        const result = await vscode.window.showInformationMessage(
+            reloadPrompt,
+            LocalizedConstants.reloadChoice,
+        );
+        if (result === LocalizedConstants.reloadChoice) {
+            await vscode.commands.executeCommand("workbench.action.reloadWindow");
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private async isContainerReadyForCommands(node: TreeNodeInfo): Promise<boolean> {
+        const containerName = node.connectionProfile?.containerName;
+        return (
+            await prepareForDockerContainerCommand(
+                containerName,
+                node as ConnectionNode,
+                this._objectExplorerProvider.objectExplorerService,
+            )
+        ).success;
+    }
+
+    private async deleteContainerForNode(node: TreeNodeInfo): Promise<void> {
+        const connectionProfile = node?.connectionProfile;
+        const containerName = connectionProfile?.containerName;
+        if (!containerName) {
+            return;
+        }
+
+        const savedConnections =
+            await this.connectionManager.connectionStore.connectionConfig.getConnections();
+        const otherConnectionsUsingContainer = savedConnections.filter(
+            (profile) =>
+                profile.id !== connectionProfile.id && profile.containerName === containerName,
+        );
+        if (otherConnectionsUsingContainer.length > 0) {
+            const confirmation = await vscode.window.showWarningMessage(
+                LocalizedConstants.LocalContainers.deleteSharedContainerConfirmation(
+                    containerName,
+                    otherConnectionsUsingContainer.map(ConnInfo.getConnectionDisplayName),
+                ),
+                { modal: true },
+                LocalizedConstants.Common.delete,
+            );
+            if (confirmation !== LocalizedConstants.Common.delete) {
+                return;
+            }
+        }
+
+        if (!(await this.isContainerReadyForCommands(node))) {
+            return;
+        }
+
+        if (otherConnectionsUsingContainer.length === 0) {
+            const confirmation = await vscode.window.showInformationMessage(
+                LocalizedConstants.LocalContainers.deleteContainerConfirmation(containerName),
+                { modal: true },
+                LocalizedConstants.Common.delete,
+            );
+
+            if (confirmation !== LocalizedConstants.Common.delete) {
+                return;
+            }
+        }
+
+        node.loadingLabel = LocalizedConstants.LocalContainers.deletingContainerLoadingLabel;
+        await this._objectExplorerProvider.setNodeLoading(node);
+        this._objectExplorerProvider.refresh(node);
+
+        const deletedSuccessfully = await deleteContainer(containerName);
+        void vscode.window.showInformationMessage(
+            deletedSuccessfully
+                ? LocalizedConstants.LocalContainers.deletedContainerSucessfully(containerName)
+                : LocalizedConstants.LocalContainers.failDeleteContainer(containerName),
+        );
+        node.loadingLabel = LocalizedConstants.LocalContainers.startingContainerLoadingLabel;
+        if (deletedSuccessfully) {
+            await this._objectExplorerProvider.removeNode(node as ConnectionNode, false);
+            this._objectExplorerProvider.refresh(undefined);
+        }
+    }
+
+    public removeAadAccount(prompter: IPrompter): void {
+        void this.connectionManager.removeAccount(prompter);
+    }
+
+    public addAadAccount(): void {
+        void this.connectionManager.addAccount();
+    }
+
+    /**
+     * Migrates the deprecated `mssql.transferActiveEditorConnections` boolean setting to
+     * `mssql.newEditorConnectionBehavior` and removes the old setting.
+     * This runs once on activation. If the old setting was never explicitly set, it is a no-op.
+     */
+    private async migrateTransferActiveEditorConnectionsSetting(): Promise<void> {
+        const config = vscode.workspace.getConfiguration();
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        const inspected = config.inspect<boolean>(Constants.configTransferActiveEditorConnections);
+
+        const targets: Array<{
+            value: boolean | undefined;
+            scope: vscode.ConfigurationTarget;
+        }> = [
+            {
+                value: inspected?.globalValue,
+                scope: vscode.ConfigurationTarget.Global,
+            },
+            {
+                value: inspected?.workspaceValue,
+                scope: vscode.ConfigurationTarget.Workspace,
+            },
+        ];
+
+        for (const { value, scope: configLocation } of targets) {
+            if (value === undefined) {
+                continue;
+            }
+
+            const newBehavior = value
+                ? Constants.NewEditorConnectionBehavior.TransferActive
+                : Constants.NewEditorConnectionBehavior.None;
+
+            const scopeName =
+                configLocation === vscode.ConfigurationTarget.Global ? "global" : "workspace";
+
+            try {
+                await config.update(
+                    Constants.configNewEditorConnectionBehavior,
+                    newBehavior,
+                    configLocation,
+                );
+
+                // unset old setting
+                await config.update(
+                    // eslint-disable-next-line @typescript-eslint/no-deprecated
+                    Constants.configTransferActiveEditorConnections,
+                    undefined, // value
+                    configLocation,
+                );
+
+                sendActionEvent(
+                    TelemetryViews.General,
+                    TelemetryActions.MigrateEditorConnectionBehavior,
+                    { additionalProps: { migratedValue: newBehavior, scope: scopeName } },
+                );
+            } catch (err) {
+                this._logger.error(
+                    `Failed to migrate transferActiveEditorConnections setting: ${err}`,
+                );
+                sendErrorEvent(
+                    TelemetryViews.General,
+                    TelemetryActions.MigrateEditorConnectionBehavior,
+                    {
+                        error: err instanceof Error ? err : new Error(String(err)),
+                        includeErrorMessage: false,
+                        additionalProps: { scope: scopeName },
+                    },
+                );
+            }
+        }
+    }
+
+    private ExecutionPlanCustomEditorProvider = class implements vscode.CustomTextEditorProvider {
+        constructor(
+            public context: vscode.ExtensionContext,
+            public executionPlanService: ExecutionPlanService,
+            public sqlDocumentService: SqlDocumentService,
+        ) {
+            this.context = context;
+            this.executionPlanService = executionPlanService;
+            this.sqlDocumentService = sqlDocumentService;
+        }
+
+        public async resolveCustomTextEditor(document: vscode.TextDocument): Promise<void> {
+            await this.onOpenExecutionPlanFile(document);
+        }
+
+        public async onOpenExecutionPlanFile(document: vscode.TextDocument) {
+            const planContents = document.getText();
+            let docName = document.fileName;
+            docName = docName.substring(docName.lastIndexOf(path.sep) + 1);
+
+            vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+
+            openExecutionPlanWebview(
+                this.context,
+                this.executionPlanService,
+                this.sqlDocumentService,
+                planContents,
+                docName,
+            );
+        }
+    };
+
+    /**
+     * Custom editor provider for XEL files.
+     * Opens XEL files in the SQL Profiler UI in read-only mode.
+     * Uses CustomReadonlyEditorProvider since XEL files are binary.
+     */
+    private ProfilerXelCustomEditorProvider = class
+        implements vscode.CustomReadonlyEditorProvider<vscode.CustomDocument>
+    {
+        constructor(public profilerController: ProfilerController) {}
+
+        public async openCustomDocument(uri: vscode.Uri): Promise<vscode.CustomDocument> {
+            // Return a simple custom document - the actual file reading is done by the backend
+            return {
+                uri,
+                dispose: () => {
+                    // No cleanup needed
+                },
+            };
+        }
+
+        public async resolveCustomEditor(
+            document: vscode.CustomDocument,
+            webviewPanel: vscode.WebviewPanel,
+        ): Promise<void> {
+            const filePath = document.uri.fsPath;
+
+            // Dispose the webview panel since we'll use our own profiler UI
+            webviewPanel.dispose();
+
+            // Open the XEL file in the Profiler UI
+            await this.profilerController.openXelFile(filePath);
+        }
+    };
+}

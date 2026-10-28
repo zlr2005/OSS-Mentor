@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1e9f411dd1304d3ca629782b825ea6edfe108f9e",
+    "size": 6190
+  },
+  "observed_at": "2026-10-27T14:05:53.155003+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8ae5d38df38da07814f0b5fd6013ea5717a68ee61e189745a4c5d7e98de5f446",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "575a345d068851caa1b61cd7e7078c1c3ffe4d9e52ff6a96175de40d67848001",
+  "source_url": "https://api.github.com/repos/microsoft/pyright/git/blobs/1e9f411dd1304d3ca629782b825ea6edfe108f9e",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 129407632,
+      "login": "Huang-404-Q",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T03:55:19Z",
+      "committer_at": "2026-10-23T03:55:19Z",
+      "tree_sha": "d8ca080e7842b49a8fddb682b14ac41b7564daf8"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a4bb4756fc606006e00ad627657d92934d974d2c"
+  },
+  "observed_at": "2026-10-26T08:16:12.813768+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "87368e7f3e6f9e4c1db3a815a2a70c4bdd152c5575bbb8cfc147dbb167b166a6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d96de72168eed7697f74e012c00deec803bddcaae315e2a3e7bbe078307bac99",
+  "source_url": "https://api.github.com/repos/microsoft/terminal/commits/a4bb4756fc606006e00ad627657d92934d974d2c?per_page=100",
+  "status_code": 200
+}

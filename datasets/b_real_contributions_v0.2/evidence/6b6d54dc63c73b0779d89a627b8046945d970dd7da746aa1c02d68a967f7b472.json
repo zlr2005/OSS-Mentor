@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "python/mypy",
+    "id": 7053637,
+    "language": "Python",
+    "private": false,
+    "size": 87583
+  },
+  "observed_at": "2026-10-26T13:18:23.128589+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "373f855d4668c456ecc454620d68bf67d7d83ad7fed491578d7dd513dd79697b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4bfbaac7f5348d862053850eddf15ecc824152756f4f403441ad569d9c1db923",
+  "source_url": "https://api.github.com/repos/python/mypy",
+  "status_code": 200
+}

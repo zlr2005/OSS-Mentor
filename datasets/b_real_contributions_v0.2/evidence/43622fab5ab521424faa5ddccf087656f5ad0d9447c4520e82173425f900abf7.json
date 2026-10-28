@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 30527984,
+      "login": "radoering",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-27T15:22:26Z",
+      "committer_at": "2026-09-27T15:22:26Z",
+      "tree_sha": "59fdffe1aea1cdc716d9caa9fb62c6e0fb6d255a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d4fd21e4711ae948f04e18a1736d9ee85b590e87"
+  },
+  "observed_at": "2026-10-26T13:17:47.042445+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "23b5b580069df520a3c525bf277631133a11bdc101fd4894c887eb753810a418",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "247f4f58531dc9a647d6bcfed86da1a3f9079b8bb734f215268461c23fc151ec",
+  "source_url": "https://api.github.com/repos/python-poetry/poetry/commits/d4fd21e4711ae948f04e18a1736d9ee85b590e87?per_page=100",
+  "status_code": 200
+}

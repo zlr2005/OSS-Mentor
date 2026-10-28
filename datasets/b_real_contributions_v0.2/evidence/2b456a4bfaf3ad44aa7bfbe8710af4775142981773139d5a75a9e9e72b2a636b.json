@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1071590,
+      "login": "artembilan",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-15T18:31:10Z",
+      "committer_at": "2026-10-15T18:31:10Z",
+      "tree_sha": "2b8830ae86c95bfb8238566f1e644253df5eb746"
+    },
+    "committer": {
+      "id": 1071590,
+      "login": "artembilan",
+      "type": "User"
+    },
+    "sha": "2f7d8e3f3dee9e9f5de0a0c0598e9c23d132cb6f"
+  },
+  "observed_at": "2026-10-27T16:15:25.294635+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5fbeb19c07c77e8f0f24eb1a5c602280fe9cf4c4b30d96fef2e269b8aea09e7c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a049e42c862a11aab0da26f84734bc3cc08d9fa3a2e29ed1e7404ab74c0ef73a",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-integration/commits/2f7d8e3f3dee9e9f5de0a0c0598e9c23d132cb6f?per_page=100",
+  "status_code": 200
+}

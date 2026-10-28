@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "637199d5267ebf1c862c02aa5b1601efb938ec7f",
+    "size": 35056
+  },
+  "observed_at": "2026-10-27T16:12:53.004729+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fe230b91bbcb9d0934fb8b0c91b8bae5adb36c3fdeb06f099c7c2ab7a0321ae2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "95df67f24d2d9a72ae3457c3f13ca8cbf4a4644e4991af7cd5d36f9ce7206d86",
+  "source_url": "https://api.github.com/repos/sphinx-doc/sphinx/git/blobs/637199d5267ebf1c862c02aa5b1601efb938ec7f",
+  "status_code": 200
+}

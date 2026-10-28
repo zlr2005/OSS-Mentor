@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "plotly/plotly.py",
+    "id": 14579099,
+    "language": "Python",
+    "private": false,
+    "size": 431540
+  },
+  "observed_at": "2026-10-26T08:46:01.657332+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "859de2f0cdb4b17e67e873aa0a614c3ea1df45b33724575649021a6012e6939b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7467a68a03f4b7f99b23725638b1f2e54936422c655ad203f3341fd4963f4e84",
+  "source_url": "https://api.github.com/repos/plotly/plotly.py",
+  "status_code": 200
+}

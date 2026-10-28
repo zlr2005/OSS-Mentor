@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 12932,
+      "login": "xrmx",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2025-12-10T14:47:31Z",
+      "committer_at": "2025-12-10T14:47:31Z",
+      "tree_sha": "b2cd92bfaba3d927eb6db03a5064340ea7a6f827"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ca097c96f97d8d2a5da09b8ca736c7e78a2467f6"
+  },
+  "observed_at": "2026-10-26T06:32:00.267790+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5d906d9336b1e13ba5195a1f504968187914d50e1116e68df03a5df87693d15b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7a34f3e71b7790fae64a7073644338d0209ee6d4d0484c3eb9e5922332361b65",
+  "source_url": "https://api.github.com/repos/encode/httpx/commits/ca097c96f97d8d2a5da09b8ca736c7e78a2467f6?per_page=100",
+  "status_code": 200
+}

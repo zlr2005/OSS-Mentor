@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {
+      "id": 2145042,
+      "login": "sameb",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-21T18:50:22Z",
+      "committer_at": "2026-08-21T18:51:43Z",
+      "tree_sha": "7f64196862ae24ca7a18574ee3f041ffbfb90a71"
+    },
+    "committer": {},
+    "sha": "b22f83c890d1085e5ef59480568b7eb7098f3044"
+  },
+  "observed_at": "2026-10-26T07:08:01.976940+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "afe26c98a6aeed8a4517e2f26fffe08d5e47970e218b489d59034ff4e5696689",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "048980661cbfd4b0a9292da95e0b68576cf0fda2c0de820dfa1e3b49e825d775",
+  "source_url": "https://api.github.com/repos/google/guice/commits/b22f83c890d1085e5ef59480568b7eb7098f3044?per_page=100",
+  "status_code": 200
+}

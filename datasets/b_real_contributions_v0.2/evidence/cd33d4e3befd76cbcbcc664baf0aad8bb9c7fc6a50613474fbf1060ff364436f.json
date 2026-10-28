@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 172584,
+      "login": "fisker",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T16:49:48Z",
+      "committer_at": "2026-10-22T16:49:48Z",
+      "tree_sha": "b34b4011079738445ab3d4b56522b54a96c95775"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "35d29898d24272f301811033f0bbb98ed0e55123"
+  },
+  "observed_at": "2026-10-26T08:53:13.786950+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9e97c88840020dae859cd26887299851dff5f375aba71c46b94b49f1a1cb078b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6ca14719f3e1d11d8e3bddf3e97e4df2df7d442edb0be4c0a22f44cf55f16052",
+  "source_url": "https://api.github.com/repos/prettier/prettier/commits/35d29898d24272f301811033f0bbb98ed0e55123?per_page=100",
+  "status_code": 200
+}

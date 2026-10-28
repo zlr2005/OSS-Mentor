@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a6466fe3e4c323cd82d743d95d49306f245a30fc",
+    "size": 14683
+  },
+  "observed_at": "2026-10-26T16:53:58.168973+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3a9563083c62364b9a39b82622ff10ba92de1c0108b137bdb37265fda8894721",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a6c2003e06b63618efcbf9a1c3c505b8e2a750ae20b37c5ba9fe6376df4abb6c",
+  "source_url": "https://api.github.com/repos/apache/netbeans/git/blobs/a6466fe3e4c323cd82d743d95d49306f245a30fc",
+  "status_code": 200
+}

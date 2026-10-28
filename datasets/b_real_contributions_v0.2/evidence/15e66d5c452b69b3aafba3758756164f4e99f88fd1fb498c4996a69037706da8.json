@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6213168,
+      "login": "crusaderky",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-09T15:37:04Z",
+      "committer_at": "2026-07-09T15:37:04Z",
+      "tree_sha": "65317e594fc8bacc78f467d01ef63ea4bbcc5e79"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0f72f8f2a14c6c53472ce276ca2700c2ffddceef"
+  },
+  "observed_at": "2026-10-26T06:15:20.779992+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8f743f2fcede173898c88bcf3d182b13a4d8dcddc873c06cce37e93e03547707",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "31293ea392a24158dd0ad712fb6e9bc06a8da98ea3f6d46bfe4b2899a96c4a4b",
+  "source_url": "https://api.github.com/repos/dask/distributed/commits/0f72f8f2a14c6c53472ce276ca2700c2ffddceef?per_page=100",
+  "status_code": 200
+}

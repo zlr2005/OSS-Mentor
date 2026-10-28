@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "scipy/scipy",
+    "id": 1460385,
+    "language": "Python",
+    "private": false,
+    "size": 208465
+  },
+  "observed_at": "2026-10-26T13:58:01.706217+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8cd034d043e546b8adcd2203adcc3759995e5df1caa8c287b0a08c4d64e5e093",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4ec92ae8490ec37531e234bd1f8ca599795016bde3a90f792e8ec3d2ff4147a6",
+  "source_url": "https://api.github.com/repos/scipy/scipy",
+  "status_code": 200
+}

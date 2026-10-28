@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 41563,
+      "login": "esc",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-05T20:52:25Z",
+      "committer_at": "2026-10-05T20:52:25Z",
+      "tree_sha": "5c6714b28205e6b49931f4a386b738549d6f4983"
+    },
+    "committer": {
+      "id": 41563,
+      "login": "esc",
+      "type": "User"
+    },
+    "sha": "e820a3a8fcc7f9694a9988cb9d867181c1c49acd"
+  },
+  "observed_at": "2026-10-27T14:50:43.891052+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bb9cfd6c278e0116e863022a05148ae9301916511dc8c8a131fa8d666049fb7a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "738db3dab6a3181bdec8ce7165d733314e7d19cd536bcde6ae051a3105f69fef",
+  "source_url": "https://api.github.com/repos/numba/numba/commits/e820a3a8fcc7f9694a9988cb9d867181c1c49acd?per_page=100",
+  "status_code": 200
+}

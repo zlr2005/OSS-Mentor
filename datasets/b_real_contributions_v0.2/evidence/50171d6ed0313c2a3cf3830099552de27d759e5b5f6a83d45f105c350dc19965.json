@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b34e1fdb3898112c7290bc5640013810e1b34b86",
+    "size": 43842
+  },
+  "observed_at": "2026-10-26T16:49:26.679980+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "35c6b868a9f40dde220c473a175328cf5623c770df0e87b78d79527ee7d1111e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "83f3dd4380c27b07c12dcf83a750d1b5ca81d16486c27c304ca90d46a3033e62",
+  "source_url": "https://api.github.com/repos/aio-libs/aiohttp/git/blobs/b34e1fdb3898112c7290bc5640013810e1b34b86",
+  "status_code": 200
+}

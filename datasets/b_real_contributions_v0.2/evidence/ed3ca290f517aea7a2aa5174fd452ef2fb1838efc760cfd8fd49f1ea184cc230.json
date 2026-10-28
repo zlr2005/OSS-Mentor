@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ae69ec9c1b97bfbbe8024be3ee8b345dfaa3a01f",
+    "size": 33330
+  },
+  "observed_at": "2026-10-26T13:43:59.072125+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8d2194f88c967e795cb2aa9958a443685cc09e480b7ac48ca94de39ffb83d102",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d193f3fa9585b6da6178d72dd73a1dd8fcf8ec026c3aac9808d716f934fa882a",
+  "source_url": "https://api.github.com/repos/resilience4j/resilience4j/git/blobs/ae69ec9c1b97bfbbe8024be3ee8b345dfaa3a01f",
+  "status_code": 200
+}

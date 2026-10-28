@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "45a2942fa07ec6f62f386dd9bfbb46e85e799ddd",
+    "size": 6722
+  },
+  "observed_at": "2026-10-26T08:23:28.157455+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "748dfe43da909073b7fb596c9c26b8870bb4011acf6063ed02242bbacedf6dbf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "165bdb4d2b8e131df6fce179513c9b8836fc80ef2bb45f245281d8ff7cee0a2b",
+  "source_url": "https://api.github.com/repos/mochajs/mocha/git/blobs/45a2942fa07ec6f62f386dd9bfbb46e85e799ddd",
+  "status_code": 200
+}

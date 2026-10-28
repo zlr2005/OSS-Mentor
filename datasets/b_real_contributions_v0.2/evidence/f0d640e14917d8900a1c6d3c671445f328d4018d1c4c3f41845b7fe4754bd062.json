@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 214632419,
+      "login": "ewaostrowska",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-25T06:24:50Z",
+      "committer_at": "2026-08-25T06:24:50Z",
+      "tree_sha": "1dcb9341a7d9ba93fc32fc14f7e8e0beccb9d9c5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0255d18827819b9393490a5d745cf163d4fe46c9"
+  },
+  "observed_at": "2026-10-26T14:51:34.383575+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2f6366db056d10cf607cfde72b071b1b3ce805930c9253d521c2933ce9550550",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7fb53486bc9f57dae3df6a7e24aaf80db20fb81cf06f63223ec664503a65ac71",
+  "source_url": "https://api.github.com/repos/swagger-api/swagger-parser/commits/0255d18827819b9393490a5d745cf163d4fe46c9?per_page=100",
+  "status_code": 200
+}

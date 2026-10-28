@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 9103069,
+      "login": "mabunemeh",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T13:19:30Z",
+      "committer_at": "2026-10-22T13:19:30Z",
+      "tree_sha": "e7de039e927f0d3dfc7179b1ad76230058a23e58"
+    },
+    "committer": {
+      "id": 9103069,
+      "login": "mabunemeh",
+      "type": "User"
+    },
+    "sha": "d2061da3894cdf558f5bc24e89e3afa916164b15"
+  },
+  "observed_at": "2026-10-26T14:06:15.887294+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "44645b5350efbb398ed4dbd71aa86346db1fabf5dd8f2c7987f115e5b19740c2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d37eaa3814bbfea12a1690639631753ccd6328581bef66ce53fb0c2f7024abed",
+  "source_url": "https://api.github.com/repos/sharkdp/fd/commits/d2061da3894cdf558f5bc24e89e3afa916164b15?per_page=100",
+  "status_code": 200
+}

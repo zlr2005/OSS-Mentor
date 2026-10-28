@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 737750,
+      "login": "samuelkarp",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T20:35:11Z",
+      "committer_at": "2026-10-20T20:35:11Z",
+      "tree_sha": "256d5198db745c6ae0cd7a606e3b2d3103dc2af2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "82d0ef9573412091e06c16db16a54522fde0225e"
+  },
+  "observed_at": "2026-10-26T06:12:40.295609+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6cdcdd6c803c32c846c224d082d5cf03ec2cfa11ff30e61917252b755fdb0556",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "68d26fe1108c763750e9d14ba4bd9056dce906f1ac127b380c3e1b999c502218",
+  "source_url": "https://api.github.com/repos/containerd/containerd/commits/82d0ef9573412091e06c16db16a54522fde0225e?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3228886,
+      "login": "alexandear",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-22T17:12:33Z",
+      "committer_at": "2026-09-22T17:12:33Z",
+      "tree_sha": "473448d071990b3348a9e648fa2ab4384e90be11"
+    },
+    "committer": {
+      "id": 3228886,
+      "login": "alexandear",
+      "type": "User"
+    },
+    "sha": "cce2851b990e0421118880449b437ff11912625b"
+  },
+  "observed_at": "2026-10-26T14:43:26.194592+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2ca94d775ec238cbb780b5c27ed8c023c00a43da93676887370d37b1d92cf18a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4369907fdead219bd2d1f9735689279362db1d6fd60a3602f4eb5ee834478d05",
+  "source_url": "https://api.github.com/repos/stretchr/testify/commits/cce2851b990e0421118880449b437ff11912625b?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "psf/black",
+    "id": 125266328,
+    "language": "Python",
+    "private": false,
+    "size": 9053
+  },
+  "observed_at": "2026-10-26T13:01:44.254334+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3378bd19bd9a4697fb686c42bfcf90f70bf1d75cdef651948080649fe327b349",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7ce78a3aad908967d129133bcaf44b4fe523c33d38d646885d3fab1b136f2a25",
+  "source_url": "https://api.github.com/repos/psf/black",
+  "status_code": 200
+}

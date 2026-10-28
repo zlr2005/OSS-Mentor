@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 76141879,
+      "login": "fuweng11",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-27T07:25:25Z",
+      "committer_at": "2026-08-27T07:25:25Z",
+      "tree_sha": "47de3b8184abcbe61d16f618a1365e6357dd95b4"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d78db5517630bc6a93aa28964645520965c5554f"
+  },
+  "observed_at": "2026-10-26T05:17:23.795792+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c157603b4c35791d0f14fccf0cd7ccb1ffb3326aab5a34cd7a920ab595432071",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cc302becf38aaa1d2036aa9675b3c00cbe40efc5c53089c6ced8cb990339fa7b",
+  "source_url": "https://api.github.com/repos/apache/inlong/commits/d78db5517630bc6a93aa28964645520965c5554f?per_page=100",
+  "status_code": 200
+}

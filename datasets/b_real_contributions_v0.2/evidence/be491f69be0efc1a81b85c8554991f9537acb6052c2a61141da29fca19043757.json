@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9fe1442eeb4881c516ae031f29c6c3a90446e9ec",
+    "size": 1071
+  },
+  "observed_at": "2026-10-26T15:03:45.461834+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4c39b8b6460d119aa64f87ee9a27aba34e84e917cc1e97af9b291c7558b98e6c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6c63e788205aa23bc9f0c11f7b62d87b1d4b088ee5a0d11378bc9280898029ad",
+  "source_url": "https://api.github.com/repos/TanStack/table/git/blobs/9fe1442eeb4881c516ae031f29c6c3a90446e9ec",
+  "status_code": 200
+}

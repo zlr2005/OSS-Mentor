@@ -1,0 +1,24 @@
+{
+  "code_availability": {
+    "available": 3715,
+    "missing": 150
+  },
+  "confirmed_contribution_author_rate": 0.9953428201811125,
+  "contribution_author_association": {
+    "unconfirmed": 18,
+    "verified": 3847
+  },
+  "developer_identity": {
+    "unconfirmed": 27,
+    "verified": 1298
+  },
+  "developers_with_file_contributions": 1133,
+  "developers_without_selected_file_contributions": 192,
+  "missing_code_rate": 0.03880983182406209,
+  "missing_code_reasons": {
+    "code_size_limit": 122,
+    "file_deleted_at_commit": 28
+  },
+  "unique_developer_key_count": 1325,
+  "weak_interest_behavior_records": 0
+}

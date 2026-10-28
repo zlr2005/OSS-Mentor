@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "pytorch/ao",
+    "id": 714073518,
+    "language": "Python",
+    "private": false,
+    "size": 175821
+  },
+  "observed_at": "2026-10-26T13:18:27.387138+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f30a91ba6fa8ed457f009e177516b41b81848bfa1d8495f9d720d239e3223e4e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4c969e26c9d2612898d3795ddd64c356e9191fd737046f4a0ec09698202a1d67",
+  "source_url": "https://api.github.com/repos/pytorch/ao",
+  "status_code": 200
+}

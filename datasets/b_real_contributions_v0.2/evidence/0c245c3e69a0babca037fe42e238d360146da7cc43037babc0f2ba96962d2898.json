@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 144427,
+      "login": "marijnh",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T04:30:31Z",
+      "committer_at": "2026-10-21T04:30:31Z",
+      "tree_sha": "cd376a6755cae41713afb9f2cb15a9b25b50b3a3"
+    },
+    "committer": {
+      "id": 144427,
+      "login": "marijnh",
+      "type": "User"
+    },
+    "sha": "5f162e081d1e493a0db96e7c2394fcead01e2daf"
+  },
+  "observed_at": "2026-10-26T16:48:41.468991+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e42586dffeb8fdd7c160e317d5e2bdfcfefcac453657f552c4547dd8c0addefa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ab2eb8b6fdf4b76908d4ac58a0021467d41163a6a1723a790af60ce2a84b6b79",
+  "source_url": "https://api.github.com/repos/acornjs/acorn/commits/5f162e081d1e493a0db96e7c2394fcead01e2daf?per_page=100",
+  "status_code": 200
+}

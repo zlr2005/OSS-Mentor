@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "21d8b15d71cd9c4eb004b1dd585068141821dbab",
+    "size": 7145
+  },
+  "observed_at": "2026-10-26T06:50:26.823146+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dbbdbf06fcdccbd385ddf3df0f3eb658e795914d975c2b07efd3a33874f97611",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "606f580d90cd09dd4ba7417a55bcb5b44419d3f37c8ccbef4efdcecf899762d0",
+  "source_url": "https://api.github.com/repos/fluxcd/flux2/git/blobs/21d8b15d71cd9c4eb004b1dd585068141821dbab",
+  "status_code": 200
+}

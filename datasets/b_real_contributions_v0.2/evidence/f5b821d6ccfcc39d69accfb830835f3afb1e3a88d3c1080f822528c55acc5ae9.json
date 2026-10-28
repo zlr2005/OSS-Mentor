@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "74ae4ed58529c0143b768df9ca1fa5621726b432",
+    "size": 28336
+  },
+  "observed_at": "2026-10-27T14:02:07.159241+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "002efaf2917159cd382dc604ce36eeb79cff98e8d1b6116a42b359e63774e7df",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "023787c5f674c1f6bed949d839a20541002e613741cf3bc410de86cb58c5fd4c",
+  "source_url": "https://api.github.com/repos/microsoft/fluentui/git/blobs/74ae4ed58529c0143b768df9ca1fa5621726b432",
+  "status_code": 200
+}

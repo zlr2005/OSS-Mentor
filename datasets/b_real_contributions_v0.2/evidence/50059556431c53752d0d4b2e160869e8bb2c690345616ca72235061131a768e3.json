@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 9800850,
+      "login": "Andarist",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T18:40:33Z",
+      "committer_at": "2026-10-21T18:40:33Z",
+      "tree_sha": "025f711abecc0246ffa6a1ba3323b5649c1be251"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b8657191f1ccf97f333923867a98f3435db3c66d"
+  },
+  "observed_at": "2026-10-27T14:13:52.690598+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3dab178b374b84b83c6d4dd4370cc23f266c3f0a3214f6077593cd04a08c9caa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "acb9bf19f573b5b13a11f67a928edc0852ca4955b928784ad9eaa0d974e3033a",
+  "source_url": "https://api.github.com/repos/microsoft/TypeScript/commits/b8657191f1ccf97f333923867a98f3435db3c66d?per_page=100",
+  "status_code": 200
+}

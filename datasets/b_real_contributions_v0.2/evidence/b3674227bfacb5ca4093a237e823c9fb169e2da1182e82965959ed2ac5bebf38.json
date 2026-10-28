@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5110813,
+      "login": "UlisesGascon",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-08T10:04:12Z",
+      "committer_at": "2026-09-08T10:04:12Z",
+      "tree_sha": "9d9d2af44412cf29bb8fa5dc381a3e61067a5e99"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "aa9889bc35ede269cbb8cc271e485cde0847776c"
+  },
+  "observed_at": "2026-10-26T06:37:49.065582+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9106b2745fcbaa7ed5968a7afb2913a9853d18ffd42a3bf922ee4fb8d677c522",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2d2ba38dcf1a5c7e81bed76ddd4bd7a6ecf1df29f8ecb79247a5d39c76b53c3c",
+  "source_url": "https://api.github.com/repos/expressjs/body-parser/commits/aa9889bc35ede269cbb8cc271e485cde0847776c?per_page=100",
+  "status_code": 200
+}

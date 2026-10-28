@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4ad96d555d972cc606015f842422ea6a889ef2ac",
+    "size": 9934
+  },
+  "observed_at": "2026-10-26T06:57:16.799075+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7b690dd9e73d8d4cdae6f113c4e64bd81df934c616e3582501f1d5931d1d7ad6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b6c6326b6dcf3c8caa5292150f195024f73e6febc69e1c0eced4aaeeea169290",
+  "source_url": "https://api.github.com/repos/go-gorm/gorm/git/blobs/4ad96d555d972cc606015f842422ea6a889ef2ac",
+  "status_code": 200
+}

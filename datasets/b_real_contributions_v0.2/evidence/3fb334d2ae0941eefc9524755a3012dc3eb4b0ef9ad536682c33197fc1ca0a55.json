@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 110186009,
+      "login": "kartik-py12",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-06T11:46:39Z",
+      "committer_at": "2026-10-06T11:46:39Z",
+      "tree_sha": "ac0a6b341d17d4e84f688541aaedd00443b3376f"
+    },
+    "committer": {
+      "id": 110186009,
+      "login": "kartik-py12",
+      "type": "User"
+    },
+    "sha": "f76e249888fab86f989800c55a1af492ef8b13fb"
+  },
+  "observed_at": "2026-10-26T13:51:57.584842+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0914a838e07819306780391b4be314de7a55a70bf99cfa3c7373408289d1eff0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1eb717127bf1cdc842d7566ff0409f0c5fbba065cb20412102e8fe9b21cdec11",
+  "source_url": "https://api.github.com/repos/rust-lang/mdBook/commits/f76e249888fab86f989800c55a1af492ef8b13fb?per_page=100",
+  "status_code": 200
+}

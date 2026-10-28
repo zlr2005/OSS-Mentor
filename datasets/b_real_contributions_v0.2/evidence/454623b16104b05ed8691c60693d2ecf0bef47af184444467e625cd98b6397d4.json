@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "341b527bc3a986c67bb3d895b09f1db1f7577bca",
+    "size": 3950
+  },
+  "observed_at": "2026-10-26T08:06:07.959868+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "747bdda4ae593eb5f2c0acd1670d0fb2f0f4303f88566dd4869116ea3f672739",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d1ce3f98930df10e1aaa1b14a8634be44de756aba60814620b01d41745ebb74f",
+  "source_url": "https://api.github.com/repos/mermaid-js/mermaid/git/blobs/341b527bc3a986c67bb3d895b09f1db1f7577bca",
+  "status_code": 200
+}

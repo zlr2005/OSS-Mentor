@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8c37b78482cfcb78b6d7e896456e1dde928b76c1",
+    "size": 1813
+  },
+  "observed_at": "2026-10-26T08:08:11.726861+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ae4c34b94491c2d156ef3112b99fb8bae36e5f4789c50c3dbd1a5531bb2d21f2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f8f3f642461f858c8605e5a1760e5f2f7cdaabeed1747d7ce2d72ba330ce43d3",
+  "source_url": "https://api.github.com/repos/micronaut-projects/micronaut-core/git/blobs/8c37b78482cfcb78b6d7e896456e1dde928b76c1",
+  "status_code": 200
+}

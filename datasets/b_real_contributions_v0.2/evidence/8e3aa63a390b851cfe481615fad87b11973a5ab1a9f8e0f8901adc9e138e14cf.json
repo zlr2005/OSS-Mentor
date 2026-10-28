@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "cac2e01b7f85ab3da0166aa1c2832e225cca3785",
+    "size": 56465
+  },
+  "observed_at": "2026-10-26T07:13:21.114903+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7907906da159b6992307c3a213b33c07ababb2ddaa67197f555fad31ce660593",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5f18404b0b3c124d116b2d4225627d4ae68a68e302c2216ea810c207f05f1bf5",
+  "source_url": "https://api.github.com/repos/gradio-app/gradio/git/blobs/cac2e01b7f85ab3da0166aa1c2832e225cca3785",
+  "status_code": 200
+}

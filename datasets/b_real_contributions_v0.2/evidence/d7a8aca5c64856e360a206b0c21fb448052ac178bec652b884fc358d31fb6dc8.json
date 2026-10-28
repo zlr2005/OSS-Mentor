@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 232033215,
+      "login": "ayush-keshri-world",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T22:13:37Z",
+      "committer_at": "2026-10-25T23:32:19Z",
+      "tree_sha": "785e26907a55f4fc76afaa7535051954ee3de8ed"
+    },
+    "committer": {
+      "id": 812984,
+      "login": "romani",
+      "type": "User"
+    },
+    "sha": "5257959d967f3c612f8c7ed30b4fcc541f3ea7f6"
+  },
+  "observed_at": "2026-10-26T06:06:00.361122+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "60a0ef358f41b5b1149eea217c204b48bb8700e1222863c5c3ad2568f9388294",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "978d34d39db50e813d318ba4145cb203f528bf8f7eff4b8d5951d59e133f71df",
+  "source_url": "https://api.github.com/repos/checkstyle/checkstyle/commits/5257959d967f3c612f8c7ed30b4fcc541f3ea7f6?per_page=100",
+  "status_code": 200
+}

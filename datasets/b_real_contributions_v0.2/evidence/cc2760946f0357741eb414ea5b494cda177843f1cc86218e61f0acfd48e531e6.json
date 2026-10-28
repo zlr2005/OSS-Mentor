@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "vitejs/vite",
+    "id": 257485422,
+    "language": "TypeScript",
+    "private": false,
+    "size": 77329
+  },
+  "observed_at": "2026-10-26T15:32:47.615334+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3ddd3c4fbf4d4082813bab53ee8f0a5640afb0c3a8aa0ac2e4607ecc4784e475",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "85cddd00ef00881f43b5488bc5bf97ca399931996e94b622e6e8d3f2abcc1444",
+  "source_url": "https://api.github.com/repos/vitejs/vite",
+  "status_code": 200
+}

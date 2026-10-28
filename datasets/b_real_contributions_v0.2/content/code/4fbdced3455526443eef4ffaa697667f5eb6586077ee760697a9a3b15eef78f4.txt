@@ -1,0 +1,630 @@
+import textwrap
+from io import StringIO
+from itertools import chain
+from typing import NamedTuple, TextIO
+
+import isort.literal
+from isort.settings import DEFAULT_CONFIG, Config
+
+from . import output, parse
+from .exceptions import ExistingSyntaxErrors, FileSkipComment
+from .format import format_natural, remove_whitespace
+from .settings import FILE_SKIP_COMMENTS
+
+CIMPORT_IDENTIFIERS = ("cimport ", "cimport*", "from.cimport")
+_BASE_IMPORT_IDENTIFIERS = ("from ", "from.import", "import ", "import*")
+IMPORT_START_IDENTIFIERS = (
+    *_BASE_IMPORT_IDENTIFIERS,
+    *(f"lazy {identifier}" for identifier in _BASE_IMPORT_IDENTIFIERS),
+    *CIMPORT_IDENTIFIERS,
+)
+DOCSTRING_INDICATORS = ('"""', "'''")
+COMMENT_INDICATORS = (*DOCSTRING_INDICATORS, "'", '"', "#")
+# Every legal Python string prefix, lower-cased; `u` cannot be combined with another.
+STRING_PREFIXES = frozenset(("r", "u", "f", "b", "fr", "rf", "br", "rb"))
+CODE_SORT_COMMENTS = (
+    "# isort: list",
+    "# isort: dict",
+    "# isort: set",
+    "# isort: unique-list",
+    "# isort: tuple",
+    "# isort: unique-tuple",
+    "# isort: assignments",
+)
+LITERAL_TYPE_MAPPING = {"(": "tuple", "[": "list", "{": "set"}
+PYLINT_DISABLE_NEXT_COMMENT = "# pylint: disable-next"
+SKIP_IMPORT_COMMENTS = ("isort:skip", "isort: skip")
+
+
+def _strip_string_prefix(line: str) -> str:
+    """Return `line` without a leading Python string prefix (`r`, `b`, `f`, `u`
+    or a legal combination of them), so quote-based heuristics see the quote itself.
+    """
+    for prefix_length in (2, 1):
+        if line[:prefix_length].lower() in STRING_PREFIXES and line[
+            prefix_length : prefix_length + 1
+        ] in ("'", '"'):
+            return line[prefix_length:]
+    return line
+
+
+def _is_comment_or_string_start(line: str) -> bool:
+    """Return whether `line` opens a comment, a docstring or any other string literal.
+
+    A string prefix (`r`, `b`, `f`, `u` or a legal combination of them) is skipped
+    first, so a prefixed docstring is recognised exactly as an unprefixed one is.
+    """
+    return _strip_string_prefix(line.lstrip()).startswith(COMMENT_INDICATORS)
+
+
+def _has_skip_comment(import_statement: str) -> bool:
+    """Return whether an import statement carries a per-line ``isort: skip`` directive."""
+    return any(comment in import_statement for comment in SKIP_IMPORT_COMMENTS)
+
+
+class _FloatToTopResult(NamedTuple):
+    input_stream: TextIO
+    verbose_output: list[str]
+    made_changes: bool
+
+
+def _float_to_top(
+    input_stream: TextIO,
+    add_imports: list[str],
+    config: Config,
+    extension: str,
+) -> _FloatToTopResult:
+    new_input = ""
+    current = ""
+    isort_off = False
+    verbose_output: list[str] = []
+    made_changes = False
+    for line in chain(input_stream, (None,)):
+        stripped_line = line.strip() if line is not None else ""
+        if isort_off and line is not None:
+            if stripped_line == "# isort: on":
+                isort_off = False
+            new_input += line
+        elif (
+            line is None
+            or stripped_line in ("# isort: split", "# isort: off")
+            or line.rstrip().endswith("# isort: split")
+        ):
+            if stripped_line == "# isort: off":
+                isort_off = True
+            if current:
+                before = current
+                if add_imports:
+                    line_separator = parse._infer_line_separator(line, config.line_ending)
+                    current += line_separator + line_separator.join(add_imports)
+                    add_imports = []
+                parsed = parse.file_contents(current, config=config)
+                verbose_output += parsed.verbose_output
+                extra_space = ""
+                while before.endswith(parsed.line_separator):
+                    extra_space += parsed.line_separator
+                    before = before[: -len(parsed.line_separator)]
+                extra_space = extra_space.replace(parsed.line_separator, "", 1)
+                sorted_output = output.sorted_imports(
+                    parsed,
+                    Config(config=config, lines_before_imports=-1),
+                    extension,
+                    import_type="import",
+                )
+                made_changes = made_changes or _has_changed(
+                    before=before,
+                    after=sorted_output,
+                    line_separator=parsed.line_separator,
+                    ignore_whitespace=config.ignore_whitespace,
+                )
+                new_input += sorted_output
+                new_input += extra_space
+                current = ""
+            new_input += line or ""
+        else:
+            current += line or ""
+
+    return _FloatToTopResult(
+        input_stream=StringIO(new_input),
+        verbose_output=verbose_output,
+        made_changes=made_changes,
+    )
+
+
+def _scan_quotes(
+    line: str,
+    stripped_line: str,
+    in_quote: str,
+) -> str:
+    """Return the active quote state after scanning a source line."""
+    if ((not stripped_line.startswith("#") or in_quote) and '"' in line) or "'" in line:
+        char_index = 0
+
+        while char_index < len(line):
+            if line[char_index] == "\\":
+                char_index += 1
+            elif in_quote:
+                if line[char_index : char_index + len(in_quote)] == in_quote:
+                    in_quote = ""
+            elif line[char_index] in ("'", '"'):
+                long_quote = line[char_index : char_index + 3]
+                if long_quote in ('"""', "'''"):
+                    in_quote = long_quote
+                    char_index += 2
+                else:
+                    in_quote = line[char_index]
+            elif line[char_index] == "#":
+                break
+            char_index += 1
+
+    return in_quote
+
+
+# Ignore DeepSource cyclomatic complexity check for this function.
+# skipcq: PY-R1000
+def process(
+    input_stream: TextIO,
+    output_stream: TextIO,
+    extension: str = "py",
+    raise_on_skip: bool = True,
+    config: Config = DEFAULT_CONFIG,
+) -> bool:
+    """Parses stream identifying sections of contiguous imports and sorting them
+
+    Code with unsorted imports is read from the provided `input_stream`, sorted and then
+    outputted to the specified `output_stream`.
+
+    - `input_stream`: Text stream with unsorted import sections.
+    - `output_stream`: Text stream to output sorted inputs into.
+    - `config`: Config settings to use when sorting imports. Defaults settings.
+        - *Default*: `isort.settings.DEFAULT_CONFIG`.
+    - `extension`: The file extension or file extension rules that should be used.
+        - *Default*: `"py"`.
+        - *Choices*: `["py", "pyi", "pyx"]`.
+
+    Returns `True` if there were changes that needed to be made (errors present) from what
+    was provided in the input_stream, otherwise `False`.
+    """
+    add_imports: list[str] = [format_natural(addition) for addition in config.add_imports]
+    made_changes: bool = False
+    verbose_output: list[str] = []
+
+    # Float to top processes the whole input stream first, moving any specified imports to the top
+    # and returns a new input stream to do actual processing on.
+    if config.float_to_top:
+        input_stream, verbose_output, made_changes = _float_to_top(
+            input_stream=input_stream,
+            add_imports=add_imports,
+            config=config,
+            extension=extension,
+        )
+        add_imports = []
+
+    line_separator: str = config.line_ending
+    import_section: str = ""
+    next_import_section: str = ""
+    next_cimports: bool = False
+    in_quote: str = ""
+    was_in_quote: bool = False
+    contains_imports: bool = False
+    in_top_comment: bool = False
+    first_import_section: bool = True
+    indent: str = ""
+    isort_off: bool = False
+    skip_file: bool = False
+    code_sorting: bool | str = False
+    code_sorting_section: str = ""
+    code_sorting_indent: str = ""
+    cimports: bool = False
+    stripped_line: str = ""
+    end_of_file: bool = False
+    lines_before: list[str] = []
+    is_reexport: bool = False
+    reexport_rollback: int = 0
+
+    for index, line in enumerate(chain(input_stream, (None,))):
+        if line is None:
+            if index == 0 and not config.force_adds:
+                return False
+
+            not_imports = True
+            end_of_file = True
+            line = ""
+            line_separator = parse._infer_line_separator(line, line_separator)
+
+            if code_sorting and code_sorting_section:
+                if is_reexport:
+                    # Clamp to 0: in check mode the output is a no-op stream whose tell()
+                    # stays 0, so an unclamped rollback would seek to a negative position
+                    # and raise ValueError. See PR #2576.
+                    output_stream.seek(max(0, output_stream.tell() - reexport_rollback))
+                    reexport_rollback = 0
+                sorted_code = textwrap.indent(
+                    isort.literal.assignment(
+                        code_sorting_section,
+                        str(code_sorting),
+                        extension,
+                        config=_indented_config(config, indent),
+                    ),
+                    code_sorting_indent,
+                )
+                made_changes = made_changes or _has_changed(
+                    before=code_sorting_section,
+                    after=sorted_code,
+                    line_separator=line_separator,
+                    ignore_whitespace=config.ignore_whitespace,
+                )
+                output_stream.write(sorted_code)
+                if (
+                    is_reexport
+                    # Check if we need to truncate. If we're redirecting to `devnull` we don't need
+                    # to and don't want to call `truncate()` on it, as it will raise an exception.
+                    and output_stream.tell() > 0
+                ):
+                    output_stream.truncate()
+        else:
+            stripped_line = line.strip()
+            line_separator = parse._infer_line_separator(line, line_separator)
+
+            for file_skip_comment in FILE_SKIP_COMMENTS:
+                if file_skip_comment in line:
+                    if raise_on_skip:
+                        raise FileSkipComment("Passed in content")
+                    isort_off = True
+                    skip_file = True
+
+            if not in_quote:
+                if stripped_line == "# isort: off":
+                    isort_off = True
+                elif stripped_line.startswith("# isort: dont-add-imports"):
+                    add_imports = []
+                elif stripped_line.startswith("# isort: dont-add-import:"):
+                    import_not_to_add = stripped_line.split("# isort: dont-add-import:", 1)[
+                        1
+                    ].strip()
+                    add_imports = [
+                        import_to_add
+                        for import_to_add in add_imports
+                        if import_to_add != import_not_to_add
+                    ]
+
+            if (
+                (index == 0 or (index in {1, 2} and not contains_imports))
+                and stripped_line.startswith("#")
+                and not stripped_line.startswith(PYLINT_DISABLE_NEXT_COMMENT)
+                and stripped_line not in config.section_comments
+                and stripped_line not in CODE_SORT_COMMENTS
+            ):
+                in_top_comment = True
+            elif in_top_comment and (
+                not line.startswith("#")
+                or stripped_line in config.section_comments
+                or stripped_line in CODE_SORT_COMMENTS
+            ):
+                in_top_comment = False
+
+            was_in_quote = bool(in_quote)
+            in_quote = _scan_quotes(line, stripped_line, in_quote)
+
+            not_imports = bool(in_quote) or was_in_quote or in_top_comment or isort_off
+            if not (in_quote or was_in_quote or in_top_comment):
+                if isort_off:
+                    if not skip_file and stripped_line == "# isort: on":
+                        isort_off = False
+                elif stripped_line.endswith("# isort: split"):
+                    not_imports = True
+                elif stripped_line in CODE_SORT_COMMENTS:
+                    code_sorting = stripped_line.split("isort: ")[1].strip()
+                    code_sorting_indent = line[: -len(line.lstrip())]
+                    not_imports = True
+                elif (
+                    config.sort_reexports
+                    and stripped_line.startswith("__all__")
+                    and not _has_skip_comment(stripped_line)
+                ):
+                    _, rhs = stripped_line.split("=", 1)
+                    code_sorting = LITERAL_TYPE_MAPPING.get(rhs.lstrip()[0], "tuple")
+                    code_sorting_indent = line[: -len(line.lstrip())]
+                    not_imports = True
+                    code_sorting_section += line
+                    reexport_rollback = len(line)
+                    is_reexport = True
+                elif code_sorting:
+                    if not stripped_line:
+                        sorted_code = textwrap.indent(
+                            isort.literal.assignment(
+                                code_sorting_section,
+                                str(code_sorting),
+                                extension,
+                                config=_indented_config(config, indent),
+                            ),
+                            code_sorting_indent,
+                        )
+                        made_changes = made_changes or _has_changed(
+                            before=code_sorting_section,
+                            after=sorted_code,
+                            line_separator=line_separator,
+                            ignore_whitespace=config.ignore_whitespace,
+                        )
+                        if is_reexport:
+                            # Clamp to 0 so check mode's no-op output stream (tell() == 0)
+                            # cannot produce a negative seek position. See PR #2576.
+                            output_stream.seek(max(0, output_stream.tell() - reexport_rollback))
+                            reexport_rollback = 0
+                        output_stream.write(sorted_code)
+                        if (
+                            is_reexport
+                            # Check if we need to truncate. If we're redirecting to `devnull` we
+                            # don't need to and don't want to call `truncate()` on it, as it will
+                            # raise an exception.
+                            and output_stream.tell() > 0
+                        ):
+                            output_stream.truncate()
+                        not_imports = True
+                        code_sorting = False
+                        code_sorting_section = ""
+                        code_sorting_indent = ""
+                        is_reexport = False
+                    else:
+                        code_sorting_section += line
+                        line = ""
+                elif (
+                    stripped_line in config.section_comments
+                    or stripped_line in config.section_comments_end
+                ):
+                    if import_section and not contains_imports:
+                        output_stream.write(import_section)
+                        import_section = line
+                        not_imports = False
+                    else:
+                        import_section += line
+                    indent = line[: -len(line.lstrip())]
+                elif not (stripped_line or contains_imports):
+                    not_imports = True
+                elif not stripped_line or (
+                    stripped_line.startswith("#")
+                    and (not indent or indent + line.lstrip() == line)
+                    and not config.treat_all_comments_as_code
+                    and stripped_line not in config.treat_comments_as_code
+                ):
+                    import_section += line
+                elif stripped_line.startswith(IMPORT_START_IDENTIFIERS):
+                    new_indent = line[: -len(line.lstrip())]
+                    import_statement = line
+                    stripped_line = line.strip().split("#")[0]
+                    while stripped_line.endswith("\\") or (
+                        "(" in stripped_line and ")" not in stripped_line
+                    ):
+                        if stripped_line.endswith("\\"):
+                            while stripped_line and stripped_line.endswith("\\"):
+                                line = input_stream.readline()
+                                stripped_line = line.strip().split("#")[0]
+                                import_statement += line
+                        else:
+                            while ")" not in stripped_line:
+                                line = input_stream.readline()
+
+                                if not line:  # end of file without closing parenthesis
+                                    raise ExistingSyntaxErrors("Parenthesis is not closed")
+
+                                stripped_line = line.strip().split("#")[0]
+                                import_statement += line
+
+                    # The second clause keeps a per-line ``isort: skip`` import exactly
+                    # where it is: when earlier imports have already been collected into
+                    # the current section, the skipped statement is treated as a section
+                    # boundary so those imports can't be sorted above it.  Without it, a
+                    # preceding import (most commonly a ``__future__`` import, which is
+                    # always floated to the top) makes isort splice the sorted block
+                    # ahead of the skipped line and relocate it below the block. See #2092.
+                    if (
+                        import_statement.lstrip().startswith("from")
+                        and "import" not in import_statement
+                    ) or (contains_imports and _has_skip_comment(import_statement)):
+                        line = import_statement
+                        not_imports = True
+                    else:
+                        did_contain_imports = contains_imports
+                        contains_imports = True
+
+                        cimport_statement: bool = False
+                        if (
+                            import_statement.lstrip().startswith(CIMPORT_IDENTIFIERS)
+                            or " cimport " in import_statement
+                            or " cimport*" in import_statement
+                            or " cimport(" in import_statement
+                            or (
+                                ".cimport" in import_statement
+                                and "cython.cimports" not in import_statement
+                            )  # Allow pure python imports. See #2062
+                        ):
+                            cimport_statement = True
+
+                        if cimport_statement != cimports or (
+                            new_indent != indent
+                            and import_section
+                            and (not did_contain_imports or len(new_indent) < len(indent))
+                        ):
+                            indent = new_indent
+                            if import_section:
+                                next_cimports = cimport_statement
+                                next_import_section = import_statement
+                                import_statement = ""
+                                not_imports = True
+                                line = ""
+                            else:
+                                cimports = cimport_statement
+                        else:
+                            if new_indent != indent:
+                                if import_section and did_contain_imports:
+                                    import_statement = indent + import_statement.lstrip()
+                                else:
+                                    indent = new_indent
+                        import_section += import_statement
+                else:
+                    not_imports = True
+
+        if not_imports:
+            above_import_section: str = ""
+            if not was_in_quote and config.lines_before_imports > -1:
+                # A pending ``next_import_section`` means ``line`` was emptied because an
+                # import at another indentation level starts a new section; it is not a
+                # blank line and must not be deferred, or the current section is only
+                # flushed at the end of the file and the next one is never written.
+                if line.strip() == "" and not end_of_file and not next_import_section:
+                    lines_before += line
+                    continue
+                if not import_section:
+                    output_stream.write("".join(lines_before))
+                else:
+                    above_import_section = "".join(lines_before)
+                lines_before = []
+
+            raw_import_section: str = import_section
+            if (
+                add_imports
+                and (stripped_line or end_of_file)
+                and not config.append_only
+                and not in_top_comment
+                and not was_in_quote
+                and not import_section
+                and not _is_comment_or_string_start(line)
+                and not (line.rstrip().endswith(DOCSTRING_INDICATORS) and "=" not in line)
+            ):
+                import_section = line_separator.join(add_imports) + line_separator
+                if end_of_file and index != 0:
+                    output_stream.write(line_separator)
+                contains_imports = True
+                add_imports = []
+
+            if next_import_section and not import_section:  # pragma: no cover
+                raw_import_section = import_section = next_import_section
+                next_import_section = ""
+
+            if import_section:
+                if add_imports and (contains_imports or not config.append_only) and not indent:
+                    import_section = (
+                        line_separator.join(add_imports) + line_separator + import_section
+                    )
+                    contains_imports = True
+                    add_imports = []
+
+                if not indent:
+                    import_section += line
+                    raw_import_section += line
+                if not contains_imports:
+                    output_stream.write(above_import_section + import_section)
+
+                else:
+                    leading_whitespace = import_section[: -len(import_section.lstrip())]
+                    trailing_whitespace = import_section[len(import_section.rstrip()) :]
+                    if first_import_section and not import_section.lstrip(
+                        line_separator
+                    ).startswith(COMMENT_INDICATORS):
+                        import_section = import_section.lstrip(line_separator)
+                        raw_import_section = raw_import_section.lstrip(line_separator)
+                        first_import_section = False
+
+                    if indent:
+                        import_section = "".join(
+                            line[len(indent) :] if line.startswith(indent) else line
+                            for line in import_section.splitlines(keepends=True)
+                        )
+
+                    parsed_content = parse.file_contents(import_section, config=config)
+                    verbose_output += parsed_content.verbose_output
+
+                    sorted_import_section = output.sorted_imports(
+                        parsed_content,
+                        _indented_config(config, indent),
+                        extension,
+                        import_type="cimport" if cimports else "import",
+                    )
+                    if not (import_section.strip() and not sorted_import_section):
+                        if indent:
+                            sorted_import_section = (
+                                leading_whitespace
+                                + textwrap.indent(sorted_import_section, indent).strip()
+                                + trailing_whitespace
+                            )
+
+                        made_changes = made_changes or _has_changed(
+                            before=above_import_section + raw_import_section,
+                            after=sorted_import_section,
+                            line_separator=line_separator,
+                            ignore_whitespace=config.ignore_whitespace,
+                        )
+                        output_stream.write(sorted_import_section)
+                        if (
+                            not line
+                            and not indent
+                            and next_import_section
+                            and config.lines_before_imports == -1
+                        ):
+                            # With ``lines_before_imports`` set, the next section is
+                            # already preceded by exactly that many blank lines.
+                            output_stream.write(line_separator)
+
+                if indent:
+                    output_stream.write(line)
+                    if not next_import_section:
+                        indent = ""
+
+                if next_import_section:
+                    cimports = next_cimports
+                    contains_imports = True
+                else:
+                    contains_imports = False
+                import_section = next_import_section
+                next_import_section = ""
+            else:
+                output_stream.write(line)
+                not_imports = False
+
+            if stripped_line and not in_quote and not import_section and not next_import_section:
+                if stripped_line == "yield":
+                    while not stripped_line or stripped_line == "yield":
+                        new_line = input_stream.readline()
+                        if not new_line:
+                            break
+
+                        output_stream.write(new_line)
+                        stripped_line = new_line.strip().split("#")[0]
+
+                if stripped_line.startswith(("raise", "yield")):
+                    while stripped_line.endswith("\\"):
+                        new_line = input_stream.readline()
+                        if not new_line:
+                            break
+
+                        output_stream.write(new_line)
+                        stripped_line = new_line.strip().split("#")[0]
+
+    if made_changes and config.only_modified:
+        for output_str in verbose_output:
+            print(output_str)
+
+    return made_changes
+
+
+def _indented_config(config: Config, indent: str) -> Config:
+    if not indent:
+        return config
+
+    return Config(
+        config=config,
+        line_length=max(config.line_length - len(indent), 0),
+        wrap_length=max(config.wrap_length - len(indent), 0),
+        lines_after_imports=1,
+        import_headings=config.import_headings if config.indented_import_headings else {},
+        import_footers=config.import_footers if config.indented_import_headings else {},
+    )
+
+
+def _has_changed(before: str, after: str, line_separator: str, ignore_whitespace: bool) -> bool:
+    if ignore_whitespace:
+        return (
+            remove_whitespace(before, line_separator=line_separator).strip()
+            != remove_whitespace(after, line_separator=line_separator).strip()
+        )
+    return before.rstrip() != after.rstrip()

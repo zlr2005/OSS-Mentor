@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 271973927,
+      "login": "rafaelfiguereod-stack",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-17T10:18:54Z",
+      "committer_at": "2026-09-17T10:18:54Z",
+      "tree_sha": "43eb02bc057d60c4c3cd613546df139be9b96796"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3b2e2866b6c5ed3a69d33f22d3e857cf124148b5"
+  },
+  "observed_at": "2026-10-26T05:56:24.195013+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9da6fe59253627fadaf20959a09879461c0d4dcf2946873c63f67d0f5e1d3ffe",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7bc57e9c5f69c7d577175ebd905b0c1185f3318e2a303cc7dbaff98a400f48cc",
+  "source_url": "https://api.github.com/repos/BloopAI/vibe-kanban/commits/3b2e2866b6c5ed3a69d33f22d3e857cf124148b5?per_page=100",
+  "status_code": 200
+}

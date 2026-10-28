@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "astral-sh/uv",
+    "id": 699532645,
+    "language": "Rust",
+    "private": false,
+    "size": 224610
+  },
+  "observed_at": "2026-10-26T05:46:58.104907+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0699bcc21e91db03e92a5193619f960f5071de95499974160c6c08d8fc22edf6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2d2e624605d756ea15b0528b162be3cab8ed7ecf7c727069f2fba6a0e242dd87",
+  "source_url": "https://api.github.com/repos/astral-sh/uv",
+  "status_code": 200
+}

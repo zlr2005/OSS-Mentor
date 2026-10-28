@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-10-23T06:02:14Z",
+      "committer_at": "2026-10-23T06:10:09Z",
+      "tree_sha": "9fc73e225bb8a8520e130c856b74e0bdf47d51ad"
+    },
+    "committer": {},
+    "sha": "b3d9dc4c5667ccfc075135345337b31c377826d4"
+  },
+  "observed_at": "2026-10-26T16:51:26.662059+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dd45fb5ab5541f7aa55277ef2d008b16c4960880b15b9e80bb45cb525408f646",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "840fed1bee00ed02370a2ddb8680cdaab82f2d61cd137d72712bd456eb894c27",
+  "source_url": "https://api.github.com/repos/apache/netbeans/commits/b3d9dc4c5667ccfc075135345337b31c377826d4?per_page=100",
+  "status_code": 200
+}

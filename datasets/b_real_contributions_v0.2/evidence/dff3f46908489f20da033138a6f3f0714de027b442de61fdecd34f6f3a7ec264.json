@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 93092234,
+      "login": "digit50",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-16T08:41:03Z",
+      "committer_at": "2026-10-21T21:56:17Z",
+      "tree_sha": "17f56e4a0991422754619caa9e723e8b9d47d603"
+    },
+    "committer": {
+      "id": 1909233,
+      "login": "Tinche",
+      "type": "User"
+    },
+    "sha": "5723ff7c325f949567c6e5f7dd4f4c269e12464a"
+  },
+  "observed_at": "2026-10-26T13:16:04.538997+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "833b1062f42a47ebec8d2c8acd7fc9fb2f7551fde148de197da2deac49631c55",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cf37880edeaa9440f9bde6c92fda0a019fdcb6f334f8e88db3f12bd27a5ed0d8",
+  "source_url": "https://api.github.com/repos/python-attrs/cattrs/commits/5723ff7c325f949567c6e5f7dd4f4c269e12464a?per_page=100",
+  "status_code": 200
+}

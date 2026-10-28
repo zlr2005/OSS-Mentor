@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1caac6f43966e410bd6d6badccb57bed1cfc6ae6",
+    "size": 7373
+  },
+  "observed_at": "2026-10-26T13:35:38.978247+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c31b1f690587de6e2c9ed60b154dbf64ccfd0657e476613486eb4999934efb68",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "25c9e75ab3b34c1c9da8fc93fbc17d8e52b8cdcb968a764729e5dd48193b094d",
+  "source_url": "https://api.github.com/repos/redis/lettuce/git/blobs/1caac6f43966e410bd6d6badccb57bed1cfc6ae6",
+  "status_code": 200
+}

@@ -1,0 +1,8 @@
+    description = 'Spring Integration CloudEvents Support'
+
+    dependencies {
+        api 'io.cloudevents:cloudevents-core'
+
+        testImplementation 'io.cloudevents:cloudevents-json-jackson'
+		testImplementation 'io.cloudevents:cloudevents-xml'
+    }

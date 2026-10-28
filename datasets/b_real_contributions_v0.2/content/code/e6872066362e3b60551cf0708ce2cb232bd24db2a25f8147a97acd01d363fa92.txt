@@ -1,0 +1,225 @@
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2023 HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package command
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/opentofu/opentofu/internal/addrs"
+	"github.com/opentofu/opentofu/internal/backend"
+	"github.com/opentofu/opentofu/internal/command/arguments"
+	"github.com/opentofu/opentofu/internal/command/views"
+	"github.com/opentofu/opentofu/internal/configs/configload"
+	"github.com/opentofu/opentofu/internal/repl"
+	"github.com/opentofu/opentofu/internal/tfdiags"
+	"github.com/opentofu/opentofu/internal/tofu"
+)
+
+func ConsoleCommander() Command {
+	cmd := Command{
+		Name:  "console",
+		Short: "Try OpenTofu expressions at an interactive command prompt",
+		Long: `Starts an interactive console for experimenting with OpenTofu interpolations.
+
+This will open an interactive console that you can use to type interpolations into and inspect their values. This command loads the current state. This lets you explore and test interpolations before using them in future configurations.
+
+This command will never modify your state.`,
+
+		DiagsWithNewline: true,
+	}
+
+	args := arguments.BindConsole(&cmd.CommandLine)
+	cmd.Run = func(meta Meta) int {
+		return ConsoleCommand{meta}.Execute(args, views.NewConsole(args.View, meta.View))
+	}
+
+	return cmd
+}
+
+// ConsoleCommand is a Command implementation that starts an interactive
+// console that can be used to try expressions with the current config.
+type ConsoleCommand struct {
+	Meta
+}
+
+func (c ConsoleCommand) Execute(args *arguments.Console, view views.Console) int {
+	var diags tfdiags.Diagnostics
+
+	ctx := c.CommandContext()
+
+	configPath := c.WorkingDir.NormalizePath(c.WorkingDir.RootModuleDir())
+
+	// Check for user-supplied plugin path
+	var err error
+	if c.pluginPath, err = c.loadPluginPath(); err != nil {
+		view.Diagnostics(diags.Append(tfdiags.Sourceless(
+			tfdiags.Error,
+			"Plugins loading error",
+			fmt.Sprintf("Error loading plugin path: %s", err),
+		)))
+		return 1
+	}
+
+	// Load the encryption configuration
+	enc, encDiags := c.EncryptionFromPath(ctx, configPath)
+	diags = diags.Append(encDiags)
+	if encDiags.HasErrors() {
+		view.Diagnostics(diags)
+		return 1
+	}
+
+	backendConfig, backendDiags := c.loadBackendConfig(ctx, configPath)
+	diags = diags.Append(backendDiags)
+	if diags.HasErrors() {
+		view.Diagnostics(diags)
+		return 1
+	}
+
+	// Load the backend
+	b, backendDiags := c.Backend(ctx, &BackendOpts{
+		Config: backendConfig,
+		View:   view.Backend(),
+	}, enc.State())
+	diags = diags.Append(backendDiags)
+	if backendDiags.HasErrors() {
+		view.Diagnostics(diags)
+		return 1
+	}
+
+	// We require a local backend
+	local, ok := b.(backend.Local)
+	if !ok {
+		view.Diagnostics(diags) // in case of any warnings in here
+		view.UnsupportedLocalOp()
+		return 1
+	}
+
+	// This is a read-only command
+	c.ignoreRemoteVersionConflict(b)
+
+	// Build the operation
+	opReq := c.Operation(ctx, b, view.Backend(), enc)
+	opReq.ConfigDir = configPath
+	opReq.ConfigLoader, err = configload.Initialise(c.configLoader())
+	opReq.AllowUnsetVariables = true // we'll just evaluate them as unknown
+	if err != nil {
+		diags = diags.Append(err)
+		view.Diagnostics(diags)
+		return 1
+	}
+
+	{
+		// Setup required variables/call for operation (usually done in Meta.RunOperation)
+		var moreDiags, callDiags tfdiags.Diagnostics
+		opReq.Variables, moreDiags = c.collectVariableValues()
+		opReq.RootCall, callDiags = c.rootModuleCall(ctx, opReq.ConfigDir)
+		diags = diags.Append(moreDiags).Append(callDiags)
+		if moreDiags.HasErrors() {
+			view.Diagnostics(diags)
+			return 1
+		}
+	}
+
+	// Get the context
+	stopCtx, cancel := c.InterruptibleContext(ctx)
+	defer cancel()
+	lr, _, ctxDiags := local.LocalRun(ctx, stopCtx, opReq)
+	diags = diags.Append(ctxDiags)
+	if ctxDiags.HasErrors() {
+		view.Diagnostics(diags)
+		return 1
+	}
+
+	// Successfully creating the context can result in a lock, so ensure we release it
+	defer func() {
+		diags := opReq.StateLocker.Unlock()
+		if diags.HasErrors() {
+			view.Diagnostics(diags)
+		}
+	}()
+
+	evalOpts := &tofu.EvalOpts{}
+	if lr.PlanOpts != nil {
+		// the LocalRun type is built primarily to support the main operations,
+		// so the variable values end up in the "PlanOpts" even though we're
+		// not actually making a plan.
+		evalOpts.SetVariables = lr.PlanOpts.SetVariables
+	}
+
+	// Before we can evaluate expressions, we must compute and populate any
+	// derived values (input variables, local values, output values)
+	// that are not stored in the persistent state.
+	scope, done, scopeDiags := lr.Core.Eval(ctx, lr.Config, lr.InputState, addrs.RootModuleInstance, evalOpts)
+	defer func() {
+		err := done(ctx)
+		if err != nil {
+			view.Diagnostics(tfdiags.New(err))
+		}
+	}()
+	diags = diags.Append(scopeDiags)
+	if scope == nil {
+		// scope is nil if there are errors so bad that we can't even build a scope.
+		// Otherwise, we'll try to eval anyway.
+		view.Diagnostics(diags)
+		return 1
+	}
+
+	// set the ConsoleMode to true so any available console-only functions included.
+	scope.ConsoleMode = true
+
+	if diags.HasErrors() {
+		diags = diags.Append(tfdiags.SimpleWarning("Due to the problems above, some expressions may produce unexpected results."))
+	}
+
+	// Before we become interactive we'll show any diagnostics we encountered
+	// during initialization, and then afterwards the driver will manage any
+	// further diagnostics itself.
+	view.Diagnostics(diags)
+
+	// IO Loop
+	session := &repl.Session{
+		Scope: scope,
+	}
+
+	// Determine if stdin is a pipe. If so, we evaluate directly.
+	if c.View.StdinPiped() {
+		return c.modePiped(session, view)
+	}
+
+	return c.modeInteractive(session, view)
+}
+
+func (c *ConsoleCommand) modePiped(session *repl.Session, view views.Console) int {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	var consoleState consoleBracketState
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// we check if there is no escaped new line at the end, or any open brackets
+		// if we have neither, then we can execute
+		fullCommand, bracketState := consoleState.UpdateState(line)
+		if bracketState <= 0 {
+			result, exit, diags := session.Handle(fullCommand)
+			if diags.HasErrors() {
+				// We're in piped mode, so we'll exit immediately on error.
+				view.Diagnostics(diags)
+				return 1
+			}
+			if exit {
+				return 0
+			}
+			// Output the result
+			view.Output(result)
+		}
+	}
+
+	return 0
+}

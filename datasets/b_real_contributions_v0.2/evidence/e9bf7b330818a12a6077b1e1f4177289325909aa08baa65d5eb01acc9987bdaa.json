@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 273514718,
+      "login": "void-ptr974",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T15:31:01Z",
+      "committer_at": "2026-10-24T15:31:01Z",
+      "tree_sha": "416dcc34ed84588b93b864ce131c12877fa238e8"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a038d6b2fa8683edf1deedfb9a59523a1776ee0f"
+  },
+  "observed_at": "2026-10-26T05:30:56.886086+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8d2f8e19a04c070c0d9056b01ccec494facb9501e77589d31d171258e4e8eb59",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7a1c9e19b89cd1830224f1b45a7e9d2412e22f0f3a655dd73729245b081ab9ab",
+  "source_url": "https://api.github.com/repos/apache/pulsar/commits/a038d6b2fa8683edf1deedfb9a59523a1776ee0f?per_page=100",
+  "status_code": 200
+}

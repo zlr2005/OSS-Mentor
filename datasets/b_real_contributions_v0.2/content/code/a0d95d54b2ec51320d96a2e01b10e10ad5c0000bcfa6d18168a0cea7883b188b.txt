@@ -1,0 +1,248 @@
+"""
+Benchmark attrs using CodSpeed.
+"""
+
+from __future__ import annotations
+
+import functools
+import time
+
+import pytest
+
+import attrs
+
+
+pytestmark = pytest.mark.benchmark()
+
+ROUNDS = 1_000
+
+
+def test_create_simple_class():
+    """
+    Benchmark creating  a simple class without any extras.
+    """
+    for _ in range(ROUNDS):
+
+        @attrs.define
+        class LocalC:
+            x: int
+            y: str
+            z: dict[str, int]
+
+
+def test_create_frozen_class():
+    """
+    Benchmark creating a frozen class without any extras.
+    """
+    for _ in range(ROUNDS):
+
+        @attrs.frozen
+        class LocalC:
+            x: int
+            y: str
+            z: dict[str, int]
+
+        LocalC(1, "2", {})
+
+
+def test_create_simple_class_make_class():
+    """
+    Benchmark creating a simple class using attrs.make_class().
+    """
+    for i in range(ROUNDS):
+        LocalC = attrs.make_class(
+            f"LocalC{i}",
+            {
+                "x": attrs.field(type=int),
+                "y": attrs.field(type=str),
+                "z": attrs.field(type=dict[str, int]),
+            },
+        )
+
+        LocalC(1, "2", {})
+
+
+@attrs.define
+class C:
+    x: int = 0
+    y: str = "foo"
+    z: dict[str, int] = attrs.Factory(dict)
+
+
+def test_instantiate_no_defaults():
+    """
+    Benchmark instantiating a class without using any defaults.
+    """
+    for _ in range(ROUNDS):
+        C(1, "2", {})
+
+
+def test_instantiate_with_defaults():
+    """
+    Benchmark instantiating a class relying on defaults.
+    """
+    for _ in range(ROUNDS):
+        C()
+
+
+def test_eq_equal():
+    """
+    Benchmark comparing two equal instances for equality.
+    """
+    c1 = C()
+    c2 = C()
+
+    for _ in range(ROUNDS):
+        c1 == c2
+
+
+def test_eq_unequal():
+    """
+    Benchmark comparing two unequal instances for equality.
+    """
+    c1 = C()
+    c2 = C(1, "bar", {"baz": 42})
+
+    for _ in range(ROUNDS):
+        c1 == c2
+
+
+@attrs.frozen
+class HashableC:
+    x: int = 0
+    y: str = "foo"
+    z: tuple[str] = ("bar",)
+
+
+def test_hash():
+    """
+    Benchmark hashing an instance.
+    """
+    c = HashableC()
+
+    for _ in range(ROUNDS):
+        hash(c)
+
+
+def test_asdict_complicated():
+    """
+    Benchmark instances with non-shortcut fields.
+    """
+    c = C()
+    ad = attrs.asdict
+
+    for _ in range(ROUNDS):
+        ad(c)
+
+
+def test_astuple_complicated():
+    """
+    Benchmark instances with non-shortcut fields.
+    """
+    c = C()
+    at = attrs.astuple
+
+    for _ in range(ROUNDS):
+        at(c)
+
+
+@attrs.define
+class AtomicFields:
+    a: int = 0
+    b: Ellipsis = ...
+    c: str = "foo"
+    d: tuple[str] = "bar"
+    e: complex = 0j
+
+
+def test_asdict_atomic():
+    """
+    Benchmark atomic-only instances.
+    """
+    c = AtomicFields()
+    ad = attrs.asdict
+
+    for _ in range(ROUNDS):
+        ad(c)
+
+
+def test_astuple_atomic():
+    """
+    Benchmark atomic-only instances.
+    """
+    c = AtomicFields()
+    at = attrs.astuple
+
+    for _ in range(ROUNDS):
+        at(c)
+
+
+@attrs.define
+class NestedAtomicFields:
+    sequence: list[int] = attrs.Factory(lambda: list(range(100)))
+
+
+def test_astuple_nested_atomic():
+    """
+    Benchmark atomic values nested in a sequence.
+    """
+    c = NestedAtomicFields()
+    at = attrs.astuple
+
+    for _ in range(ROUNDS):
+        at(c)
+
+
+class TestCachedProperties:
+    @attrs.define
+    class Slotted:
+        x: int = 0
+
+        @functools.cached_property
+        def cached(self):
+            time.sleep(0.1)
+            return 42
+
+    @attrs.define(slots=False)
+    class Unslotted:
+        x: int = 0
+
+        @functools.cached_property
+        def cached(self):
+            time.sleep(0.1)
+            return 42
+
+    def test_first_access(self):
+        """
+        Benchmark first access to a cached property (computation + storage).
+        """
+        for _ in range(ROUNDS):
+            c = self.Slotted(42)
+            _ = c.cached
+
+    def test_repeated_access(self):
+        """
+        Benchmark repeated access to a cached property (should use stored
+        value).
+        """
+        c = self.Slotted(42)
+        _ = c.cached  # Prime the cache
+
+        for _ in range(ROUNDS):
+            _ = c.cached
+
+    def test_create_cached_property_class(self):
+        """
+        Benchmark creating a class with a cached property
+        """
+        for _ in range(ROUNDS):
+
+            @attrs.define
+            class LocalC:
+                x: int
+                y: str
+                z: dict[str, int]
+
+                @functools.cached_property
+                def cached(self):
+                    return 42

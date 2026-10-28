@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 94130,
+      "login": "jackc",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T01:42:35Z",
+      "committer_at": "2026-10-17T01:42:35Z",
+      "tree_sha": "ce3793f10588d75897288f4561085214f9d32c70"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "306fe3c4d9ab317b5a01dc8306a0cd8bcf3a0f4c"
+  },
+  "observed_at": "2026-10-26T07:43:53.296149+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9fc443fe62a535c66cfc13dcb3e70b285199ecb5964e7ee2af1d380a8f90ef81",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "60443ab028c88923e4693372c2cf218da4b2e0015f04cbbde0470680fa8e7a5f",
+  "source_url": "https://api.github.com/repos/jackc/pgx/commits/306fe3c4d9ab317b5a01dc8306a0cd8bcf3a0f4c?per_page=100",
+  "status_code": 200
+}

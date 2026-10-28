@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1522c5c3f55b6a420286f836919f98084bc0df39",
+    "size": 10507
+  },
+  "observed_at": "2026-10-26T06:43:02.364396+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cc7211cbb4d17428da64b280bec5b2b24d53515d4742ba3223604e2575c39568",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0d9715809209f02e87ca98e044e8dc0e473999a53f844bb2a92aead2a2d1e805",
+  "source_url": "https://api.github.com/repos/facebook/docusaurus/git/blobs/1522c5c3f55b6a420286f836919f98084bc0df39",
+  "status_code": 200
+}

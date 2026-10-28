@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "37eba01b75e530dc6cfe35be6694bdc8d5935b7b",
+    "size": 24841
+  },
+  "observed_at": "2026-10-26T07:05:24.094992+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "40ba1a293ccfc7a26aa9c4446698206d8ef887f128a82fb25747e828a4dd656b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a941d573bde2c2403ce468ee97056270160c87906d97f17c57b54020923cf217",
+  "source_url": "https://api.github.com/repos/google/error-prone/git/blobs/37eba01b75e530dc6cfe35be6694bdc8d5935b7b",
+  "status_code": 200
+}

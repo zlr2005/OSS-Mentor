@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 100520587,
+      "login": "Metastarx",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T09:22:17Z",
+      "committer_at": "2026-10-22T09:22:17Z",
+      "tree_sha": "c5da304b7f01fb817afdd153422e67a12c0ecf5c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "391f8ab00980908af7604f2534c3826e44b0c3c4"
+  },
+  "observed_at": "2026-10-26T05:32:19.156796+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9e9f58d97a56e94a0544b5c2975b6cc24e7ffeece2dacbaffdb3ff646aeabe1d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e805adce0201e6c93f811de7005b8ccd8ad103ad00e312956f5c4a0500b92ecc",
+  "source_url": "https://api.github.com/repos/apache/rocketmq/commits/391f8ab00980908af7604f2534c3826e44b0c3c4?per_page=100",
+  "status_code": 200
+}

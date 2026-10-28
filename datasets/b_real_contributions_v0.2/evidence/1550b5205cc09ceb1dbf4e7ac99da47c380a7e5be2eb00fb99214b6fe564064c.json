@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 41898282,
+      "login": "github-actions[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-06-04T15:15:56Z",
+      "committer_at": "2026-06-04T15:15:56Z",
+      "tree_sha": "f2d27ce0df569af4bd8c665e3f3d787710d390d7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "efafcf8d029faa3d1ab74b5ec98d620112af859d"
+  },
+  "observed_at": "2026-10-26T08:30:26.148090+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ce3d5f209a13cdaa835334cac8f41c0d289277b6464eca4784efcaff7c75b368",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a45b5d6a1cbb6c9f1107e24a3d60bf42fa24cab1791ee824abdfe67fd999906e",
+  "source_url": "https://api.github.com/repos/npm/node-semver/commits/efafcf8d029faa3d1ab74b5ec98d620112af859d?per_page=100",
+  "status_code": 200
+}

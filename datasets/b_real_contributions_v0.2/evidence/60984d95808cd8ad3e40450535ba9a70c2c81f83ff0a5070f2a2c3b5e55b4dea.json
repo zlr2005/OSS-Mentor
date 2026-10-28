@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 61804231,
+      "login": "kamilkrzywanski",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T07:38:40Z",
+      "committer_at": "2026-10-22T07:38:40Z",
+      "tree_sha": "096b566cdfbd037b8009bccc105ad63309d5673b"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8d7d3c5d1c7f4e5fcf670e2531fb559ea516070c"
+  },
+  "observed_at": "2026-10-26T05:22:14.304391+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "19b3e5b167785eeff3a9be477e941b36cc721ca293ccd61dedb87cb3dff15c63",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8a90af51af7bf0132ff5c1daa1a52a18631ed07c6682919fcf3fcd02ea10dfd3",
+  "source_url": "https://api.github.com/repos/apache/logging-log4j2/commits/8d7d3c5d1c7f4e5fcf670e2531fb559ea516070c?per_page=100",
+  "status_code": 200
+}

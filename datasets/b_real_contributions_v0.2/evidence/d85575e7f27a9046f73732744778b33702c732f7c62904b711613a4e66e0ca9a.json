@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4cdeaeca4ee786e286b9ac5aa4942a60cb8a029f",
+    "size": 1944
+  },
+  "observed_at": "2026-10-26T07:26:27.088761+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3e53871c85d7c83d114755cb434e5c85abfe51f3db2919d6e24f5faa237c5175",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ef6d6b51738a4b8a18312aedc5ab13c57aa065f5bef1e326ff416d8b107d8ff2",
+  "source_url": "https://api.github.com/repos/hoppscotch/hoppscotch/git/blobs/4cdeaeca4ee786e286b9ac5aa4942a60cb8a029f",
+  "status_code": 200
+}

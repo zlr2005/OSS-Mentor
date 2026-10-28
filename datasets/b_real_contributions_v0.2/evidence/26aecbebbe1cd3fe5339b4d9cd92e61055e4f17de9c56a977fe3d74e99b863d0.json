@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 117777,
+      "login": "wez",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-10T07:19:14Z",
+      "committer_at": "2026-10-10T07:39:11Z",
+      "tree_sha": "9b06e07aabbfa5d27ce8f5105ef839fd0b4a74d8"
+    },
+    "committer": {
+      "id": 117777,
+      "login": "wez",
+      "type": "User"
+    },
+    "sha": "9b919222ca18b985d51949b69d06b8d8fb7fa166"
+  },
+  "observed_at": "2026-10-27T16:32:17.606519+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "44afdcbf3f40b365b106a9b64295818008dc9a491271cc760892732e3791775b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e580ac1b4be31f208007826f4f208b0f88072ed358d90bc97cd5335598678be8",
+  "source_url": "https://api.github.com/repos/wezterm/wezterm/commits/9b919222ca18b985d51949b69d06b8d8fb7fa166?per_page=100",
+  "status_code": 200
+}

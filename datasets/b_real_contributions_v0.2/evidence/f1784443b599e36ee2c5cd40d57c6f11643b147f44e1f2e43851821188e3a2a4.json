@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "d948454a2d40a7e37af8ddc01658037280218e1a",
+    "size": 9625
+  },
+  "observed_at": "2026-10-26T05:34:46.297609+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c755ec3e2fb6f74bfd593f9ae809a59e23dcc8a02cc88f50214348e2cabcde9a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d9194e7de2408f73a6b0ff3fd491a410368fda434ec542da09de1febf578fdb5",
+  "source_url": "https://api.github.com/repos/apache/seatunnel/git/blobs/d948454a2d40a7e37af8ddc01658037280218e1a",
+  "status_code": 200
+}

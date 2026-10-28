@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/iceberg",
+    "id": 158256479,
+    "language": "Java",
+    "private": false,
+    "size": 117040
+  },
+  "observed_at": "2026-10-26T05:16:06.801076+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "acf3e802152c09b25609733fbb258721f3eba39fdbe96bfdaea0a8ff3264d514",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "26f4877fc3eb93f4ca6969de579f3b58c33257720f4150ca0f5dce0068df6da8",
+  "source_url": "https://api.github.com/repos/apache/iceberg",
+  "status_code": 200
+}

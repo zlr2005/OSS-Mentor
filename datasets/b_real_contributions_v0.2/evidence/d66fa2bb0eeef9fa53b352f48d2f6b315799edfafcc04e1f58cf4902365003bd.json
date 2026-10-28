@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4db8c3a99ede173c00d070c5decc2f8699572be3",
+    "size": 11221
+  },
+  "observed_at": "2026-10-26T07:40:46.685754+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "550a866710851ec0739e57cc4f75909d6d00ec585fb1fe5be309e72a02e60769",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c5c179a31f42eef260a9c47689a52d347c070a208c99fe782c5b7fad86681173",
+  "source_url": "https://api.github.com/repos/immerjs/immer/git/blobs/4db8c3a99ede173c00d070c5decc2f8699572be3",
+  "status_code": 200
+}

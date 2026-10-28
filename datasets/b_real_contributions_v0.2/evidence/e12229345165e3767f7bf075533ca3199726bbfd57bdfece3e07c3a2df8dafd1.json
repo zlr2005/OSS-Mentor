@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 928074,
+      "login": "Darksonn",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T10:56:03Z",
+      "committer_at": "2026-10-25T10:56:09Z",
+      "tree_sha": "583834f4a34491478334971300484560c440b3af"
+    },
+    "committer": {
+      "id": 928074,
+      "login": "Darksonn",
+      "type": "User"
+    },
+    "sha": "b77914aa963f8d71a0ab4f97f95a511b06a25ff8"
+  },
+  "observed_at": "2026-10-26T15:13:16.127383+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "04c7b903d960a6b33c94baa011e1ce19c4674876ff56723f55e1a8d998f9ae40",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4c3d8480559fb848f94673cf3ceaab92f9c8b9f57f132031e2f1698e5a1eb918",
+  "source_url": "https://api.github.com/repos/tokio-rs/tokio/commits/b77914aa963f8d71a0ab4f97f95a511b06a25ff8?per_page=100",
+  "status_code": 200
+}

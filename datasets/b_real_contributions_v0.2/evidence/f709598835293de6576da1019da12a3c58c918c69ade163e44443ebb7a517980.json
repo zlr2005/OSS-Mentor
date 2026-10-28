@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e550f3d3095dac3f60c9c449fa0117b059900962",
+    "size": 12079
+  },
+  "observed_at": "2026-10-27T15:05:08.191842+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8d7dfccf0842606fb7af3bad0c026e3e642285df352c986f0e6a972247488b5d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e3813a406178679d7e2df656e5359df6030f148b055b2bb39b42ba15df28d48e",
+  "source_url": "https://api.github.com/repos/OpenAPITools/openapi-generator/git/blobs/e550f3d3095dac3f60c9c449fa0117b059900962",
+  "status_code": 200
+}

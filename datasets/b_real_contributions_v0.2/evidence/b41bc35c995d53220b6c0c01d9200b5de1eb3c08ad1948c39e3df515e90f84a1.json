@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 61218022,
+      "login": "itsjunetime",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-09T13:55:22Z",
+      "committer_at": "2026-10-09T13:55:22Z",
+      "tree_sha": "5dfeabce19ee65a80580fda106f45bd4dc866161"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "db5e784448bd12429eb94d1e689f5c4b82621944"
+  },
+  "observed_at": "2026-10-26T15:14:10.593020+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9ad490c5dcd0c488ca9a8a082dba0d1d4a21d5b212aef3057715d2c460ba15be",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d01e0344b0da5da30c235e55fcaa783987e9f67fb30e9e255d5c2a9ac639ad10",
+  "source_url": "https://api.github.com/repos/tokio-rs/tracing/commits/db5e784448bd12429eb94d1e689f5c4b82621944?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b1ca26574f96a51f31b1ccc55a470ad4f6740bab",
+    "size": 5574
+  },
+  "observed_at": "2026-10-26T06:17:16.890511+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7272706a211d29e455b40d906e6f8b0f2006aa6b1709b11f489f5f92d96a2ad5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e892fe395306b52c65ec1d7d42e087c81d8f21cd6b56069a84bc14465cb4e38c",
+  "source_url": "https://api.github.com/repos/dbeaver/dbeaver/git/blobs/b1ca26574f96a51f31b1ccc55a470ad4f6740bab",
+  "status_code": 200
+}

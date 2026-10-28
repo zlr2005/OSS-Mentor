@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 9048635,
+      "login": "Titus-von-Koeller",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T10:01:43Z",
+      "committer_at": "2026-10-19T10:01:43Z",
+      "tree_sha": "8b2219e1c3f818f58af1e0e80617331e89404f64"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ffc870d6dc2ef8b8277b1c942ff8eaba171532f1"
+  },
+  "observed_at": "2026-10-26T07:26:45.439135+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b20ae348651029d88446018397715270ff641c6bae492a8f586fd9912925675b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5519f3fe307e9ac38a88bc5a24c8100b272c27f86793cb5336e7b82e9e6390f3",
+  "source_url": "https://api.github.com/repos/huggingface/accelerate/commits/ffc870d6dc2ef8b8277b1c942ff8eaba171532f1?per_page=100",
+  "status_code": 200
+}

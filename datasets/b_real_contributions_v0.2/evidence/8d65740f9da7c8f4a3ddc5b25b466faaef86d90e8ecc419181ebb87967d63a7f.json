@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 108283560,
+      "login": "playlikeboy",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T07:24:44Z",
+      "committer_at": "2026-10-25T07:25:58Z",
+      "tree_sha": "648c3cd9e779cb3ccc548b8c102c3d3df4c57364"
+    },
+    "committer": {
+      "id": 108283560,
+      "login": "playlikeboy",
+      "type": "User"
+    },
+    "sha": "b21ad22e5dd99f579cbf094f0c9fcc8cfb299e29"
+  },
+  "observed_at": "2026-10-26T08:50:31.388155+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "092f6ebce8cddb53d8dfce1e489beb73d731ecb946d99ef0b27873a9b0c02e94",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f5e613c83159d25e6518db94101318d7f8acbf32ed922f631f30c69003e9455",
+  "source_url": "https://api.github.com/repos/preactjs/preact/commits/b21ad22e5dd99f579cbf094f0c9fcc8cfb299e29?per_page=100",
+  "status_code": 200
+}

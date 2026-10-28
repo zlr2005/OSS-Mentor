@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8d0a524f4755db6e47d7974347a60317285a8460",
+    "size": 44049
+  },
+  "observed_at": "2026-10-26T06:15:38.286578+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9123fe997d0e749008677029b33aaa776694a3da3dd8eee78982c475f0a9e366",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "349dd0af21faf62fe6638fe05150ce1ebc4ee45a7a0871611b0b3cfe76d09bc6",
+  "source_url": "https://api.github.com/repos/dask/distributed/git/blobs/8d0a524f4755db6e47d7974347a60317285a8460",
+  "status_code": 200
+}

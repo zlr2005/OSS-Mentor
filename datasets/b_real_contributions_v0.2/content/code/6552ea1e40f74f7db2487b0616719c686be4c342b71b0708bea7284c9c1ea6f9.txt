@@ -1,0 +1,5565 @@
+import dataclasses
+import gc
+import json
+import logging
+import os
+import pathlib
+import re
+import sys
+import threading
+import time
+import typing
+import uuid
+import warnings
+import weakref
+from collections.abc import Callable, Hashable
+from collections.abc import Set as AbstractSet
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, date, datetime
+from enum import Enum, IntEnum
+from pathlib import Path
+from typing import Annotated, Any, ClassVar, Generic, Literal, TypeVar
+from unittest import mock
+
+import pytest
+from annotated_types import Len, MinLen
+from pydantic import (
+    AfterValidator,
+    AliasChoices,
+    AliasGenerator,
+    AliasPath,
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    HttpUrl,
+    Json,
+    PostgresDsn,
+    PydanticUserError,
+    RootModel,
+    Secret,
+    SecretStr,
+    StrictBool,
+    StrictInt,
+    Tag,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
+from pydantic import (
+    dataclasses as pydantic_dataclasses,
+)
+from pydantic.fields import FieldInfo
+from typing_extensions import TypeAliasType, override
+
+from pydantic_settings import (
+    BaseSettings,
+    DotEnvSettingsSource,
+    EnvSettingsSource,
+    ForceDecode,
+    IncompleteFieldDefinitionWarning,
+    InitSettingsSource,
+    JsonConfigSettingsSource,
+    NestedSecretsSettingsSource,
+    NoDecode,
+    PydanticBaseSettingsSource,
+    SecretsSettingsSource,
+    SettingsConfigDict,
+    SettingsError,
+)
+from pydantic_settings.main import _settings_cache
+from pydantic_settings.sources import DefaultSettingsSource, read_env_file
+from pydantic_settings.sources.providers import env as env_provider
+
+try:
+    import dotenv
+except ImportError:
+    dotenv = None
+
+
+class FruitsEnum(IntEnum):
+    pear = 0
+    kiwi = 1
+    lime = 2
+
+
+class SimpleSettings(BaseSettings):
+    apple: str
+
+
+class SettingWithIgnoreEmpty(BaseSettings):
+    apple: str = 'default'
+
+    model_config = SettingsConfigDict(env_ignore_empty=True)
+
+
+class SettingWithPopulateByName(BaseSettings):
+    apple: str = Field('default', alias='pomo')
+
+    model_config = SettingsConfigDict(populate_by_name=True)
+
+
+@pytest.fixture(autouse=True)
+def clean_env():
+    with mock.patch.dict(os.environ, clear=True):
+        yield
+
+
+def test_sub_env(env):
+    env.set('apple', 'hello')
+    s = SimpleSettings()
+    assert s.apple == 'hello'
+
+
+@pytest.fixture
+def clear_settings_cache():
+    """Leave the process-wide settings cache empty, even if a test fails part way through."""
+    _settings_cache.clear()
+    yield
+    _settings_cache.clear()
+
+
+def test_settings_cached(env, clear_settings_cache):
+    class Settings(BaseSettings):
+        apple: str
+
+    env.set('apple', 'honeycrisp')
+    initial = Settings.settings_cached()
+
+    env.set('apple', 'granny_smith')
+    assert Settings.settings_cached() is initial
+    assert Settings.settings_cached().apple == 'honeycrisp'
+    assert Settings().apple == 'granny_smith'
+
+    Settings.settings_clear_cache()
+    reloaded = Settings.settings_cached()
+    assert reloaded is not initial
+    assert reloaded.apple == 'granny_smith'
+
+
+def test_settings_cached_per_subclass(env, clear_settings_cache):
+    class ParentSettings(BaseSettings):
+        parent: bool = True
+
+    class ChildSettings(ParentSettings):
+        child: bool = True
+
+    parent = ParentSettings.settings_cached()
+    child = ChildSettings.settings_cached()
+
+    assert type(parent) is ParentSettings
+    assert type(child) is ChildSettings
+
+    ParentSettings.settings_clear_cache()
+    assert ParentSettings.settings_cached() is not parent
+    assert ChildSettings.settings_cached() is child
+
+
+def test_settings_cached_is_thread_safe(env, clear_settings_cache):
+    class Settings(BaseSettings):
+        constructions: ClassVar[int] = 0
+
+        def __init__(self) -> None:
+            type(self).constructions += 1
+            time.sleep(0.01)
+            super().__init__()
+
+    barrier = threading.Barrier(8)
+
+    def load_settings(_: int) -> Settings:
+        barrier.wait()
+        return Settings.settings_cached()
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        settings = list(executor.map(load_settings, range(8)))
+
+    assert Settings.constructions == 1
+    assert all(instance is settings[0] for instance in settings)
+
+
+def test_settings_cached_does_not_deadlock_on_other_threads(env, clear_settings_cache):
+    """Construction must not hold a global lock, or waiting on another thread deadlocks."""
+
+    class Inner(BaseSettings):
+        inner: bool = True
+
+    class Outer(BaseSettings):
+        outer: bool = True
+
+        @model_validator(mode='after')
+        def load_inner(self) -> 'Outer':
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                executor.submit(Inner.settings_cached).result(timeout=10)
+            return self
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        outer = executor.submit(Outer.settings_cached).result(timeout=10)
+
+    assert isinstance(outer, Outer)
+    assert Outer.settings_cached() is outer
+
+
+def test_settings_cached_loads_unrelated_classes_concurrently(env, clear_settings_cache):
+    """A class being constructed must not block loading of an unrelated one.
+
+    Both classes wait on the same barrier from inside ``__init__``, so this only completes if
+    they are constructed at the same time. If loading were serialized, the second class would
+    never start and the barrier would time out.
+    """
+    both_constructing = threading.Barrier(2, timeout=10)
+
+    class First(BaseSettings):
+        def __init__(self) -> None:
+            both_constructing.wait()
+            super().__init__()
+
+    class Second(BaseSettings):
+        def __init__(self) -> None:
+            both_constructing.wait()
+            super().__init__()
+
+    def load(settings_cls: type[BaseSettings]) -> BaseSettings:
+        return settings_cls.settings_cached()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        loaded = list(executor.map(load, [First, Second]))
+
+    assert [type(instance) for instance in loaded] == [First, Second]
+
+
+def test_settings_cached_releases_class_after_clearing(env, clear_settings_cache):
+    """A cleared class must be collectable.
+
+    While cached, the instance necessarily references its own class, so the entry is kept
+    alive on purpose: that is what makes it a per-process singleton. Clearing the cache
+    must drop the entry entirely so dynamically built classes can be collected.
+    """
+
+    class Settings(BaseSettings):
+        apple: str = 'honeycrisp'
+
+    Settings.settings_cached()
+    Settings.settings_clear_cache()
+    ref = weakref.ref(Settings)
+
+    del Settings
+    gc.collect()
+
+    assert ref() is None, 'cleared settings class was kept alive by the cache'
+
+
+def test_settings_cached_retries_after_failure(env, clear_settings_cache):
+    class Settings(BaseSettings):
+        apple: str
+
+    with pytest.raises(ValidationError):
+        Settings.settings_cached()
+
+    env.set('apple', 'honeycrisp')
+    assert Settings.settings_cached().apple == 'honeycrisp'
+
+
+def test_sub_env_override(env):
+    env.set('apple', 'hello')
+    s = SimpleSettings(apple='goodbye')
+    assert s.apple == 'goodbye'
+
+
+def test_sub_env_missing():
+    with pytest.raises(ValidationError) as exc_info:
+        SimpleSettings()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'missing', 'loc': ('apple',), 'msg': 'Field required', 'input': {}}
+    ]
+
+
+def test_other_setting():
+    with pytest.raises(ValidationError):
+        SimpleSettings(apple='a', foobar=42)
+
+
+def test_ignore_empty_when_empty_uses_default(env):
+    env.set('apple', '')
+    s = SettingWithIgnoreEmpty()
+    assert s.apple == 'default'
+
+
+def test_ignore_empty_when_not_empty_uses_value(env):
+    env.set('apple', 'a')
+    s = SettingWithIgnoreEmpty()
+    assert s.apple == 'a'
+
+
+def test_ignore_empty_with_dotenv_when_empty_uses_default(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a=')
+
+    class Settings(BaseSettings):
+        a: str = 'default'
+
+        model_config = SettingsConfigDict(env_file=p, env_ignore_empty=True)
+
+    s = Settings()
+    assert s.a == 'default'
+
+
+def test_ignore_empty_with_dotenv_when_not_empty_uses_value(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a=b')
+
+    class Settings(BaseSettings):
+        a: str = 'default'
+
+        model_config = SettingsConfigDict(env_file=p, env_ignore_empty=True)
+
+    s = Settings()
+    assert s.a == 'b'
+
+
+def test_populate_by_name_when_using_alias(env):
+    env.set('pomo', 'bongusta')
+    s = SettingWithPopulateByName()
+    assert s.apple == 'bongusta'
+
+
+def test_populate_by_name_when_using_name(env):
+    env.set('apple', 'honeycrisp')
+    s = SettingWithPopulateByName()
+    assert s.apple == 'honeycrisp'
+
+
+def test_populate_by_name_when_using_both(env):
+    env.set('apple', 'honeycrisp')
+    env.set('pomo', 'bongusta')
+    s = SettingWithPopulateByName()
+    assert s.apple == 'bongusta', 'Expected alias value to be prioritized.'
+
+
+def test_populate_by_name_with_alias_path_when_using_alias(env):
+    env.set('fruits', '["empire", "honeycrisp"]')
+
+    class Settings(BaseSettings):
+        apple: str = Field('default', validation_alias=AliasPath('fruits', 0))
+        model_config = SettingsConfigDict(populate_by_name=True)
+
+    s = Settings()
+    assert s.apple == 'empire'
+
+
+def test_populate_by_name_with_alias_path_when_using_name(env):
+    env.set('apple', 'jonathan gold')
+
+    class Settings(BaseSettings):
+        apple: str = Field('default', validation_alias=AliasPath('fruits', 0))
+        model_config = SettingsConfigDict(populate_by_name=True)
+
+    s = Settings()
+    assert s.apple == 'jonathan gold'
+
+
+@pytest.mark.parametrize(
+    'env_vars, expected_value',
+    [
+        pytest.param({'pomo': 'pomo-chosen'}, 'pomo-chosen', id='pomo'),
+        pytest.param({'pomme': 'pomme-chosen'}, 'pomme-chosen', id='pomme'),
+        pytest.param({'manzano': 'manzano-chosen'}, 'manzano-chosen', id='manzano'),
+        pytest.param(
+            {'pomo': 'pomo-chosen', 'pomme': 'pomme-chosen', 'manzano': 'manzano-chosen'},
+            'pomo-chosen',
+            id='pomo-priority',
+        ),
+        pytest.param({'pomme': 'pomme-chosen', 'manzano': 'manzano-chosen'}, 'pomme-chosen', id='pomme-priority'),
+    ],
+)
+def test_populate_by_name_with_alias_choices_when_using_alias(env, env_vars: dict[str, str], expected_value: str):
+    for k, v in env_vars.items():
+        env.set(k, v)
+
+    class Settings(BaseSettings):
+        apple: str = Field('default', validation_alias=AliasChoices('pomo', 'pomme', 'manzano'))
+        model_config = SettingsConfigDict(populate_by_name=True)
+
+    s = Settings()
+    assert s.apple == expected_value
+
+
+def test_populate_by_name_with_dotenv_when_using_alias(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('pomo=bongusta')
+
+    class Settings(BaseSettings):
+        apple: str = Field('default', alias='pomo')
+        model_config = SettingsConfigDict(env_file=p, populate_by_name=True)
+
+    s = Settings()
+    assert s.apple == 'bongusta'
+
+
+def test_populate_by_name_with_dotenv_when_using_name(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('apple=honeycrisp')
+
+    class Settings(BaseSettings):
+        apple: str = Field('default', alias='pomo')
+        model_config = SettingsConfigDict(env_file=p, populate_by_name=True)
+
+    s = Settings()
+    assert s.apple == 'honeycrisp'
+
+
+def test_populate_by_name_with_dotenv_when_using_both(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('apple=honeycrisp')
+    p.write_text('pomo=bongusta')
+
+    class Settings(BaseSettings):
+        apple: str = Field('default', alias='pomo')
+        model_config = SettingsConfigDict(env_file=p, populate_by_name=True)
+
+    s = Settings()
+    assert s.apple == 'bongusta', 'Expected alias value to be prioritized.'
+
+
+class SettingWithValidateByAliasFalse(BaseSettings):
+    apple: str = Field('default', alias='pomo')
+
+    model_config = SettingsConfigDict(validate_by_alias=False)
+
+
+def test_validate_by_alias_false_when_using_name(env):
+    env.set('apple', 'honeycrisp')
+    s = SettingWithValidateByAliasFalse()
+    assert s.apple == 'honeycrisp'
+
+
+def test_validate_by_alias_false_with_secrets_when_using_name(tmp_path):
+    (tmp_path / 'apple').write_text('honeycrisp')
+    s = SettingWithValidateByAliasFalse(_secrets_dir=tmp_path)
+    assert s.apple == 'honeycrisp'
+
+
+def test_validate_by_alias_false_init_kwarg_takes_priority_over_env(env):
+    env.set('apple', 'honeycrisp')
+    s = SettingWithValidateByAliasFalse(apple='bongusta')
+    assert s.apple == 'bongusta'
+
+
+def test_validate_by_alias_false_ignores_alias_env_var(env):
+    env.set('pomo', 'honeycrisp')
+    s = SettingWithValidateByAliasFalse()
+    assert s.apple == 'default'
+
+
+def test_validate_by_alias_false_ignores_alias_secret(tmp_path):
+    (tmp_path / 'pomo').write_text('honeycrisp')
+    s = SettingWithValidateByAliasFalse(_secrets_dir=tmp_path)
+    assert s.apple == 'default'
+
+
+def test_validate_by_alias_false_nested_model_default_partial_update(env):
+    class Sub(BaseModel):
+        a: int = 1
+        b: int = 2
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            validate_by_alias=False, env_nested_delimiter='__', nested_model_default_partial_update=True
+        )
+
+        sub: Sub = Field(Sub(a=5), alias='subAlias')
+
+    env.set('sub__b', '3')
+    assert Settings().sub == Sub(a=5, b=3)
+
+
+def test_nested_model_validate_by_alias_false(env):
+    class Sub(BaseModel):
+        model_config = ConfigDict(validate_by_alias=False)
+
+        Apple: str = Field('default', alias='pomo')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+        sub: Sub = Sub()
+
+    env.set('sub__apple', 'honeycrisp')
+    assert Settings().sub.Apple == 'honeycrisp'
+
+
+def test_validate_by_alias_false_nested_model_validates_by_alias(env):
+    class Sub(BaseModel):
+        counts: dict[str, int] = Field(alias='countsAlias')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(validate_by_alias=False, env_nested_delimiter='__')
+
+        sub: Sub
+
+    env.set('sub__countsAlias', '{"a": 1}')
+    assert Settings().sub.counts == {'a': 1}
+
+
+def test_with_prefix(env):
+    class Settings(BaseSettings):
+        apple: str
+
+        model_config = SettingsConfigDict(env_prefix='foobar_')
+
+    with pytest.raises(ValidationError):
+        Settings()
+    env.set('foobar_apple', 'has_prefix')
+    s = Settings()
+    assert s.apple == 'has_prefix'
+
+
+def test_nested_env_with_basemodel(env):
+    class TopValue(BaseModel):
+        apple: str
+        banana: str
+
+    class Settings(BaseSettings):
+        top: TopValue
+
+    with pytest.raises(ValidationError):
+        Settings()
+    env.set('top', '{"banana": "secret_value"}')
+    s = Settings(top={'apple': 'value'})
+    assert s.top.apple == 'value'
+    assert s.top.banana == 'secret_value'
+
+
+def test_merge_dict(env):
+    class Settings(BaseSettings):
+        top: dict[str, str]
+
+    with pytest.raises(ValidationError):
+        Settings()
+    env.set('top', '{"banana": "secret_value"}')
+    s = Settings(top={'apple': 'value'})
+    assert s.top == {'apple': 'value', 'banana': 'secret_value'}
+
+
+def test_nested_env_delimiter(env):
+    class SubSubValue(BaseSettings):
+        v6: str
+
+    class SubValue(BaseSettings):
+        v4: str
+        v5: int
+        sub_sub: SubSubValue
+
+    class TopValue(BaseSettings):
+        v1: str
+        v2: str
+        v3: str
+        sub: SubValue
+
+    class Cfg(BaseSettings):
+        v0: str
+        v0_union: SubValue | int
+        top: TopValue
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('top', '{"v1": "json-1", "v2": "json-2", "sub": {"v5": "xx"}}')
+    env.set('top__sub__v5', '5')
+    env.set('v0', '0')
+    env.set('top__v2', '2')
+    env.set('top__v3', '3')
+    env.set('v0_union', '0')
+    env.set('top__sub__sub_sub__v6', '6')
+    env.set('top__sub__v4', '4')
+    cfg = Cfg()
+    assert cfg.model_dump() == {
+        'v0': '0',
+        'v0_union': 0,
+        'top': {
+            'v1': 'json-1',
+            'v2': '2',
+            'v3': '3',
+            'sub': {'v4': '4', 'v5': 5, 'sub_sub': {'v6': '6'}},
+        },
+    }
+
+
+def test_nested_env_optional_json(env):
+    class Child(BaseModel):
+        num_list: list[int] | None = None
+
+    class Cfg(BaseSettings, env_nested_delimiter='__'):
+        child: Child | None = None
+
+    env.set('CHILD__NUM_LIST', '[1,2,3]')
+    cfg = Cfg()
+    assert cfg.model_dump() == {
+        'child': {
+            'num_list': [1, 2, 3],
+        },
+    }
+
+
+def test_nested_env_delimiter_with_prefix(env):
+    class Subsettings(BaseSettings):
+        banana: str
+
+    class Settings(BaseSettings):
+        subsettings: Subsettings
+
+        model_config = SettingsConfigDict(env_nested_delimiter='_', env_prefix='myprefix_')
+
+    env.set('myprefix_subsettings_banana', 'banana')
+    s = Settings()
+    assert s.subsettings.banana == 'banana'
+
+    class Settings(BaseSettings):
+        subsettings: Subsettings
+
+        model_config = SettingsConfigDict(env_nested_delimiter='_', env_prefix='myprefix__')
+
+    env.set('myprefix__subsettings_banana', 'banana')
+    s = Settings()
+    assert s.subsettings.banana == 'banana'
+
+
+def test_nested_env_delimiter_complex_required(env):
+    class Cfg(BaseSettings):
+        v: str = 'default'
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('v__x', 'x')
+    env.set('v__y', 'y')
+    cfg = Cfg()
+    assert cfg.model_dump() == {'v': 'default'}
+
+
+def test_nested_env_delimiter_aliases(env):
+    class SubModel(BaseModel):
+        v1: str
+        v2: str
+
+    class Cfg(BaseSettings):
+        sub_model: SubModel = Field(validation_alias=AliasChoices('foo', 'bar'))
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('foo__v1', '-1-')
+    env.set('bar__v2', '-2-')
+    assert Cfg().model_dump() == {'sub_model': {'v1': '-1-', 'v2': '-2-'}}
+
+
+@pytest.mark.parametrize(
+    'annotation',
+    [
+        typing.Dict,  # noqa: UP006
+        typing.Dict | None,  # noqa: UP006
+        Annotated[typing.Dict, 'meta'],  # noqa: UP006
+        typing.OrderedDict,
+        dict,
+    ],
+)
+def test_nested_env_delimiter_bare_dict(env, annotation):
+    class Cfg(BaseSettings):
+        dvals: annotation
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('dvals__k1', 'v1')
+    env.set('dvals__k2', 'v2')
+    assert Cfg().model_dump() == {'dvals': {'k1': 'v1', 'k2': 'v2'}}
+
+
+def test_nested_env_delimiter_bare_typing_dict_in_sub_model(env):
+    class SubModel(BaseModel):
+        dvals: typing.Dict  # noqa: UP006
+
+    class Cfg(BaseSettings):
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('sub_model__dvals__k1', 'v1')
+    env.set('sub_model__dvals__k2', 'v2')
+    assert Cfg().model_dump() == {'sub_model': {'dvals': {'k1': 'v1', 'k2': 'v2'}}}
+
+
+@pytest.mark.parametrize('env_prefix', [None, 'prefix_', 'prefix__'])
+def test_nested_env_max_split(env, env_prefix):
+    class Person(BaseModel):
+        sex: Literal['M', 'F']
+        first_name: str
+        date_of_birth: date
+
+    class Cfg(BaseSettings):
+        caregiver: Person
+        significant_other: Person | None = None
+        next_of_kin: Person | None = None
+
+        model_config = SettingsConfigDict(env_nested_delimiter='_', env_nested_max_split=1)
+        if env_prefix is not None:
+            model_config['env_prefix'] = env_prefix
+
+    env_prefix = env_prefix or ''
+    env.set(env_prefix + 'caregiver_sex', 'M')
+    env.set(env_prefix + 'caregiver_first_name', 'Joe')
+    env.set(env_prefix + 'caregiver_date_of_birth', '1975-09-12')
+    env.set(env_prefix + 'significant_other_sex', 'F')
+    env.set(env_prefix + 'significant_other_first_name', 'Jill')
+    env.set(env_prefix + 'significant_other_date_of_birth', '1998-04-19')
+    env.set(env_prefix + 'next_of_kin_sex', 'M')
+    env.set(env_prefix + 'next_of_kin_first_name', 'Jack')
+    env.set(env_prefix + 'next_of_kin_date_of_birth', '1999-04-19')
+
+    assert Cfg().model_dump() == {
+        'caregiver': {'sex': 'M', 'first_name': 'Joe', 'date_of_birth': date(1975, 9, 12)},
+        'significant_other': {'sex': 'F', 'first_name': 'Jill', 'date_of_birth': date(1998, 4, 19)},
+        'next_of_kin': {'sex': 'M', 'first_name': 'Jack', 'date_of_birth': date(1999, 4, 19)},
+    }
+
+
+class DateModel(BaseModel):
+    pips: bool = False
+
+
+class ComplexSettings(BaseSettings):
+    apples: list[str] = []
+    bananas: set[int] = set()
+    carrots: dict = {}
+    date: DateModel = DateModel()
+
+
+def test_list(env):
+    env.set('apples', '["russet", "granny smith"]')
+    s = ComplexSettings()
+    assert s.apples == ['russet', 'granny smith']
+    assert s.date.pips is False
+
+
+def test_annotated_list(env):
+    class AnnotatedComplexSettings(BaseSettings):
+        apples: Annotated[list[str], MinLen(2)] = []
+
+    env.set('apples', '["russet", "granny smith"]')
+    s = AnnotatedComplexSettings()
+    assert s.apples == ['russet', 'granny smith']
+
+    env.set('apples', '["russet"]')
+    with pytest.raises(ValidationError) as exc_info:
+        AnnotatedComplexSettings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'ctx': {'actual_length': 1, 'field_type': 'List', 'min_length': 2},
+            'input': ['russet'],
+            'loc': ('apples',),
+            'msg': 'List should have at least 2 items after validation, not 1',
+            'type': 'too_short',
+        }
+    ]
+
+
+@pytest.mark.parametrize('optional', [False, True])
+@pytest.mark.parametrize('alias_kind', ['plain', 'annotated', 'generic'])
+@pytest.mark.parametrize('validation_alias', [None, 'custom_value'])
+@pytest.mark.parametrize('source', ['env', 'dotenv', 'nested'])
+@pytest.mark.parametrize('raw_value, expected', [('plain-string', 'plain-string'), ('[1,', '[1,'), ('[1, 2]', [1, 2])])
+def test_named_union_type_alias_parsing(
+    env, tmp_path, optional, alias_kind, validation_alias, source, raw_value, expected
+):
+    if alias_kind == 'plain':
+        Value = TypeAliasType('Value', list[int] | str)
+    elif alias_kind == 'annotated':
+        Value = TypeAliasType('Value', Annotated[list[int] | str, MinLen(1)])
+    else:
+        T = TypeVar('T')
+        Value = TypeAliasType('Value', list[T] | str, type_params=(T,))[int]
+    if optional:
+        Value = Value | None
+
+    class Nested(BaseModel):
+        value: Value = Field(validation_alias=validation_alias)
+
+    class Settings(BaseSettings):
+        value: Value = Field(validation_alias=validation_alias)
+
+    class NestedSettings(BaseSettings):
+        nested: Nested
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env_name = validation_alias or 'value'
+    if source == 'nested':
+        env.set(f'nested__{env_name}', raw_value)
+        actual = NestedSettings().nested.value
+    elif source == 'dotenv':
+        env_file = tmp_path / '.env'
+        env_file.write_text(f"{env_name}='{raw_value}'")
+        actual = Settings(_env_file=env_file).value
+    else:
+        env.set(env_name, raw_value)
+        actual = Settings().value
+    assert actual == expected
+
+
+def test_nested_type_alias_parsing(env):
+    Values = TypeAliasType('Values', TypeAliasType('Inner', list[int]))
+
+    class Settings(BaseSettings):
+        value: Values
+
+    env.set('value', '[1, 2]')
+    assert Settings().value == [1, 2]
+
+
+@pytest.mark.parametrize('decode_annotation', [NoDecode, ForceDecode])
+@pytest.mark.parametrize('validation_alias', [None, 'custom_value'])
+def test_named_union_type_alias_decoding_control(env, decode_annotation, validation_alias):
+    Value = TypeAliasType('Value', Annotated[list[int] | str, decode_annotation])
+
+    class Settings(BaseSettings):
+        value: Value = Field(validation_alias=validation_alias)
+        model_config = SettingsConfigDict(enable_decoding=decode_annotation is NoDecode)
+
+    env.set(validation_alias or 'value', '[1, 2]')
+    assert Settings().value == ('[1, 2]' if decode_annotation is NoDecode else [1, 2])
+
+
+@pytest.mark.parametrize('validation_alias', [None, 'custom_value'])
+@pytest.mark.parametrize('strict', [False, True])
+def test_named_union_type_alias_json_validation(env, validation_alias, strict):
+    Value = TypeAliasType('Value', Json[list[int] | str])
+
+    class Settings(BaseSettings):
+        value: Value = Field(validation_alias=validation_alias)
+        model_config = SettingsConfigDict(strict=strict)
+
+    env.set(validation_alias or 'value', '[1, 2]')
+    assert Settings().value == [1, 2]
+
+
+@pytest.mark.parametrize('raw_value, expected', [('plain-string', 'plain-string'), ('[1,', '[1,'), ('[1, 2]', [1, 2])])
+@pytest.mark.parametrize('alias_kind', ['plain', 'annotated'])
+def test_optional_annotated_named_union_type_alias(env, alias_kind, raw_value, expected):
+    if alias_kind == 'plain':
+        Value = TypeAliasType('Value', list[int] | str)
+    else:
+        Value = TypeAliasType('Value', Annotated[list[int] | str, MinLen(1)])
+
+    class Settings(BaseSettings):
+        value: Annotated[Value, MinLen(1)] | None
+
+    env.set('value', raw_value)
+    assert Settings().value == expected
+
+
+@pytest.mark.parametrize('annotated', [False, True])
+def test_optional_named_union_type_alias_json_validation(env, annotated):
+    Value = TypeAliasType('Value', Json[list[int] | str])
+
+    class Settings(BaseSettings):
+        value: (Annotated[Value, MinLen(1)] if annotated else Value) | None
+
+    env.set('value', '[1, 2]')
+    assert Settings().value == [1, 2]
+
+
+@pytest.mark.parametrize('decode_annotation', [NoDecode, ForceDecode])
+def test_optional_named_union_type_alias_decoding_control(env, decode_annotation):
+    Value = TypeAliasType('Value', list[int] | str)
+
+    class Settings(BaseSettings):
+        value: Annotated[Value | None, decode_annotation]
+        model_config = SettingsConfigDict(enable_decoding=decode_annotation is NoDecode)
+
+    env.set('value', '[1, 2]')
+    assert Settings().value == ('[1, 2]' if decode_annotation is NoDecode else [1, 2])
+
+
+@pytest.mark.parametrize('raw_value, expected', [('plain-string', 'plain-string'), ('[["a"], "b"]', [['a'], 'b'])])
+def test_optional_recursive_union_type_alias(env, raw_value, expected):
+    Value = TypeAliasType('Value', list['Value'] | str)
+
+    class Settings(BaseSettings):
+        value: Value | None
+
+    env.set('value', raw_value)
+    assert Settings().value == expected
+
+
+@pytest.mark.parametrize('annotation, raw_value, expected', [(Json[list[int]], '[1, 2]', [1, 2]), (Json[int], '5', 5)])
+@pytest.mark.parametrize('nested', [False, True])
+def test_inline_json_strict(env, annotation, raw_value, expected, nested):
+    class Nested(BaseModel):
+        value: annotation
+
+    class Settings(BaseSettings):
+        value: annotation
+        model_config = SettingsConfigDict(strict=True)
+
+    class NestedSettings(BaseSettings):
+        nested: Nested
+        model_config = SettingsConfigDict(strict=True, env_nested_delimiter='__')
+
+    if nested:
+        env.set('nested__value', raw_value)
+        assert NestedSettings().nested.value == expected
+    else:
+        env.set('value', raw_value)
+        assert Settings().value == expected
+
+
+@pytest.mark.parametrize('source', ['env', 'dotenv', 'nested'])
+@pytest.mark.parametrize('raw_value, expected', [('true', True), ('false', False)])
+def test_named_union_type_alias_strict_bool(env, tmp_path, source, raw_value, expected):
+    Value = TypeAliasType('Value', StrictBool | None)
+
+    class Nested(BaseModel):
+        value: Value
+
+    class Settings(BaseSettings):
+        value: Value
+
+    class NestedSettings(BaseSettings):
+        nested: Nested
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    if source == 'nested':
+        env.set('nested__value', raw_value)
+        actual = NestedSettings().nested.value
+    elif source == 'dotenv':
+        env_file = tmp_path / '.env'
+        env_file.write_text(f'value={raw_value}')
+        actual = Settings(_env_file=env_file).value
+    else:
+        env.set('value', raw_value)
+        actual = Settings().value
+    assert actual is expected
+
+
+@pytest.mark.parametrize('validation_alias', [None, 'custom_value'])
+@pytest.mark.parametrize('annotated', [False, True])
+def test_named_union_type_alias_dotenv_nested_extras(tmp_path, validation_alias, annotated):
+    class Nested(BaseModel):
+        a: int
+
+    annotation = Annotated[Nested | str, 'metadata'] if annotated else Nested | str
+    Value = TypeAliasType('Value', annotation)
+
+    class Settings(BaseSettings):
+        value: Value = Field(validation_alias=validation_alias)
+        model_config = SettingsConfigDict(env_nested_delimiter='__', extra='forbid')
+
+    env_file = tmp_path / '.env'
+    env_file.write_text(f'{validation_alias or "value"}__a=1')
+    assert Settings(_env_file=env_file).value == Nested(a=1)
+
+
+def test_annotated_with_type(env):
+    """https://github.com/pydantic/pydantic-settings/issues/536.
+
+    PEP 695 type aliases need to be analyzed when determining if an annotation is complex.
+    """
+    MinLenList = TypeAliasType('MinLenList', Annotated[list[str] | list[int], MinLen(2)])
+
+    class AnnotatedComplexSettings(BaseSettings):
+        apples: MinLenList
+
+    env.set('apples', '["russet", "granny smith"]')
+    s = AnnotatedComplexSettings()
+    assert s.apples == ['russet', 'granny smith']
+
+    T = TypeVar('T')
+    MinLenList = TypeAliasType('MinLenList', Annotated[list[T] | tuple[T], MinLen(2)], type_params=(T,))
+
+    class AnnotatedComplexSettings(BaseSettings):
+        apples: MinLenList[str]
+
+    s = AnnotatedComplexSettings()
+    assert s.apples == ['russet', 'granny smith']
+
+
+def test_annotated_with_parameterized_type_alias(env):
+    """https://github.com/pydantic/pydantic-settings/issues/778.
+
+    Parameterized PEP 695 type aliases should correctly substitute type params
+    when determining if a field is complex.
+    """
+    T = TypeVar('T')
+
+    MaxLenA = Annotated[T, Len(max_length=4)]
+    MaxLenB = TypeAliasType('MaxLenB', Annotated[T, Len(max_length=4)], type_params=(T,))
+    MaxLenC = TypeAliasType('MaxLenC', Annotated[T, Len(max_length=4), ForceDecode], type_params=(T,))
+
+    class MySettingsA(BaseSettings):
+        SIMPLE_LIST: MaxLenA[list[str]]
+
+    class MySettingsB(BaseSettings):
+        SIMPLE_LIST: MaxLenB[list[str]]
+
+    class MySettingsC(BaseSettings):
+        SIMPLE_LIST: MaxLenC[list[str]]
+
+    env.set('SIMPLE_LIST', '["a", "b", "c"]')
+    assert MySettingsA().SIMPLE_LIST == ['a', 'b', 'c']
+    assert MySettingsB().SIMPLE_LIST == ['a', 'b', 'c']
+    assert MySettingsC().SIMPLE_LIST == ['a', 'b', 'c']
+
+    # NoDecode should prevent automatic JSON decoding
+    MaxLenD = TypeAliasType('MaxLenD', Annotated[T, Len(max_length=4), NoDecode], type_params=(T,))
+
+    class MySettingsD(BaseSettings):
+        SIMPLE_LIST: MaxLenD[list[str]]
+
+    with pytest.raises(ValidationError):
+        MySettingsD()
+
+
+@pytest.mark.parametrize('rebuild', [False, True])
+def test_type_alias_metadata_does_not_modify_field(env, rebuild):
+    DoubledValues = TypeAliasType(
+        'DoubledValues',
+        Annotated[list[int], AfterValidator(lambda values: [value * 2 for value in values]), ForceDecode],
+    )
+
+    class Settings(BaseSettings):
+        values: DoubledValues
+        model_config = SettingsConfigDict(enable_decoding=False)
+
+    env.set('values', '[1]')
+    assert Settings().values == [2]
+
+    if rebuild:
+        Settings.model_rebuild(force=True)
+        derived_settings = Settings
+    else:
+
+        class DerivedSettings(Settings):
+            pass
+
+        derived_settings = DerivedSettings
+
+    assert derived_settings().values == [2]
+    assert Settings.model_fields['values'].metadata == []
+
+
+def test_annotated_with_type_no_decode(env):
+    A = TypeAliasType('A', Annotated[list[str], NoDecode])
+
+    class Settings(BaseSettings):
+        a: A
+
+        # decode the value here. the field value won't be decoded because of NoDecode
+        @field_validator('a', mode='before')
+        @classmethod
+        def decode_a(cls, v: str) -> list[str]:
+            return json.loads(v)
+
+    env.set('a', '["one", "two"]')
+
+    s = Settings()
+    assert s.model_dump() == {'a': ['one', 'two']}
+
+
+def test_abstract_set_env_var(env):
+    env.set('fruits', '["empire", "honeycrisp"]')
+
+    class Settings(BaseSettings):
+        fruits: AbstractSet[str] = frozenset()
+
+    assert Settings().fruits == frozenset({'empire', 'honeycrisp'})
+
+
+def test_set_dict_model(env):
+    env.set('bananas', '[1, 2, 3, 3]')
+    env.set('CARROTS', '{"a": null, "b": 4}')
+    env.set('daTE', '{"pips": true}')
+    s = ComplexSettings()
+    assert s.bananas == {1, 2, 3}
+    assert s.carrots == {'a': None, 'b': 4}
+    assert s.date.pips is True
+
+
+def test_invalid_json(env):
+    env.set('apples', '["russet", "granny smith",]')
+    with pytest.raises(SettingsError, match='error parsing value for field "apples" from source "EnvSettingsSource"'):
+        ComplexSettings()
+
+
+def test_required_sub_model(env):
+    class Settings(BaseSettings):
+        foobar: DateModel
+
+    with pytest.raises(ValidationError):
+        Settings()
+    env.set('FOOBAR', '{"pips": "TRUE"}')
+    s = Settings()
+    assert s.foobar.pips is True
+
+
+def test_non_class(env):
+    class Settings(BaseSettings):
+        foobar: str | None
+
+    env.set('FOOBAR', 'xxx')
+    s = Settings()
+    assert s.foobar == 'xxx'
+
+
+@pytest.mark.parametrize('dataclass_decorator', (pydantic_dataclasses.dataclass, dataclasses.dataclass))
+def test_generic_dataclass(env, dataclass_decorator):
+    T = TypeVar('T')
+
+    @dataclass_decorator
+    class GenericDataclass(Generic[T]):
+        x: T
+
+    class ComplexSettings(BaseSettings):
+        field: GenericDataclass[int]
+
+    env.set('field', '{"x": 1}')
+    s = ComplexSettings()
+    assert s.field.x == 1
+
+    env.set('field', '{"x": "a"}')
+    with pytest.raises(ValidationError) as exc_info:
+        ComplexSettings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'input': 'a',
+            'loc': ('field', 'x'),
+            'msg': 'Input should be a valid integer, unable to parse string as an integer',
+            'type': 'int_parsing',
+        }
+    ]
+
+
+def test_generic_basemodel(env):
+    T = TypeVar('T')
+
+    class GenericModel(BaseModel, Generic[T]):
+        x: T
+
+    class ComplexSettings(BaseSettings):
+        field: GenericModel[int]
+
+    env.set('field', '{"x": 1}')
+    s = ComplexSettings()
+    assert s.field.x == 1
+
+    env.set('field', '{"x": "a"}')
+    with pytest.raises(ValidationError) as exc_info:
+        ComplexSettings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'input': 'a',
+            'loc': ('field', 'x'),
+            'msg': 'Input should be a valid integer, unable to parse string as an integer',
+            'type': 'int_parsing',
+        }
+    ]
+
+
+def test_annotated(env):
+    T = TypeVar('T')
+
+    class GenericModel(BaseModel, Generic[T]):
+        x: T
+
+    class ComplexSettings(BaseSettings):
+        field: GenericModel[int]
+
+    env.set('field', '{"x": 1}')
+    s = ComplexSettings()
+    assert s.field.x == 1
+
+    env.set('field', '{"x": "a"}')
+    with pytest.raises(ValidationError) as exc_info:
+        ComplexSettings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'input': 'a',
+            'loc': ('field', 'x'),
+            'msg': 'Input should be a valid integer, unable to parse string as an integer',
+            'type': 'int_parsing',
+        }
+    ]
+
+
+def test_class_nested_model_default_partial_update(env):
+    class NestedA(BaseModel):
+        v0: bool
+        v1: bool
+
+    @pydantic_dataclasses.dataclass
+    class NestedB:
+        v0: bool
+        v1: bool
+
+    @dataclasses.dataclass
+    class NestedC:
+        v0: bool
+        v1: bool
+
+    class NestedD(BaseModel):
+        v0: bool = False
+        v1: bool = True
+
+    class SettingsDefaultsA(BaseSettings, env_nested_delimiter='__', nested_model_default_partial_update=True):
+        nested_a: NestedA = NestedA(v0=False, v1=True)
+        nested_b: NestedB = NestedB(v0=False, v1=True)
+        nested_d: NestedC = NestedC(v0=False, v1=True)
+        nested_c: NestedD = NestedD()
+
+    assert SettingsDefaultsA().model_dump() == {
+        'nested_a': {'v0': False, 'v1': True},
+        'nested_b': {'v0': False, 'v1': True},
+        'nested_c': {'v0': False, 'v1': True},
+        'nested_d': {'v0': False, 'v1': True},
+    }
+    assert SettingsDefaultsA().model_dump(exclude_unset=True) == {}
+
+    env.set('NESTED_A__V0', 'True')
+    env.set('NESTED_B__V0', 'True')
+    assert SettingsDefaultsA().model_dump() == {
+        'nested_a': {'v0': True, 'v1': True},
+        'nested_b': {'v0': True, 'v1': True},
+        'nested_c': {'v0': False, 'v1': True},
+        'nested_d': {'v0': False, 'v1': True},
+    }
+    assert SettingsDefaultsA().model_dump(exclude_unset=True) == {
+        'nested_a': {'v0': True, 'v1': True},
+        'nested_b': {'v0': True, 'v1': True},
+    }
+
+    env.set('NESTED_C__V0', 'True')
+    env.set('NESTED_D__V0', 'True')
+    assert SettingsDefaultsA().model_dump() == {
+        'nested_a': {'v0': True, 'v1': True},
+        'nested_b': {'v0': True, 'v1': True},
+        'nested_c': {'v0': True, 'v1': True},
+        'nested_d': {'v0': True, 'v1': True},
+    }
+    assert SettingsDefaultsA().model_dump(exclude_unset=True) == {
+        'nested_a': {'v0': True, 'v1': True},
+        'nested_b': {'v0': True, 'v1': True},
+        'nested_c': {'v0': True, 'v1': True},
+        'nested_d': {'v0': True, 'v1': True},
+    }
+
+
+def test_nested_model_default_partial_update_validation_alias_differs_from_alias(env):
+    class Nested(BaseModel):
+        v0: int = 0
+        v1: int = 0
+
+    class Settings(BaseSettings, env_nested_delimiter='__', nested_model_default_partial_update=True):
+        nested: Nested = Field(Nested(v0=1), alias='nestedAlias', validation_alias='NESTED')
+
+    assert Settings().nested == Nested(v0=1, v1=0)
+    env.set('NESTED__V1', '2')
+    assert Settings().nested == Nested(v0=1, v1=2)
+
+
+def test_init_kwargs_nested_model_default_partial_update(env):
+    class DeepSubModel(BaseModel):
+        v4: str
+
+    class SubModel(BaseModel):
+        v1: str
+        v2: bytes
+        v3: int
+        deep: DeepSubModel
+
+    class Settings(BaseSettings, env_nested_delimiter='__', nested_model_default_partial_update=True):
+        v0: str
+        sub_model: SubModel
+
+        @classmethod
+        def settings_customise_sources(
+            cls, settings_cls, init_settings, env_settings, dotenv_settings, file_secret_settings
+        ):
+            return env_settings, dotenv_settings, init_settings, file_secret_settings
+
+    env.set('SUB_MODEL__DEEP__V4', 'override-v4')
+
+    s_final = {'v0': '0', 'sub_model': {'v1': 'init-v1', 'v2': b'init-v2', 'v3': 3, 'deep': {'v4': 'override-v4'}}}
+
+    s = Settings(v0='0', sub_model={'v1': 'init-v1', 'v2': b'init-v2', 'v3': 3, 'deep': {'v4': 'init-v4'}})
+    assert s.model_dump() == s_final
+
+    s = Settings(v0='0', sub_model=SubModel(v1='init-v1', v2=b'init-v2', v3=3, deep=DeepSubModel(v4='init-v4')))
+    assert s.model_dump() == s_final
+
+    s = Settings(v0='0', sub_model=SubModel(v1='init-v1', v2=b'init-v2', v3=3, deep={'v4': 'init-v4'}))
+    assert s.model_dump() == s_final
+
+    s = Settings(v0='0', sub_model={'v1': 'init-v1', 'v2': b'init-v2', 'v3': 3, 'deep': DeepSubModel(v4='init-v4')})
+    assert s.model_dump() == s_final
+
+
+def test_alias_resolution_init_source(env):
+    class Example(BaseSettings):
+        model_config = SettingsConfigDict(env_prefix='PREFIX')
+
+        name: str
+        last_name: str = Field(validation_alias=AliasChoices('PREFIX_LAST_NAME', 'PREFIX_SURNAME'))
+
+    env.set('PREFIX_SURNAME', 'smith')
+    assert Example(name='john', PREFIX_SURNAME='doe').model_dump() == {'name': 'john', 'last_name': 'doe'}
+
+    class Settings(BaseSettings):
+        NAME: str = Field(
+            default='',
+            validation_alias=AliasChoices('NAME', 'OLD_NAME'),
+        )
+
+        @model_validator(mode='before')
+        def check_for_deprecated_attributes(cls, data: Any) -> Any:
+            if isinstance(data, dict):
+                old_keys = {k for k in data if k.startswith('OLD_')}
+                assert not old_keys
+            return data
+
+    s = Settings(NAME='foo')
+    assert s.model_dump() == {'NAME': 'foo'}
+
+    with pytest.raises(ValidationError, match=re.escape("Assertion failed, assert not {'OLD_NAME'}")):
+        Settings(OLD_NAME='foo')
+
+
+def test_init_kwargs_alias_resolution_deterministic():
+    class Example(BaseSettings):
+        name: str
+        last_name: str = Field(validation_alias=AliasChoices('surname', 'last_name'))
+
+    result = Example(name='john', surname='doe', last_name='smith').model_dump()
+
+    assert result == {'name': 'john', 'last_name': 'doe'}
+
+
+def test_alias_nested_model_default_partial_update():
+    class SubModel(BaseModel):
+        v1: str = 'default'
+        v2: bytes = b'hello'
+        v3: int
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            nested_model_default_partial_update=True, alias_generator=AliasGenerator(lambda s: s.replace('_', '-'))
+        )
+
+        v0: str = 'ok'
+        sub_model: SubModel = SubModel(v1='top default', v3=33)
+
+    assert Settings(**{'sub-model': {'v1': 'cli'}}).model_dump() == {
+        'v0': 'ok',
+        'sub_model': {'v1': 'cli', 'v2': b'hello', 'v3': 33},
+    }
+
+
+def test_nested_model_default_partial_update_with_discriminated_union():
+    """Test that nested_model_default_partial_update skips discriminated union fields selecting a different type.
+
+    When a field uses a discriminated union, the default model's fields should not bleed
+    into the incoming value when the discriminator selects a different type.
+    See: https://github.com/pydantic/pydantic-settings/issues/871
+    """
+
+    class SubModel1(BaseModel):
+        discriminator: Literal['submodel1'] = 'submodel1'
+        submodel1_field: str = 'foo'
+
+    class SubModel2(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        discriminator: Literal['submodel2'] = 'submodel2'
+
+    # Test with Annotated[..., Discriminator(...)]
+    class SettingsAnnotated(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        root_field: Annotated[SubModel1 | SubModel2, Discriminator('discriminator')] = SubModel1()
+
+    result = SettingsAnnotated.model_validate_json('{"root_field": {"discriminator": "submodel2"}}')
+    assert result.root_field == SubModel2()
+
+    # Test with Field(discriminator=...)
+    class SettingsField(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        root_field: SubModel1 | SubModel2 = Field(default=SubModel1(), discriminator='discriminator')
+
+    result = SettingsField.model_validate_json('{"root_field": {"discriminator": "submodel2"}}')
+    assert result.root_field == SubModel2()
+
+    # Test that selecting the same type as the default still works
+    result = SettingsAnnotated.model_validate_json(
+        '{"root_field": {"discriminator": "submodel1", "submodel1_field": "bar"}}'
+    )
+    assert result.root_field == SubModel1(submodel1_field='bar')
+
+    # Test that the default is used when no value is provided
+    result = SettingsAnnotated.model_validate_json('{}')
+    assert result.root_field == SubModel1()
+
+
+class _PartialUpdateSubModel1(BaseModel):
+    discriminator: Literal['submodel1'] = 'submodel1'
+    submodel1_field: str = 'foo'
+    other_field: str = 'foo'
+
+
+class _PartialUpdateSubModel2(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    discriminator: Literal['submodel2'] = 'submodel2'
+
+
+@pytest.mark.parametrize(
+    'env_vars,expected',
+    [
+        # The issue's case: no discriminator in the env, so the default's member is partially updated
+        pytest.param(
+            {'ROOT_FIELD__OTHER_FIELD': 'baz'},
+            _PartialUpdateSubModel1(submodel1_field='bar', other_field='baz'),
+            id='no-discriminator',
+        ),
+        # Selecting the same member as the default keeps the default's fields
+        pytest.param(
+            {'ROOT_FIELD__OTHER_FIELD': 'baz', 'ROOT_FIELD__DISCRIMINATOR': 'submodel1'},
+            _PartialUpdateSubModel1(submodel1_field='bar', other_field='baz'),
+            id='same-member',
+        ),
+        # Selecting another member doesn't keep the default's fields
+        pytest.param(
+            {'ROOT_FIELD__DISCRIMINATOR': 'submodel2'},
+            _PartialUpdateSubModel2(),
+            id='other-member',
+        ),
+    ],
+)
+def test_nested_model_default_partial_update_with_discriminated_union_same_type(env, env_vars, expected):
+    """Test that nested_model_default_partial_update applies to discriminated union fields.
+
+    The default model's fields should be kept when the incoming value doesn't select a different type.
+    See: https://github.com/pydantic/pydantic-settings/issues/996
+    """
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', nested_model_default_partial_update=True)
+        root_field: Annotated[_PartialUpdateSubModel1 | _PartialUpdateSubModel2, Discriminator('discriminator')] = (
+            _PartialUpdateSubModel1(submodel1_field='bar')
+        )
+
+    for name, value in env_vars.items():
+        env.set(name, value)
+    assert Settings().root_field == expected
+
+
+def test_nested_model_default_partial_update_with_aliased_discriminator():
+    """Test that the discriminator value is also looked up by the discriminator field's alias.
+
+    Pydantic reads the tag from either key, so both have to be checked.
+    """
+
+    class AliasSubModel1(BaseModel):
+        kind: Literal['submodel1'] = Field('submodel1', alias='type')
+        submodel1_field: str = 'foo'
+
+    class AliasSubModel2(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        kind: Literal['submodel2'] = Field('submodel2', alias='type')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        root_field: Annotated[AliasSubModel1 | AliasSubModel2, Discriminator('kind')] = AliasSubModel1(
+            submodel1_field='bar'
+        )
+
+    assert Settings(root_field={'type': 'submodel1'}).root_field == AliasSubModel1(submodel1_field='bar')
+    assert Settings(root_field={'type': 'submodel2'}).root_field == AliasSubModel2()
+
+
+def test_nested_model_default_partial_update_with_callable_discriminator():
+    """Test that a callable discriminator skips partial updates, as the selected member can't be looked up."""
+
+    def get_discriminator_value(v: Any) -> Hashable:
+        return v.get('discriminator') if isinstance(v, dict) else v.discriminator
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        root_field: Annotated[
+            Annotated[_PartialUpdateSubModel1, Tag('submodel1')] | Annotated[_PartialUpdateSubModel2, Tag('submodel2')],
+            Discriminator(get_discriminator_value),
+        ] = _PartialUpdateSubModel1(submodel1_field='bar')
+
+    assert Settings(root_field={'discriminator': 'submodel2'}).root_field == _PartialUpdateSubModel2()
+
+
+def test_nested_model_default_partial_update_with_stdlib_dataclass_aliased_discriminator():
+    """Test that the discriminator alias of a standard-library dataclass member is also looked up.
+
+    Pydantic doesn't attach ``__pydantic_fields__`` to stdlib dataclasses, so the alias has to be read from
+    the dataclass fields themselves. Only selecting another member is asserted here: a same-member partial
+    update would merge the default dumped by field name next to the value's alias key, which the dataclass
+    can't take both of.
+    """
+
+    @dataclasses.dataclass
+    class AnnotatedField:
+        kind: Annotated[Literal['submodel1'], Field(validation_alias='type')] = 'submodel1'
+        submodel1_field: str = 'foo'
+
+    @dataclasses.dataclass
+    class AnnotatedField2:
+        kind: Annotated[Literal['submodel2'], Field(validation_alias='type')] = 'submodel2'
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        root_field: Annotated[AnnotatedField | AnnotatedField2, Discriminator('kind')] = AnnotatedField(
+            submodel1_field='bar'
+        )
+
+    assert Settings(root_field={'type': 'submodel2'}).root_field == AnnotatedField2()
+
+    # The alias can also come from a `Field()` kept as the dataclass field's default
+    @dataclasses.dataclass
+    class DefaultField:
+        kind: Literal['submodel1'] = Field('submodel1', validation_alias='type')  # type: ignore[assignment]
+        submodel1_field: str = 'foo'
+
+    @dataclasses.dataclass
+    class DefaultField2:
+        kind: Literal['submodel2'] = Field('submodel2', validation_alias='type')  # type: ignore[assignment]
+
+    class SettingsDefault(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        root_field: Annotated[DefaultField | DefaultField2, Discriminator('kind')] = DefaultField(
+            kind='submodel1', submodel1_field='bar'
+        )
+
+    assert SettingsDefault(root_field={'type': 'submodel2'}).root_field == DefaultField2(kind='submodel2')
+
+
+class _BlackCat(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    pet_type: Literal['cat'] = 'cat'
+    color: Literal['black'] = 'black'
+    black_name: str = 'blackie'
+
+
+class _WhiteCat(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    pet_type: Literal['cat'] = 'cat'
+    color: Literal['white'] = 'white'
+    white_name: str = 'whitie'
+
+
+class _Dog(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    pet_type: Literal['dog'] = 'dog'
+    dog_name: str = 'rex'
+
+
+@pytest.mark.parametrize(
+    'value,expected',
+    [
+        # The outer tag is unchanged but a nested discriminator selects another member, so the default's
+        # fields must not be merged in
+        pytest.param({'pet_type': 'cat', 'color': 'white'}, _WhiteCat(), id='nested-other-member'),
+        # The outer tag selects another member
+        pytest.param({'pet_type': 'dog'}, _Dog(), id='outer-other-member'),
+        # Both tags still select the default's member, so it is partially updated
+        pytest.param({'black_name': 'x'}, _BlackCat(black_name='x'), id='same-member'),
+        pytest.param(
+            {'pet_type': 'cat', 'color': 'black'}, _BlackCat(black_name='custom'), id='same-member-explicit-tags'
+        ),
+    ],
+)
+def test_nested_model_default_partial_update_with_nested_discriminated_union(value, expected):
+    """Test that every discriminator guarding the default's member is checked, not just the outermost one."""
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        pet: Annotated[
+            Annotated[_BlackCat | _WhiteCat, Discriminator('color')] | _Dog,
+            Discriminator('pet_type'),
+        ] = _BlackCat(black_name='custom')
+
+    assert Settings(pet=value).pet == expected
+
+
+def test_nested_model_default_partial_update_nested_discriminator_without_outer_tag():
+    """Test that dropping the default also drops the outer tag it provided.
+
+    Discarding the default removes the ``pet_type`` it would have contributed, so the outer tag has to come
+    from the value itself. This matches the behaviour before the partial-update change.
+    """
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        pet: Annotated[
+            Annotated[_BlackCat | _WhiteCat, Discriminator('color')] | _Dog,
+            Discriminator('pet_type'),
+        ] = _BlackCat(black_name='custom')
+
+    with pytest.raises(ValidationError, match="Unable to extract tag using discriminator 'pet_type'"):
+        Settings(pet={'color': 'white'})
+
+
+def test_nested_model_default_partial_update_with_nested_callable_discriminator():
+    """Test that a nested callable discriminator skips partial updates, like an outer one."""
+
+    def get_color(v: Any) -> Hashable:
+        return v.get('color') if isinstance(v, dict) else v.color
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        pet: Annotated[
+            Annotated[Annotated[_BlackCat, Tag('black')] | Annotated[_WhiteCat, Tag('white')], Discriminator(get_color)]
+            | _Dog,
+            Discriminator('pet_type'),
+        ] = _BlackCat(black_name='custom')
+
+    assert Settings(pet={'pet_type': 'cat', 'color': 'white'}).pet == _WhiteCat()
+
+
+def test_nested_model_default_partial_update_with_deeply_nested_callable_discriminator():
+    """Test that a callable discriminator is detected at any nesting depth."""
+
+    def get_color(v: Any) -> Hashable:
+        return v.get('color') if isinstance(v, dict) else v.color
+
+    Cat = Annotated[
+        Annotated[Annotated[_BlackCat, Tag('black')] | Annotated[_WhiteCat, Tag('white')], Discriminator(get_color)]
+        | _Dog,
+        Discriminator('pet_type'),
+    ]
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        pet: Cat | None = Field(default=_BlackCat(black_name='custom'), discriminator='pet_type')
+
+    assert Settings(pet={'pet_type': 'cat', 'color': 'white'}).pet == _WhiteCat()
+
+
+def test_nested_model_default_partial_update_with_optional_nested_discriminated_union():
+    """Test that the ``None`` member of an ``Optional`` union is skipped when collecting discriminators."""
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(nested_model_default_partial_update=True)
+        pet: Annotated[
+            Annotated[_BlackCat | _WhiteCat, Discriminator('color')] | _Dog | None,
+            Discriminator('pet_type'),
+        ] = _BlackCat(black_name='custom')
+
+    assert Settings(pet={'pet_type': 'cat', 'color': 'white'}).pet == _WhiteCat()
+    assert Settings(pet={'pet_type': 'cat', 'color': 'black'}).pet == _BlackCat(black_name='custom')
+    assert Settings().pet == _BlackCat(black_name='custom')
+
+
+@pytest.mark.parametrize(
+    'nested_discriminator',
+    [Discriminator('color'), Field(discriminator='color'), Field(discriminator=Discriminator('color'))],
+    ids=['Discriminator', 'Field', 'Field-with-Discriminator'],
+)
+@pytest.mark.parametrize(
+    'env_vars,expected',
+    [
+        pytest.param({'PET__PET_TYPE': 'cat', 'PET__COLOR': 'white'}, _WhiteCat(), id='other-member'),
+        pytest.param({'PET__BLACK_NAME': 'x'}, _BlackCat(black_name='x'), id='same-member'),
+    ],
+)
+def test_nested_model_default_partial_update_with_nested_discriminator_forms(
+    env, nested_discriminator, env_vars, expected
+):
+    """Test that a nested discriminator is recognised whether it is given as a ``Discriminator`` or a ``Field``."""
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', nested_model_default_partial_update=True)
+        pet: Annotated[_BlackCat | _WhiteCat, nested_discriminator] | _Dog = Field(
+            _BlackCat(black_name='custom'), discriminator='pet_type'
+        )
+
+    for name, value in env_vars.items():
+        env.set(name, value)
+    assert Settings().pet == expected
+
+
+def test_nested_model_default_partial_update_with_nested_field_without_discriminator(env):
+    """Test that a nested ``Field`` without a discriminator doesn't stop the default from being partially updated."""
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', nested_model_default_partial_update=True)
+        pet: _BlackCat | Annotated[_Dog, Field(title='Dog')] = Field(
+            _BlackCat(black_name='custom'), discriminator='pet_type'
+        )
+
+    env.set('PET__BLACK_NAME', 'x')
+    assert Settings().pet == _BlackCat(black_name='x')
+    env.pop('PET__BLACK_NAME')
+    env.set('PET__PET_TYPE', 'dog')
+    assert Settings().pet == _Dog()
+
+
+def test_env_str(env):
+    class Settings(BaseSettings):
+        apple: str = Field(None, validation_alias='BOOM')
+
+    env.set('BOOM', 'hello')
+    assert Settings().apple == 'hello'
+
+
+def test_env_list(env):
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias=AliasChoices('different1', 'different2'))
+
+    env.set('different1', 'value 1')
+    env.set('different2', 'value 2')
+    s = Settings()
+    assert s.foobar == 'value 1'
+
+
+def test_env_list_field(env):
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias='foobar_env_name')
+
+    env.set('FOOBAR_ENV_NAME', 'env value')
+    s = Settings()
+    assert s.foobar == 'env value'
+
+
+def test_env_list_last(env):
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias=AliasChoices('different2'))
+
+    env.set('different1', 'value 1')
+    env.set('different2', 'value 2')
+    s = Settings()
+    assert s.foobar == 'value 2'
+
+
+def test_env_inheritance_field(env):
+    class SettingsParent(BaseSettings):
+        foobar: str = Field('parent default', validation_alias='foobar_env')
+
+    class SettingsChild(SettingsParent):
+        foobar: str = 'child default'
+
+    assert SettingsParent().foobar == 'parent default'
+
+    assert SettingsChild().foobar == 'child default'
+    assert SettingsChild(foobar='abc').foobar == 'abc'
+    env.set('foobar_env', 'env value')
+    assert SettingsParent().foobar == 'env value'
+    assert SettingsChild().foobar == 'child default'
+    assert SettingsChild(foobar='abc').foobar == 'abc'
+
+
+def test_env_inheritance_config(env):
+    env.set('foobar', 'foobar')
+    env.set('prefix_foobar', 'prefix_foobar')
+
+    env.set('foobar_parent_from_field', 'foobar_parent_from_field')
+    env.set('prefix_foobar_parent_from_field', 'prefix_foobar_parent_from_field')
+
+    env.set('foobar_parent_from_config', 'foobar_parent_from_config')
+    env.set('foobar_child_from_config', 'foobar_child_from_config')
+
+    env.set('foobar_child_from_field', 'foobar_child_from_field')
+
+    # a. Child class config overrides prefix
+    class Parent(BaseSettings):
+        foobar: str = Field(None, validation_alias='foobar_parent_from_field')
+
+        model_config = SettingsConfigDict(env_prefix='p_')
+
+    class Child(Parent):
+        model_config = SettingsConfigDict(env_prefix='prefix_')
+
+    assert Child().foobar == 'foobar_parent_from_field'
+
+    # b. Child class overrides field
+    class Parent(BaseSettings):
+        foobar: str = Field(None, validation_alias='foobar_parent_from_config')
+
+    class Child(Parent):
+        foobar: str = Field(None, validation_alias='foobar_child_from_config')
+
+    assert Child().foobar == 'foobar_child_from_config'
+
+    # . Child class overrides parent prefix and field
+    class Parent(BaseSettings):
+        foobar: str | None
+
+        model_config = SettingsConfigDict(env_prefix='p_')
+
+    class Child(Parent):
+        foobar: str = Field(None, validation_alias='foobar_child_from_field')
+
+        model_config = SettingsConfigDict(env_prefix='prefix_')
+
+    assert Child().foobar == 'foobar_child_from_field'
+
+
+def test_invalid_validation_alias(env):
+    with pytest.raises(
+        TypeError,
+        match=re.escape('Invalid `validation_alias` type. it should be `str`, `AliasChoices`, or `AliasPath`'),
+    ):
+
+        class Settings(BaseSettings):
+            foobar: str = Field(validation_alias=123)
+
+
+def test_validation_aliases(env):
+    class Settings(BaseSettings):
+        foobar: str = Field('default value', validation_alias='foobar_alias')
+
+    assert Settings().foobar == 'default value'
+    assert Settings(foobar_alias='42').foobar == '42'
+    env.set('foobar_alias', 'xxx')
+    assert Settings().foobar == 'xxx'
+    assert Settings(foobar_alias='42').foobar == '42'
+
+
+def test_validation_aliases_alias_path(env):
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias=AliasPath('foo', 'bar', 1))
+
+    env.set('foo', '{"bar": ["val0", "val1"]}')
+    assert Settings().foobar == 'val1'
+
+
+def test_validation_aliases_alias_path_single_segment(env):
+    """A single-segment ``AliasPath`` is just a rename to a differently-named env var and
+    needs no JSON decoding, regardless of how long the env var name is.
+
+    Regression test: `_extract_field_info` used to derive complexity from the length of the
+    alias *string* (`len('foobar') > 1`) instead of the number of path segments
+    (`len(['foobar']) > 1`), so any single-segment `AliasPath` whose name was longer than one
+    character was wrongly treated as complex and crashed on a non-JSON value.
+    """
+
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias=AliasPath('foobar_alias'))
+
+    env.set('foobar_alias', 'plain-string-value')
+    assert Settings().foobar == 'plain-string-value'
+
+
+def test_validation_aliases_alias_path_short_head(env):
+    """A multi-segment ``AliasPath`` whose head is a one-character env var name must still be
+    JSON-decoded and navigated, and must not also register 'bar' as its own candidate env var.
+
+    Regression test: the same length-based bug made `len(alias) > 1` evaluate the *head's*
+    name instead of the path length, so a one-character head (`len('a') > 1` is False) was
+    wrongly treated as non-complex and the raw JSON string leaked through unnavigated; the old
+    per-segment loop also added 'bar' itself as a second, independent env var candidate.
+    """
+
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias=AliasPath('a', 'bar'))
+
+    env.set('a', '{"bar": "val-from-a"}')
+    env.set('bar', 'val-from-bar')
+    assert Settings().foobar == 'val-from-a'
+
+
+def test_validation_aliases_alias_path_tail_is_not_an_env_var(env):
+    """An unrelated env var sharing a name with a non-head path segment must be ignored.
+
+    Regression test: the old per-segment loop registered 'tail' as its own complex candidate,
+    so with the head unset the source fell through to it and tried to JSON-decode an unrelated
+    env var, raising SettingsError instead of falling back to the default.
+    """
+
+    class Settings(BaseSettings):
+        foobar: str = Field('DEFAULT', validation_alias=AliasPath('head', 'tail'))
+
+    env.set('tail', 'not-json')
+    assert Settings().foobar == 'DEFAULT'
+
+
+def test_validation_aliases_alias_choices(env):
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias=AliasChoices('foo', AliasPath('foo1', 'bar', 1), AliasPath('bar', 2)))
+
+    env.set('foo', 'val1')
+    assert Settings().foobar == 'val1'
+
+    env.pop('foo')
+    env.set('foo1', '{"bar": ["val0", "val2"]}')
+    assert Settings().foobar == 'val2'
+
+    env.pop('foo1')
+    env.set('bar', '["val1", "val2", "val3"]')
+    assert Settings().foobar == 'val3'
+
+
+def test_validation_aliases_alias_path_in_nested_model(env):
+    """Regression test for https://github.com/pydantic/pydantic-settings/issues/670
+
+    An ``AliasPath`` used on a field of a nested model should have its env value
+    JSON-decoded so the path can navigate into the resulting container.
+    """
+
+    class Nested(BaseModel):
+        alias_path: str = Field(validation_alias=AliasPath('path', 0))
+        deep: str = Field(validation_alias=AliasPath('foo', 'bar', 1))
+        alias: str = Field(validation_alias='no_path')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+        nest: Nested
+
+    env.set('NEST__PATH', '["hello"]')
+    env.set('NEST__FOO', '{"bar": ["v0", "v1"]}')
+    env.set('NEST__NO_PATH', 'world')
+
+    settings = Settings()
+    assert settings.nest.alias_path == 'hello'
+    assert settings.nest.deep == 'v1'
+    assert settings.nest.alias == 'world'
+
+
+def test_validation_aliases_alias_choices_in_nested_model(env):
+    """A nested-model ``AliasChoices`` containing an ``AliasPath`` should still
+    prefer a plain string alias when present, and decode the ``AliasPath`` value otherwise."""
+
+    class Nested(BaseModel):
+        choice: str = Field(validation_alias=AliasChoices('plain', AliasPath('cc', 0)))
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+        nest: Nested
+
+    env.set('NEST__CC', '["fromcc"]')
+    assert Settings().nest.choice == 'fromcc'
+
+    env.set('NEST__PLAIN', 'fromplain')
+    assert Settings().nest.choice == 'fromplain'
+
+
+def test_validation_alias_alias_choices_with_alias_path_first(env):
+    """Test that AliasPath in AliasChoices doesn't interfere with env var lookup.
+
+    Regression test for https://github.com/pydantic/pydantic-settings/issues/766
+    When AliasChoices has AliasPath as first choice, the env source should not use
+    the AliasPath's first element as the key when a string alias matches.
+    """
+
+    class Settings(BaseSettings):
+        my_field: str = Field(
+            default='default-value',
+            validation_alias=AliasChoices(AliasPath('nested', 'key'), 'MY_FIELD'),
+        )
+
+    # The env var MY_FIELD should be used, not 'nested' from the AliasPath
+    env.set('MY_FIELD', 'env-value')
+    assert Settings().my_field == 'env-value'
+
+
+def test_validation_alias_with_env_prefix(env):
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias='foo')
+
+        model_config = SettingsConfigDict(env_prefix='p_')
+
+    env.set('p_foo', 'bar')
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'missing', 'loc': ('foo',), 'msg': 'Field required', 'input': {}}
+    ]
+
+    env.set('foo', 'bar')
+    assert Settings().foobar == 'bar'
+
+
+@pytest.mark.parametrize('env_prefix_target', ['all', 'alias'])
+def test_validation_alias_with_env_prefix_and_env_prefix_target(env, env_prefix_target):
+    class Settings(BaseSettings):
+        foobar: str = Field(validation_alias='foo')
+
+        model_config = SettingsConfigDict(env_prefix='p_', env_prefix_target=env_prefix_target)
+
+    env.set('foo', 'bar')
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'missing', 'loc': ('foo',), 'msg': 'Field required', 'input': {}}
+    ]
+
+    env.set('p_foo', 'bar')
+    assert Settings().foobar == 'bar'
+
+
+@pytest.mark.parametrize('env_prefix_target', ['variable', 'alias', 'all'])
+def test_validation_alias_with_env_prefix_and_env_prefix_target_nested(env, env_prefix_target):
+    class SubModel(BaseModel):
+        var1: str | None = None
+
+    class Settings(BaseSettings):
+        submodel: SubModel | None = Field(alias='SUB', default=None)
+
+        model_config = SettingsConfigDict(
+            env_prefix='APP_', env_nested_delimiter='_', env_prefix_target=env_prefix_target
+        )
+
+    unprefixed_alias_matches = env_prefix_target == 'variable'
+
+    env.set('SUB_VAR1', 'unprefixed-value')
+    if unprefixed_alias_matches:
+        assert Settings().submodel == SubModel(var1='unprefixed-value')
+    else:
+        assert Settings().submodel is None
+
+    env.set('APP_SUB_VAR1', 'prefixed-value')
+    if unprefixed_alias_matches:
+        assert Settings().submodel == SubModel(var1='unprefixed-value')
+    else:
+        assert Settings().submodel == SubModel(var1='prefixed-value')
+
+
+def test_case_sensitive(monkeypatch):
+    class Settings(BaseSettings):
+        foo: str
+
+        model_config = SettingsConfigDict(case_sensitive=True)
+
+    # Need to patch os.environ to get build to work on Windows, where os.environ is case insensitive
+    monkeypatch.setattr(os, 'environ', value={'Foo': 'foo'})
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'missing', 'loc': ('foo',), 'msg': 'Field required', 'input': {}}
+    ]
+
+
+@pytest.mark.parametrize('env_nested_delimiter', [None, ''])
+def test_case_sensitive_no_nested_delimiter(monkeypatch, env_nested_delimiter):
+    class Subsettings(BaseSettings):
+        foo: str
+
+    class Settings(BaseSettings):
+        subsettings: Subsettings
+
+        model_config = SettingsConfigDict(case_sensitive=True, env_nested_delimiter=env_nested_delimiter)
+
+    # Need to patch os.environ to get build to work on Windows, where os.environ is case insensitive
+    monkeypatch.setattr(os, 'environ', value={'subsettingsNonefoo': '1'})
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'missing', 'loc': ('subsettings',), 'msg': 'Field required', 'input': {}}
+    ]
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='os.environ is only case-insensitive on Windows')
+def test_case_sensitive_windows_env_fallback(env):
+    # On Windows, os.environ is case-insensitive (variable names are normalized to
+    # upper-case), so case_sensitive=True must not break matching of environment
+    # variables (see https://github.com/pydantic/pydantic-settings/issues/295).
+    class RedisSettings(BaseModel):
+        host: str
+        port: int
+
+    class Settings(BaseSettings, case_sensitive=True):
+        redis: RedisSettings
+
+    env.set('redis', '{"host": "localhost", "port": 6379}')
+    assert 'REDIS' in os.environ  # Windows upper-cases env var names
+    assert Settings().model_dump() == {'redis': {'host': 'localhost', 'port': 6379}}
+
+
+def test_case_sensitive_downgraded_when_environ_is_case_insensitive():
+    """The Windows fallback from #295, exercised on any platform by patching the probe."""
+
+    class Settings(BaseSettings):
+        foo: str = 'default'
+
+    with mock.patch.object(env_provider, '_environ_is_case_insensitive', return_value=True):
+        source = EnvSettingsSource(Settings, case_sensitive=True)
+    assert source.case_sensitive is False
+
+    with mock.patch.object(env_provider, '_environ_is_case_insensitive', return_value=False):
+        source = EnvSettingsSource(Settings, case_sensitive=True)
+    assert source.case_sensitive is True
+
+
+def test_init_source_case_insensitive():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(case_sensitive=False, extra='allow')
+        test: str = 'default'
+
+    # A differently-cased init kwarg populates the field (see #562).
+    assert Settings(TeSt='override').model_dump() == {'test': 'override'}
+
+
+def test_init_source_case_insensitive_collision():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(case_sensitive=False, extra='allow')
+        test: str = 'default'
+
+    # Multiple keys that differ only by case all resolve to the field; none leak
+    # through as an extra. The first provided key wins the value.
+    assert Settings(TeSt='a', TEST='b').model_dump() == {'test': 'a'}
+
+
+def test_init_source_case_insensitive_with_alias():
+    class Settings(BaseSettings):
+        foo: str = Field(..., alias='FOO')
+        model_config = SettingsConfigDict(case_sensitive=False, extra='allow')
+
+    settings = Settings(Foo='foo_value', extra_field='extra_value')
+    assert settings.foo == 'foo_value'
+    assert settings.__pydantic_extra__ == {'extra_field': 'extra_value'}
+
+
+def test_init_source_case_sensitive():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(case_sensitive=True, extra='allow')
+        test: str = 'default'
+
+    # With case_sensitive=True, a differently-cased key stays an extra.
+    assert Settings(TeSt='override').model_dump() == {'test': 'default', 'TeSt': 'override'}
+
+
+def test_config_file_source_case_insensitive(tmp_path):
+    p = tmp_path / '.env.json'
+    p.write_text('{"API_KEY": "secret"}')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(case_sensitive=False, json_file=p)
+        api_key: str = 'none'
+
+        @classmethod
+        def settings_customise_sources(cls, settings_cls, **_kwargs):
+            return (JsonConfigSettingsSource(settings_cls),)
+
+    assert Settings().model_dump() == {'api_key': 'secret'}
+
+
+def test_init_and_default_sources_get_field_value_stubs():
+    """`get_field_value` is unused by these sources; it exists to satisfy the abstract API."""
+
+    class Settings(BaseSettings):
+        foo: str = 'default'
+
+    field = Settings.model_fields['foo']
+
+    assert InitSettingsSource(Settings, {}).get_field_value(field, 'foo') == (None, '', False)
+    assert DefaultSettingsSource(Settings).get_field_value(field, 'foo') == (None, '', False)
+
+
+def test_settings_customise_sources_returning_no_sources():
+    """With no sources at all, no values are built and field defaults apply."""
+
+    class Settings(BaseSettings):
+        foo: str = 'default'
+
+        @classmethod
+        def settings_customise_sources(cls, settings_cls, **_kwargs):
+            return ()
+
+    assert Settings._settings_build_values((), {}) == {}
+    assert Settings().model_dump() == {'foo': 'default'}
+
+
+def test_nested_dataclass(env):
+    @pydantic_dataclasses.dataclass
+    class DeepNestedDataclass:
+        boo: int
+        rar: str
+
+    @pydantic_dataclasses.dataclass
+    class MyDataclass:
+        foo: int
+        bar: str
+        deep: DeepNestedDataclass
+
+    class Settings(BaseSettings, env_nested_delimiter='__'):
+        n: MyDataclass
+
+    env.set('N', '{"foo": 123, "bar": "bar value"}')
+    env.set('N__DEEP', '{"boo": 1, "rar": "eek"}')
+    s = Settings()
+    assert isinstance(s.n, MyDataclass)
+    assert s.n.foo == 123
+    assert s.n.bar == 'bar value'
+
+
+def test_nested_vanilla_dataclass(env):
+    @dataclasses.dataclass
+    class MyDataclass:
+        value: str
+
+    class NestedSettings(BaseSettings, MyDataclass):
+        pass
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+        sub: NestedSettings
+
+    env.set('SUB__VALUE', 'something')
+    s = Settings()
+    assert s.sub.value == 'something'
+
+
+def test_env_takes_precedence(env):
+    class Settings(BaseSettings):
+        foo: int
+        bar: str
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return env_settings, init_settings
+
+    env.set('BAR', 'env setting')
+
+    s = Settings(foo='123', bar='argument')
+    assert s.foo == 123
+    assert s.bar == 'env setting'
+
+
+def test_config_file_settings_nornir(env):
+    """
+    See https://github.com/pydantic/pydantic/pull/341#issuecomment-450378771
+    """
+
+    def nornir_settings_source() -> dict[str, Any]:
+        return {'param_a': 'config a', 'param_b': 'config b', 'param_c': 'config c'}
+
+    class Settings(BaseSettings):
+        param_a: str
+        param_b: str
+        param_c: str
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return env_settings, init_settings, nornir_settings_source
+
+    env.set('PARAM_C', 'env setting c')
+
+    s = Settings(param_b='argument b', param_c='argument c')
+    assert s.param_a == 'config a'
+    assert s.param_b == 'argument b'
+    assert s.param_c == 'env setting c'
+
+
+def test_env_union_with_complex_subfields_parses_json(env):
+    class A(BaseModel):
+        a: str
+
+    class B(BaseModel):
+        b: int
+
+    class Settings(BaseSettings):
+        content: A | B | int
+
+    env.set('content', '{"a": "test"}')
+    s = Settings()
+    assert s.content == A(a='test')
+
+
+def test_env_union_with_complex_subfields_parses_plain_if_json_fails(env):
+    class A(BaseModel):
+        a: str
+
+    class B(BaseModel):
+        b: int
+
+    class Settings(BaseSettings):
+        content: A | B | datetime
+
+    env.set('content', '{"a": "test"}')
+    s = Settings()
+    assert s.content == A(a='test')
+
+    env.set('content', '2020-07-05T00:00:00Z')
+    s = Settings()
+    assert s.content == datetime(2020, 7, 5, 0, 0, tzinfo=UTC)
+
+
+def test_env_union_without_complex_subfields_does_not_parse_json(env):
+    class Settings(BaseSettings):
+        content: datetime | str
+
+    env.set('content', '2020-07-05T00:00:00Z')
+    s = Settings()
+    assert s.content == '2020-07-05T00:00:00Z'
+
+
+test_env_file = """\
+# this is a comment
+A=good string
+# another one, followed by whitespace
+
+b='better string'
+c="best string"
+"""
+
+
+def test_env_file_config(env, tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(test_env_file)
+
+    class Settings(BaseSettings):
+        a: str
+        b: str
+        c: str
+
+        model_config = SettingsConfigDict(env_file=p)
+
+    env.set('A', 'overridden var')
+
+    s = Settings()
+    assert s.a == 'overridden var'
+    assert s.b == 'better string'
+    assert s.c == 'best string'
+
+
+prefix_test_env_file = """\
+# this is a comment
+prefix_A=good string
+# another one, followed by whitespace
+
+prefix_b='better string'
+prefix_c="best string"
+"""
+
+
+def test_env_file_with_env_prefix(env, tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(prefix_test_env_file)
+
+    class Settings(BaseSettings):
+        a: str
+        b: str
+        c: str
+
+        model_config = SettingsConfigDict(env_file=p, env_prefix='prefix_')
+
+    env.set('prefix_A', 'overridden var')
+
+    s = Settings()
+    assert s.a == 'overridden var'
+    assert s.b == 'better string'
+    assert s.c == 'best string'
+
+
+prefix_test_env_invalid_file = """\
+# this is a comment
+prefix_A=good string
+# another one, followed by whitespace
+
+prefix_b='better string'
+prefix_c="best string"
+f="random value"
+"""
+
+
+def test_env_file_with_env_prefix_invalid(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(prefix_test_env_invalid_file)
+
+    class Settings(BaseSettings):
+        a: str
+        b: str
+        c: str
+
+        model_config = SettingsConfigDict(env_file=p, env_prefix='prefix_')
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'extra_forbidden', 'loc': ('f',), 'msg': 'Extra inputs are not permitted', 'input': 'random value'}
+    ]
+
+
+def test_ignore_env_file_with_env_prefix_invalid(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(prefix_test_env_invalid_file)
+
+    class Settings(BaseSettings):
+        a: str
+        b: str
+        c: str
+
+        model_config = SettingsConfigDict(env_file=p, env_prefix='prefix_', extra='ignore')
+
+    s = Settings()
+
+    assert s.a == 'good string'
+    assert s.b == 'better string'
+    assert s.c == 'best string'
+
+
+def test_env_file_config_case_sensitive(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(test_env_file)
+
+    class Settings(BaseSettings):
+        a: str
+        b: str
+        c: str
+
+        model_config = SettingsConfigDict(env_file=p, case_sensitive=True, extra='ignore')
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'missing',
+            'loc': ('a',),
+            'msg': 'Field required',
+            'input': {'b': 'better string', 'c': 'best string', 'A': 'good string'},
+        }
+    ]
+
+
+def test_env_file_export(env, tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(
+        """\
+export A='good string'
+export B=better-string
+export C="best string"
+"""
+    )
+
+    class Settings(BaseSettings):
+        a: str
+        b: str
+        c: str
+
+        model_config = SettingsConfigDict(env_file=p)
+
+    env.set('A', 'overridden var')
+
+    s = Settings()
+    assert s.a == 'overridden var'
+    assert s.b == 'better-string'
+    assert s.c == 'best string'
+
+
+def test_env_file_export_validation_alias(env, tmp_path):
+    p = tmp_path / '.env'
+    p.write_text("""export a='{"b": ["1", "2"]}'""")
+
+    class Settings(BaseSettings):
+        a: str = Field(validation_alias=AliasChoices(AliasPath('a', 'b', 1)))
+
+        model_config = SettingsConfigDict(env_file=p)
+
+    s = Settings()
+    assert s.a == '2'
+
+
+def test_env_file_config_custom_encoding(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('pika=p!±@', encoding='latin-1')
+
+    class Settings(BaseSettings):
+        pika: str
+
+        model_config = SettingsConfigDict(env_file=p, env_file_encoding='latin-1')
+
+    s = Settings()
+    assert s.pika == 'p!±@'
+
+
+@pytest.fixture
+def home_tmp(tmp_path, env):
+    env.set('HOME', str(tmp_path))
+    env.set('USERPROFILE', str(tmp_path))
+    env.set('HOMEPATH', str(tmp_path))
+
+    tmp_filename = f'{uuid.uuid4()}.env'
+    home_tmp_path = tmp_path / tmp_filename
+    yield home_tmp_path, tmp_filename
+    home_tmp_path.unlink()
+
+
+def test_env_file_home_directory(home_tmp):
+    home_tmp_path, tmp_filename = home_tmp
+    home_tmp_path.write_text('pika=baz')
+
+    class Settings(BaseSettings):
+        pika: str
+
+        model_config = SettingsConfigDict(env_file=f'~/{tmp_filename}')
+
+    assert Settings().pika == 'baz'
+
+
+def test_env_file_none(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a')
+
+    class Settings(BaseSettings):
+        a: str = 'xxx'
+
+    s = Settings(_env_file=p)
+    assert s.a == 'xxx'
+
+
+def test_env_file_override_file(tmp_path):
+    p1 = tmp_path / '.env'
+    p1.write_text(test_env_file)
+    p2 = tmp_path / '.env.prod'
+    p2.write_text('A="new string"')
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file=str(p1))
+
+    s = Settings(_env_file=p2)
+    assert s.a == 'new string'
+
+
+def test_env_file_override_none(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(test_env_file)
+
+    class Settings(BaseSettings):
+        a: str | None = None
+
+        model_config = SettingsConfigDict(env_file=p)
+
+    s = Settings(_env_file=None)
+    assert s.a is None
+
+
+def test_env_file_not_a_file(env):
+    class Settings(BaseSettings):
+        a: str = None
+
+    env.set('A', 'ignore non-file')
+    s = Settings(_env_file='tests/')
+    assert s.a == 'ignore non-file'
+
+
+def test_read_env_file_case_sensitive(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a="test"\nB=123')
+
+    assert DotEnvSettingsSource._static_read_env_file(p) == {'a': 'test', 'b': '123'}
+    assert DotEnvSettingsSource._static_read_env_file(p, case_sensitive=True) == {'a': 'test', 'B': '123'}
+
+
+def test_read_env_file_syntax_wrong(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('NOT_AN_ASSIGNMENT')
+
+    assert DotEnvSettingsSource._static_read_env_file(p, case_sensitive=True) == {'NOT_AN_ASSIGNMENT': None}
+
+
+def test_env_file_example(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text(
+        """\
+# ignore comment
+ENVIRONMENT="production"
+REDIS_ADDRESS=localhost:6379
+MEANING_OF_LIFE=42
+MY_VAR='Hello world'
+"""
+    )
+
+    class Settings(BaseSettings):
+        environment: str
+        redis_address: str
+        meaning_of_life: int
+        my_var: str
+
+    s = Settings(_env_file=str(p))
+    assert s.model_dump() == {
+        'environment': 'production',
+        'redis_address': 'localhost:6379',
+        'meaning_of_life': 42,
+        'my_var': 'Hello world',
+    }
+
+
+def test_env_file_custom_encoding(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('pika=p!±@', encoding='latin-1')
+
+    class Settings(BaseSettings):
+        pika: str
+
+    with pytest.raises(UnicodeDecodeError):
+        Settings(_env_file=str(p))
+
+    s = Settings(_env_file=str(p), _env_file_encoding='latin-1')
+    assert s.model_dump() == {'pika': 'p!±@'}
+
+
+test_default_env_file = """\
+debug_mode=true
+host=localhost
+Port=8000
+"""
+
+test_prod_env_file = """\
+debug_mode=false
+host=https://example.com/services
+"""
+
+
+def test_multiple_env_file(tmp_path):
+    base_env = tmp_path / '.env'
+    base_env.write_text(test_default_env_file)
+    prod_env = tmp_path / '.env.prod'
+    prod_env.write_text(test_prod_env_file)
+
+    class Settings(BaseSettings):
+        debug_mode: bool
+        host: str
+        port: int
+
+        model_config = SettingsConfigDict(env_file=[base_env, prod_env])
+
+    s = Settings()
+    assert s.debug_mode is False
+    assert s.host == 'https://example.com/services'
+    assert s.port == 8000
+
+
+def test_env_file_depth_not_searched_by_default(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a="test"')
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file='.env')
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False)[0]['type'] == 'missing'
+
+
+def test_env_file_depth_finds_parent(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a="test"')
+    sub = cd_tmp_path / 'x' / 'y'
+    sub.mkdir(parents=True)
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file='.env', env_file_depth=2)
+
+    assert Settings().a == 'test'
+
+
+def test_env_file_depth_from_init_kwarg(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a="test"')
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file='.env')
+
+    assert Settings(_env_file_depth=1).a == 'test'
+
+
+def test_env_file_depth_init_kwarg_overrides_config(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a="test"')
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        a: str = 'default'
+
+        model_config = SettingsConfigDict(env_file='.env', env_file_depth=2)
+
+    assert Settings().a == 'test'
+    assert Settings(_env_file_depth=0).a == 'default'
+
+
+def test_multiple_env_file_depth(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text(test_default_env_file)
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    (sub / '.env.prod').write_text(test_prod_env_file)
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        debug_mode: bool
+        host: str
+        port: int
+
+        model_config = SettingsConfigDict(env_file=['.env', '.env.prod'], env_file_depth=1)
+
+    s = Settings()
+    assert s.debug_mode is False
+    assert s.host == 'https://example.com/services'
+    assert s.port == 8000
+
+
+def test_env_file_depth_nearest_wins(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a="top"')
+    mid = cd_tmp_path / 'mid'
+    mid.mkdir()
+    (mid / '.env').write_text('a="mid"')
+    sub = mid / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file='.env', env_file_depth=2)
+
+    assert Settings().a == 'mid'
+
+
+def test_env_file_depth_nested_relative_path(cd_tmp_path):
+    (cd_tmp_path / 'cfg').mkdir()
+    (cd_tmp_path / 'cfg' / '.env').write_text('a="nested"')
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file='cfg/.env', env_file_depth=1)
+
+    assert Settings().a == 'nested'
+
+
+def test_env_file_depth_negative(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a="test"')
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    class Settings(BaseSettings):
+        a: str = 'default'
+
+        model_config = SettingsConfigDict(env_file='.env', env_file_depth=-1)
+
+    assert Settings().a == 'default'
+
+
+def test_dotenv_source_positional_args_order(cd_tmp_path):
+    """`env_file_depth` must not shift the position of pre-existing positional parameters."""
+    (cd_tmp_path / '.env').write_text('a=1')
+
+    source = DotEnvSettingsSource(BaseSettings(), '.env', 'utf-8', 'only_existing')
+    assert source.dotenv_filtering == 'only_existing'
+    assert source.env_file_depth == 0
+
+
+def test_model_env_file_override_model_config(tmp_path):
+    base_env = tmp_path / '.env'
+    base_env.write_text(test_default_env_file)
+    prod_env = tmp_path / '.env.prod'
+    prod_env.write_text(test_prod_env_file)
+
+    class Settings(BaseSettings):
+        debug_mode: bool
+        host: str
+        port: int
+
+        model_config = SettingsConfigDict(env_file=prod_env)
+
+    s = Settings(_env_file=base_env)
+    assert s.debug_mode is True
+    assert s.host == 'localhost'
+    assert s.port == 8000
+
+
+def test_multiple_env_file_encoding(tmp_path):
+    base_env = tmp_path / '.env'
+    base_env.write_text('pika=p!±@', encoding='latin-1')
+    prod_env = tmp_path / '.env.prod'
+    prod_env.write_text('pika=chu!±@', encoding='latin-1')
+
+    class Settings(BaseSettings):
+        pika: str
+
+    s = Settings(_env_file=[base_env, prod_env], _env_file_encoding='latin-1')
+    assert s.pika == 'chu!±@'
+
+
+def test_read_dotenv_vars(tmp_path):
+    base_env = tmp_path / '.env'
+    base_env.write_text(test_default_env_file)
+    prod_env = tmp_path / '.env.prod'
+    prod_env.write_text(test_prod_env_file)
+
+    source = DotEnvSettingsSource(
+        BaseSettings(), env_file=[base_env, prod_env], env_file_encoding='utf8', case_sensitive=False
+    )
+    assert source._read_env_files() == {
+        'debug_mode': 'false',
+        'host': 'https://example.com/services',
+        'port': '8000',
+    }
+
+    source = DotEnvSettingsSource(
+        BaseSettings(), env_file=[base_env, prod_env], env_file_encoding='utf8', case_sensitive=True
+    )
+    assert source._read_env_files() == {
+        'debug_mode': 'false',
+        'host': 'https://example.com/services',
+        'Port': '8000',
+    }
+
+
+def test_read_dotenv_vars_cwd_only_by_default(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text(test_default_env_file)
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    source = DotEnvSettingsSource(BaseSettings(), env_file='.env', env_file_encoding='utf8')
+    assert source._read_env_files() == {}
+
+
+def test_read_dotenv_vars_with_depth(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a=1')
+    sub = cd_tmp_path / 'a' / 'b'
+    sub.mkdir(parents=True)
+    os.chdir(sub)
+
+    source = DotEnvSettingsSource(BaseSettings(), env_file='.env', env_file_depth=2)
+    assert source._read_env_files() == {'a': '1'}
+
+    source = DotEnvSettingsSource(BaseSettings(), env_file='.env', env_file_depth=1)
+    assert source._read_env_files() == {}
+
+    source = DotEnvSettingsSource(BaseSettings(), env_file='.env')
+    assert source._read_env_files() == {}
+
+
+def test_read_dotenv_vars_absolute_path_with_depth(cd_tmp_path):
+    (cd_tmp_path / '.env').write_text('a=1')
+    sub = cd_tmp_path / 'sub'
+    sub.mkdir()
+    os.chdir(sub)
+
+    source = DotEnvSettingsSource(BaseSettings(), env_file=sub / '.env', env_file_depth=5)
+    assert source._read_env_files() == {}
+
+
+@pytest.mark.skipif(not hasattr(os, 'mkfifo'), reason='requires os.mkfifo (Unix)')
+def test_read_dotenv_vars_from_fifo(tmp_path):
+    """Named pipes / FIFOs (e.g. 1Password Environments) should be read as env files."""
+    env_content = 'KEY=value\nOTHER=123'
+    fifo_path = tmp_path / '.env'
+    os.mkfifo(fifo_path)
+
+    def write_to_fifo():
+        with fifo_path.open('w') as f:
+            f.write(env_content)
+
+    thread = threading.Thread(target=write_to_fifo)
+    thread.start()
+
+    try:
+        source = DotEnvSettingsSource(
+            BaseSettings(), env_file=fifo_path, env_file_encoding='utf8', case_sensitive=False
+        )
+        assert dict(source.env_vars) == {'key': 'value', 'other': '123'}
+    finally:
+        thread.join(timeout=1)
+        if thread.is_alive():
+            fifo_path.read_text()  # writer may be blocked without a read
+            thread.join(timeout=1)
+
+
+def test_read_dotenv_vars_when_env_file_is_none():
+    assert (
+        DotEnvSettingsSource(
+            BaseSettings(), env_file=None, env_file_encoding=None, case_sensitive=False
+        )._read_env_files()
+        == {}
+    )
+
+
+def test_dotenvsource_override(env):
+    class StdinDotEnvSettingsSource(DotEnvSettingsSource):
+        @override
+        def _read_env_file(self, file_path: Path) -> dict[str, str]:
+            assert str(file_path) == '-'
+            return {'foo': 'stdin_foo', 'bar': 'stdin_bar'}
+
+        @override
+        def _read_env_files(self) -> dict[str, str]:
+            return self._read_env_file(Path('-'))
+
+    source = StdinDotEnvSettingsSource(BaseSettings())
+    assert source._read_env_files() == {'foo': 'stdin_foo', 'bar': 'stdin_bar'}
+
+
+# test that calling read_env_file issues a DeprecationWarning
+# TODO: remove this test once read_env_file is removed
+def test_read_env_file_deprecation(tmp_path):
+    base_env = tmp_path / '.env'
+    base_env.write_text(test_default_env_file)
+
+    with pytest.deprecated_call():
+        assert read_env_file(base_env) == {
+            'debug_mode': 'true',
+            'host': 'localhost',
+            'port': '8000',
+        }
+
+
+def test_alias_set(env):
+    class Settings(BaseSettings):
+        foo: str = Field('default foo', validation_alias='foo_env')
+        bar: str = 'bar default'
+
+    assert Settings.model_fields['bar'].alias is None
+    assert Settings.model_fields['bar'].validation_alias is None
+    assert Settings.model_fields['foo'].alias is None
+    assert Settings.model_fields['foo'].validation_alias == 'foo_env'
+
+    class SubSettings(Settings):
+        spam: str = 'spam default'
+
+    assert SubSettings.model_fields['bar'].alias is None
+    assert SubSettings.model_fields['bar'].validation_alias is None
+    assert SubSettings.model_fields['foo'].alias is None
+    assert SubSettings.model_fields['foo'].validation_alias == 'foo_env'
+
+    assert SubSettings().model_dump() == {'foo': 'default foo', 'bar': 'bar default', 'spam': 'spam default'}
+    env.set('foo_env', 'fff')
+    assert SubSettings().model_dump() == {'foo': 'fff', 'bar': 'bar default', 'spam': 'spam default'}
+    env.set('bar', 'bbb')
+    assert SubSettings().model_dump() == {'foo': 'fff', 'bar': 'bbb', 'spam': 'spam default'}
+    env.set('spam', 'sss')
+    assert SubSettings().model_dump() == {'foo': 'fff', 'bar': 'bbb', 'spam': 'sss'}
+
+
+def test_prefix_on_parent(env):
+    class MyBaseSettings(BaseSettings):
+        var: str = 'old'
+
+    class MySubSettings(MyBaseSettings):
+        model_config = SettingsConfigDict(env_prefix='PREFIX_')
+
+    assert MyBaseSettings().model_dump() == {'var': 'old'}
+    assert MySubSettings().model_dump() == {'var': 'old'}
+    env.set('PREFIX_VAR', 'new')
+    assert MyBaseSettings().model_dump() == {'var': 'old'}
+    assert MySubSettings().model_dump() == {'var': 'new'}
+
+
+def test_secrets_path(tmp_path):
+    p = tmp_path / 'foo'
+    p.write_text('foo_secret_value_str')
+
+    class Settings(BaseSettings):
+        foo: str
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    assert Settings().model_dump() == {'foo': 'foo_secret_value_str'}
+
+
+def test_secrets_path_multiple(tmp_path):
+    d1 = tmp_path / 'dir1'
+    d2 = tmp_path / 'dir2'
+    d1.mkdir()
+    d2.mkdir()
+    (d1 / 'foo1').write_text('foo1_dir1_secret_value_str')
+    (d1 / 'foo2').write_text('foo2_dir1_secret_value_str')
+    (d2 / 'foo2').write_text('foo2_dir2_secret_value_str')
+    (d2 / 'foo3').write_text('foo3_dir2_secret_value_str')
+
+    class Settings(BaseSettings):
+        foo1: str
+        foo2: str
+        foo3: str
+
+    assert Settings(_secrets_dir=(d1, d2)).model_dump() == {
+        'foo1': 'foo1_dir1_secret_value_str',
+        'foo2': 'foo2_dir2_secret_value_str',  # dir2 takes priority
+        'foo3': 'foo3_dir2_secret_value_str',
+    }
+    assert Settings(_secrets_dir=(d2, d1)).model_dump() == {
+        'foo1': 'foo1_dir1_secret_value_str',
+        'foo2': 'foo2_dir1_secret_value_str',  # dir1 takes priority
+        'foo3': 'foo3_dir2_secret_value_str',
+    }
+
+
+def test_secrets_path_with_validation_alias(tmp_path):
+    p = tmp_path / 'foo'
+    p.write_text('{"bar": ["test"]}')
+
+    class Settings(BaseSettings):
+        foo: str = Field(validation_alias=AliasChoices(AliasPath('foo', 'bar', 0)))
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    assert Settings().model_dump() == {'foo': 'test'}
+
+
+def test_secrets_case_sensitive(tmp_path):
+    (tmp_path / 'SECRET_VAR').write_text('foo_env_value_str')
+
+    class Settings(BaseSettings):
+        secret_var: str | None = None
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path, case_sensitive=True)
+
+    assert Settings().model_dump() == {'secret_var': None}
+
+
+def test_secrets_case_insensitive(tmp_path):
+    (tmp_path / 'SECRET_VAR').write_text('foo_env_value_str')
+
+    class Settings(BaseSettings):
+        secret_var: str | None
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path, case_sensitive=False)
+
+    settings = Settings().model_dump()
+    assert settings == {'secret_var': 'foo_env_value_str'}
+
+
+def test_secrets_path_url(tmp_path):
+    (tmp_path / 'foo').write_text('http://www.example.com')
+    (tmp_path / 'bar').write_text('snap')
+
+    class Settings(BaseSettings):
+        foo: HttpUrl
+        bar: SecretStr
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    settings = Settings()
+    assert str(settings.foo) == 'http://www.example.com/'
+    assert settings.bar == SecretStr('snap')
+
+
+def test_secrets_path_utf8(tmp_path):
+    p = tmp_path / 'foo'
+    p.write_bytes('pässwörd-\U0001f510'.encode('utf-8'))
+
+    class Settings(BaseSettings):
+        foo: str
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    assert Settings().model_dump() == {'foo': 'pässwörd-\U0001f510'}
+
+
+def test_secrets_path_utf8_under_non_utf8_locale(tmp_path, non_utf8_default_encoding):
+    """A UTF-8 secret must not be decoded with the locale encoding.
+
+    On a Windows code page such as cp1252 or cp936 an implicit `read_text()` either
+    raises `UnicodeDecodeError` or, worse, silently returns a different string.
+    """
+    p = tmp_path / 'foo'
+    p.write_bytes('café-pässwörd'.encode())
+
+    class Settings(BaseSettings):
+        foo: str
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    assert Settings().model_dump() == {'foo': 'café-pässwörd'}
+
+
+def test_secrets_path_json(tmp_path):
+    p = tmp_path / 'foo'
+    p.write_text('{"a": "b"}')
+
+    class Settings(BaseSettings):
+        foo: dict[str, str]
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    assert Settings().model_dump() == {'foo': {'a': 'b'}}
+
+
+def test_secrets_nested_optional_json(tmp_path):
+    p = tmp_path / 'foo'
+    p.write_text('{"a": 10}')
+
+    class Foo(BaseModel):
+        a: int
+
+    class Settings(BaseSettings):
+        foo: Foo | None = None
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    assert Settings().model_dump() == {'foo': {'a': 10}}
+
+
+def test_secrets_path_invalid_json(tmp_path):
+    p = tmp_path / 'foo'
+    p.write_text('{"a": "b"')
+
+    class Settings(BaseSettings):
+        foo: dict[str, str]
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    with pytest.raises(SettingsError, match='error parsing value for field "foo" from source "SecretsSettingsSource"'):
+        Settings()
+
+
+def test_secrets_missing(tmp_path):
+    class Settings(BaseSettings):
+        foo: str
+        bar: list[str]
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'missing', 'loc': ('foo',), 'msg': 'Field required', 'input': {}},
+        {'input': {}, 'loc': ('bar',), 'msg': 'Field required', 'type': 'missing'},
+    ]
+
+
+def test_secrets_invalid_secrets_dir(tmp_path):
+    p1 = tmp_path / 'foo'
+    p1.write_text('foo_secret_value_str')
+
+    class Settings(BaseSettings):
+        foo: str
+
+        model_config = SettingsConfigDict(secrets_dir=p1)
+
+    with pytest.raises(SettingsError, match='secrets_dir must reference a directory, not a file'):
+        Settings()
+
+
+def test_secrets_invalid_secrets_dir_multiple_all(tmp_path):
+    class Settings(BaseSettings):
+        foo: str
+
+    (d1 := tmp_path / 'dir1').write_text('')
+    (d2 := tmp_path / 'dir2').write_text('')
+
+    with pytest.raises(SettingsError, match='secrets_dir must reference a directory, not a file'):
+        Settings(_secrets_dir=[d1, d2])
+
+
+def test_secrets_invalid_secrets_dir_multiple_one(tmp_path):
+    class Settings(BaseSettings):
+        foo: str
+
+    (d1 := tmp_path / 'dir1').mkdir()
+    (d2 := tmp_path / 'dir2').write_text('')
+
+    with pytest.raises(SettingsError, match='secrets_dir must reference a directory, not a file'):
+        Settings(_secrets_dir=[d1, d2])
+
+
+@pytest.mark.skipif(sys.platform.startswith('win'), reason='windows paths break regex')
+def test_secrets_missing_location(tmp_path):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(secrets_dir=tmp_path / 'does_not_exist')
+
+    with pytest.warns(UserWarning, match=f'directory "{tmp_path}/does_not_exist" does not exist'):
+        Settings()
+
+
+@pytest.mark.skipif(sys.platform.startswith('win'), reason='windows paths break regex')
+def test_secrets_missing_location_multiple_all(tmp_path):
+    class Settings(BaseSettings):
+        foo: str | None = None
+
+    with pytest.warns() as record:
+        Settings(_secrets_dir=[tmp_path / 'dir1', tmp_path / 'dir2'])
+
+    assert len(record) == 2
+    assert record[0].category is UserWarning and record[1].category is UserWarning
+    assert str(record[0].message) == f'directory "{tmp_path}/dir1" does not exist'
+    assert str(record[1].message) == f'directory "{tmp_path}/dir2" does not exist'
+
+
+@pytest.mark.skipif(sys.platform.startswith('win'), reason='windows paths break regex')
+def test_secrets_missing_location_multiple_one(tmp_path):
+    class Settings(BaseSettings):
+        foo: str | None = None
+
+    (d1 := tmp_path / 'dir1').mkdir()
+    (d1 / 'foo').write_text('secret_value')
+
+    with pytest.warns(UserWarning, match=f'directory "{tmp_path}/dir2" does not exist'):
+        conf = Settings(_secrets_dir=[d1, tmp_path / 'dir2'])
+
+    assert conf.foo == 'secret_value'  # value obtained from first directory
+
+
+@pytest.mark.skipif(sys.platform.startswith('win'), reason='windows paths break regex')
+def test_secrets_file_is_a_directory(tmp_path):
+    p1 = tmp_path / 'foo'
+    p1.mkdir()
+
+    class Settings(BaseSettings):
+        foo: str | None = None
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    with pytest.warns(
+        UserWarning, match=f'attempted to load secret file "{tmp_path}/foo" but found a directory instead'
+    ):
+        Settings()
+
+
+@pytest.mark.skipif(sys.platform.startswith('win'), reason='windows paths break regex')
+def test_secrets_file_is_a_directory_multiple_all(tmp_path):
+    class Settings(BaseSettings):
+        foo: str | None = None
+
+    (d1 := tmp_path / 'dir1').mkdir()
+    (d2 := tmp_path / 'dir2').mkdir()
+    (d1 / 'foo').mkdir()
+    (d2 / 'foo').mkdir()
+
+    with pytest.warns() as record:
+        Settings(_secrets_dir=[d1, d2])
+
+    assert len(record) == 2
+    assert record[0].category is UserWarning and record[1].category is UserWarning
+    # warnings are emitted in reverse order
+    assert str(record[0].message) == f'attempted to load secret file "{d2}/foo" but found a directory instead.'
+    assert str(record[1].message) == f'attempted to load secret file "{d1}/foo" but found a directory instead.'
+
+
+@pytest.mark.skipif(sys.platform.startswith('win'), reason='windows paths break regex')
+def test_secrets_file_is_a_directory_multiple_one(tmp_path):
+    class Settings(BaseSettings):
+        foo: str | None = None
+
+    (d1 := tmp_path / 'dir1').mkdir()
+    (d2 := tmp_path / 'dir2').mkdir()
+    (d1 / 'foo').write_text('secret_value')
+    (d2 / 'foo').mkdir()
+
+    with pytest.warns(UserWarning, match=f'attempted to load secret file "{d2}/foo" but found a directory instead.'):
+        conf = Settings(_secrets_dir=[d1, d2])
+
+    assert conf.foo == 'secret_value'  # value obtained from first directory
+
+
+def test_secrets_dotenv_precedence(tmp_path):
+    s = tmp_path / 'foo'
+    s.write_text('foo_secret_value_str')
+
+    e = tmp_path / '.env'
+    e.write_text('foo=foo_env_value_str')
+
+    class Settings(BaseSettings):
+        foo: str
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+    assert Settings(_env_file=e).model_dump() == {'foo': 'foo_env_value_str'}
+
+
+def test_external_settings_sources_precedence(env):
+    def external_source_0() -> dict[str, str]:
+        return {'apple': 'value 0', 'banana': 'value 2'}
+
+    def external_source_1() -> dict[str, str]:
+        return {'apple': 'value 1', 'raspberry': 'value 3'}
+
+    class Settings(BaseSettings):
+        apple: str
+        banana: str
+        raspberry: str
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (
+                init_settings,
+                env_settings,
+                dotenv_settings,
+                file_secret_settings,
+                external_source_0,
+                external_source_1,
+            )
+
+    env.set('banana', 'value 1')
+    assert Settings().model_dump() == {'apple': 'value 0', 'banana': 'value 1', 'raspberry': 'value 3'}
+
+
+def test_external_settings_sources_filter_env_vars():
+    vault_storage = {'user:password': {'apple': 'value 0', 'banana': 'value 2'}}
+
+    class VaultSettingsSource(PydanticBaseSettingsSource):
+        def __init__(self, settings_cls: type[BaseSettings], user: str, password: str):
+            self.user = user
+            self.password = password
+            super().__init__(settings_cls)
+
+        def get_field_value(self, field: FieldInfo, field_name: str) -> Any:
+            pass
+
+        def __call__(self) -> dict[str, str]:
+            vault_vars = vault_storage[f'{self.user}:{self.password}']
+            return {
+                field_name: vault_vars[field_name]
+                for field_name in self.settings_cls.model_fields
+                if field_name in vault_vars
+            }
+
+    class Settings(BaseSettings):
+        apple: str
+        banana: str
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (
+                init_settings,
+                env_settings,
+                dotenv_settings,
+                file_secret_settings,
+                VaultSettingsSource(settings_cls, user='user', password='password'),
+            )
+
+    assert Settings().model_dump() == {'apple': 'value 0', 'banana': 'value 2'}
+
+
+def test_customise_sources_empty():
+    class Settings(BaseSettings):
+        apple: str = 'default'
+        banana: str = 'default'
+
+        @classmethod
+        def settings_customise_sources(cls, *args, **kwargs):
+            return ()
+
+    assert Settings().model_dump() == {'apple': 'default', 'banana': 'default'}
+    assert Settings(apple='xxx').model_dump() == {'apple': 'default', 'banana': 'default'}
+
+
+def test_builtins_settings_source_repr():
+    assert (
+        repr(DefaultSettingsSource(BaseSettings, nested_model_default_partial_update=True))
+        == 'DefaultSettingsSource(nested_model_default_partial_update=True)'
+    )
+    assert (
+        repr(InitSettingsSource(BaseSettings, init_kwargs={'apple': 'value 0', 'banana': 'value 1'}))
+        == "InitSettingsSource(init_kwargs={'apple': 'value 0', 'banana': 'value 1'})"
+    )
+    assert (
+        repr(EnvSettingsSource(BaseSettings, env_nested_delimiter='__'))
+        == "EnvSettingsSource(env_nested_delimiter='__', env_prefix_len=0)"
+    )
+    assert repr(DotEnvSettingsSource(BaseSettings, env_file='.env', env_file_encoding='utf-8')) == (
+        "DotEnvSettingsSource(env_file='.env', env_file_encoding='utf-8', env_file_depth=0, env_nested_delimiter=None, env_prefix_len=0)"
+    )
+    assert (
+        repr(SecretsSettingsSource(BaseSettings, secrets_dir='/secrets'))
+        == "SecretsSettingsSource(secrets_dir='/secrets')"
+    )
+
+
+def _parse_custom_dict(value: str) -> Callable[[str], dict[int, str]]:
+    """A custom parsing function passed into env parsing test."""
+    res = {}
+    for part in value.split(','):
+        k, v = part.split('=')
+        res[int(k)] = v
+    return res
+
+
+class CustomEnvSettingsSource(EnvSettingsSource):
+    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
+        if not value:
+            return None
+
+        return _parse_custom_dict(value)
+
+
+def test_env_setting_source_custom_env_parse(env):
+    class Settings(BaseSettings):
+        top: dict[int, str]
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (CustomEnvSettingsSource(settings_cls),)
+
+    with pytest.raises(ValidationError):
+        Settings()
+    env.set('top', '1=apple,2=banana')
+    s = Settings()
+    assert s.top == {1: 'apple', 2: 'banana'}
+
+
+class BadCustomEnvSettingsSource(EnvSettingsSource):
+    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
+        """A custom parsing function passed into env parsing test."""
+        return int(value)
+
+
+def test_env_settings_source_custom_env_parse_is_bad(env):
+    class Settings(BaseSettings):
+        top: dict[int, str]
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (BadCustomEnvSettingsSource(settings_cls),)
+
+    env.set('top', '1=apple,2=banana')
+    with pytest.raises(
+        SettingsError, match='error parsing value for field "top" from source "BadCustomEnvSettingsSource"'
+    ):
+        Settings()
+
+
+class CustomSecretsSettingsSource(SecretsSettingsSource):
+    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
+        if not value:
+            return None
+
+        return _parse_custom_dict(value)
+
+
+def test_secret_settings_source_custom_env_parse(tmp_path):
+    p = tmp_path / 'top'
+    p.write_text('1=apple,2=banana')
+
+    class Settings(BaseSettings):
+        top: dict[int, str]
+
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (CustomSecretsSettingsSource(settings_cls, tmp_path),)
+
+    s = Settings()
+    assert s.top == {1: 'apple', 2: 'banana'}
+
+
+class BadCustomSettingsSource(EnvSettingsSource):
+    def get_field_value(self, field: FieldInfo, field_name: str) -> Any:
+        raise ValueError('Error')
+
+
+def test_custom_source_get_field_value_error(env):
+    class Settings(BaseSettings):
+        top: dict[int, str]
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (BadCustomSettingsSource(settings_cls),)
+
+    with pytest.raises(
+        SettingsError, match='error getting value for field "top" from source "BadCustomSettingsSource"'
+    ):
+        Settings()
+
+
+def test_nested_env_complex_values(env):
+    class SubSubModel(BaseSettings):
+        dvals: dict
+
+    class SubModel(BaseSettings):
+        vals: list[str]
+        sub_sub_model: SubSubModel
+
+    class Cfg(BaseSettings):
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(env_prefix='cfg_', env_nested_delimiter='__')
+
+    env.set('cfg_sub_model__vals', '["one", "two"]')
+    env.set('cfg_sub_model__sub_sub_model__dvals', '{"three": 4}')
+
+    assert Cfg().model_dump() == {'sub_model': {'vals': ['one', 'two'], 'sub_sub_model': {'dvals': {'three': 4}}}}
+
+    env.set('cfg_sub_model__vals', 'invalid')
+    with pytest.raises(
+        SettingsError, match='error parsing value for field "sub_model" from source "EnvSettingsSource"'
+    ):
+        Cfg()
+
+
+def test_nested_env_nonexisting_field(env):
+    class SubModel(BaseSettings):
+        vals: list[str]
+
+    class Cfg(BaseSettings):
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(env_prefix='cfg_', env_nested_delimiter='__')
+
+    env.set('cfg_sub_model__foo_vals', '[]')
+    with pytest.raises(ValidationError):
+        Cfg()
+
+
+def test_nested_env_nonexisting_field_deep(env):
+    class SubModel(BaseSettings):
+        vals: list[str]
+
+    class Cfg(BaseSettings):
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(env_prefix='cfg_', env_nested_delimiter='__')
+
+    env.set('cfg_sub_model__vals__foo__bar__vals', '[]')
+    with pytest.raises(ValidationError):
+        Cfg()
+
+
+def test_nested_env_union_complex_values(env):
+    class SubModel(BaseSettings):
+        vals: list[str] | dict[str, str]
+
+    class Cfg(BaseSettings):
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(env_prefix='cfg_', env_nested_delimiter='__')
+
+    env.set('cfg_sub_model__vals', '["one", "two"]')
+    assert Cfg().model_dump() == {'sub_model': {'vals': ['one', 'two']}}
+
+    env.set('cfg_sub_model__vals', '{"three": "four"}')
+    assert Cfg().model_dump() == {'sub_model': {'vals': {'three': 'four'}}}
+
+    env.set('cfg_sub_model__vals', 'stringval')
+    with pytest.raises(ValidationError):
+        Cfg()
+
+    env.set('cfg_sub_model__vals', '{"invalid": dict}')
+    with pytest.raises(ValidationError):
+        Cfg()
+
+
+def test_discriminated_union_with_callable_discriminator(env):
+    class A(BaseModel):
+        x: Literal['a'] = 'a'
+        y: str
+
+    class B(BaseModel):
+        x: Literal['b'] = 'b'
+        z: str
+
+    def get_discriminator_value(v: Any) -> Hashable:
+        if isinstance(v, dict):
+            v0 = v.get('x')
+        else:
+            v0 = getattr(v, 'x', None)
+
+        if v0 == 'a':
+            return 'a'
+        if v0 == 'b':
+            return 'b'
+        return None
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+        # Discriminated union using a callable discriminator.
+        a_or_b: Annotated[Annotated[A, Tag('a')] | Annotated[B, Tag('b')], Discriminator(get_discriminator_value)]
+
+    # Set up environment so that the discriminator is 'a'.
+    env.set('a_or_b__x', 'a')
+    env.set('a_or_b__y', 'foo')
+
+    s = Settings()
+
+    assert s.a_or_b.x == 'a'
+    assert s.a_or_b.y == 'foo'
+
+
+def test_json_field_with_discriminated_union(env):
+    class A(BaseModel):
+        x: Literal['a'] = 'a'
+
+    class B(BaseModel):
+        x: Literal['b'] = 'b'
+
+    A_OR_B = Annotated[A | B, Field(discriminator='x')]
+
+    class Settings(BaseSettings):
+        a_or_b: Json[A_OR_B] | None = None
+
+    # Set up environment so that the discriminator is 'a'.
+    env.set('a_or_b', '{"x": "a"}')
+
+    s = Settings()
+
+    assert s.a_or_b.x == 'a'
+
+
+def test_nested_discriminated_union(env):
+    """Test that nested unions like Union[Annotated[Union[A, B], Discriminator(...)], None] are handled correctly."""
+
+    class A(BaseModel):
+        x: Literal['a'] = 'a'
+        a: int = 1
+
+    class B(BaseModel):
+        x: Literal['b'] = 'b'
+        b: str = 'hello'
+
+    AOrB = Annotated[A | B, Discriminator('x')]
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+        a_or_b: AOrB | None = None
+
+    # Test env var for nested model field
+    env.set('a_or_b__x', 'b')
+    env.set('a_or_b__b', 'world')
+    s = Settings()
+    assert isinstance(s.a_or_b, B)
+    assert s.a_or_b.b == 'world'
+
+
+def test_nested_model_case_insensitive(env):
+    class SubSubSub(BaseModel):
+        VaL3: str
+        val4: str = Field(validation_alias='VAL4')
+
+    class SubSub(BaseModel):
+        Val2: str
+        SUB_sub_SuB: SubSubSub
+
+    class Sub(BaseModel):
+        VAL1: str
+        SUB_sub: SubSub
+
+    class Settings(BaseSettings):
+        nested: Sub
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('nested', '{"val1": "v1", "sub_SUB": {"VAL2": "v2", "sub_SUB_sUb": {"vAl3": "v3", "VAL4": "v4"}}}')
+    s = Settings()
+    assert s.nested.VAL1 == 'v1'
+    assert s.nested.SUB_sub.Val2 == 'v2'
+    assert s.nested.SUB_sub.SUB_sub_SuB.VaL3 == 'v3'
+    assert s.nested.SUB_sub.SUB_sub_SuB.val4 == 'v4'
+
+
+def test_dotenv_extra_allow(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a=b\nx=y')
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file=p, extra='allow')
+
+    s = Settings()
+    assert s.a == 'b'
+    assert s.x == 'y'
+
+
+def test_dotenv_extra_forbid(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a=b\nx=y')
+
+    class Settings(BaseSettings):
+        a: str
+
+        model_config = SettingsConfigDict(env_file=p, extra='forbid')
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'extra_forbidden', 'loc': ('x',), 'msg': 'Extra inputs are not permitted', 'input': 'y'}
+    ]
+
+
+def test_dotenv_extra_case_insensitive(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a=b')
+
+    class Settings(BaseSettings):
+        A: str
+
+        model_config = SettingsConfigDict(env_file=p, extra='forbid')
+
+    s = Settings()
+    assert s.A == 'b'
+
+
+def test_dotenv_extra_sub_model_case_insensitive(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('a=b\nSUB_model={"v": "v1"}')
+
+    class SubModel(BaseModel):
+        v: str
+
+    class Settings(BaseSettings):
+        A: str
+        sub_MODEL: SubModel
+
+        model_config = SettingsConfigDict(env_file=p, extra='forbid')
+
+    s = Settings()
+    assert s.A == 'b'
+    assert s.sub_MODEL.v == 'v1'
+
+
+def test_nested_bytes_field(env):
+    class SubModel(BaseModel):
+        v1: str
+        v2: bytes
+
+    class Settings(BaseSettings):
+        v0: str
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__', env_prefix='TEST_')
+
+    env.set('TEST_V0', 'v0')
+    env.set('TEST_SUB_MODEL__V1', 'v1')
+    env.set('TEST_SUB_MODEL__V2', 'v2')
+
+    s = Settings()
+
+    assert s.v0 == 'v0'
+    assert s.sub_model.v1 == 'v1'
+    assert s.sub_model.v2 == b'v2'
+
+
+def test_protected_namespace_defaults():
+    # pydantic default
+    with pytest.warns(
+        UserWarning,
+        match=(
+            'Field "model_dump_prefixed_field" in Model has conflict with protected namespace "model_dump"|'
+            r"Field 'model_dump_prefixed_field' in 'Model' conflicts with protected namespace 'model_dump'\..*"
+        ),
+    ):
+
+        class Model(BaseSettings):
+            model_dump_prefixed_field: str
+
+    # pydantic-settings default
+    with pytest.warns(
+        UserWarning,
+        match=(
+            'Field "settings_customise_sources_prefixed_field" in Model1 has conflict with protected namespace "settings_customise_sources"|'
+            r"Field 'settings_customise_sources_prefixed_field' in 'Model1' conflicts with protected namespace 'settings_customise_sources'\..*"
+        ),
+    ):
+
+        class Model1(BaseSettings):
+            settings_customise_sources_prefixed_field: str
+
+    with pytest.raises(
+        (NameError, ValueError),
+        match=(
+            r'Field (["\'])settings_customise_sources\1 conflicts with member <bound method '
+            r"BaseSettings\.settings_customise_sources of <class 'pydantic_settings\.main\.BaseSettings'>> "
+            r'of protected namespace \1settings_customise_sources\1\.'
+        ),
+    ):
+
+        class Model2(BaseSettings):
+            settings_customise_sources: str
+
+
+def test_case_sensitive_from_args(monkeypatch):
+    class Settings(BaseSettings):
+        foo: str
+
+    # Need to patch os.environ to get build to work on Windows, where os.environ is case insensitive
+    monkeypatch.setattr(os, 'environ', value={'Foo': 'foo'})
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(_case_sensitive=True)
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'missing', 'loc': ('foo',), 'msg': 'Field required', 'input': {}}
+    ]
+
+
+def test_env_prefix_from_args(env):
+    class Settings(BaseSettings):
+        apple: str
+
+    env.set('foobar_apple', 'has_prefix')
+    s = Settings(_env_prefix='foobar_')
+    assert s.apple == 'has_prefix'
+
+
+def test_env_json_field(env):
+    class Settings(BaseSettings):
+        x: Json
+
+    env.set('x', '{"foo": "bar"}')
+
+    s = Settings()
+    assert s.x == {'foo': 'bar'}
+
+    env.set('x', 'test')
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'json_invalid',
+            'loc': ('x',),
+            'msg': 'Invalid JSON: expected ident at line 1 column 2',
+            'input': 'test',
+            'ctx': {'error': 'expected ident at line 1 column 2'},
+        }
+    ]
+
+
+def test_env_parse_enums(env):
+    class NestedEnum(BaseModel):
+        fruit: FruitsEnum
+
+    class Settings(BaseSettings, env_nested_delimiter='__'):
+        fruit: FruitsEnum
+        union_fruit: int | FruitsEnum | None = None
+        nested: NestedEnum
+
+    with pytest.raises(ValidationError) as exc_info:
+        env.set('FRUIT', 'kiwi')
+        env.set('UNION_FRUIT', 'kiwi')
+        env.set('NESTED__FRUIT', 'kiwi')
+        s = Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'enum',
+            'loc': ('fruit',),
+            'msg': 'Input should be 0, 1 or 2',
+            'input': 'kiwi',
+            'ctx': {'expected': '0, 1 or 2'},
+        },
+        {
+            'input': 'kiwi',
+            'loc': (
+                'union_fruit',
+                'int',
+            ),
+            'msg': 'Input should be a valid integer, unable to parse string as an integer',
+            'type': 'int_parsing',
+        },
+        {
+            'ctx': {
+                'expected': '0, 1 or 2',
+            },
+            'input': 'kiwi',
+            'loc': (
+                'union_fruit',
+                'int-enum[FruitsEnum]',
+            ),
+            'msg': 'Input should be 0, 1 or 2',
+            'type': 'enum',
+        },
+        {
+            'ctx': {
+                'expected': '0, 1 or 2',
+            },
+            'input': 'kiwi',
+            'loc': (
+                'nested',
+                'fruit',
+            ),
+            'msg': 'Input should be 0, 1 or 2',
+            'type': 'enum',
+        },
+    ]
+
+    env.set('FRUIT', str(FruitsEnum.lime.value))
+    env.set('UNION_FRUIT', str(FruitsEnum.lime.value))
+    env.set('NESTED__FRUIT', str(FruitsEnum.lime.value))
+    s = Settings()
+    assert s.fruit == FruitsEnum.lime
+    assert s.union_fruit == FruitsEnum.lime
+    assert s.nested.fruit == FruitsEnum.lime
+
+    env.set('FRUIT', 'kiwi')
+    env.set('UNION_FRUIT', 'kiwi')
+    env.set('NESTED__FRUIT', 'kiwi')
+    s = Settings(_env_parse_enums=True)
+    assert s.fruit == FruitsEnum.kiwi
+    assert s.union_fruit == FruitsEnum.kiwi
+    assert s.nested.fruit == FruitsEnum.kiwi
+
+    env.set('FRUIT', str(FruitsEnum.lime.value))
+    env.set('UNION_FRUIT', str(FruitsEnum.lime.value))
+    env.set('NESTED__FRUIT', str(FruitsEnum.lime.value))
+    s = Settings(_env_parse_enums=True)
+    assert s.fruit == FruitsEnum.lime
+    assert s.union_fruit == FruitsEnum.lime
+    assert s.nested.fruit == FruitsEnum.lime
+
+
+def test_env_parse_enums_with_nested_annotated(env):
+    class Settings(BaseSettings):
+        fruit: Annotated[FruitsEnum, Field(description='fruit')] | None = None
+
+    env.set('FRUIT', 'kiwi')
+
+    assert Settings(_env_parse_enums=True).fruit == FruitsEnum.kiwi
+
+
+def test_env_parse_none_str(env):
+    env.set('x', 'null')
+    env.set('y', 'y_override')
+
+    class Settings(BaseSettings):
+        x: str | None = 'x_default'
+        y: str | None = 'y_default'
+
+    s = Settings()
+    assert s.x == 'null'
+    assert s.y == 'y_override'
+    s = Settings(_env_parse_none_str='null')
+    assert s.x is None
+    assert s.y == 'y_override'
+
+    env.set('nested__x', 'None')
+    env.set('nested__y', 'y_override')
+    env.set('nested__deep__z', 'None')
+
+    class NestedBaseModel(BaseModel):
+        x: str | None = 'x_default'
+        y: str | None = 'y_default'
+        deep: dict | None = {'z': 'z_default'}
+        keep: dict | None = {'z': 'None'}
+
+    class NestedSettings(BaseSettings, env_nested_delimiter='__'):
+        nested: NestedBaseModel | None = NestedBaseModel()
+
+    s = NestedSettings()
+    assert s.nested.x == 'None'
+    assert s.nested.y == 'y_override'
+    assert s.nested.deep['z'] == 'None'
+    assert s.nested.keep['z'] == 'None'
+    s = NestedSettings(_env_parse_none_str='None')
+    assert s.nested.x is None
+    assert s.nested.y == 'y_override'
+    assert s.nested.deep['z'] is None
+    assert s.nested.keep['z'] == 'None'
+
+    env.set('nested__deep', 'None')
+
+    with pytest.raises(ValidationError):
+        s = NestedSettings()
+    s = NestedSettings(_env_parse_none_str='None')
+    assert s.nested.x is None
+    assert s.nested.y == 'y_override'
+    assert s.nested.deep['z'] is None
+    assert s.nested.keep['z'] == 'None'
+
+    env.pop('nested__deep__z')
+
+    with pytest.raises(ValidationError):
+        s = NestedSettings()
+    s = NestedSettings(_env_parse_none_str='None')
+    assert s.nested.x is None
+    assert s.nested.y == 'y_override'
+    assert s.nested.deep is None
+    assert s.nested.keep['z'] == 'None'
+
+
+def test_env_json_field_dict(env):
+    class Settings(BaseSettings):
+        x: Json[dict[str, int]]
+
+    env.set('x', '{"foo": 1}')
+
+    s = Settings()
+    assert s.x == {'foo': 1}
+
+    env.set('x', '{"foo": "bar"}')
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'int_parsing',
+            'loc': ('x', 'foo'),
+            'msg': 'Input should be a valid integer, unable to parse string as an integer',
+            'input': 'bar',
+        }
+    ]
+
+
+def test_custom_env_source_default_values_from_config():
+    class CustomEnvSettingsSource(EnvSettingsSource):
+        pass
+
+    class Settings(BaseSettings):
+        foo: str = 'test'
+
+        model_config = SettingsConfigDict(env_prefix='prefix_', case_sensitive=True)
+
+    s = Settings()
+    assert s.model_config['env_prefix'] == 'prefix_'
+    assert s.model_config['case_sensitive'] is True
+
+    c = CustomEnvSettingsSource(Settings)
+    assert c.env_prefix == 'prefix_'
+    # os.environ is case-insensitive on Windows, so EnvSettingsSource falls back to
+    # case-insensitive matching there regardless of the configured value (see #295).
+    assert c.case_sensitive is (os.name != 'nt')
+
+
+def test_model_config_through_class_kwargs(env):
+    class Settings(BaseSettings, env_prefix='foobar_', title='Test Settings Model'):
+        apple: str
+
+    assert Settings.model_config['title'] == 'Test Settings Model'  # pydantic config
+    assert Settings.model_config['env_prefix'] == 'foobar_'  # pydantic-settings config
+
+    assert Settings.model_json_schema()['title'] == 'Test Settings Model'
+
+    env.set('foobar_apple', 'has_prefix')
+    s = Settings()
+    assert s.apple == 'has_prefix'
+
+
+def test_root_model_as_field(env):
+    class Foo(BaseModel):
+        x: int
+        y: dict[str, int]
+
+    FooRoot = RootModel[list[Foo]]
+
+    class Settings(BaseSettings):
+        z: FooRoot
+
+    env.set('z', '[{"x": 1, "y": {"foo": 1}}, {"x": 2, "y": {"foo": 2}}]')
+    s = Settings()
+    assert s.model_dump() == {'z': [{'x': 1, 'y': {'foo': 1}}, {'x': 2, 'y': {'foo': 2}}]}
+
+
+def test_str_based_root_model(env):
+    """Testing to pass string directly to root model."""
+
+    class Foo(RootModel[str]):
+        root: str
+
+    class Settings(BaseSettings):
+        foo: Foo
+        plain: str
+
+    TEST_STR = 'hello world'
+    env.set('foo', TEST_STR)
+    env.set('plain', TEST_STR)
+    s = Settings()
+    assert s.model_dump() == {'foo': TEST_STR, 'plain': TEST_STR}
+
+
+def test_path_based_root_model(env):
+    """Testing to pass path directly to root model."""
+
+    class Foo(RootModel[pathlib.PurePosixPath]):
+        root: pathlib.PurePosixPath
+
+    class Settings(BaseSettings):
+        foo: Foo
+        plain: pathlib.PurePosixPath
+
+    TEST_PATH: str = '/hello/world'
+    env.set('foo', TEST_PATH)
+    env.set('plain', TEST_PATH)
+    s = Settings()
+    assert s.model_dump() == {
+        'foo': pathlib.PurePosixPath(TEST_PATH),
+        'plain': pathlib.PurePosixPath(TEST_PATH),
+    }
+
+
+def test_optional_field_from_env(env):
+    class Settings(BaseSettings):
+        x: str | None = None
+
+    env.set('x', '123')
+
+    s = Settings()
+    assert s.x == '123'
+
+
+def test_dotenv_optional_json_field(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text("""DATA='{"foo":"bar"}'""")
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p)
+
+        data: Json[dict[str, str]] | None = Field(default=None)
+
+    s = Settings()
+    assert s.data == {'foo': 'bar'}
+
+
+def test_dotenv_with_alias_and_env_prefix(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('xxx__foo=1\nxxx__bar=2')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p, env_prefix='xxx__')
+
+        foo: str = ''
+        bar_alias: str = Field('', validation_alias='xxx__bar')
+
+    s = Settings()
+    assert s.model_dump() == {'foo': '1', 'bar_alias': '2'}
+
+    class Settings1(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p, env_prefix='xxx__')
+
+        foo: str = ''
+        bar_alias: str = Field('', alias='bar')
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings1()
+    assert exc_info.value.errors(include_url=False) == [
+        {'type': 'extra_forbidden', 'loc': ('xxx__bar',), 'msg': 'Extra inputs are not permitted', 'input': '2'}
+    ]
+
+
+def test_dotenv_with_alias_and_env_prefix_nested(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('xxx__bar=0\nxxx__nested__a=1\nxxx__nested__b=2')
+
+    class NestedSettings(BaseModel):
+        a: str = 'a'
+        b: str = 'b'
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_prefix='xxx__', env_nested_delimiter='__', env_file=p)
+
+        foo: str = ''
+        bar_alias: str = Field('', alias='xxx__bar')
+        nested_alias: NestedSettings = Field(default_factory=NestedSettings, alias='xxx__nested')
+
+    s = Settings()
+    assert s.model_dump() == {'foo': '', 'bar_alias': '0', 'nested_alias': {'a': '1', 'b': '2'}}
+
+
+def test_dotenv_with_extra_and_env_prefix(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('xxx__foo=1\nxxx__extra_var=extra_value')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(extra='allow', env_file=p, env_prefix='xxx__')
+
+        foo: str = ''
+
+    s = Settings()
+    assert s.model_dump() == {'foo': '1', 'extra_var': 'extra_value'}
+
+
+def test_dotenv_with_extra_and_uppercase_env_prefix(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('XXX__FOO=1\nXXX__EXTRA_VAR=extra_value')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(extra='allow', env_file=p, env_prefix='XXX__')
+
+        foo: str = ''
+
+    s = Settings()
+    assert s.model_dump() == {'foo': '1', 'extra_var': 'extra_value'}
+
+
+def test_nested_field_with_alias_init_source():
+    class NestedSettings(BaseModel):
+        foo: str = Field(alias='fooAlias')
+
+    class Settings(BaseSettings):
+        nested_foo: NestedSettings
+
+    s = Settings(nested_foo=NestedSettings(fooAlias='EXAMPLE'))
+    assert s.model_dump() == {'nested_foo': {'foo': 'EXAMPLE'}}
+
+
+def test_nested_models_as_dict_value(env):
+    class NestedSettings(BaseModel):
+        foo: dict[str, int]
+
+    class Settings(BaseSettings):
+        nested: NestedSettings
+        sub_dict: dict[str, NestedSettings]
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('nested__foo', '{"a": 1}')
+    env.set('sub_dict__bar__foo', '{"b": 2}')
+    s = Settings()
+    assert s.model_dump() == {'nested': {'foo': {'a': 1}}, 'sub_dict': {'bar': {'foo': {'b': 2}}}}
+
+
+def test_env_nested_dict_value(env):
+    class Settings(BaseSettings):
+        nested: dict[str, dict[str, dict[str, str]]]
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('nested__foo__a__b', 'bar')
+    s = Settings()
+    assert s.model_dump() == {'nested': {'foo': {'a': {'b': 'bar'}}}}
+
+
+def test_env_nested_dict_simple_value_types(env):
+    """Test that nested env vars work for dict fields with simple value types (e.g. dict[str, str]).
+
+    Regression test for https://github.com/pydantic/pydantic-settings/issues/785
+    """
+
+    class Settings(BaseSettings):
+        nested_field: dict[str, str]
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('nested_field__key', 'some value')
+    s = Settings()
+    assert s.model_dump() == {'nested_field': {'key': 'some value'}}
+
+
+def test_env_nested_dict_multiple_simple_keys(env):
+    """Test multiple nested env vars for dict[str, str]."""
+
+    class Settings(BaseSettings):
+        nested_field: dict[str, str]
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('nested_field__key1', 'value1')
+    env.set('nested_field__key2', 'value2')
+    s = Settings()
+    assert s.model_dump() == {'nested_field': {'key1': 'value1', 'key2': 'value2'}}
+
+
+def test_env_nested_dict_complex_value_type(env):
+    """Test nested env vars for dict with complex value types like list[str]."""
+
+    class Settings(BaseSettings):
+        nested_field: dict[str, list[str]]
+
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+    env.set('nested_field__key', '["a", "b"]')
+    s = Settings()
+    assert s.model_dump() == {'nested_field': {'key': ['a', 'b']}}
+
+
+def test_nested_models_leaf_vs_deeper_env_dict_assumed(env):
+    class NestedSettings(BaseModel):
+        foo: str
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+        nested: NestedSettings
+
+    env.set('nested__foo', 'string')
+    env.set(
+        'nested__foo__bar',
+        'this should not be evaluated, since foo is a string by annotation and not a dict',
+    )
+    env.set(
+        'nested__foo__bar__baz',
+        'one more',
+    )
+    s = Settings()
+    assert s.model_dump() == {'nested': {'foo': 'string'}}
+
+
+def test_case_insensitive_nested_optional(env):
+    class NestedSettings(BaseModel):
+        FOO: str
+        BaR: int
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=False)
+
+        nested: NestedSettings | None
+
+    env.set('nested__FoO', 'string')
+    env.set('nested__bar', '123')
+    s = Settings()
+    assert s.model_dump() == {'nested': {'BaR': 123, 'FOO': 'string'}}
+
+
+def test_case_insensitive_deeply_nested_optional(env):
+    """Optional nested models must still be resolved case-insensitively (#903)."""
+
+    class NestedModel(BaseModel):
+        Name: str
+
+    class ConfigModel(BaseModel):
+        nested: NestedModel | None = None
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=False)
+
+        config: ConfigModel
+
+    env.set('config__nested__name', 'value')
+    s = Settings()
+    assert s.model_dump() == {'config': {'nested': {'Name': 'value'}}}
+
+
+def test_case_insensitive_nested_dataclass(env):
+    @pydantic_dataclasses.dataclass
+    class NestedDataclass:
+        FOO: str
+        BaR: int
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=False)
+
+        nested: NestedDataclass
+
+    env.set('nested__FoO', 'string')
+    env.set('nested__bar', '123')
+    s = Settings()
+    assert s.nested == NestedDataclass(FOO='string', BaR=123)
+
+
+def test_case_insensitive_deeply_nested_dataclass(env):
+    class DeepModel(BaseModel):
+        Name: str
+
+    @pydantic_dataclasses.dataclass
+    class DeepDataclass:
+        Name: str
+        Model: DeepModel
+
+    @pydantic_dataclasses.dataclass
+    class NestedDataclass:
+        Deep: DeepDataclass | None = None
+
+    class ConfigModel(BaseModel):
+        nested: NestedDataclass
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=False)
+
+        config: ConfigModel
+
+    env.set('config__nested__deep__name', 'value')
+    env.set('config__nested__deep__model__name', 'model value')
+    s = Settings()
+    assert s.config.nested == NestedDataclass(Deep=DeepDataclass(Name='value', Model=DeepModel(Name='model value')))
+
+
+def test_case_insensitive_optional_annotated_nested(env):
+    class DeepModel(BaseModel):
+        Name: str
+
+    @pydantic_dataclasses.dataclass
+    class NestedDataclass:
+        ApiKey: str
+        Deep: Annotated[DeepModel, Field(description='deep')] | None = None
+
+    class NestedModel(BaseModel):
+        ApiKey: str
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=False)
+
+        model: Annotated[NestedModel, Field(description='model')] | None = None
+        dc: Annotated[NestedDataclass, Field(description='dataclass')] | None = None
+
+    env.set('model__apikey', 'model key')
+    env.set('dc__apikey', 'dc key')
+    env.set('dc__deep__name', 'deep name')
+    s = Settings()
+    assert s.model == NestedModel(ApiKey='model key')
+    assert s.dc == NestedDataclass(ApiKey='dc key', Deep=DeepModel(Name='deep name'))
+
+
+def test_case_insensitive_nested_alias(env):
+    """Ensure case-insensitive environment lookup works with nested aliases."""
+
+    class NestedSettings(BaseModel):
+        FOO: str = Field(..., alias='Foo')
+        BaR: int
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=False)
+
+        nEstEd: NestedSettings = Field(..., alias='NesTed')
+
+    env.set('nested__FoO', 'string')
+    env.set('nested__bar', '123')
+    s = Settings()
+    assert s.model_dump() == {'nEstEd': {'BaR': 123, 'FOO': 'string'}}
+
+
+def test_case_insensitive_nested_list(env):
+    class NestedSettings(BaseModel):
+        FOO: list[str]
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=False)
+
+        nested: NestedSettings | None
+
+    env.set('nested__FOO', '["string1", "string2"]')
+    s = Settings()
+    assert s.model_dump() == {'nested': {'FOO': ['string1', 'string2']}}
+
+
+def test_settings_source_current_state(env):
+    class SettingsSource(PydanticBaseSettingsSource):
+        def get_field_value(self, field: FieldInfo, field_name: str) -> Any:
+            pass
+
+        def __call__(self) -> dict[str, Any]:
+            current_state = self.current_state
+            if current_state.get('one') == '1':
+                return {'two': '1'}
+
+            return {}
+
+    class Settings(BaseSettings):
+        one: bool = False
+        two: bool = False
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (env_settings, SettingsSource(settings_cls))
+
+    env.set('one', '1')
+    s = Settings()
+    assert s.two is True
+
+
+def test_settings_source_settings_sources_data(env):
+    class SettingsSource(PydanticBaseSettingsSource):
+        def get_field_value(self, field: FieldInfo, field_name: str) -> Any:
+            pass
+
+        def __call__(self) -> dict[str, Any]:
+            settings_sources_data = self.settings_sources_data
+            if settings_sources_data == {
+                'InitSettingsSource': {'one': True, 'two': True},
+                'EnvSettingsSource': {'one': '1'},
+                'function_settings_source': {'three': 'false'},
+            }:
+                return {'four': '1'}
+
+            return {}
+
+    def function_settings_source():
+        return {'three': 'false'}
+
+    class Settings(BaseSettings):
+        one: bool = False
+        two: bool = False
+        three: bool = False
+        four: bool = False
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (env_settings, init_settings, function_settings_source, SettingsSource(settings_cls))
+
+    env.set('one', '1')
+    s = Settings(one=True, two=True)
+    assert s.four is True
+
+
+def test_dotenv_extra_allow_similar_fields(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('POSTGRES_USER=postgres\nPOSTGRES_USER_2=postgres2\nPOSTGRES_NAME=name')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p, extra='allow')
+
+        POSTGRES_USER: str
+
+    s = Settings()
+    assert s.POSTGRES_USER == 'postgres'
+    assert s.model_dump() == {'POSTGRES_USER': 'postgres', 'postgres_name': 'name', 'postgres_user_2': 'postgres2'}
+
+
+def test_dotenv_extra_allow_similar_complex_fields(tmp_path):
+    """A complex field must not claim extras that merely share its name prefix.
+
+    `dbx_token` is not `db` and, without a nested delimiter, cannot belong to `db`
+    at all -- it must be kept as an extra instead of being silently dropped.
+    """
+    p = tmp_path / '.env'
+    p.write_text('dbx_token=secret\n')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p, extra='allow')
+
+        db: dict = {}
+
+    s = Settings()
+    assert s.db == {}
+    assert s.model_dump() == {'db': {}, 'dbx_token': 'secret'}
+
+
+def test_dotenv_extra_allow_complex_field_nested_delimiter_boundary(tmp_path):
+    """Only vars at the nested delimiter boundary belong to a complex field.
+
+    With `env_nested_delimiter='__'`, `db__host` is consumed into `db`, while
+    `db_host` and `dbx_token` are not part of `db` and must survive as extras.
+    """
+    p = tmp_path / '.env'
+    p.write_text('db__host=localhost\ndb_host=oops\ndbx_token=secret\n')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p, extra='allow', env_nested_delimiter='__')
+
+        db: dict = {}
+
+    s = Settings()
+    assert s.db == {'host': 'localhost'}
+    assert s.model_dump() == {'db': {'host': 'localhost'}, 'db_host': 'oops', 'dbx_token': 'secret'}
+
+
+def test_dotenv_extra_forbid_similar_complex_fields(tmp_path):
+    """With extra='forbid', a var sharing a complex field's name prefix must raise.
+
+    Previously `dbx_token` was wrongly treated as consumed by `db`, so the
+    forbidden extra was silently ignored instead of failing validation.
+    """
+    p = tmp_path / '.env'
+    p.write_text('dbx_token=secret\n')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p, extra='forbid')
+
+        db: dict = {}
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'extra_forbidden',
+            'loc': ('dbx_token',),
+            'msg': 'Extra inputs are not permitted',
+            'input': 'secret',
+        }
+    ]
+
+
+def test_dotenv_extra_forbid_similar_union_complex_fields(tmp_path):
+    """Same guard applies to the union-complex branch of the field matching.
+
+    `db: dict | None` reaches the matching logic via the union-complex path
+    rather than `_annotation_is_complex`, so exercise it explicitly: `dbx_token`
+    must not be claimed by `db` and must raise under extra='forbid'.
+    """
+    p = tmp_path / '.env'
+    p.write_text('dbx_token=secret\n')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=p, extra='forbid')
+
+        db: dict | None = None
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'extra_forbidden',
+            'loc': ('dbx_token',),
+            'msg': 'Extra inputs are not permitted',
+            'input': 'secret',
+        }
+    ]
+
+
+def test_annotation_is_complex_root_model_check():
+    """Test for https://github.com/pydantic/pydantic-settings/issues/390"""
+
+    class Settings(BaseSettings):
+        foo: list[str] = []
+
+    Settings()
+
+
+def test_nested_model_field_with_alias(env):
+    class NestedSettings(BaseModel):
+        foo: list[str] = Field(alias='fooalias')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+        nested: NestedSettings
+
+    env.set('nested__fooalias', '["one", "two"]')
+
+    s = Settings()
+    assert s.model_dump() == {'nested': {'foo': ['one', 'two']}}
+
+
+def test_nested_model_field_with_alias_case_sensitive(monkeypatch):
+    class NestedSettings(BaseModel):
+        foo: list[str] = Field(alias='fooAlias')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__', case_sensitive=True)
+
+        nested: NestedSettings
+
+    # Need to patch os.environ to get build to work on Windows, where os.environ is case insensitive
+    monkeypatch.setattr(os, 'environ', value={'nested__fooalias': '["one", "two"]'})
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'missing',
+            'loc': ('nested', 'fooAlias'),
+            'msg': 'Field required',
+            'input': {'fooalias': '["one", "two"]'},
+        }
+    ]
+
+    monkeypatch.setattr(os, 'environ', value={'nested__fooAlias': '["one", "two"]'})
+    s = Settings()
+    assert s.model_dump() == {'nested': {'foo': ['one', 'two']}}
+
+
+def test_nested_model_field_with_alias_choices(env):
+    class NestedSettings(BaseModel):
+        foo: list[str] = Field(alias=AliasChoices('fooalias', 'foo-alias'))
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_nested_delimiter='__')
+
+        nested: NestedSettings
+
+    env.set('nested__fooalias', '["one", "two"]')
+
+    s = Settings()
+    assert s.model_dump() == {'nested': {'foo': ['one', 'two']}}
+
+
+def test_dotenv_optional_nested(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('not_nested=works\nNESTED__A=fails\nNESTED__b=2')
+
+    class NestedSettings(BaseModel):
+        A: str
+        b: int
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_nested_delimiter='__',
+            extra='forbid',
+        )
+
+        not_nested: str
+        NESTED: NestedSettings | None
+
+    s = Settings()
+    assert s.model_dump() == {'not_nested': 'works', 'NESTED': {'A': 'fails', 'b': 2}}
+
+
+def test_dotenv_env_prefix_env_without_prefix(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('test_foo=test-foo\nfoo=foo')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix='TEST_',
+            extra='ignore',
+        )
+
+        foo: str
+
+    s = Settings()
+    assert s.model_dump() == {'foo': 'test-foo'}
+
+
+def test_dotenv_env_prefix_env_without_prefix_ignored(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('foo=foo')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix='TEST_',
+            extra='ignore',
+        )
+
+        foo: str = ''
+
+    s = Settings()
+    assert s.model_dump() == {'foo': ''}
+
+
+def test_nested_model_dotenv_env_prefix_env_without_prefix_ignored(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('foo__val=1')
+
+    class Foo(BaseModel):
+        val: int = 0
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_nested_delimiter='__',
+            env_file=p,
+            env_prefix='TEST_',
+            extra='ignore',
+        )
+
+        foo: Foo = Foo()
+
+    s = Settings()
+    assert s.model_dump() == {'foo': {'val': 0}}
+
+
+def test_dotenv_env_prefix_env_with_alias_without_prefix(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('FooAlias=foo')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix='TEST_',
+            extra='ignore',
+        )
+
+        foo: str = Field('xxx', alias='FooAlias')
+
+    s = Settings()
+    assert s.model_dump() == {'foo': 'foo'}
+
+
+@pytest.mark.parametrize('env_prefix_target', ['all', 'alias'])
+def test_dotenv_env_prefix_env_with_alias_with_prefix(tmp_path, env_prefix_target):
+    p = tmp_path / '.env'
+    p.write_text('TEST_FooAlias=foo')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix_target=env_prefix_target,
+            env_prefix='TEST_',
+            extra='ignore',
+        )
+
+        foo: str = Field('xxx', alias='FooAlias')
+
+    s = Settings()
+    assert s.model_dump() == {'foo': 'foo'}
+
+
+@pytest.mark.parametrize('prefix', ['TEST_', ''])
+def test_dotenv_only_existing(tmp_path, prefix):
+    p = tmp_path / '.env'
+    p.write_text('a=foo\nb=x\nTEST_a=bar\nTEST_b=y')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix=prefix,
+            dotenv_filtering='only_existing',
+            extra='forbid',
+        )
+
+        a: str = 'default'
+
+    s = Settings()
+    assert s.model_dump() == {'a': 'foo' if prefix == '' else 'bar'}
+
+
+@pytest.mark.parametrize('prefix', ['TEST_', ''])
+@pytest.mark.parametrize('case_sensitive', [True, False])
+def test_dotenv_match_prefix(tmp_path, prefix, case_sensitive):
+    p = tmp_path / '.env'
+    if case_sensitive:
+        p.write_text('A=foo\nb=x\nTEST_a=bar\ntest_b=y')
+    else:
+        p.write_text('a=foo\nb=x\nTEST_a=bar\nTEST_b=y')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix=prefix,
+            dotenv_filtering='match_prefix',
+            case_sensitive=case_sensitive,
+            extra='allow',
+        )
+
+        a: str = 'default'
+
+    s = Settings()
+    if prefix:
+        assert s.model_dump() == {'a': 'bar'} if case_sensitive else {'a': 'bar', 'b': 'y'}
+    else:
+        if case_sensitive:
+            v = {'a': 'default', 'A': 'foo', 'b': 'x', 'TEST_a': 'bar', 'test_b': 'y'}
+        else:
+            v = {'a': 'foo', 'b': 'x', 'test_a': 'bar', 'test_b': 'y'}
+        assert s.model_dump() == v
+
+
+def test_dotenv_match_prefix_case_normalization_changes_length(tmp_path):
+    # `'İ'.lower()` is two code points, so slicing with the raw `env_prefix` length
+    # would under-strip and leave a partial prefix behind.
+    p = tmp_path / '.env'
+    p.write_text('İX_FOO=1\nİX_BAR=2', encoding='utf-8')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix='İX_',
+            dotenv_filtering='match_prefix',
+            extra='allow',
+        )
+
+    assert Settings().model_dump() == {'foo': '1', 'bar': '2'}
+
+
+@pytest.mark.parametrize('filtering', ['match_prefix', None])
+def test_dotenv_match_prefix_nested_delimiter(tmp_path, filtering):
+    p = tmp_path / '.env'
+    p.write_text('x=foo\nprefix_a@x=bar\nprefix_a@b=y\nprefix_b=b\nprefix_c@a=1\nprefix_c@b=2')
+
+    class A(BaseModel):
+        x: str = 'x_default'
+        b: str = 'b_default'
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix='prefix_',
+            dotenv_filtering=filtering,
+            env_nested_delimiter='@',
+            extra='allow',
+        )
+
+        a: A
+
+    s = Settings()
+    exp = {'a': {'x': 'bar', 'b': 'y'}, 'b': 'b', 'c@a': '1', 'c@b': '2'}
+    if not filtering:
+        exp['x'] = 'foo'
+    assert s.model_dump() == exp
+
+
+def test_dotenv_match_prefix_nested_delimiter_no_extra(tmp_path):
+    p = tmp_path / '.env'
+    p.write_text('x=foo\nprefix_a__x=bar\nprefix_a__b=y\nprefix_c__a=1')
+
+    class A(BaseModel):
+        x: str = 'x_default'
+        b: str = 'b_default'
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_file=p,
+            env_prefix='prefix_',
+            dotenv_filtering='match_prefix',
+            env_nested_delimiter='__',
+            extra='forbid',
+        )
+
+        a: A
+        c__a: int
+
+    s = Settings()
+    assert s.model_dump() == {'a': {'x': 'bar', 'b': 'y'}, 'c__a': 1}
+
+
+def test_parsing_secret_field(env):
+    class Settings(BaseSettings):
+        foo: Secret[int]
+        bar: Secret[PostgresDsn]
+
+    env.set('foo', '123')
+    env.set('bar', 'postgres://user:password@localhost/dbname')
+
+    s = Settings()
+    assert s.foo.get_secret_value() == 123
+    assert s.bar.get_secret_value() == PostgresDsn('postgres://user:password@localhost/dbname')
+
+
+def test_parsing_secret_subclass_field(env):
+    # A subclass of the generic `Secret` type must be treated like `Secret`
+    # itself, i.e. not as a "complex" field that gets JSON-decoded. Regression
+    # test for https://github.com/pydantic/pydantic-settings/issues/716.
+    SecretT = TypeVar('SecretT')
+
+    class MySecret(Secret[SecretT]):
+        @override
+        def _display(self) -> str:
+            return '***'
+
+    class Settings(BaseSettings):
+        foo: MySecret[int]
+        bar: MySecret[PostgresDsn]
+        baz: MySecret[PostgresDsn] | None = None
+
+    env.set('foo', '123')
+    env.set('bar', 'postgres://user:password@localhost/dbname')
+    env.set('baz', 'postgres://user:password@localhost/other')
+
+    s = Settings()
+    assert s.foo.get_secret_value() == 123
+    assert s.bar.get_secret_value() == PostgresDsn('postgres://user:password@localhost/dbname')
+    assert s.baz is not None
+    assert s.baz.get_secret_value() == PostgresDsn('postgres://user:password@localhost/other')
+
+
+def test_field_annotated_no_decode(env):
+    class Settings(BaseSettings):
+        a: list[str]  # this field will be decoded because of default `enable_decoding=True`
+        b: Annotated[list[str], NoDecode]
+
+        # decode the value here. the field value won't be decoded because of NoDecode
+        @field_validator('b', mode='before')
+        @classmethod
+        def decode_b(cls, v: str) -> list[str]:
+            return json.loads(v)
+
+    env.set('a', '["one", "two"]')
+    env.set('b', '["1", "2"]')
+
+    s = Settings()
+    assert s.model_dump() == {'a': ['one', 'two'], 'b': ['1', '2']}
+
+
+def test_field_annotated_no_decode_and_disable_decoding(env):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(enable_decoding=False)
+
+        a: Annotated[list[str], NoDecode]
+
+        # decode the value here. the field value won't be decoded because of NoDecode
+        @field_validator('a', mode='before')
+        @classmethod
+        def decode_b(cls, v: str) -> list[str]:
+            return json.loads(v)
+
+    env.set('a', '["one", "two"]')
+
+    s = Settings()
+    assert s.model_dump() == {'a': ['one', 'two']}
+
+
+def test_field_annotated_disable_decoding(env):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(enable_decoding=False)
+
+        a: list[str]
+
+        # decode the value here. the field value won't be decoded because of `enable_decoding=False`
+        @field_validator('a', mode='before')
+        @classmethod
+        def decode_b(cls, v: str) -> list[str]:
+            return json.loads(v)
+
+    env.set('a', '["one", "two"]')
+
+    s = Settings()
+    assert s.model_dump() == {'a': ['one', 'two']}
+
+
+def test_field_annotated_force_decode_disable_decoding(env):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(enable_decoding=False)
+
+        a: Annotated[list[str], ForceDecode]
+
+    env.set('a', '["one", "two"]')
+
+    s = Settings()
+    assert s.model_dump() == {'a': ['one', 'two']}
+
+
+def test_warns_if_config_keys_are_set_but_source_is_missing():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            json_file='config.json',
+            pyproject_toml_depth=2,
+            toml_file='config.toml',
+            yaml_file='config.yaml',
+            yaml_config_section='myapp',
+        )
+
+    with pytest.warns() as record:
+        Settings()
+
+    assert len(record) == 5
+
+    key_class_pairs = [
+        ('json_file', 'JsonConfigSettingsSource'),
+        ('pyproject_toml_depth', 'PyprojectTomlConfigSettingsSource'),
+        ('toml_file', 'TomlConfigSettingsSource'),
+        ('yaml_file', 'YamlConfigSettingsSource'),
+        ('yaml_config_section', 'YamlConfigSettingsSource'),
+    ]
+
+    for warning, key_class_pair in zip(record, key_class_pairs, strict=True):
+        assert warning.category is UserWarning
+        expected_message = (
+            f'Config key `{key_class_pair[0]}` is set in model_config but will be ignored because no '
+            f'{key_class_pair[1]} source is configured. To use this config key, add a {key_class_pair[1]} '
+            f'source to the settings sources via the settings_customise_sources hook.'
+        )
+        assert warning.message.args[0] == expected_message
+
+
+def test_warns_if_nested_secrets_config_keys_are_set_but_source_is_missing():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            secrets_dir_missing='error',
+            secrets_dir_max_size=1024,
+            secrets_case_sensitive=True,
+            secrets_prefix='app_',
+            secrets_nested_delimiter='__',
+            secrets_nested_subdir=True,
+        )
+
+    with pytest.warns() as record:
+        Settings()
+
+    keys = (
+        'secrets_dir_missing',
+        'secrets_dir_max_size',
+        'secrets_case_sensitive',
+        'secrets_prefix',
+        'secrets_nested_delimiter',
+        'secrets_nested_subdir',
+    )
+
+    def expected_message(key: str) -> str:
+        return (
+            f'Config key `{key}` is set in model_config but will be ignored because no '
+            'NestedSecretsSettingsSource source is configured. To use this config key, add a '
+            'NestedSecretsSettingsSource source to the settings sources via the settings_customise_sources hook.'
+        )
+
+    assert all(warning.category is UserWarning for warning in record)
+    # Compare as sets so the test does not depend on the order the keys are checked in.
+    assert {warning.message.args[0] for warning in record} == {expected_message(key) for key in keys}
+    assert len(record) == len(keys)
+
+
+@pytest.mark.parametrize(
+    'config',
+    [
+        {'secrets_dir_missing': 'error'},
+        {'secrets_dir_max_size': 1024},
+        {'secrets_case_sensitive': True},
+        {'secrets_prefix': 'app_'},
+        {'secrets_nested_delimiter': '__'},
+        {'secrets_nested_subdir': True},
+    ],
+)
+def test_does_not_warn_if_nested_secrets_config_keys_are_set_and_source_is_configured(config, tmp_path):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(secrets_dir=tmp_path, **config)
+
+        @classmethod
+        def settings_customise_sources(
+            cls, settings_cls, init_settings, env_settings, dotenv_settings, file_secret_settings
+        ):
+            return (init_settings, env_settings, dotenv_settings, NestedSecretsSettingsSource(file_secret_settings))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        Settings()
+
+
+def test_env_strict_coercion(env):
+    class SubModel(BaseModel):
+        my_str: str
+        my_int: int
+
+    class Settings(BaseSettings, env_nested_delimiter='__'):
+        my_str: str
+        my_int: int
+        sub_model: SubModel
+
+    env.set('MY_STR', '0')
+    env.set('MY_INT', '0')
+    env.set('SUB_MODEL__MY_STR', '1')
+    env.set('SUB_MODEL__MY_INT', '1')
+    assert Settings().model_dump() == {
+        'my_str': '0',
+        'my_int': 0,
+        'sub_model': {
+            'my_str': '1',
+            'my_int': 1,
+        },
+    }
+
+    class StrictSettings(BaseSettings, env_nested_delimiter='__', strict=True):
+        my_str: str
+        my_int: int
+        sub_model: SubModel
+
+    assert StrictSettings().model_dump() == {
+        'my_str': '0',
+        'my_int': 0,
+        'sub_model': {
+            'my_str': '1',
+            'my_int': 1,
+        },
+    }
+
+
+def test_env_strict_coercion_optional_strict_types(env):
+    class StrictSettings(BaseSettings, strict=True):
+        my_bool: StrictBool | None = None
+
+    env.set('MY_BOOL', 'true')
+    s = StrictSettings()
+    assert s.my_bool is True
+
+    class NonStrictSettings(BaseSettings):
+        my_bool: StrictBool | None = None
+
+    s = NonStrictSettings()
+    assert s.my_bool is True
+
+    class NestedModel(BaseModel):
+        flag: StrictBool | None = None
+
+    class NestedSettings(BaseSettings, env_nested_delimiter='__'):
+        sub: NestedModel = NestedModel()
+
+    env.set('SUB__FLAG', 'true')
+    s = NestedSettings()
+    assert s.sub.flag is True
+
+    class IntSettings(BaseSettings):
+        my_int: StrictInt | None = None
+
+    env.set('MY_INT', '42')
+    s = IntSettings()
+    assert s.my_int == 42
+
+
+def test_env_strict_coercion_non_json_value(env):
+    class Settings(BaseSettings):
+        my_bool: StrictBool | None = None
+
+    env.set('MY_BOOL', 'maybe')
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'bool_type',
+            'loc': ('my_bool',),
+            'msg': 'Input should be a valid boolean',
+            'input': 'maybe',
+        }
+    ]
+
+    class StrictSettings(BaseSettings, strict=True):
+        my_int: int = 0
+
+    env.set('MY_INT', 'not-a-number')
+    with pytest.raises(ValidationError) as exc_info:
+        StrictSettings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'int_type',
+            'loc': ('my_int',),
+            'msg': 'Input should be a valid integer',
+            'input': 'not-a-number',
+        }
+    ]
+
+
+def test_env_strict_coercion_none_str_passthrough(env):
+    """`env_parse_none_str` matches are left alone rather than strict-coerced."""
+
+    class Settings(BaseSettings, strict=True, env_parse_none_str='null'):
+        my_int: StrictInt | None = None
+
+    env.set('MY_INT', 'null')
+    assert Settings().my_int is None
+
+
+def test_env_strict_coercion_skips_json_annotation(env):
+    """`Json`-annotated fields keep their raw string so the Json parser handles them."""
+
+    # The strict-annotated union member enables coercion, but the `Json` marker opts out of it.
+    class Settings(BaseSettings):
+        my_json: Json[StrictInt] | None = None
+
+    env.set('MY_JSON', '42')
+    assert Settings().my_json == 42
+
+
+def test_env_strict_coercion_json_decodes_to_str(env):
+    """A JSON string that decodes to another string re-raises the original validation error."""
+
+    class Settings(BaseSettings, strict=True):
+        my_int: StrictInt = 0
+
+    env.set('MY_INT', '"hello"')
+    with pytest.raises(ValidationError) as exc_info:
+        Settings()
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'int_type',
+            'loc': ('my_int',),
+            'msg': 'Input should be a valid integer',
+            'input': '"hello"',
+        }
+    ]
+
+
+def test_matches_alias_path_head_non_field_info():
+    """The alias-path check only applies to `FieldInfo`; anything else is not a path head."""
+
+    class Settings(BaseSettings):
+        foo: str = 'x'
+
+    source = EnvSettingsSource(Settings)
+
+    assert source._matches_alias_path_head(None, 'foo') is False
+    assert source._matches_alias_path_head(int, 'foo') is False
+
+
+def test_env_source_when_load_multi_nested_config(env):
+    class EmbeddingModel(BaseModel):
+        model: str = 'text-embedding-3-small'
+        keys: list[str] = Field(default_factory=list)
+
+    class LLM(BaseModel):
+        embeddings: dict[str, EmbeddingModel] = Field(default_factory=dict)
+
+    class LLMSettings(BaseSettings):
+        llm: LLM = Field(default_factory=lambda: LLM())
+
+        model_config = SettingsConfigDict(env_prefix='my_prefix_', env_nested_delimiter='__')
+
+    env.set('my_prefix_llm__embeddings__openai__keys', '["sk-..."]')
+    env.set('my_prefix_llm__embeddings__qwen__keys', '["sk-..."]')
+    llm_setting = LLMSettings()
+    assert llm_setting.llm.embeddings['openai'].keys == ['sk-...']
+    assert llm_setting.llm.embeddings['qwen'].keys == ['sk-...']
+
+
+class _MQTTVersion(IntEnum):
+    v31 = 3
+    v311 = 4
+
+
+class _Priority(int, Enum):
+    low = 1
+    high = 3
+
+
+class _Threshold(float, Enum):
+    low = 0.25
+    high = 0.75
+
+
+@pytest.mark.parametrize(
+    'field_type,env_val,expected',
+    [
+        pytest.param(
+            Literal[_MQTTVersion.v31, _MQTTVersion.v311],
+            '3',
+            _MQTTVersion.v31,
+            id='IntEnum',
+        ),
+        pytest.param(
+            Literal[_Priority.low, _Priority.high],
+            '3',
+            _Priority.high,
+            id='int_Enum_mixin',
+        ),
+        pytest.param(
+            Literal[_Threshold.low, _Threshold.high],
+            '0.75',
+            _Threshold.high,
+            id='float_Enum_mixin',
+        ),
+        pytest.param(
+            Literal[_MQTTVersion.v31, _MQTTVersion.v311] | None,
+            '4',
+            _MQTTVersion.v311,
+            id='Optional_IntEnum',
+        ),
+        pytest.param(
+            Annotated[Literal[_MQTTVersion.v31, _MQTTVersion.v311], Field(description='MQTT version')],
+            '3',
+            _MQTTVersion.v31,
+            id='Annotated_IntEnum',
+        ),
+    ],
+)
+def test_env_literal_numeric_enum(field_type, env_val, expected, env):
+    """Literal[numeric Enum member] should parse from env var numeric strings."""
+
+    class Cfg(BaseSettings):
+        val: field_type = ...  # type: ignore[valid-type]
+
+    env.set('VAL', env_val)
+    cfg = Cfg()
+    assert cfg.val is expected
+
+
+def test_field_named_cls():
+    """Test that a model with a field named `cls` works correctly (GH-857)."""
+
+    class Settings(BaseSettings):
+        cls: str = 'Foo'
+
+    s = Settings.model_validate({'cls': 'Foo'})
+    assert s.cls == 'Foo'
+
+
+def test_warn_on_incomplete_field_info():
+    """Settings sources should emit a single `IncompleteFieldDefinitionWarning` per incomplete
+    `FieldInfo` (i.e. with an annotation containing unresolved forward references) per settings resolution.
+    """
+
+    class App(BaseSettings):
+        service: 'Service | None' = None  # noqa: F821
+
+    assert not App.model_fields['service']._complete
+
+    with (
+        pytest.warns(IncompleteFieldDefinitionWarning) as caught,
+        pytest.raises(PydanticUserError, match='`App` is not fully defined'),
+    ):
+        App()
+
+    incomplete_warnings = [str(w.message) for w in caught if w.category is IncompleteFieldDefinitionWarning]
+    # The shared init state deduplicates warnings across all sources within a single resolution:
+    assert len(incomplete_warnings) == 1
+    assert incomplete_warnings[0].startswith("Field 'service' ")
+
+
+def test_warn_on_incomplete_field_info_nested_model(env):
+    """The incomplete field warning is also emitted for fields of nested models, reached
+    when resolving nested environment variables.
+
+    In this scenario (the forward reference is resolvable when the settings class builds
+    its schema, but the nested model's `model_fields` was never rebuilt), instantiation
+    succeeds while nested env overrides for the incomplete field are silently ignored.
+    The warning is the only signal that something is wrong.
+    """
+
+    class ServiceConfig(BaseModel):
+        connector: 'ConnectorConfig'
+
+    class ConnectorConfig(BaseModel):
+        apiKey: str = 'orig-key'
+        endpoint: str = 'orig-endpoint'
+
+    class AppSettings(BaseSettings):
+        model_config = SettingsConfigDict(env_prefix='app_', env_nested_delimiter='_', case_sensitive=False)
+        service: ServiceConfig
+
+    assert not ServiceConfig.model_fields['connector']._complete
+
+    env.set('APP_SERVICE_CONNECTOR_apiKey', 'ENV_KEY')
+    env.set('APP_SERVICE_CONNECTOR_endpoint', 'ENV_ENDPOINT')
+
+    with pytest.warns(IncompleteFieldDefinitionWarning) as caught:
+        s = AppSettings()
+
+    incomplete_warnings = [str(w.message) for w in caught if w.category is IncompleteFieldDefinitionWarning]
+    assert len(incomplete_warnings) == 1
+    assert incomplete_warnings[0].startswith("Field 'connector' ")
+
+    # The `apiKey` override is silently ignored because of the incomplete field:
+    assert s.service.connector.apiKey == 'orig-key'
+    assert s.service.connector.endpoint == 'ENV_ENDPOINT'
+
+
+def test_warn_on_incomplete_field_info_standalone_source():
+    """A source instantiated on its own still warns (and deduplicates) using its own init state."""
+
+    class App(BaseSettings):
+        service: 'Service | None' = None  # noqa: F821
+
+    source = EnvSettingsSource(App)
+
+    with pytest.warns(IncompleteFieldDefinitionWarning) as caught:
+        source()
+        source()
+
+    incomplete_warnings = [str(w.message) for w in caught if w.category is IncompleteFieldDefinitionWarning]
+    assert len(incomplete_warnings) == 1
+    assert incomplete_warnings[0].startswith("Field 'service' ")
+
+
+def test_debug_sources_disabled_by_default(env, caplog, monkeypatch):
+    # Ensure the env var is unset regardless of the outer environment.
+    monkeypatch.delenv('PYDANTIC_SETTINGS_DEBUG', raising=False)
+
+    class Settings(BaseSettings, env_prefix='myapp_'):
+        name: str = 'default'
+        port: int = 8080
+
+    env.set('myapp_name', 'from_env')
+    with caplog.at_level(logging.DEBUG, logger='pydantic_settings'):
+        Settings(port=9000)
+
+    assert not any('Resolving settings for' in r.getMessage() for r in caplog.records)
+
+
+@pytest.mark.parametrize('flag', ['1', 'true', 'True', 'yes', 'on'])
+def test_debug_sources_enabled(env, caplog, flag):
+    class Settings(BaseSettings, env_prefix='myapp_'):
+        name: str = 'default'
+        port: int = 8080
+
+    env.set('PYDANTIC_SETTINGS_DEBUG', flag)
+    env.set('myapp_name', 'from_env')
+    with caplog.at_level(logging.DEBUG, logger='pydantic_settings'):
+        Settings(port=9000)
+
+    messages = [r.getMessage() for r in caplog.records if 'Resolving settings for' in r.getMessage()]
+    assert len(messages) == 1
+    message = messages[0]
+    # Each source reports the data it collected, in priority order (highest first).
+    assert (
+        message.index('InitSettingsSource')
+        < message.index('EnvSettingsSource')
+        < message.index('DefaultSettingsSource')
+    )
+    assert "InitSettingsSource: {'port': 9000}" in message
+    assert "EnvSettingsSource: {'name': 'from_env'}" in message
+
+
+def test_debug_sources_falsy_env_value(env, caplog):
+    class Settings(BaseSettings):
+        port: int = 8080
+
+    env.set('PYDANTIC_SETTINGS_DEBUG', 'false')
+    with caplog.at_level(logging.DEBUG, logger='pydantic_settings'):
+        Settings(port=9000)
+
+    assert not any('Resolving settings for' in r.getMessage() for r in caplog.records)
+
+
+def test_debug_env_file_resolution(env, caplog, tmp_path):
+    present = tmp_path / '.env'
+    present.write_text('name=from_dotenv')
+    missing = tmp_path / '.env.missing'
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=[missing, present])
+        name: str = 'default'
+
+    env.set('PYDANTIC_SETTINGS_DEBUG', '1')
+    with caplog.at_level(logging.DEBUG, logger='pydantic_settings'):
+        s = Settings()
+
+    assert s.name == 'from_dotenv'
+    messages = [r.getMessage() for r in caplog.records]
+    assert any(f'Loading env file: {present.resolve()}' == m for m in messages)
+    assert any(f'Env file not found, skipping: {missing.resolve()}' == m for m in messages)
+
+
+def test_debug_env_file_resolution_disabled_by_default(env, caplog, tmp_path, monkeypatch):
+    monkeypatch.delenv('PYDANTIC_SETTINGS_DEBUG', raising=False)
+    missing = tmp_path / '.env.missing'
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=missing)
+        name: str = 'default'
+
+    with caplog.at_level(logging.DEBUG, logger='pydantic_settings'):
+        Settings()
+
+    assert not any('env file' in r.getMessage().lower() for r in caplog.records)
+
+
+def test_debug_secret_file_resolution(env, caplog, tmp_path):
+    (tmp_path / 'name').write_text('from_secret')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(secrets_dir=tmp_path)
+        name: str = 'default'
+        missing: str = 'default'
+
+    env.set('PYDANTIC_SETTINGS_DEBUG', '1')
+    with caplog.at_level(logging.DEBUG, logger='pydantic_settings'):
+        s = Settings()
+
+    assert s.name == 'from_secret'
+    messages = [r.getMessage() for r in caplog.records]
+    assert any(f'Loading secret file: {(tmp_path / "name").resolve()}' == m for m in messages)
+    assert any('Secret file not found, skipping' in m and 'missing' in m for m in messages)

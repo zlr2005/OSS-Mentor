@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-25T20:05:43Z",
+      "committer_at": "2026-10-25T20:05:43Z",
+      "tree_sha": "0dfd8c80596e9dac230e40dca76df16eeafaaecf"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f74297c85038c4ccc435efc05b592b2ab062c208"
+  },
+  "observed_at": "2026-10-26T08:27:33.922675+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "396200bec392937566bc4f3cc67ac145514eaad7c58eafc8a3323ff2fda7a1d4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b59ea90cabe7866ec60a78bfd9436eb71ec1281da40ffbea080e2713e36dc85f",
+  "source_url": "https://api.github.com/repos/nestjs/nest/commits/f74297c85038c4ccc435efc05b592b2ab062c208?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "jackc/pgx",
+    "id": 9120526,
+    "language": "Go",
+    "private": false,
+    "size": 6670
+  },
+  "observed_at": "2026-10-26T07:43:19.323594+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "70ec16976a08fb91f33ece845eea86910cf21d5e27fac72a01d9af1d40e9fc5b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "84a15400b4a6cc8aa2350a3facd6dbec95d6dfafd2c94e19636e424487d8c18a",
+  "source_url": "https://api.github.com/repos/jackc/pgx",
+  "status_code": 200
+}

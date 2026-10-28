@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "sharkdp/bat",
+    "id": 130464961,
+    "language": "Rust",
+    "private": false,
+    "size": 35264
+  },
+  "observed_at": "2026-10-26T14:04:37.406298+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5d943563fc40fb899f83bdee203ee2fb3fde57d480032b43625836a1d7d24055",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9bb2258a78a750e650395d9b88cd90061f172690fccc989bebadebe086d22efb",
+  "source_url": "https://api.github.com/repos/sharkdp/bat",
+  "status_code": 200
+}

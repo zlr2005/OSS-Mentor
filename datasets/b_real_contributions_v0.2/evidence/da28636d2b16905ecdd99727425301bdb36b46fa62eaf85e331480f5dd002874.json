@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "ratatui/ratatui",
+    "id": 600886023,
+    "language": "Rust",
+    "private": false,
+    "size": 141071
+  },
+  "observed_at": "2026-10-26T13:23:38.967432+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5beaf2a3214f74662f25995cf6135f6286cb125cd89068555cbb3b80545c8c19",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "855f9c1964b1a914b8f01dea626e5d7906399f185a338333a68978a13b0597ad",
+  "source_url": "https://api.github.com/repos/ratatui/ratatui",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "freeCodeCamp/freeCodeCamp",
+    "id": 28457823,
+    "language": "TypeScript",
+    "private": false,
+    "size": 583873
+  },
+  "observed_at": "2026-10-26T06:50:56.128177+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e722b9582f61fcb65e9a3d011fa624446b79d599677fe2a16c945ccf2a81f215",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f9acb79e1bcf0feb2aa4c20e841a63c4b3ff576e190f280f16805c70cd44baf1",
+  "source_url": "https://api.github.com/repos/freeCodeCamp/freeCodeCamp",
+  "status_code": 200
+}

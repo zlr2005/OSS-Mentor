@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7acab4c46e0caf1ca8e0f22441c074af7a3747cb",
+    "size": 30773
+  },
+  "observed_at": "2026-10-26T06:41:20.160532+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "84e198e07ec113f0be5fbe7fc5ad635609303a233f3e80a717b2594c5a7c410f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0f0b64f5c86c2b406db54c3771a9a2d69112f4e491bff513914794b049a3d34c",
+  "source_url": "https://api.github.com/repos/facebook/buck2/git/blobs/7acab4c46e0caf1ca8e0f22441c074af7a3747cb",
+  "status_code": 200
+}

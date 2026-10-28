@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 336776614,
+      "login": "arfa-21",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T13:11:17Z",
+      "committer_at": "2026-10-24T20:46:32Z",
+      "tree_sha": "3bb235e52b32c5abc429a9470476eedb5178f945"
+    },
+    "committer": {
+      "id": 115476,
+      "login": "ceki",
+      "type": "User"
+    },
+    "sha": "1bc0ad7ab83c88628dde108647019fa7ef39eef4"
+  },
+  "observed_at": "2026-10-27T15:41:27.597386+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "569a7218ac4bef021146b8201101127f5ece9bfffbe1f5d9918d1710d998dd6d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8de67dbafd8654ec257741d83bd18bd6f7f7b232ea91ae2a95adea3764479294",
+  "source_url": "https://api.github.com/repos/qos-ch/logback/commits/1bc0ad7ab83c88628dde108647019fa7ef39eef4?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4246b0cfbbefc0cfdf2127631733d3ce99a1743a",
+    "size": 49245
+  },
+  "observed_at": "2026-10-26T16:51:18.603826+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2b8fd9a55474960e0e10d1765411422f54fcd5fd6170f0df3f4a9147472cf83a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "77b7ff77c29c9ea37e6addb839b6663c17d183442d0c8d38d6ad4d8268796929",
+  "source_url": "https://api.github.com/repos/ajaxorg/ace/git/blobs/4246b0cfbbefc0cfdf2127631733d3ce99a1743a",
+  "status_code": 200
+}

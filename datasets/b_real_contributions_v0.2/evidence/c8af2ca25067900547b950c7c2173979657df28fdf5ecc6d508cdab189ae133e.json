@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "qos-ch/logback",
+    "id": 283325,
+    "language": "Java",
+    "private": false,
+    "size": 31600
+  },
+  "observed_at": "2026-10-26T13:18:30.009779+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dbaeabab4ea75f799975b56b4c6ed67dcdb2c94f3b05d6ffd3d4a150e4f0ff9d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0df0a624e0a98093171289abd0a498580336e13b9e0ad51e80bed9bfa7faee94",
+  "source_url": "https://api.github.com/repos/qos-ch/logback",
+  "status_code": 200
+}

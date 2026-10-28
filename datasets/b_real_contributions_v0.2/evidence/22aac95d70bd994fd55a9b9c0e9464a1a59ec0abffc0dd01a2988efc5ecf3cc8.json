@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 339208,
+      "login": "hshoff",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-22T14:20:47Z",
+      "committer_at": "2026-06-22T14:20:47Z",
+      "tree_sha": "4fa886ec5e1e79c10dc4c3c25bf5a669fb0d46d7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "485c0359664ee8e612992defb16e1f035ed40b23"
+  },
+  "observed_at": "2026-10-26T05:02:02.247810+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7895556dd0d1fd3dc005ffe02c541902dc8e0bffa86350a576e5f916253b23a1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0b2dc767db838a76f6292bad2e2eb727900c16d6b4aaa13254e4b17be4d6bc9b",
+  "source_url": "https://api.github.com/repos/airbnb/visx/commits/485c0359664ee8e612992defb16e1f035ed40b23?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7985733,
+      "login": "diqiu50",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T07:23:25Z",
+      "committer_at": "2026-10-23T07:23:25Z",
+      "tree_sha": "7a80e3be0ea34147d75c693d5875410f3b17f22a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d4d95ebfe5c92e18e2ae2e8ae88d95aeb0c0251d"
+  },
+  "observed_at": "2026-10-26T05:13:40.678590+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7a8dc4a5af06fe4ec89e1cb5494cefaec2c492f6800dcb17c2a665ff6779ea42",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4544de0e1683d45027ebcaee92e08217193d761499f8f776f8b37e55292b0453",
+  "source_url": "https://api.github.com/repos/apache/gravitino/commits/d4d95ebfe5c92e18e2ae2e8ae88d95aeb0c0251d?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "huggingface/accelerate",
+    "id": 308638334,
+    "language": "Python",
+    "private": false,
+    "size": 6579
+  },
+  "observed_at": "2026-10-26T07:26:36.092914+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "860eb95f1474cb9b54cd8e894c3a7644875012e46eaed489fd5d56089ec0fb3b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "43ee89aad7a66b2e807895c9da10cb394a951bceda51d934203eb49a122cd980",
+  "source_url": "https://api.github.com/repos/huggingface/accelerate",
+  "status_code": 200
+}

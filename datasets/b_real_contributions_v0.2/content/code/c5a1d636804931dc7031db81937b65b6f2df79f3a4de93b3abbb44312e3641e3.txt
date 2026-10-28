@@ -1,0 +1,45 @@
+/*
+ * Copyright (C) 2020 Graylog, Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Server Side Public License, version 1,
+ * as published by MongoDB, Inc.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * Server Side Public License for more details.
+ *
+ * You should have received a copy of the Server Side Public License
+ * along with this program. If not, see
+ * <http://www.mongodb.com/licensing/server-side-public-license>.
+ */
+module.exports = {
+  customSyntax: 'postcss-styled-syntax',
+  extends: [
+    'stylelint-config-standard',
+  ],
+  rules: {
+    'declaration-empty-line-before': null,
+    'declaration-property-value-disallowed-list': [
+      { 'z-index': [/^-?\d{2,}$/] },
+      { message: 'Use a value from `theme/z-indices` instead of a numeric z-index.' },
+    ],
+    'function-name-case': null,
+    'media-query-no-invalid': null,
+    // `postcss-styled-syntax` does not treat a styled-component template root as a
+    // scoping root, so idiomatic root-level `&` selectors (e.g. `&::before`,
+    // `&.content`) are flagged as false positives. Disable for styled-components.
+    'nesting-selector-no-missing-scoping-root': null,
+    'no-descending-specificity': null,
+    'no-empty-source': null,
+    'property-no-vendor-prefix': [true, {
+      ignoreProperties: ['grid-rows', 'grid-columns', 'grid-row', 'grid-column'],
+    }],
+    'selector-class-pattern': null,
+    'value-no-vendor-prefix': [true, {
+      ignoreValues: ['grid', 'inline-grid'],
+    }],
+    'value-keyword-case': null,
+  },
+};

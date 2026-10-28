@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "networkx/networkx",
+    "id": 890377,
+    "language": "Python",
+    "private": false,
+    "size": 98434
+  },
+  "observed_at": "2026-10-26T08:28:02.800288+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "07af6f70fbdfdbb8ad4bd53c74744af8fafd3d79c2f78aedb48015100d57c5d9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0f058be3211ef01a7921108c61d99ba697435d53a1a9a7fe8d64cf4a54ff54b3",
+  "source_url": "https://api.github.com/repos/networkx/networkx",
+  "status_code": 200
+}

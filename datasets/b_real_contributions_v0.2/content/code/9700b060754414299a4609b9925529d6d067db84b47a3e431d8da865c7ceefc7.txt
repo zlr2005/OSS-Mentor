@@ -1,0 +1,147 @@
+# flags: --skip-magic-trailing-comma
+# We should not remove the trailing comma in a single-element subscript.
+a: tuple[int,]
+b = tuple[int,]
+
+# But commas in multiple element subscripts should be removed.
+c: tuple[int, int,]
+d = tuple[int, int,]
+
+# Remove commas for non-subscripts.
+small_list = [1,]
+list_of_types = [tuple[int,],]
+small_set = {1,}
+set_of_types = {tuple[int,],}
+
+# Except single element tuples
+small_tuple = (1,)
+
+# Also keep the comma when a standalone comment splits the opening paren of a
+# single-element tuple used as a lambda parameter default onto a previous line.
+foo(lambda x=(
+    # comment
+    1,
+): x)
+[lambda x=(
+    # comment
+    1,
+): x]
+
+# Same for a single-element subscript, but not for one with more elements.
+foo(lambda x=a[
+    # comment
+    1,
+]: x)
+[lambda x=a[
+    # comment
+    1,
+    2,
+]: x]
+
+# Trailing commas in multiple chained non-nested parens.
+zero(
+    one,
+).two(
+    three,
+).four(
+    five,
+)
+
+func1(arg1).func2(arg2,).func3(arg3).func4(arg4,).func5(arg5)
+
+(
+    a,
+    b,
+    c,
+    d,
+) = func1(
+    arg1
+) and func2(arg2)
+
+func(
+    argument1,
+    (
+        one,
+        two,
+    ),
+    argument4,
+    argument5,
+    argument6,
+)
+
+# Also keep it when the line is long enough to be split and a power operator
+# sends it through hug_power_op, which used to rebuild the line from leaves that
+# had lost their place in the tree.
+value = alpha[beta,]() ** gamma * delta << epsilon | zeta < eta ^ theta * iota + kappa + mu
+
+# A comment after an argument stays there when the last argument is an implicitly
+# concatenated string.
+parser.add_argument("--retries",  # 0 disables
+                    help="Number of times to retry "
+                         "before giving up")
+
+# output
+# We should not remove the trailing comma in a single-element subscript.
+a: tuple[int,]
+b = tuple[int,]
+
+# But commas in multiple element subscripts should be removed.
+c: tuple[int, int]
+d = tuple[int, int]
+
+# Remove commas for non-subscripts.
+small_list = [1]
+list_of_types = [tuple[int,]]
+small_set = {1}
+set_of_types = {tuple[int,]}
+
+# Except single element tuples
+small_tuple = (1,)
+
+# Also keep the comma when a standalone comment splits the opening paren of a
+# single-element tuple used as a lambda parameter default onto a previous line.
+foo(
+    lambda x=(
+    # comment
+    1,): x
+)
+[
+    lambda x=(
+    # comment
+    1,): x
+]
+
+# Same for a single-element subscript, but not for one with more elements.
+foo(
+    lambda x=a[
+    # comment
+    1,]: x
+)
+[
+    lambda x=a[
+    # comment
+    1, 2]: x
+]
+
+# Trailing commas in multiple chained non-nested parens.
+zero(one).two(three).four(five)
+
+func1(arg1).func2(arg2).func3(arg3).func4(arg4).func5(arg5)
+
+a, b, c, d = func1(arg1) and func2(arg2)
+
+func(argument1, (one, two), argument4, argument5, argument6)
+
+# Also keep it when the line is long enough to be split and a power operator
+# sends it through hug_power_op, which used to rebuild the line from leaves that
+# had lost their place in the tree.
+value = (
+    alpha[beta,]() ** gamma * delta << epsilon | zeta < eta ^ theta * iota + kappa + mu
+)
+
+# A comment after an argument stays there when the last argument is an implicitly
+# concatenated string.
+parser.add_argument(
+    "--retries",  # 0 disables
+    help="Number of times to retry " "before giving up",
+)

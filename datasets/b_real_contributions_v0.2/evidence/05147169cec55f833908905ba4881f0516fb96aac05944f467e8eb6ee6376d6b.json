@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "91ba52e24ec14b6534fb4127df6216f2c19cdf5f",
+    "size": 17016
+  },
+  "observed_at": "2026-10-26T06:20:48.287966+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c89e1a9f8b3f7d02b7ae528ab5d87c44e925c7c28ed41bd7fe2f63ed52938847",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ff11c5eedf1c9a00c9012ecc90a058fe1ae67cd5abe1991385bf0955a0291e1e",
+  "source_url": "https://api.github.com/repos/diesel-rs/diesel/git/blobs/91ba52e24ec14b6534fb4127df6216f2c19cdf5f",
+  "status_code": 200
+}

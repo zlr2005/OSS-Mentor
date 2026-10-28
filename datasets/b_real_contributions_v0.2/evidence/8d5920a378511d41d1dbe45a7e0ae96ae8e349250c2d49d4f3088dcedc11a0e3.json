@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 75228263,
+      "login": "bercedev",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T20:05:35Z",
+      "committer_at": "2026-10-25T20:05:35Z",
+      "tree_sha": "a611e03476ed31c0aabdac8e0d47c5432309ca38"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f3cc93329cb1e1723229eddfbb426bad4b105beb"
+  },
+  "observed_at": "2026-10-26T08:31:42.261213+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9a079c739b40fbeacc9e1aa7a75090bc087e8c491cbe8d242a44e316a41eb158",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b771ab24c5cb4e26de865c9eda11258233c7566bff58edf0398c9c420110ccbf",
+  "source_url": "https://api.github.com/repos/nushell/nushell/commits/f3cc93329cb1e1723229eddfbb426bad4b105beb?per_page=100",
+  "status_code": 200
+}

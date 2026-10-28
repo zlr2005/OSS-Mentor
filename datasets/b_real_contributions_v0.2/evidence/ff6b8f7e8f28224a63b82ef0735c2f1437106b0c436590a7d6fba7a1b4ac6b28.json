@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "excalidraw/excalidraw",
+    "id": 231283452,
+    "language": "TypeScript",
+    "private": false,
+    "size": 109192
+  },
+  "observed_at": "2026-10-26T06:35:56.785613+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e42e6d5f05f238fb73bdb7b6b73c7af033db0361dd7c999c8fe883e375565cd4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "145bf1ff8b8145e32f507ac4672a27bed51fc901726f5978cb1319d31dc226ff",
+  "source_url": "https://api.github.com/repos/excalidraw/excalidraw",
+  "status_code": 200
+}

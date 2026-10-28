@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "d4bb8d39dfe4e761fbd0c75b318c14126fa2f45f",
+    "size": 1720
+  },
+  "observed_at": "2026-10-26T07:40:58.984406+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "973e6c8f5fa968ee67553fa71a6cc752452642b3b0665053cc96638a614d4edf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e338dac8743971f8c8ec8ebea2ebd94ecd50fdc01a8143387eb18c75f6679026",
+  "source_url": "https://api.github.com/repos/ipython/ipython/git/blobs/d4bb8d39dfe4e761fbd0c75b318c14126fa2f45f",
+  "status_code": 200
+}

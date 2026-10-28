@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "vercel/next.js",
+    "id": 70107786,
+    "language": "JavaScript",
+    "private": false,
+    "size": 2606177
+  },
+  "observed_at": "2026-10-26T15:32:20.563627+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1469b632bbd1ff5c143841a6b2718795b2ec3a7696fa7647cc440508d08c06ac",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7a42d8549a567b301e6771948fa4e5443f7ed08794c368b4a2f490e79afa3751",
+  "source_url": "https://api.github.com/repos/vercel/next.js",
+  "status_code": 200
+}

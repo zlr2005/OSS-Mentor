@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1128784,
+      "login": "markerikson",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-28T12:50:38Z",
+      "committer_at": "2026-09-28T12:50:38Z",
+      "tree_sha": "fa4504bd1edcebd516be545dc8d69fb728306d53"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0eeae5cfb16d0fdd0bfca87c5c3283e096e5cfd4"
+  },
+  "observed_at": "2026-10-26T13:39:42.285583+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "255bd34add12f38aa5fa1a1755222fe4cca3e1dd7f93f69874e88bb101391aaf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ba0f64107515c6f53483740b93d588867c0c1368915e950b1225c94365e52a0f",
+  "source_url": "https://api.github.com/repos/reduxjs/redux-toolkit/commits/0eeae5cfb16d0fdd0bfca87c5c3283e096e5cfd4?per_page=100",
+  "status_code": 200
+}

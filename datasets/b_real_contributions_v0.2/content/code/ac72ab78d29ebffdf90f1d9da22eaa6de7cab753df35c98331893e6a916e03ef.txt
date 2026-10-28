@@ -1,0 +1,4926 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+use lsp_types::CompletionItem;
+use lsp_types::CompletionItemKind;
+use lsp_types::CompletionItemTag;
+use pretty_assertions::assert_eq;
+use pyrefly_build::handle::Handle;
+use pyrefly_python::sys_info::PythonVersion;
+use ruff_text_size::TextSize;
+
+use crate::state::lsp::ImportFormat;
+use crate::state::require::Require;
+use crate::state::state::State;
+use crate::state::state::Transaction;
+use crate::test::django::util::django_env;
+use crate::test::util::TestEnv;
+use crate::test::util::extract_cursors_for_test;
+use crate::test::util::get_batched_lsp_operations_report;
+use crate::test::util::get_batched_lsp_operations_report_allow_error;
+use crate::test::util::mk_multi_file_state;
+
+// Some assertions compare literal completion dumps. pretty_assertions decorates
+// diffs with ANSI escapes, so we strip them to keep the expected strings stable.
+fn strip_ansi(input: &str) -> String {
+    let mut result = String::with_capacity(input.len());
+    let mut chars = input.chars();
+    while let Some(ch) = chars.next() {
+        if ch == '\u{1b}' {
+            for next in chars.by_ref() {
+                if next == 'm' {
+                    break;
+                }
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+    result
+}
+
+#[derive(Default)]
+struct ResultsFilter {
+    include_keywords: bool,
+    include_builtins: bool,
+}
+
+/// Attributes inherited from `object` appear in almost every attribute completion, so most
+/// tests exclude them to keep their expectations short.
+fn is_object_attribute(item: &CompletionItem) -> bool {
+    item.sort_text
+        .as_deref()
+        .is_some_and(|sort_text| sort_text.starts_with("3a"))
+}
+
+#[test]
+fn completion_magic_methods_in_class() {
+    let code = r#"
+class Foo:
+    def __
+#       ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let trimmed = report.trim();
+    for expected in [
+        "- (Method) __eq__",
+        "- (Method) __len__",
+        "- (Method) __str__",
+        "- (Method) __hash__",
+    ] {
+        assert!(
+            trimmed.contains(expected),
+            "missing {expected} in completions:\n{trimmed}"
+        );
+    }
+}
+
+#[test]
+fn completion_method_definition_has_unique_suggestions() {
+    let code = r#"
+class Foo:
+    def get_value(self) -> int:
+        return 1
+
+    def get_
+#           ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let get_value_suggestions = state
+        .transaction()
+        .completion(handle, position, ImportFormat::Absolute, true, None)
+        .into_iter()
+        .filter(|item| item.label == "get_value")
+        .count();
+
+    assert_eq!(get_value_suggestions, 1);
+}
+
+/// Returns the `sort_text` of the completion at the cursor with `label`, or `None` if there is none.
+fn completion_sort_text(code: &str, label: &str) -> Option<String> {
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let position = extract_cursors_for_test(code)[0];
+    let mut items = state
+        .transaction()
+        .completion(
+            &handles["main"],
+            position,
+            ImportFormat::Absolute,
+            true,
+            None,
+        )
+        .into_iter()
+        .filter(|item| item.label == label);
+    let item = items.next()?;
+    assert!(items.next().is_none(), "duplicate completion for {label}");
+    item.sort_text
+}
+
+// https://github.com/facebook/pyrefly/issues/1211
+#[test]
+fn completion_dunder_attribute_inherited_from_object() {
+    let code = r#"
+from pathlib import Path
+
+Path(".").read_text.__do
+#                       ^
+"#;
+    assert_eq!(completion_sort_text(code, "__doc__").as_deref(), Some("3a"));
+}
+
+#[test]
+fn completion_object_attributes_rank_after_class_attributes() {
+    let code = r#"
+class Foo:
+    def __custom__(self): ...
+
+Foo().__
+#       ^
+"#;
+    assert_eq!(
+        completion_sort_text(code, "__custom__").as_deref(),
+        Some("3")
+    );
+    assert_eq!(completion_sort_text(code, "__eq__").as_deref(), Some("3a"));
+    assert_eq!(completion_sort_text(code, "__doc__").as_deref(), Some("3a"));
+}
+
+fn get_default_test_report() -> impl Fn(&State, &Handle, TextSize) -> String {
+    get_test_report(ResultsFilter::default(), ImportFormat::Absolute)
+}
+
+fn get_test_report(
+    filter: ResultsFilter,
+    import_format: ImportFormat,
+) -> impl Fn(&State, &Handle, TextSize) -> String {
+    move |state: &State, handle: &Handle, position: TextSize| {
+        let mut report = "Completion Results:".to_owned();
+        for CompletionItem {
+            label,
+            detail,
+            kind,
+            insert_text,
+            data,
+            tags,
+            text_edit,
+            documentation,
+            ..
+        } in state
+            .transaction()
+            .completion(handle, position, import_format, true, None)
+            .into_iter()
+            .filter(|item| !is_object_attribute(item))
+        {
+            let is_deprecated = if let Some(tags) = tags {
+                tags.contains(&lsp_types::CompletionItemTag::Deprecated)
+            } else {
+                false
+            };
+            if (filter.include_keywords || kind != Some(CompletionItemKind::Keyword))
+                && (filter.include_builtins || data != Some(serde_json::json!("builtin")))
+            {
+                report.push_str("\n- (");
+                report.push_str(&format!("{:?}", kind.unwrap()));
+                report.push_str(") ");
+                if is_deprecated {
+                    report.push_str("[DEPRECATED] ");
+                }
+                report.push_str(&label);
+                if let Some(detail) = detail {
+                    report.push_str(": ");
+                    report.push_str(&detail);
+                }
+                if let Some(insert_text) = insert_text {
+                    report.push_str(" inserting `");
+                    report.push_str(&insert_text);
+                    report.push('`');
+                }
+                if let Some(text_edit) = text_edit {
+                    report.push_str(" with text edit: ");
+                    report.push_str(&format!("{:?}", text_edit));
+                }
+                if let Some(documentation) = documentation {
+                    report.push('\n');
+                    match documentation {
+                        lsp_types::Documentation::String(s) => {
+                            report.push_str(&s);
+                        }
+                        lsp_types::Documentation::MarkupContent(content) => {
+                            report.push_str(&content.value);
+                        }
+                    }
+                }
+            }
+        }
+        report
+    }
+}
+
+fn dict_field_labels(txn: &Transaction<'_>, handle: &Handle, position: TextSize) -> Vec<String> {
+    txn.completion(handle, position, ImportFormat::Absolute, true, None)
+        .into_iter()
+        .filter(|item| item.kind == Some(CompletionItemKind::Field) && !is_object_attribute(item))
+        .map(|item| item.label)
+        .collect()
+}
+
+fn polars_column_completion_labels(code: &str) -> Vec<String> {
+    let mut env = TestEnv::new();
+    env.add_with_path(
+        "polars.expr.expr",
+        "polars/expr/expr.pyi",
+        r#"
+class Expr:
+    def alias(self, name: str) -> "Expr": ...
+"#,
+    );
+    env.add_with_path(
+        "polars.functions.col",
+        "polars/functions/col.pyi",
+        r#"
+from polars.expr.expr import Expr
+class Col:
+    def __call__(self, *names: str) -> Expr: ...
+    def __getattr__(self, name: str) -> Expr: ...
+col: Col
+"#,
+    );
+    env.add_with_path(
+        "polars.functions.lit",
+        "polars/functions/lit.pyi",
+        r#"
+from polars.expr.expr import Expr
+def lit(value: object) -> Expr: ...
+"#,
+    );
+    env.add_with_path(
+        "polars.dataframe.frame",
+        "polars/dataframe/frame.pyi",
+        r#"
+class DataFrame:
+    def __init__(self, data: object = None) -> None: ...
+    def select(self, *exprs: object, **named_exprs: object) -> "DataFrame": ...
+    def with_columns(self, *exprs: object, **named_exprs: object) -> "DataFrame": ...
+    def filter(self, *predicates: object, **constraints: object) -> "DataFrame": ...
+    def sort(self, by: object, *more_by: object, descending: bool = False) -> "DataFrame": ...
+    def group_by(self, *by: object, maintain_order: bool = False, **named_by: object) -> object: ...
+    def write_csv(self, file: str) -> None: ...
+"#,
+    );
+    env.add(
+        "polars",
+        r#"
+from polars.dataframe.frame import DataFrame as DataFrame
+from polars.expr.expr import Expr as Expr
+from polars.functions.col import col as col
+from polars.functions.lit import lit as lit
+"#,
+    );
+    env.add("main", code);
+    let (state, handle_for) = env.to_state();
+    let handle = handle_for("main");
+    let position = extract_cursors_for_test(code)[0];
+    dict_field_labels(&state.transaction(), &handle, position)
+}
+
+fn pandas_column_completion_labels(code: &str) -> Vec<String> {
+    let mut env = TestEnv::new();
+    env.add_with_path(
+        "pandas.core.frame",
+        "pandas/core/frame.pyi",
+        r#"
+class DataFrame:
+    def __init__(self, data: object = None) -> None: ...
+    def drop(self, labels: object = None, *, axis: object = None, columns: object = None) -> object: ...
+    def groupby(self, by: object) -> object: ...
+    def filter(self, items: object = None, axis: object = None) -> object: ...
+"#,
+    );
+    env.add(
+        "pandas",
+        "from pandas.core.frame import DataFrame as DataFrame",
+    );
+    env.add("main", code);
+    let (state, handle_for) = env.to_state();
+    let handle = handle_for("main");
+    let position = extract_cursors_for_test(code)[0];
+    dict_field_labels(&state.transaction(), &handle, position)
+}
+
+fn dataframe_column_completion_code(package: &str, body: &str) -> String {
+    let call = body.lines().last().expect("body must contain a call");
+    let caret = " ".repeat(
+        call.find("\"\"")
+            .expect("call must contain an empty string"),
+    );
+    format!(
+        r#"
+import {package} as lib
+df = lib.DataFrame({{"foo": [1], "bar": [2]}})
+{body}
+#{caret}^
+"#
+    )
+}
+
+#[test]
+fn dot_complete_basic_test() {
+    let code = r#"
+class Foo:
+    x: int
+foo = Foo()
+foo.
+#   ^
+class Bar(Foo):
+    y: int
+bar = Bar()
+bar.
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | foo.
+        ^
+Completion Results:
+- (Field) x: int
+
+10 | bar.
+         ^
+Completion Results:
+- (Field) x: int
+- (Field) y: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dict_key_completion_from_literal() {
+    let code = r#"
+def use_dict():
+    data = {"foo": 1, "bar": 2}
+    data[""]
+#        ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(
+        report.trim().contains(
+            r#"
+# main.py
+4 |     data[""]
+             ^
+Completion Results:
+- (Field) bar: Literal[2]
+- (Field) foo: Literal[1]
+"#
+            .trim()
+        )
+    );
+}
+
+#[test]
+fn dict_key_completion_from_nested_literal() {
+    let code = r#"
+def nested():
+    config = {"user": {"name": "Alice"}}
+    config["user"][""]
+#                  ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, true);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let labels = dict_field_labels(&txn, handle, position);
+    assert_eq!(labels, vec!["name".to_owned()]);
+}
+
+#[test]
+fn dict_key_completion_from_outer_literal() {
+    let code = r#"
+def nested():
+    config = {"user": {"name": "Alice"}}
+    config["user"][""]
+#           ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, true);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let labels = dict_field_labels(&txn, handle, position);
+    assert_eq!(labels, vec!["user".to_owned()]);
+}
+
+#[test]
+fn dict_key_completion_from_typed_dict() {
+    let code = r#"
+from typing import TypedDict
+
+class User(TypedDict):
+    name: str
+    age: int
+
+u: User
+u[""]
+#  ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(
+        report.trim().contains(
+            r#"
+# main.py
+9 | u[""]
+       ^
+Completion Results:
+- (Field) age: int
+- (Field) name: str
+"#
+            .trim()
+        )
+    );
+}
+
+#[test]
+fn dict_key_completion_from_typed_dict_get() {
+    let code = r#"
+from typing import TypedDict
+
+class Dimension(TypedDict):
+    x: int
+    y: int
+    z: int
+
+dim: Dimension
+dim.get("")
+#        ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(
+        report.contains(
+            r#"
+Completion Results:
+- (Field) x: int
+- (Field) y: int
+- (Field) z: int
+"#
+            .trim()
+        ),
+        "{report}"
+    );
+}
+
+#[test]
+fn dict_key_completion_from_typed_dict_get_keyword() {
+    let code = r#"
+from typing import TypedDict
+
+class Dimension(TypedDict):
+    x: int
+    y: int
+    z: int
+
+dim: Dimension
+dim.get(key="")
+#             ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(
+        report.contains(
+            r#"
+Completion Results:
+- (Field) x: int
+- (Field) y: int
+- (Field) z: int
+"#
+            .trim()
+        ),
+        "{report}"
+    );
+}
+
+#[test]
+fn dict_key_completion_from_typed_dict_literal() {
+    let code = r#"
+from typing import TypedDict
+
+class Config(TypedDict):
+    name: str
+    age: int
+
+cfg: Config = {"": 1}
+#             ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(report.contains("- (Field) age: int"));
+    assert!(report.contains("- (Field) name: str"));
+}
+
+#[test]
+fn dict_value_completion_from_discriminated_typed_dict_union_literal() {
+    let code = r#"
+from typing import Literal, TypedDict
+
+class Foo(TypedDict):
+    kind: Literal["foo"]
+    foo_value: int
+
+class Bar(TypedDict):
+    kind: Literal["bar"]
+    bar_value: str
+
+type FooBar = Foo | Bar
+
+item: FooBar = {
+    "kind": "|",
+#            ^
+}
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(
+        report.contains("- (Value) 'bar': Literal['bar']"),
+        "{report}"
+    );
+    assert!(
+        report.contains("- (Value) 'foo': Literal['foo']"),
+        "{report}"
+    );
+}
+
+#[test]
+fn dict_value_completion_narrows_discriminated_typed_dict_union_literal() {
+    let code = r#"
+from typing import Literal, TypedDict
+
+class Foo(TypedDict):
+    kind: Literal["foo"]
+    mode: Literal["foo-mode"]
+
+class Bar(TypedDict):
+    kind: Literal["bar"]
+    mode: Literal["bar-mode"]
+
+type FooBar = Foo | Bar
+
+item: FooBar = {
+    "kind": "foo",
+    "mode": "|",
+#            ^
+}
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(
+        report.contains("- (Value) 'foo-mode': Literal['foo-mode']"),
+        "{report}"
+    );
+    assert!(
+        !report.contains("- (Value) 'bar-mode': Literal['bar-mode']"),
+        "{report}"
+    );
+}
+
+#[test]
+fn dict_key_completion_from_discriminated_typed_dict_union_literal() {
+    let code = r#"
+from typing import Literal, TypedDict
+
+class Foo(TypedDict):
+    kind: Literal["foo"]
+    foo_value: int
+
+class Bar(TypedDict):
+    kind: Literal["bar"]
+    bar_value: str
+
+type FooBar = Foo | Bar
+
+item: FooBar = {
+    "kind": "foo",
+    "": 0,
+#    ^
+}
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let labels = dict_field_labels(&txn, handle, position);
+    assert_eq!(labels, vec!["foo_value".to_owned()]);
+}
+
+#[test]
+fn dict_key_completion_uses_enclosing_expected_type() {
+    let code = r#"
+from typing import Literal, TypedDict
+
+class Foo(TypedDict):
+    kind: Literal["foo"]
+    foo_value: int
+
+class Bar(TypedDict):
+    kind: Literal["bar"]
+    bar_value: str
+
+type FooBar = Foo | Bar
+
+def consume(item: FooBar) -> None: ...
+
+consume({
+    "kind": "foo",
+    "": 0,
+#    ^
+})
+
+def make() -> FooBar:
+    return {
+        "kind": "foo",
+        "": 0,
+#        ^
+    }
+
+class Outer(TypedDict):
+    item: FooBar
+
+outer: Outer = {
+    "item": {
+        "kind": "foo",
+        "": 0,
+#        ^
+    },
+}
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let txn = state.transaction();
+    for position in extract_cursors_for_test(code) {
+        assert_eq!(
+            dict_field_labels(&txn, handle, position),
+            vec!["foo_value".to_owned()]
+        );
+    }
+}
+
+#[test]
+fn dataframe_column_completion_from_method_argument() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select("")
+#          ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn dataframe_column_completion_from_inline_groupby_agg() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"nm_produto": ["A"], "volume": [2]})
+df.group_by("nm_produto").agg(pl.col(""))
+#                                     ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["nm_produto".to_owned(), "volume".to_owned()]
+    );
+}
+#[test]
+fn dataframe_column_completion_from_nested_call_argument() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(pl.col(""))
+#                 ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn dataframe_column_completion_from_aliased_column_helper() {
+    let code = r#"
+from polars import DataFrame, col as column
+df = DataFrame({"foo": [1], "bar": [2]})
+df.filter(foo=column(""))
+#                    ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn dataframe_column_completion_uses_innermost_polars_helper() {
+    let column_code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(pl.lit(pl.col("")))
+#                       ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(column_code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+
+    let literal_code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(pl.col(pl.lit("")))
+#                       ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(literal_code),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn polars_col_attribute_completion() {
+    for expression in [
+        "df.select(pl.col.|)",
+        "df.select(pl.col.|",
+        "df.select(pl.col.f|)",
+        "df.select(pl.col.f|.alias(\"renamed\"))",
+        "df.select(column.|)",
+        "df.with_columns(pl.col.|)",
+        "df.filter(pl.col.|)",
+        "df.filter(foo=pl.col.|)",
+        "df.group_by(**dict(alias=pl.col.|))",
+        "df.group_by(**{\"alias\": pl.col.|})",
+        "df.select(pl.lit(pl.col.|))",
+        "outer.select(df.select(pl.col.|))",
+    ] {
+        let cursor = expression.find('|').unwrap();
+        let expression = expression.replace('|', "");
+        let code = format!(
+            r#"
+import polars as pl
+from polars import col as column
+df = pl.DataFrame({{"foo": [1], "bar": [2]}})
+outer = pl.DataFrame({{"other": [3]}})
+{expression}
+#{:width$}^
+"#,
+            "",
+            width = cursor - 1,
+        );
+        assert_eq!(
+            polars_column_completion_labels(&code),
+            vec!["bar".to_owned(), "foo".to_owned()],
+            "{expression}",
+        );
+    }
+}
+
+#[test]
+fn polars_col_attribute_completion_valid_identifiers() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "two words": [2], "class": [3], "match": [4], "123": [5]})
+df.select(pl.col.)
+#                ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["foo".to_owned(), "match".to_owned()]
+    );
+}
+
+#[test]
+fn polars_col_attribute_completion_requires_context() {
+    for expression in [
+        "pl.col.|",
+        "df.write_csv(pl.col.|)",
+        "df.sort(\"foo\", descending=pl.col.|)",
+        "df.group_by(**dict(maintain_order=pl.col.|))",
+        "df.group_by(**{\"maintain_order\": pl.col.|})",
+        "df.select(df.write_csv(pl.col.|))",
+        "df.select(unrelated.|)",
+        "df.select(pl.col(\"foo\").|)",
+        "unknown.select(pl.col.|)",
+    ] {
+        let cursor = expression.find('|').unwrap();
+        let expression = expression.replace('|', "");
+        let code = format!(
+            r#"
+import polars as pl
+df = pl.DataFrame({{"foo": [1], "bar": [2]}})
+class Col:
+    def __getattr__(self, name: str) -> object: ...
+unrelated = Col()
+unknown: pl.DataFrame
+{expression}
+#{:width$}^
+"#,
+            "",
+            width = cursor - 1,
+        );
+        assert_eq!(polars_column_completion_labels(&code), Vec::<String>::new());
+    }
+}
+
+#[test]
+fn polars_col_attribute_completion_intersects_union_columns() {
+    let code = r#"
+import polars as pl
+def f(cond: bool) -> None:
+    a = pl.DataFrame({"id": [1], "x": [1]})
+    b = pl.DataFrame({"id": [1], "y": [1]})
+    df = a if cond else b
+    df.select(pl.col.)
+#                    ^
+"#;
+    assert_eq!(polars_column_completion_labels(code), vec!["id".to_owned()]);
+}
+
+#[test]
+fn pandas_column_completion_from_method_argument() {
+    let code = r#"
+import pandas as pd
+df = pd.DataFrame({"foo": [1], "bar": [2]})
+df.groupby("")
+#           ^
+"#;
+    assert_eq!(
+        pandas_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn no_column_completion_from_unrelated_call_argument() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+def f(frame: object, value: str) -> None: ...
+f(df, "")
+#      ^
+"#;
+    assert_eq!(polars_column_completion_labels(code), Vec::<String>::new());
+}
+
+#[test]
+fn dataframe_column_completion_from_sort_by_keyword() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.sort(by="")
+#            ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn no_column_completion_from_sort_control_keyword() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.sort(by="foo", descending="")
+#                             ^
+"#;
+    assert_eq!(polars_column_completion_labels(code), Vec::<String>::new());
+}
+
+// A splat leaves the number of positional arguments unknown, but every positional parameter of
+// these methods names a column, so a literal after one is still a column position.
+#[test]
+fn dataframe_column_completion_after_positional_splat() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+keys: list[str] = []
+df.select(*keys, "")
+#                 ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+// `filter(name=value)` reads the keyword as the column and a direct string value as data.
+#[test]
+fn no_column_completion_from_filter_keyword_value() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.filter(foo="")
+#              ^
+"#;
+    assert_eq!(polars_column_completion_labels(code), Vec::<String>::new());
+}
+
+#[test]
+fn dataframe_column_completion_from_named_expression_keyword() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(alias="")
+#               ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn dataframe_column_completion_from_keyword_splat() {
+    for code in [
+        r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(**dict(alias=""))
+#                       ^
+"#,
+        r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(**{"alias": ""})
+#                      ^
+"#,
+        r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(**dict(alias=pl.col("")))
+#                              ^
+"#,
+        r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(**{"alias": pl.col("")})
+#                             ^
+"#,
+    ] {
+        assert_eq!(
+            polars_column_completion_labels(code),
+            vec!["bar".to_owned(), "foo".to_owned()]
+        );
+    }
+}
+
+#[test]
+fn dataframe_column_completion_recovers_keyword_from_splat() {
+    for call in [
+        r#"df.group_by(**dict(alias=""))"#,
+        r#"df.group_by(**{"alias": ""})"#,
+    ] {
+        assert_eq!(
+            polars_column_completion_labels(&dataframe_column_completion_code("polars", call)),
+            vec!["bar".to_owned(), "foo".to_owned()]
+        );
+    }
+
+    for call in [
+        r#"df.filter(**dict(items=[""]))"#,
+        r#"df.filter(**{"items": [""]})"#,
+        r#"options: dict[str, object] = {}
+df.filter(items=[""], **options)"#,
+        r#"options: dict[str, object] = {}
+df.filter(**dict(items=[""]), **options)"#,
+    ] {
+        assert_eq!(
+            pandas_column_completion_labels(&dataframe_column_completion_code("pandas", call)),
+            vec!["bar".to_owned(), "foo".to_owned()]
+        );
+    }
+}
+
+#[test]
+fn no_column_completion_from_control_keyword_splat() {
+    assert_eq!(
+        polars_column_completion_labels(&dataframe_column_completion_code(
+            "polars",
+            r#"df.group_by(**dict(maintain_order=""))"#,
+        )),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        polars_column_completion_labels(&dataframe_column_completion_code(
+            "polars",
+            r#"options: dict[str, object] = {}
+df.group_by(**{"alias": "", **options})"#,
+        )),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        pandas_column_completion_labels(&dataframe_column_completion_code(
+            "pandas",
+            r#"df.filter(**dict(axis=""))"#,
+        )),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn dataframe_column_completion_from_aliased_builtin_dict_splat() {
+    assert_eq!(
+        pandas_column_completion_labels(&dataframe_column_completion_code(
+            "pandas",
+            r#"from builtins import dict as mapping
+df.filter(**mapping(items=[""]))"#,
+        )),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn no_column_completion_from_shadowed_dict_splat() {
+    assert_eq!(
+        pandas_column_completion_labels(&dataframe_column_completion_code(
+            "pandas",
+            r#"from builtins import dict as mapping
+def dict(**kwargs: object) -> mapping[str, object]:
+    return kwargs
+df.filter(**dict(items=[""]))"#,
+        )),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn named_expression_alias_key_does_not_complete_source_columns() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.select(**{"": "bar"})
+#             ^
+"#;
+    let labels = polars_column_completion_labels(code);
+    assert!(!labels.iter().any(|label| label == "foo" || label == "bar"));
+}
+
+#[test]
+fn no_column_completion_from_non_column_dataframe_method() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"foo": [1], "bar": [2]})
+df.write_csv("")
+#             ^
+"#;
+    assert_eq!(polars_column_completion_labels(code), Vec::<String>::new());
+}
+
+#[test]
+fn no_column_completion_falls_through_to_outer_dataframe_call() {
+    for code in [
+        r#"
+import polars as pl
+outer = pl.DataFrame({"outer_column": [1]})
+inner = pl.DataFrame({"inner_column": [1]})
+outer.select(inner.filter(constraint=""))
+#                                     ^
+"#,
+        r#"
+import polars as pl
+outer = pl.DataFrame({"outer_column": [1]})
+frame = pl.DataFrame({"inner_column": [1]})
+def f(cond: bool, unknown: object) -> None:
+    inner = frame if cond else unknown
+    outer.select(inner.filter(constraint=""))
+#                                         ^
+"#,
+    ] {
+        assert_eq!(polars_column_completion_labels(code), Vec::<String>::new());
+    }
+}
+
+#[test]
+fn pandas_column_completion_from_filter_items_keyword() {
+    let code = r#"
+import pandas as pd
+df = pd.DataFrame({"foo": [1], "bar": [2]})
+df.filter(items=[""])
+#                 ^
+"#;
+    assert_eq!(
+        pandas_column_completion_labels(code),
+        vec!["bar".to_owned(), "foo".to_owned()]
+    );
+}
+
+#[test]
+fn pandas_column_completion_from_drop_labels_on_column_axis() {
+    for call in [
+        r#"df.drop(labels=[""], axis=1)"#,
+        r#"df.drop(labels=[""], axis="columns")"#,
+        r#"df.drop(**dict(labels=[""], axis=1))"#,
+        r#"df.drop(**{"labels": [""], "axis": "columns"})"#,
+        r#"df.drop(**{"labels": [""], "axis": 0, "axis": 1})"#,
+    ] {
+        assert_eq!(
+            pandas_column_completion_labels(&dataframe_column_completion_code("pandas", call)),
+            vec!["bar".to_owned(), "foo".to_owned()]
+        );
+    }
+}
+
+#[test]
+fn no_pandas_column_completion_from_drop_labels_on_row_axis() {
+    for call in [
+        r#"df.drop(labels=[""])"#,
+        r#"df.drop(labels=[""], axis=0)"#,
+        r#"df.drop(**dict(labels=[""]))"#,
+        r#"df.drop(**{"labels": [""], "axis": 1, "axis": 0})"#,
+        r#"opts: dict[str, object] = {}
+df.drop(labels=[""], **{"axis": 1, **opts})"#,
+        r#"k = "axis"
+df.drop(labels=[""], **{"axis": 1, k: 0})"#,
+    ] {
+        assert_eq!(
+            pandas_column_completion_labels(&dataframe_column_completion_code("pandas", call)),
+            Vec::<String>::new()
+        );
+    }
+}
+
+#[test]
+fn dataframe_union_completion_intersects_columns() {
+    let code = r#"
+import polars as pl
+def f(cond: bool) -> None:
+    a = pl.DataFrame({"id": [1], "x": [1]})
+    b = pl.DataFrame({"id": [1], "y": [1]})
+    df = a if cond else b
+    df.select("")
+#              ^
+"#;
+    assert_eq!(polars_column_completion_labels(code), vec!["id".to_owned()]);
+}
+
+#[test]
+fn dot_complete_with_deprecated_method() {
+    let code = r#"
+from warnings import deprecated
+class Foo:
+    x: int
+    @deprecated("this is not ok")
+    def not_ok(self): ...
+    @deprecated("this is also not ok")
+    @property
+    def also_not_ok(self) -> int: ...
+foo = Foo()
+foo.
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+11 | foo.
+         ^
+Completion Results:
+- (Field) x: int
+- (Field) [DEPRECATED] also_not_ok: int
+- (Method) [DEPRECATED] not_ok: def not_ok(self: Foo) -> None: ...
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_deprecated_top_level_function() {
+    let code = r#"
+from typing import *
+from warnings import deprecated
+
+@deprecated("this is deprecated")
+def test1() -> None:
+    ...
+
+def test2() -> None:
+    ...
+
+te
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+12 | te
+       ^
+Completion Results:
+- (Class) deprecated: type[deprecated]
+- (Function) test2: () -> None
+- (Function) [DEPRECATED] test1: () -> None
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn complete_deprecated_class() {
+    let code = r#"
+from warnings import deprecated
+@deprecated("this class is deprecated")
+class MyDeprecatedClass: pass
+MyDe
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | MyDe
+        ^
+Completion Results:
+- (Class) [DEPRECATED] MyDeprecatedClass: type[MyDeprecatedClass]
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_complete_types_test() {
+    let code = r#"
+class Foo:
+    x: int
+    def method(self): ...
+    @staticmethod
+    def static_method(): ...
+    @classmethod
+    def class_method(cls): ...
+foo = Foo()
+foo.
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+10 | foo.
+         ^
+Completion Results:
+- (Method) class_method: def class_method(cls: type[Foo]) -> None: ...
+- (Method) method: def method(self: Foo) -> None: ...
+- (Function) static_method: def static_method() -> None: ...
+- (Field) x: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_complete_ranked_test() {
+    let code = r#"
+class Foo:
+    _private: bool
+    __special__: str
+    y: int
+    x: int
+
+foo = Foo()
+foo.
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+9 | foo.
+        ^
+Completion Results:
+- (Field) x: int
+- (Field) y: int
+- (Field) _private: bool
+- (Field) __special__: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn variable_complete_basic_test() {
+    let code = r#"
+def foo():
+  xxxx = 3
+  x
+# ^
+  y
+# ^
+  f
+# ^
+  b
+# ^
+  def bar():
+    yyyy = 4;
+    x
+#   ^
+    y
+#   ^
+    f
+#   ^
+    b
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 |   x
+      ^
+Completion Results:
+- (Variable) xxxx: Literal[3]
+
+6 |   y
+      ^
+Completion Results:
+
+8 |   f
+      ^
+Completion Results:
+- (Function) foo: () -> None
+
+10 |   b
+       ^
+Completion Results:
+- (Function) bar: () -> None
+
+14 |     x
+         ^
+Completion Results:
+- (Variable) xxxx: Literal[3]
+
+16 |     y
+         ^
+Completion Results:
+- (Variable) yyyy: Literal[4]
+
+18 |     f
+         ^
+Completion Results:
+- (Function) foo: () -> None
+
+20 |     b
+         ^
+Completion Results:
+- (Function) bar: () -> None
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn variable_complete_with_deprecated_function() {
+    let code = r#"
+from warnings import deprecated
+@deprecated("this is not ok")
+def not_ok(): ...
+def foo():
+  n
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+6 |   n
+      ^
+Completion Results:
+- (Function) [DEPRECATED] not_ok: () -> None
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn variable_with_globals_complete_test() {
+    let code = r#"
+FileExistsOrNot = 1
+FileExist
+#        ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code)],
+        get_test_report(
+            ResultsFilter {
+                include_builtins: true,
+                ..Default::default()
+            },
+            ImportFormat::Absolute,
+        ),
+    );
+    assert_eq!(
+        r#"
+# main.py
+3 | FileExist
+             ^
+Completion Results:
+- (Class) FileExistsError
+- (Variable) FileExistsOrNot: Literal[1]
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn complete_multi_module() {
+    let code = r#"
+import lib
+
+def foo(x: lib.Foo):
+  x.
+#   ^
+"#;
+
+    let lib = r#"
+# This file needs to be much longer than main, in order to provoke a crash.
+# Therefore, we pad it with a bunch of nonsense. This is the first line.
+# This is the second line.
+from typing import overload
+
+class Foo:
+    @property
+    @overload
+    def magic(x, y) -> bool:
+        return True
+    @overload
+    def magic(x, y, z) -> int:
+        return True
+"#;
+
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code), ("lib", lib)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+5 |   x.
+        ^
+Completion Results:
+- (Field) magic: Unknown
+
+
+# lib.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+// TODO(kylei): ruff's ast gives us names = ["imp"] for `from foo imp`
+#[test]
+fn from_import_imp_test() {
+    let foo_code = r#"
+imperial_guard = "cool"
+"#;
+    let main_code = r#"
+from foo imp
+#          ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main_code), ("foo", foo_code)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | from foo imp
+               ^
+Completion Results:
+- (Variable) imperial_guard
+- (Constant) __annotations__
+- (Constant) __builtins__
+- (Constant) __cached__
+- (Constant) __debug__
+- (Constant) __dict__
+- (Constant) __doc__
+- (Constant) __file__
+- (Constant) __loader__
+- (Constant) __name__
+- (Constant) __package__
+- (Constant) __path__
+- (Constant) __spec__
+
+
+# foo.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+// TODO(kylei): ruff's ast gives us names = [] for `from foo import <>`
+#[test]
+fn from_import_empty_test() {
+    let foo_code = r#"
+imperial_guard = "cool"
+"#;
+    let main_code = r#"
+from foo import
+#              ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main_code), ("foo", foo_code)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | from foo import
+                   ^
+Completion Results:
+
+
+# foo.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn from_import_empty_trailing_whitespace_test() {
+    let foo_code = r#"
+imperial_guard = "cool"
+"#;
+    // NOTE: trailing space after `import` is intentional — it places the
+    // cursor in whitespace so the empty-import completion path triggers.
+    let main_code = "from foo import \n#               ^\n";
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main_code), ("foo", foo_code)],
+        get_default_test_report(),
+    );
+    let expected = [
+        "# main.py",
+        "1 | from foo import ",
+        "                    ^",
+        "Completion Results:",
+        "- (Variable) imperial_guard",
+        "- (Constant) __annotations__",
+        "- (Constant) __builtins__",
+        "- (Constant) __cached__",
+        "- (Constant) __debug__",
+        "- (Constant) __dict__",
+        "- (Constant) __doc__",
+        "- (Constant) __file__",
+        "- (Constant) __loader__",
+        "- (Constant) __name__",
+        "- (Constant) __package__",
+        "- (Constant) __path__",
+        "- (Constant) __spec__",
+        "",
+        "",
+        "# foo.py",
+    ]
+    .join("\n");
+    assert_eq!(expected, report.trim());
+}
+
+#[test]
+fn from_import_relative_empty_trailing_whitespace_test() {
+    let foo_code = r#"
+imperial_guard = "cool"
+"#;
+    // NOTE: trailing space after `import` is intentional.
+    let main_code = "from .foo import \n#                ^\n";
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main_code), ("foo", foo_code)],
+        get_default_test_report(),
+    );
+    let expected = [
+        "# main.py",
+        "1 | from .foo import ",
+        "                     ^",
+        "Completion Results:",
+        "- (Variable) imperial_guard",
+        "- (Constant) __annotations__",
+        "- (Constant) __builtins__",
+        "- (Constant) __cached__",
+        "- (Constant) __debug__",
+        "- (Constant) __dict__",
+        "- (Constant) __doc__",
+        "- (Constant) __file__",
+        "- (Constant) __loader__",
+        "- (Constant) __name__",
+        "- (Constant) __package__",
+        "- (Constant) __path__",
+        "- (Constant) __spec__",
+        "",
+        "",
+        "# foo.py",
+    ]
+    .join("\n");
+    assert_eq!(expected, report.trim());
+}
+
+#[test]
+fn from_import_deprecated() {
+    let foo_code = r#"
+from warnings import deprecated
+
+def func_ok():
+    ...
+@deprecated("this is not ok")
+def func_not_ok():
+    ...
+"#;
+    let main_code = r#"
+from foo import func
+#          ^        ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main_code), ("foo", foo_code)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | from foo import func
+               ^
+Completion Results:
+
+2 | from foo import func
+                        ^
+Completion Results:
+- (Variable) deprecated
+- (Function) func_ok
+- (Constant) __annotations__
+- (Constant) __builtins__
+- (Constant) __cached__
+- (Constant) __debug__
+- (Constant) __dict__
+- (Constant) __doc__
+- (Constant) __file__
+- (Constant) __loader__
+- (Constant) __name__
+- (Constant) __package__
+- (Constant) __path__
+- (Constant) __spec__
+- (Function) [DEPRECATED] func_not_ok
+
+
+# foo.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn from_import_basic() {
+    let foo_code = r#"
+imperial_guard = "cool"
+"#;
+    let main_code = r#"
+from foo import imperial
+#          ^           ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main_code), ("foo", foo_code)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | from foo import imperial
+               ^
+Completion Results:
+
+2 | from foo import imperial
+                           ^
+Completion Results:
+- (Variable) imperial_guard
+- (Constant) __annotations__
+- (Constant) __builtins__
+- (Constant) __cached__
+- (Constant) __debug__
+- (Constant) __dict__
+- (Constant) __doc__
+- (Constant) __file__
+- (Constant) __loader__
+- (Constant) __name__
+- (Constant) __package__
+- (Constant) __path__
+- (Constant) __spec__
+
+
+# foo.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn from_import_relative() {
+    let foo_code = r#"
+imperial_guard = "cool"
+"#;
+    let main_code = r#"
+from .foo import imperial
+#                       ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main_code), ("foo", foo_code)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | from .foo import imperial
+                            ^
+Completion Results:
+- (Variable) imperial_guard
+- (Constant) __annotations__
+- (Constant) __builtins__
+- (Constant) __cached__
+- (Constant) __debug__
+- (Constant) __dict__
+- (Constant) __doc__
+- (Constant) __file__
+- (Constant) __loader__
+- (Constant) __name__
+- (Constant) __package__
+- (Constant) __path__
+- (Constant) __spec__
+
+
+# foo.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_basic() {
+    let code = r#"
+def foo(a: int, b: str): ...
+xyz = 5
+foo(x
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo(x
+         ^
+Completion Results:
+- (Variable) a=: int
+- (Variable) b=: str
+- (Variable) xyz: Literal[5]
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_allows_unicode_identifier() {
+    let code = r#"
+def foo(a·b: int): ...
+foo(x
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | foo(x
+         ^
+Completion Results:
+- (Variable) a·b=: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_unpack_typed_dict() {
+    let code = r#"
+from typing import TypedDict, Unpack
+
+class Movie(TypedDict):
+    name: str
+    year: int
+
+def foo(**kwargs: Unpack[Movie]) -> None: ...
+foo(
+#  ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let report = strip_ansi(&report);
+    assert!(report.contains("- (Variable) name=: str"), "{report}");
+    assert!(report.contains("- (Variable) year=: int"), "{report}");
+}
+
+#[test]
+fn kwargs_completion_unpack_typed_dict_inherited() {
+    // Inherited and non-total fields are offered alongside the ordinary
+    // parameters. `x` matches no local, so the report is exactly the keyword
+    // completions.
+    let code = r#"
+from typing import NotRequired, TypedDict, Unpack
+
+class Base(TypedDict):
+    name: str
+
+class Movie(Base, total=False):
+    year: int
+    tag: NotRequired[str]
+
+def foo(a: int, **kwargs: Unpack[Movie]) -> None: ...
+foo(x
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+12 | foo(x
+          ^
+Completion Results:
+- (Variable) a=: int
+- (Variable) name=: str
+- (Variable) tag=: str
+- (Variable) year=: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_unpack_generic_typed_dict() {
+    // The field type must be instantiated from the `Holder[int]` specialization,
+    // not reported as the bare type parameter.
+    let code = r#"
+from typing import Generic, TypedDict, TypeVar, Unpack
+
+T = TypeVar("T")
+
+class Holder(TypedDict, Generic[T]):
+    item: T
+
+def foo(tag: str, **kwargs: Unpack[Holder[int]]) -> None: ...
+foo(x
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+10 | foo(x
+          ^
+Completion Results:
+- (Variable) item=: int
+- (Variable) tag=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_unpack_typed_dict_skips_unwritable_keys() {
+    // Functional syntax allows arbitrary strings as keys, but only those that are
+    // valid identifiers can be passed as keyword arguments.
+    let code = r#"
+from typing import TypedDict, Unpack
+
+Weird = TypedDict("Weird", {"ok": int, "class": str, "two words": bytes, "": float})
+
+def foo(**kwargs: Unpack[Weird]) -> None: ...
+foo(q
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+7 | foo(q
+         ^
+Completion Results:
+- (Variable) ok=: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_typed_dict_constructor_skips_unwritable_keys() {
+    // The synthesized `__init__` carries the raw keys too, so the constructor call
+    // needs the same filtering as the `Unpack` case. `__map` is that constructor's
+    // positional dict-copy parameter, not one of the declared keys.
+    let code = r#"
+from typing import TypedDict
+
+Weird = TypedDict("Weird", {"ok": int, "class": str, "two words": bytes})
+
+Weird(q
+#     ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+6 | Weird(q
+          ^
+Completion Results:
+- (Variable) ok=: int
+- (Variable) __map=: Weird
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_plain_kwargs_offers_no_fields() {
+    // An ordinary `**kwargs` has no named fields to offer, and `kwargs` itself
+    // is not a keyword argument, so only the value completion appears.
+    let code = r#"
+def foo(**kwargs: int) -> None: ...
+xyz = 5
+foo(x
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo(x
+         ^
+Completion Results:
+- (Variable) xyz: Literal[5]
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn no_value_completions_after_keyword_argument() {
+    // `foo(a=1, x|`: because a keyword argument precedes the cursor, the next
+    // argument must be a keyword name (Python forbids a positional after a
+    // keyword). Only keyword-argument completions (`a=`, `b=`) should appear;
+    // every value completion — locals, Python keywords, builtins, and
+    // auto-imports — must be suppressed.
+    let code = r#"
+def foo(a: int, b: str): ...
+xyz = 5
+foo(a=1, x
+#         ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let items =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    assert!(
+        items.iter().any(|item| item.label == "b="),
+        "expected keyword-arg completion `b=`, got {items:?}"
+    );
+    for item in &items {
+        assert!(
+            item.label.ends_with('='),
+            "only keyword-argument completions should appear, got {:?}",
+            item.label
+        );
+        assert_ne!(
+            item.kind,
+            Some(CompletionItemKind::Keyword),
+            "Python keyword `{}` should be suppressed after a keyword argument",
+            item.label
+        );
+        assert_ne!(
+            item.data,
+            Some(serde_json::json!("builtin")),
+            "builtin `{}` should be suppressed after a keyword argument",
+            item.label
+        );
+        assert!(
+            item.additional_text_edits.is_none(),
+            "auto-import `{}` should be suppressed after a keyword argument",
+            item.label
+        );
+    }
+}
+
+#[test]
+fn value_completions_when_typing_keyword_argument_value() {
+    // `foo(a=1, b=my_v|`: the cursor is typing the *value* of keyword `b`, even
+    // though keyword `a=1` precedes it. Value completions (e.g. the local
+    // `my_value`) must still be offered — regression test for a false positive
+    // that suppressed them whenever any earlier keyword argument existed.
+    let code = r#"
+def foo(a: int, b: str): ...
+my_value = "s"
+foo(a=1, b=my_v
+#             ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let labels: Vec<String> = state
+        .transaction()
+        .completion(handle, position, ImportFormat::Absolute, true, None)
+        .into_iter()
+        .map(|item| item.label)
+        .collect();
+    assert!(
+        labels.iter().any(|l| l == "my_value"),
+        "expected local `my_value` when typing a keyword-argument value, got {labels:?}"
+    );
+}
+
+#[test]
+fn no_statement_keywords_in_expression_context() {
+    // On the right-hand side of an assignment the cursor is in a nested
+    // expression, so statement keywords like `while`/`try`/`def` are invalid and
+    // must not be offered, while expression keywords like `None` remain.
+    let code = r#"
+x = w
+#    ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let keyword_labels: Vec<String> = state
+        .transaction()
+        .completion(handle, position, ImportFormat::Absolute, true, None)
+        .into_iter()
+        .filter(|item| item.kind == Some(CompletionItemKind::Keyword))
+        .map(|item| item.label)
+        .collect();
+    assert!(
+        keyword_labels.iter().any(|l| l == "None"),
+        "expected expression keyword `None`, got {keyword_labels:?}"
+    );
+    for stmt_kw in ["while", "try", "def", "class", "return"] {
+        assert!(
+            !keyword_labels.iter().any(|l| l == stmt_kw),
+            "statement keyword `{stmt_kw}` should be suppressed in expression context, got {keyword_labels:?}"
+        );
+    }
+}
+
+#[test]
+fn statement_keywords_available_at_statement_start() {
+    // At the start of a statement both expression and statement keywords are
+    // valid, so `while` should still be offered.
+    let code = r#"
+def f():
+    w
+#    ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let keyword_labels: Vec<String> = state
+        .transaction()
+        .completion(handle, position, ImportFormat::Absolute, true, None)
+        .into_iter()
+        .filter(|item| item.kind == Some(CompletionItemKind::Keyword))
+        .map(|item| item.label)
+        .collect();
+    assert!(
+        keyword_labels.iter().any(|l| l == "while"),
+        "expected statement keyword `while` at statement start, got {keyword_labels:?}"
+    );
+}
+
+#[test]
+fn kwargs_completion_with_existing_args() {
+    let code = r#"
+def foo(a: int, b: str, c: bool): ...
+foo(1,
+#     ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | foo(1,
+          ^
+Completion Results:
+- (Variable) a=: int
+- (Variable) b=: str
+- (Variable) c=: bool
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_method() {
+    let code = r#"
+class Foo:
+    def method(self, x: int, y: str): ...
+
+foo = Foo()
+foo.method(
+#          ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+6 | foo.method(
+               ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_kwonly_params() {
+    let code = r#"
+def foo(a: int, *, b: str, c: bool): ...
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | foo(
+        ^
+Completion Results:
+- (Variable) a=: int
+- (Variable) b=: str
+- (Variable) c=: bool
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_mixed_params() {
+    let code = r#"
+def foo(a: int, b: str = "default", *, c: bool, d: float = 1.0): ...
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | foo(
+        ^
+Completion Results:
+- (Variable) a=: int
+- (Variable) b=: str
+- (Variable) c=: bool
+- (Variable) d=: float
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_no_self_param() {
+    let code = r#"
+class Foo:
+    def test(self, x: int, y: str): ...
+
+Foo().test(
+#          ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | Foo().test(
+               ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_dunder_new() {
+    let code = r#"
+from typing import Self
+class Foo:
+    def __new__(cls, x: int, y: str) -> Self: ...
+
+Foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+6 | Foo(
+        ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_dunder_new_incompatible() {
+    let code = r#"
+class Foo:
+    def __new__(cls, x: int, y: str) -> None: ...
+
+Foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | Foo(
+        ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_constructor() {
+    let code = r#"
+class Foo:
+    def __init__(self, x: int, y: str): ...
+
+Foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | Foo(
+        ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_django_annotate_includes_extra_attribute() {
+    let code = r#"
+from django.db import models
+
+class Article(models.Model):
+    title = models.CharField(max_length=100)
+
+for article in Article.objects.annotate(extra_title=models.F("title")):
+    article.
+#           ^
+"#;
+    let mut test_env = django_env();
+    test_env.add("main", code);
+    let (state, handle) = test_env
+        .with_default_require_level(Require::Exports)
+        .to_state();
+    let completions = state.transaction().completion(
+        &handle("main"),
+        extract_cursors_for_test(code)[0],
+        ImportFormat::Absolute,
+        true,
+        None,
+    );
+
+    assert!(
+        completions.iter().any(|item| item.label == "title"),
+        "model field missing from {completions:?}"
+    );
+    assert!(
+        completions.iter().any(|item| item.label == "extra_title"),
+        "annotate() extra attribute missing from {completions:?}"
+    );
+}
+
+#[test]
+fn kwargs_completion_pydantic_constructor_ignores_inherited_unannotated_new() {
+    let sqlmodel = r#"
+from typing import Any
+from pydantic import BaseModel
+
+class SQLModel(BaseModel):
+    def __new__(cls, *args: Any, **kwargs: Any):
+        return object.__new__(cls)
+
+    def __init__(self, **data: Any) -> None: ...
+"#;
+    let main = r#"
+from sqlmodel import SQLModel
+
+class A(SQLModel):
+    a: int
+    b: str
+
+A(
+# ^
+"#;
+    let pydantic_path =
+        std::env::var("PYDANTIC_TEST_PATH").expect("PYDANTIC_TEST_PATH must be set");
+    let mut test_env = TestEnv::new_with_site_package_paths(&[&pydantic_path]);
+    test_env.add("sqlmodel", sqlmodel);
+    test_env.add("main", main);
+    let (state, handle) = test_env
+        .with_default_require_level(Require::Exports)
+        .to_state();
+    let report =
+        get_default_test_report()(&state, &handle("main"), extract_cursors_for_test(main)[0]);
+    assert!(report.contains("- (Variable) a=:"), "{report}");
+    assert!(report.contains("- (Variable) b=:"), "{report}");
+    assert!(!report.contains("args="), "{report}");
+    assert!(!report.contains("kwargs="), "{report}");
+}
+
+#[test]
+fn kwargs_completion_dunder_call_metaclass_constructor() {
+    let code = r#"
+class Meta(type):
+    def __call__(cls, a: int) -> None: ...
+class Foo(metaclass=Meta):
+    def __init__(self): ...
+
+Foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+7 | Foo(
+        ^
+Completion Results:
+- (Variable) a=: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_nested_call() {
+    let code = r#"
+def outer(a: int): ...
+def inner(b: str): ...
+outer(inner(
+#           ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | outer(inner(
+                ^
+Completion Results:
+- (Variable) b=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_no_completions_for_non_function() {
+    let code = r#"
+x = 42
+x(
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | x(
+      ^
+Completion Results:
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn attribute_completion_in_function_call() {
+    let code = r#"
+class Foo:
+    x: int
+
+def test(abcdefg: int) -> None:
+    pass
+
+f = Foo()
+
+test(f.
+#      ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+10 | test(f.
+            ^
+Completion Results:
+- (Field) x: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_class_override_members() {
+    let code = r#"
+from typing import *
+from abc import ABC, abstractmethod
+
+class A(ABC):
+    @property
+    @abstractmethod
+    def error_message(self):
+        """
+        Child classes must provide an error message string.
+        """
+        ...
+
+class B(A):
+    erro = ""
+#   ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let completions = txn.completion(handle, position, ImportFormat::Absolute, true, None);
+    assert!(
+        completions.iter().any(|item| item.label == "error_message"),
+        "Expected inherited override completion, got {:?}",
+        completions
+            .iter()
+            .map(|item| item.label.as_str())
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn attribute_completion_remains_unfiltered() {
+    let code = r#"
+class A:
+    name = 1
+
+a = A()
+a.zz
+#  ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let completions = txn.completion(handle, position, ImportFormat::Absolute, true, None);
+    assert!(
+        completions.iter().any(|item| item.label == "name"),
+        "Expected normal attribute completions to remain unfiltered, got {:?}",
+        completions
+            .iter()
+            .map(|item| item.label.as_str())
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn builtins_doesnt_autoimport() {
+    let code = r#"
+isins
+#    ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code)],
+        get_test_report(
+            ResultsFilter {
+                include_builtins: true,
+                ..Default::default()
+            },
+            ImportFormat::Absolute,
+        ),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | isins
+         ^
+Completion Results:
+- (Function) isinstance
+- (Class) DivisionImpossible: from decimal import DivisionImpossible
+
+- (Function) disjoint_base: from typing_extensions import disjoint_base
+
+- (Function) timerfd_settime_ns: from os import timerfd_settime_ns
+
+- (Module) typing_extensions: import typing_extensions
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal() {
+    let code = r#"
+from typing import Literal
+def foo(x: Literal['foo']): ...
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo(
+        ^
+Completion Results:
+- (Value) 'foo': Literal['foo'] inserting `'foo'`
+- (Variable) x=: Literal['foo']
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_with_escape_chars() {
+    let code = r#"
+from typing import Literal
+def foo(x: Literal['\a', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '"', "'"]): ...
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo(
+        ^
+Completion Results:
+- (Value) '"': Literal['"'] inserting `'"'`
+- (Value) '\'': Literal['\''] inserting `'\''`
+- (Value) '\\': Literal['\\'] inserting `'\\'`
+- (Value) '\a': Literal['\a'] inserting `'\a'`
+- (Value) '\b': Literal['\b'] inserting `'\b'`
+- (Value) '\f': Literal['\f'] inserting `'\f'`
+- (Value) '\n': Literal['\n'] inserting `'\n'`
+- (Value) '\r': Literal['\r'] inserting `'\r'`
+- (Value) '\t': Literal['\t'] inserting `'\t'`
+- (Value) '\v': Literal['\v'] inserting `'\v'`
+- (Variable) x=: Literal['\a', '\b', '\t', '\n', '\v', '\f', '\r', '"', '\'', '\\']
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_with_escape_chars_inside() {
+    let code = r#"
+from typing import Literal
+def foo(x: Literal["a\nb"]): ...
+foo("
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo("
+         ^
+Completion Results:
+- (Value) 'a\nb': Literal['a\nb'] inserting `a
+b`"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_union() {
+    let code = r#"
+from typing import Literal, Union
+def foo(x: Union[Literal['foo'] | Literal['bar']]): ...
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo(
+        ^
+Completion Results:
+- (Value) 'bar': Literal['bar'] inserting `'bar'`
+- (Value) 'foo': Literal['foo'] inserting `'foo'`
+- (Variable) x=: Literal['bar', 'foo']
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_union_being_typed() {
+    let code = r#"
+from typing import Literal, Union
+def foo(x: Union[Literal['foo'] | Literal['bar']]): ...
+foo('
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo('
+         ^
+Completion Results:
+- (Value) 'bar': Literal['bar'] inserting `bar`
+- (Value) 'foo': Literal['foo'] inserting `foo`
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_match_value() {
+    let code = r#"
+from typing import Literal
+x: Literal['a', 'b'] = 'a'
+match x:
+    case ':
+#         ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 |     case ':
+              ^
+Completion Results:
+- (Value) 'a': Literal['a'] inserting `a`
+- (Value) 'b': Literal['b'] inserting `b`
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_demotes_previously_matched_enum_members() {
+    let code = r#"
+from enum import StrEnum, auto
+
+class A(StrEnum):
+    AA = auto()
+    BB = auto()
+
+def f(a: A):
+    match a:
+        case A.AA:
+            ...
+        case A.
+#              ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code)],
+        |state, handle, position| {
+            let mut report = String::new();
+            for item in state
+                .transaction()
+                .completion(handle, position, ImportFormat::Absolute, true, None)
+                .into_iter()
+                .filter(|item| matches!(item.label.as_str(), "AA" | "BB"))
+            {
+                report.push_str(&item.label);
+                report.push('\n');
+            }
+            report
+        },
+    );
+
+    let bb_index = report.find("BB\n");
+    let aa_index = report.find("AA\n");
+    assert!(
+        bb_index.is_some() && aa_index.is_some(),
+        "Expected completions for AA and BB."
+    );
+    assert!(
+        bb_index.unwrap() < aa_index.unwrap(),
+        "Expected the unmatched enum member to sort first."
+    );
+}
+
+#[test]
+fn completion_match_prior_case_narrowing_ranking() {
+    for (subject, previous, demoted) in [
+        ("a", "A.AA", vec!["AA"]),
+        ("a", "A.AA if flag", vec![]),
+        ("a", "A.AA | A.BB", vec!["AA", "BB"]),
+        ("a", "A.AA as alias", vec!["AA"]),
+        ("box.value", "A.AA", vec!["AA"]),
+        ("get_a()", "A.AA", vec!["AA"]),
+        ("get_a()", "A.AA if flag", vec![]),
+    ] {
+        let code = format!(
+            r#"
+from enum import Enum
+class A(Enum):
+    AA = 1
+    BB = 2
+    CC = 3
+class Box:
+    value: A
+def get_a() -> A: ...
+def f(a: A, box: Box, flag: bool):
+    match {subject}:
+        case {previous}:
+            pass
+        case A.
+#              ^
+"#
+        );
+        let (handles, state) = mk_multi_file_state(&[("main", &code)], Require::Exports, false);
+        let position = extract_cursors_for_test(&code)[0];
+        let completions = state.transaction().completion(
+            &handles["main"],
+            position,
+            ImportFormat::Absolute,
+            true,
+            None,
+        );
+        for name in ["AA", "BB", "CC"] {
+            let item = completions.iter().find(|item| item.label == name).unwrap();
+            assert_eq!(
+                item.sort_text.as_deref(),
+                Some(if demoted.contains(&name) { "0z" } else { "0" }),
+                "Unexpected rank for {name} after case {previous} matching {subject}",
+            );
+        }
+    }
+}
+
+#[test]
+fn completion_match_prior_case_narrowing_scope() {
+    for current in [
+        "[A.]: pass",
+        "Box(value=A.): pass",
+        "A.BB if A.: pass",
+        "A.BB:\n            A.",
+    ] {
+        let code = format!(
+            r#"
+from enum import Enum
+class A(Enum):
+    AA = 1
+    BB = 2
+class Box:
+    value: A
+def f(a: A | list[A] | Box):
+    match a:
+        case A.AA:
+            pass
+        case {current}
+"#
+        );
+        let (handles, state) = mk_multi_file_state(&[("main", &code)], Require::Exports, false);
+        let position = TextSize::try_from(code.rfind("A.").unwrap() + 2).unwrap();
+        let completions = state.transaction().completion(
+            &handles["main"],
+            position,
+            ImportFormat::Absolute,
+            true,
+            None,
+        );
+        for name in ["AA", "BB"] {
+            let item = completions.iter().find(|item| item.label == name).unwrap();
+            assert_eq!(item.sort_text.as_deref(), Some("0"), "case {current}");
+        }
+    }
+}
+
+#[test]
+fn completion_literal_union_alias() {
+    let code = r#"
+from typing import Literal, Union
+MyUnion = Union[Literal['foo'], Literal['bar']]
+def foo(x: MyUnion): ...
+foo(
+#   ^
+
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | foo(
+        ^
+Completion Results:
+- (Value) 'bar': Literal['bar'] inserting `'bar'`
+- (Value) 'foo': Literal['foo'] inserting `'foo'`
+- (Variable) x=: Literal['bar', 'foo']
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_union_multiple_types() {
+    let code = r#"
+from typing import Literal, Union, LiteralString
+def foo(x: Union[Literal['foo'] | Literal[1] | LiteralString]): ...
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | foo(
+        ^
+Completion Results:
+- (Value) 1: Literal[1] inserting `1`
+- (Variable) x=: Literal[1] | LiteralString
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_nested() {
+    let code = r#"
+from typing import Literal, Union
+class Foo: ...
+def foo(x: Union[Union[Literal['foo']] | Literal[1] | Foo]): ...
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | foo(
+        ^
+Completion Results:
+- (Value) 'foo': Literal['foo'] inserting `'foo'`
+- (Value) 1: Literal[1] inserting `1`
+- (Variable) x=: Literal['foo', 1] | Foo
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_do_not_duplicate_quotes() {
+    let code = r#"
+from typing import Literal, Union
+class Foo: ...
+def foo(x: Union[Union[Literal['foo']] | Literal[1] | Foo]): ...
+foo(''
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | foo(''
+         ^
+Completion Results:
+- (Value) 'foo': Literal['foo'] inserting `foo`
+- (Value) 1: Literal[1] inserting `1`
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+// Literal-value completion fires in expected-type contexts (annotated
+// assignment, return, attribute target), sourcing the expected type from
+// `get_expected_type_at` when the cursor is not a call argument.
+#[test]
+fn completion_literal_annotated_assignment() {
+    let code = r#"
+from typing import Literal
+x: Literal['foo', 'bar'] = '
+#                           ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | x: Literal['foo', 'bar'] = '
+                                ^
+Completion Results:
+- (Value) 'bar': Literal['bar'] inserting `bar`
+- (Value) 'foo': Literal['foo'] inserting `foo`
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_return() {
+    let code = r#"
+from typing import Literal
+def f() -> Literal['foo', 'bar']:
+    return '
+#           ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 |     return '
+                ^
+Completion Results:
+- (Value) 'bar': Literal['bar'] inserting `bar`
+- (Value) 'foo': Literal['foo'] inserting `foo`
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_literal_attribute_assignment() {
+    let code = r#"
+from typing import Literal
+class C:
+    x: Literal['foo', 'bar']
+c = C()
+c.x = '
+#      ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+6 | c.x = '
+           ^
+Completion Results:
+- (Value) 'bar': Literal['bar'] inserting `bar`
+- (Value) 'foo': Literal['foo'] inserting `foo`
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_dict() {
+    let code = r#"
+x = {"a": 3, "b": 4}
+x["
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | x["
+      ^
+Completion Results:
+- (Field) a: Literal[3]
+- (Field) b: Literal[4]
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_dict_no_quote() {
+    // Before any key string is typed (`x[`), offer the known keys with quoted
+    // insert text so selecting one produces `x["a"`.
+    let code = r#"
+x = {"a": 3, "b": 4}
+x[
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+3 | x[
+      ^
+Completion Results:
+- (Field) a: Literal[3] inserting `"a"`
+- (Field) b: Literal[4] inserting `"b"`
+- (Variable) x: dict[str, int]
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_dict_no_keys_for_list() {
+    // A list subscript has only index facets, never string keys, so the bare
+    // subscript path must not offer any dict-key (Field) completions.
+    let code = r#"
+xs = [1, 2, 3]
+xs[
+#  ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let labels = dict_field_labels(&txn, handle, position);
+    assert!(
+        labels.is_empty(),
+        "Expected no dict-key completions for a list subscript, got: {labels:?}"
+    );
+}
+
+#[test]
+fn kwargs_completion_overload_basic() {
+    let code = r#"
+from typing import Literal, overload
+@overload
+def foo(x: int):
+    print(x)
+@overload
+def foo(y: bool):
+    print(y)
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+9 | foo(
+        ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: bool
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+/// When an argument is provided that narrows down the overload,
+/// only params from compatible overloads are shown. Here `1` (int)
+/// is compatible with `x: int` (second overload) but not `y: bool`
+/// (first overload), so only the second overload's params appear.
+#[test]
+fn kwargs_completion_overload_correct() {
+    let code = r#"
+from typing import Literal, overload
+@overload
+def foo(y: bool, z: bool):
+    print(y)
+@overload
+def foo(x: int, y: str):
+    print(x)
+foo(1,
+#     ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+9 | foo(1,
+          ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+/// When overloads share the same first arg and differ on later args,
+/// show params from all overloads (here both overloads accept `x: int`,
+/// so `y=` and `z=` should both appear).
+#[test]
+fn kwargs_completion_overload_shared_first_arg() {
+    let code = r#"
+from typing import overload
+@overload
+def foo(x: int, y: str): ...
+@overload
+def foo(x: int, z: bool): ...
+def foo(x, **kwargs): ...
+foo(1,
+#     ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+8 | foo(1,
+          ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) y=: str
+- (Variable) z=: bool
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwargs_completion_overload_same_name_different_types() {
+    let code = r#"
+from typing import Any, overload
+@overload
+def foo(x: int) -> int: ...
+@overload
+def foo(x: str) -> str: ...
+def foo(x: Any) -> Any:
+    return x
+foo(
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+9 | foo(
+        ^
+Completion Results:
+- (Variable) x=: int
+- (Variable) x=: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn no_keywords_on_dot_complete() {
+    let code = r#"
+class Foo: ...
+Foo.
+#   ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code)],
+        get_test_report(
+            ResultsFilter {
+                include_keywords: true,
+                ..Default::default()
+            },
+            ImportFormat::Absolute,
+        ),
+    );
+    assert_eq!(
+        r#"
+# main.py
+3 | Foo.
+        ^
+Completion Results:
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_compete_union() {
+    let code = r#"
+class A:
+    x: int
+    y: int
+
+class B:
+    y: str
+    z: str
+
+def foo(x: A | B) -> None:
+    x.
+#     ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+11 |     x.
+           ^
+Completion Results:
+- (Field) x: int
+- (Field) y: int | str
+- (Field) z: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_compete_override() {
+    let code = r#"
+class A:
+    def foo(self) -> int | str: ...
+
+class B(A):
+    def foo(self) -> int: ...
+
+def foo(x: B) -> None:
+    x.
+#     ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+9 |     x.
+          ^
+Completion Results:
+- (Method) foo: def foo(self: B) -> int: ...
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_complete_super() {
+    let code = r#"
+class A:
+    x: int
+
+class B:
+    y: str
+
+class C(A, B):
+    def foo(self):
+        super().
+#               ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+10 |         super().
+                     ^
+Completion Results:
+- (Field) x: int
+- (Field) y: str
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn import_completions_on_builtins() {
+    let code = r#"
+import typ
+#         ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code)],
+        get_test_report(
+            ResultsFilter {
+                include_keywords: true,
+                ..Default::default()
+            },
+            ImportFormat::Absolute,
+        ),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | import typ
+              ^
+Completion Results:
+- (Module) types: types
+- (Module) typing: typing
+- (Module) typing_extensions: typing_extensions
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn import_alias_has_no_completions() {
+    let code = r#"
+import pandas as pd
+#                  ^
+"#;
+    let files = [("main", code), ("pandas", ""), ("pdb", "")];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    assert!(
+        completions.is_empty(),
+        "import aliases should not receive completions, got {:?}",
+        completions
+            .iter()
+            .map(|item| item.label.as_str())
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn from_import_alias_has_no_completions() {
+    let code = r#"
+from pandas import read_csv as pd
+#                                ^
+"#;
+    let files = [("main", code), ("pandas", "read_csv = 1\n")];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    assert!(
+        completions.is_empty(),
+        "from-import aliases should not receive completions, got {:?}",
+        completions
+            .iter()
+            .map(|item| item.label.as_str())
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn autoimport_relative_on_builtins() {
+    let code = r#"
+T = foooooo
+#       ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code), ("bar", "foooooo = 1")],
+        get_test_report(Default::default(), ImportFormat::Relative),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | T = foooooo
+            ^
+Completion Results:
+- (Variable) foooooo: from .bar import foooooo
+
+
+
+# bar.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn autoimport_relative_on_deprecated() {
+    let code = r#"
+T = foooooo
+#       ^
+"#;
+    let bar_code = r#"
+from warnings import deprecated
+@deprecated("this is not ok")
+def foooooo():
+    ...
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code), ("bar", bar_code)],
+        get_test_report(Default::default(), ImportFormat::Relative),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | T = foooooo
+            ^
+Completion Results:
+- (Function) [DEPRECATED] foooooo: from .bar import foooooo
+
+
+
+# bar.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn autoimport_completions_on_builtins() {
+    let code = r#"
+T = Literal
+#       ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code)],
+        get_test_report(Default::default(), ImportFormat::Relative),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | T = Literal
+            ^
+Completion Results:
+- (Variable) Literal: from typing import Literal
+
+- (Variable) Literal: from typing_extensions import Literal
+
+- (Variable) LiteralString: from typing import LiteralString
+
+- (Variable) AnyOrLiteralStr: from _typeshed import AnyOrLiteralStr
+
+- (Variable) StrOrLiteralStr: from _typeshed import StrOrLiteralStr
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn autoimport_completion_not_blocked_by_fuzzy_local_symbol() {
+    let code = r#"
+def avg_kendall_tau(): ...
+
+kendalltau
+#         ^
+"#;
+    let files = [("main", code), ("scipy.stats", "def kendalltau(): ...\n")];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    let autoimport = completions
+        .iter()
+        .find(|item| item.label == "kendalltau")
+        .expect("expected kendalltau auto-import completion");
+    assert!(
+        autoimport.additional_text_edits.is_some(),
+        "expected auto-import edit, got {autoimport:?}"
+    );
+    assert!(
+        autoimport
+            .detail
+            .as_ref()
+            .is_some_and(|detail| detail.contains("from scipy.stats import kendalltau")),
+        "expected scipy.stats import detail, got {:?}",
+        autoimport.detail
+    );
+}
+
+#[test]
+fn autoimport_common_alias_for_module() {
+    let code = r#"
+T = spio
+#       ^
+"#;
+    let files = [("main", code), ("scipy.io", "data = 1\n")];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    let autoimport = completions
+        .iter()
+        .find(|item| item.label == "spio")
+        .expect("expected spio to be in completions");
+    assert!(
+        autoimport
+            .detail
+            .as_ref()
+            .is_some_and(|detail| detail.contains("import scipy.io as spio")),
+        "expected alias import detail for spio, got {:?}",
+        autoimport.detail
+    );
+    assert_eq!(autoimport.insert_text.as_deref(), Some("spio"));
+    let label_details = autoimport
+        .label_details
+        .as_ref()
+        .expect("auto import completion should include label details");
+    assert_eq!(
+        label_details.detail.as_deref(),
+        Some(" (import scipy.io as spio)")
+    );
+    assert_eq!(label_details.description.as_deref(), Some("scipy.io"));
+    assert!(
+        !completions.iter().any(|item| item.label == "scipy.io"),
+        "expected alias completion to suppress non-aliased scipy.io module suggestion"
+    );
+}
+
+#[test]
+fn autoimport_does_not_duplicate_existing_module_import() {
+    let code = r#"
+import json
+
+jso
+#  ^
+"#;
+    let files = [("main", code), ("json", "def dumps(value): ...\n")];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    let json = completions
+        .iter()
+        .filter(|item| item.label == "json")
+        .collect::<Vec<_>>();
+    assert_eq!(json.len(), 1, "expected one completion for imported module");
+    assert!(
+        json[0].additional_text_edits.is_none(),
+        "existing module import should not produce another import edit"
+    );
+}
+
+#[test]
+fn autoimport_suggests_unloaded_stdlib_module() {
+    let code = r#"
+jso
+#  ^
+"#;
+    let mut env = TestEnv::new().with_default_require_level(Require::Exports);
+    env.add("main", code);
+    let (state, handle_for) = env.to_state();
+    let handle = handle_for("main");
+    let position = extract_cursors_for_test(code)[0];
+
+    let completions =
+        state
+            .transaction()
+            .completion(&handle, position, ImportFormat::Absolute, true, None);
+    let json = completions
+        .iter()
+        .find(|item| item.label == "json")
+        .expect("expected an auto-import completion for the unloaded json module");
+    assert!(
+        json.detail
+            .as_ref()
+            .is_some_and(|detail| detail.contains("import json")),
+        "expected json completion to add an import, got {:?}",
+        json.detail
+    );
+    assert!(
+        json.additional_text_edits
+            .as_ref()
+            .is_some_and(|edits| !edits.is_empty()),
+        "expected json completion to include an import edit"
+    );
+}
+
+#[test]
+fn autoimport_does_not_duplicate_existing_module_import_after_another_import() {
+    let code = r#"
+import os
+import json
+
+jso
+#  ^
+"#;
+    let files = [
+        ("main", code),
+        ("os", "name = 'posix'\n"),
+        ("json", "def dumps(value): ...\n"),
+    ];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    let json = completions
+        .iter()
+        .filter(|item| item.label == "json")
+        .collect::<Vec<_>>();
+    assert_eq!(json.len(), 1, "expected one completion for imported module");
+    assert!(
+        json[0].additional_text_edits.is_none(),
+        "existing module import should not produce another import edit"
+    );
+}
+
+#[test]
+fn autoimport_common_alias_bypasses_min_char_threshold() {
+    let code = r#"
+T = np
+#     ^
+"#;
+    let files = [("main", code), ("numpy", "data = 1\n")];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    let autoimport = completions
+        .iter()
+        .find(|item| item.label == "np")
+        .expect("expected np to be in completions");
+    assert!(
+        autoimport
+            .detail
+            .as_ref()
+            .is_some_and(|detail| detail.contains("import numpy as np")),
+        "expected alias import detail for np, got {:?}",
+        autoimport.detail
+    );
+    assert_eq!(autoimport.insert_text.as_deref(), Some("np"));
+    let label_details = autoimport
+        .label_details
+        .as_ref()
+        .expect("auto import completion should include label details");
+    assert_eq!(
+        label_details.detail.as_deref(),
+        Some(" (import numpy as np)")
+    );
+    assert_eq!(label_details.description.as_deref(), Some("numpy"));
+}
+
+#[test]
+fn autoimport_prefers_public_reexport_for_dotted_private_module() {
+    let code = r#"
+T = Thing
+#       ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[
+            ("main", code),
+            ("_foo_bar", "Thing = 1\n"),
+            ("foo.bar", "from _foo_bar import Thing\n"),
+        ],
+        get_test_report(Default::default(), ImportFormat::Absolute),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | T = Thing
+            ^
+Completion Results:
+- (Variable) Thing: from foo.bar import Thing
+
+- (Variable) Thing: from _foo_bar import Thing
+
+
+
+# _foo_bar.py
+
+# foo.bar.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn autoimport_demotes_deprecated_typing_alias() {
+    let code = r#"
+T = Iterable
+#          ^
+"#;
+    let mut env = TestEnv::new_with_version(PythonVersion::new(3, 9, 0))
+        .with_default_require_level(Require::Exports);
+    env.add("main", code);
+    let (state, handle_for) = env.to_state();
+    let handle = handle_for("main");
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(&handle, position, ImportFormat::Absolute, true, None);
+    let typing_index = completions
+        .iter()
+        .position(|item| {
+            item.label == "Iterable"
+                && item
+                    .detail
+                    .as_ref()
+                    .is_some_and(|detail| detail.contains("from typing import Iterable"))
+        })
+        .expect("expected typing.Iterable auto-import completion");
+    let collections_index = completions
+        .iter()
+        .position(|item| {
+            item.label == "Iterable"
+                && item
+                    .detail
+                    .as_ref()
+                    .is_some_and(|detail| detail.contains("from collections.abc import Iterable"))
+        })
+        .expect("expected collections.abc.Iterable auto-import completion");
+    let typing_tags = completions[typing_index]
+        .tags
+        .as_deref()
+        .unwrap_or_default();
+
+    assert!(
+        typing_tags.contains(&CompletionItemTag::Deprecated),
+        "expected typing.Iterable to be tagged deprecated"
+    );
+    assert!(
+        collections_index < typing_index,
+        "expected collections.abc.Iterable to sort before deprecated typing.Iterable"
+    );
+}
+
+#[test]
+fn autoimport_explicit_reexport_suggests_reexport_path() {
+    let code = r#"
+T = Thing
+#       ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[
+            ("main", code),
+            ("source", "Thing = 1\n"),
+            ("public", "from source import Thing as Thing\n"),
+        ],
+        get_test_report(Default::default(), ImportFormat::Absolute),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | T = Thing
+            ^
+Completion Results:
+- (Variable) Thing: from public import Thing
+
+- (Variable) Thing: from source import Thing
+
+
+
+# source.py
+
+# public.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn autoimport_aliased_import_uses_aliasing_module() {
+    let code = r#"
+x: MyM
+#     ^
+"#;
+    let files = [
+        ("main", code),
+        ("model", "class MyModel: pass\n"),
+        ("alias_user", "from model import MyModel as MyModelAlias\n"),
+    ];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    let original = completions
+        .iter()
+        .find(|item| item.label == "MyModel")
+        .expect("expected MyModel to be in completions");
+    assert_eq!(
+        original.detail.as_deref(),
+        Some("from model import MyModel\n")
+    );
+
+    let alias = completions
+        .iter()
+        .find(|item| item.label == "MyModelAlias")
+        .expect("expected MyModelAlias to be in completions");
+    assert_eq!(
+        alias.detail.as_deref(),
+        Some("from alias_user import MyModelAlias\n")
+    );
+    assert_eq!(
+        alias.additional_text_edits.as_ref().unwrap()[0].new_text,
+        "from alias_user import MyModelAlias\n"
+    );
+}
+
+#[test]
+fn autoimport_prefers_shorter_module() {
+    let code = r#"
+T = Thing
+#       ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[
+            ("main", code),
+            ("a.b", "Thing = 1\n"),
+            ("a.b.c", "Thing = 2\n"),
+        ],
+        get_test_report(Default::default(), ImportFormat::Absolute),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | T = Thing
+            ^
+Completion Results:
+- (Variable) Thing: from a.b import Thing
+
+- (Variable) Thing: from a.b.c import Thing
+
+
+
+# a.b.py
+
+# a.b.c.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn autoimport_completions_set_label_details() {
+    let code = r#"
+T = foooooo
+#       ^
+"#;
+    let files = [("main", code), ("bar", "foooooo = 1")];
+    let (handles, state) = mk_multi_file_state(&files, Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+
+    // Label details supported
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+    let autoimport = completions
+        .into_iter()
+        .find(|item| item.label == "foooooo")
+        .expect("expected foooooo to be in completions");
+    let label_details = autoimport
+        .label_details
+        .expect("auto import completion should include label details");
+    assert_eq!(label_details.detail.as_deref(), Some(" (import bar)"));
+    assert_eq!(label_details.description.as_deref(), Some("bar"));
+
+    // Label details unsupported
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, false, None);
+    completions
+        .into_iter()
+        .find(|item| item.label == "foooooo")
+        .expect("expected foooooo to be in completions");
+}
+
+#[test]
+fn completion_on_empty_line() {
+    let code = r#"
+def test():
+    xyz = 5
+    
+#   ^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code)],
+        get_test_report(
+            ResultsFilter {
+                include_keywords: true,
+                include_builtins: true,
+            },
+            ImportFormat::Absolute,
+        ),
+    );
+    assert_eq!(
+        r#"
+# main.py
+4 |     
+        ^
+Completion Results:
+- (Class) ArithmeticError
+- (Class) AssertionError
+- (Class) AttributeError
+- (Class) BaseException
+- (Class) BaseExceptionGroup
+- (Class) BlockingIOError
+- (Class) BrokenPipeError
+- (Class) BufferError
+- (Class) BytesWarning
+- (Class) ChildProcessError
+- (Class) ConnectionAbortedError
+- (Class) ConnectionError
+- (Class) ConnectionRefusedError
+- (Class) ConnectionResetError
+- (Class) DeprecationWarning
+- (Class) EOFError
+- (Variable) Ellipsis
+- (Class) EncodingWarning
+- (Variable) EnvironmentError
+- (Class) Exception
+- (Class) ExceptionGroup
+- (Keyword) False
+- (Class) FileExistsError
+- (Class) FileNotFoundError
+- (Class) FloatingPointError
+- (Class) FutureWarning
+- (Class) GeneratorExit
+- (Variable) IOError
+- (Class) ImportError
+- (Class) ImportWarning
+- (Class) IndentationError
+- (Class) IndexError
+- (Class) InterruptedError
+- (Class) IsADirectoryError
+- (Class) KeyError
+- (Class) KeyboardInterrupt
+- (Class) LookupError
+- (Class) MemoryError
+- (Class) ModuleNotFoundError
+- (Class) NameError
+- (Keyword) None
+- (Class) NotADirectoryError
+- (Variable) NotImplemented
+- (Class) NotImplementedError
+- (Class) OSError
+- (Class) OverflowError
+- (Class) PendingDeprecationWarning
+- (Class) PermissionError
+- (Class) ProcessLookupError
+- (Class) PythonFinalizationError
+- (Class) RecursionError
+- (Class) ReferenceError
+- (Class) ResourceWarning
+- (Class) RuntimeError
+- (Class) RuntimeWarning
+- (Class) StopAsyncIteration
+- (Class) StopIteration
+- (Class) SyntaxError
+- (Class) SyntaxWarning
+- (Class) SystemError
+- (Class) SystemExit
+- (Class) TabError
+- (Class) TimeoutError
+- (Keyword) True
+- (Class) TypeError
+- (Class) UnboundLocalError
+- (Class) UnicodeDecodeError
+- (Class) UnicodeEncodeError
+- (Class) UnicodeError
+- (Class) UnicodeTranslateError
+- (Class) UnicodeWarning
+- (Class) UserWarning
+- (Class) ValueError
+- (Class) Warning
+- (Class) ZeroDivisionError
+- (Function) abs
+- (Function) aiter
+- (Function) all
+- (Keyword) and
+- (Function) anext
+- (Function) any
+- (Function) ascii
+- (Keyword) assert
+- (Keyword) async
+- (Keyword) await
+- (Function) bin
+- (Class) bool
+- (Keyword) break
+- (Function) breakpoint
+- (Class) bytearray
+- (Class) bytes
+- (Function) callable
+- (Keyword) case
+- (Function) chr
+- (Keyword) class
+- (Class) classmethod
+- (Function) compile
+- (Class) complex
+- (Keyword) continue
+- (Variable) copyright
+- (Variable) credits
+- (Keyword) def
+- (Keyword) del
+- (Function) delattr
+- (Class) dict
+- (Function) dir
+- (Function) divmod
+- (Keyword) elif
+- (Variable) ellipsis
+- (Keyword) else
+- (Class) enumerate
+- (Function) eval
+- (Keyword) except
+- (Function) exec
+- (Variable) exit
+- (Class) filter
+- (Keyword) finally
+- (Class) float
+- (Keyword) for
+- (Function) format
+- (Keyword) from
+- (Class) frozenset
+- (Class) function
+- (Function) getattr
+- (Keyword) global
+- (Function) globals
+- (Function) hasattr
+- (Function) hash
+- (Variable) help
+- (Function) hex
+- (Function) id
+- (Keyword) if
+- (Keyword) import
+- (Keyword) in
+- (Function) input
+- (Class) int
+- (Keyword) is
+- (Function) isinstance
+- (Function) issubclass
+- (Function) iter
+- (Keyword) lambda
+- (Function) len
+- (Variable) license
+- (Class) list
+- (Function) locals
+- (Class) map
+- (Keyword) match
+- (Function) max
+- (Class) memoryview
+- (Function) min
+- (Function) next
+- (Keyword) nonlocal
+- (Keyword) not
+- (Class) object
+- (Function) oct
+- (Function) open
+- (Keyword) or
+- (Function) ord
+- (Keyword) pass
+- (Function) pow
+- (Function) print
+- (Class) property
+- (Variable) quit
+- (Keyword) raise
+- (Class) range
+- (Function) repr
+- (Keyword) return
+- (Class) reversed
+- (Function) round
+- (Class) set
+- (Function) setattr
+- (Class) slice
+- (Function) sorted
+- (Class) staticmethod
+- (Class) str
+- (Function) sum
+- (Class) super
+- (Function) test: () -> None
+- (Keyword) try
+- (Class) tuple
+- (Keyword) type
+- (Function) vars
+- (Keyword) while
+- (Keyword) with
+- (Keyword) yield
+- (Class) zip
+- (Variable) _AddableT1
+- (Variable) _AddableT2
+- (Variable) _AwaitableT
+- (Variable) _AwaitableT_co
+- (Variable) _BaseExceptionT
+- (Variable) _BaseExceptionT_co
+- (Variable) _ClassInfo
+- (Variable) _E_contra
+- (Variable) _ExceptionT
+- (Variable) _ExceptionT_co
+- (Class) _FormatMapMapping
+- (Class) _GetItemIterable
+- (Variable) _I
+- (Variable) _IntegerFormats
+- (Variable) _KT
+- (Variable) _LiteralInteger
+- (Variable) _M_contra
+- (Variable) _NegativeInteger
+- (Variable) _Opener
+- (Variable) _P
+- (Variable) _PositiveInteger
+- (Variable) _R_co
+- (Variable) _S
+- (Variable) _StartT_co
+- (Variable) _StepT_co
+- (Variable) _StopT_co
+- (Variable) _SupportsAnextT_co
+- (Variable) _SupportsNextT_co
+- (Class) _SupportsPow2
+- (Class) _SupportsPow3
+- (Class) _SupportsPow3NoneOnly
+- (Class) _SupportsRound1
+- (Class) _SupportsRound2
+- (Variable) _SupportsSomeKindOfPow
+- (Variable) _SupportsSumNoDefaultT
+- (Class) _SupportsSumWithNoDefaultGiven
+- (Class) _SupportsSynchronousAnext
+- (Class) _SupportsWriteAndFlush
+- (Variable) _T
+- (Variable) _T1
+- (Variable) _T2
+- (Variable) _T3
+- (Variable) _T4
+- (Variable) _T5
+- (Variable) _T_co
+- (Variable) _T_contra
+- (Class) _TranslateTable
+- (Variable) _VT
+- (Constant) __annotations__
+- (Function) __build_class__
+- (Constant) __builtins__
+- (Constant) __cached__
+- (Constant) __debug__
+- (Constant) __dict__
+- (Constant) __doc__
+- (Constant) __file__
+- (Function) __import__
+- (Constant) __loader__
+- (Constant) __name__
+- (Constant) __package__
+- (Constant) __path__
+- (Constant) __spec__"#
+            .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn redeclaration() {
+    let code = r#"
+fff = 1
+fff = fff + 1
+ff
+#^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+4 | ff
+     ^
+Completion Results:
+- (Variable) fff: Literal[1, 2]
+- (Variable) fff: Literal[2]
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn from_import_keyword_completion() {
+    let code = r#"
+from lib imp
+#          ^
+"#;
+
+    let lib = r#"
+class Foo: pass
+"#;
+
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", code), ("lib", lib)],
+        get_test_report(
+            ResultsFilter {
+                include_keywords: true,
+                ..Default::default()
+            },
+            ImportFormat::Absolute,
+        ),
+    );
+    assert_eq!(
+        r#"
+# main.py
+2 | from lib imp
+               ^
+Completion Results:
+- (Class) Foo
+- (Keyword) import
+- (Constant) __annotations__
+- (Constant) __builtins__
+- (Constant) __cached__
+- (Constant) __debug__
+- (Constant) __dict__
+- (Constant) __doc__
+- (Constant) __file__
+- (Constant) __loader__
+- (Constant) __name__
+- (Constant) __package__
+- (Constant) __path__
+- (Constant) __spec__
+
+
+# lib.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn kwarg_completion_in_str() {
+    let code = r#"
+def foo(x: str): ...
+foo(x="x")
+#      ^"#;
+    let report = get_batched_lsp_operations_report(
+        &[("main", code)],
+        get_test_report(
+            ResultsFilter {
+                include_keywords: true,
+                ..Default::default()
+            },
+            ImportFormat::Absolute,
+        ),
+    );
+    assert_eq!(
+        r#"
+# main.py
+3 | foo(x="x")
+           ^
+Completion Results:
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_with_imported_class_docstring() {
+    let lib = r#"
+class Foo:
+    """This is a Foo class with useful functionality."""
+    pass
+"#;
+    let main = r#"
+from lib import Foo
+F
+#^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main), ("lib", lib)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+3 | F
+     ^
+Completion Results:
+- (Class) Foo: type[Foo]
+This is a Foo class with useful functionality.
+
+
+# lib.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_with_imported_function_docstring() {
+    let lib = r#"
+def bar():
+    """This function does something useful."""
+    pass
+"#;
+    let main = r#"
+from lib import bar
+b
+#^
+"#;
+    let report = get_batched_lsp_operations_report_allow_error(
+        &[("main", main), ("lib", lib)],
+        get_default_test_report(),
+    );
+    assert_eq!(
+        r#"
+# main.py
+3 | b
+     ^
+Completion Results:
+- (Function) bar: () -> None
+This function does something useful.
+
+
+# lib.py
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_with_local_class_docstring() {
+    let code = r#"
+class Foo:
+    """This is a local Foo class with useful functionality."""
+    pass
+F
+#^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | F
+     ^
+Completion Results:
+- (Class) Foo: type[Foo]
+This is a local Foo class with useful functionality.
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn completion_with_local_function_docstring() {
+    let code = r#"
+def bar():
+    """This function does something useful."""
+    pass
+b
+#^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+5 | b
+     ^
+Completion Results:
+- (Function) bar: () -> None
+This function does something useful.
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_complete_with_method_docstring() {
+    let code = r#"
+class Foo:
+    def method(self) -> int:
+        """This is a method docstring."""
+        return 42
+
+f = Foo()
+f.
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+8 | f.
+      ^
+Completion Results:
+- (Method) method: def method(self: Foo) -> int: ...
+This is a method docstring.
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_complete_with_multiple_methods_docstring() {
+    let code = r#"
+class Foo:
+    def first(self) -> int:
+        """First method documentation."""
+        return 1
+
+    def second(self) -> str:
+        """Second method documentation."""
+        return "hello"
+
+f = Foo()
+f.
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+12 | f.
+       ^
+Completion Results:
+- (Method) first: def first(self: Foo) -> int: ...
+First method documentation.
+- (Method) second: def second(self: Foo) -> str: ...
+Second method documentation.
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_complete_with_property_docstring() {
+    let code = r#"
+class Foo:
+    @property
+    def value(self) -> int:
+        """Property with documentation."""
+        return 42
+
+f = Foo()
+f.
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+9 | f.
+      ^
+Completion Results:
+- (Field) value: int
+Property with documentation.
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn dot_complete_mixed_with_and_without_docstring() {
+    let code = r#"
+class Foo:
+    x: int
+
+    def documented(self) -> str:
+        """This has documentation."""
+        return "doc"
+
+    def undocumented(self) -> int:
+        return 123
+
+f = Foo()
+f.
+# ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+13 | f.
+       ^
+Completion Results:
+- (Method) documented: def documented(self: Foo) -> str: ...
+This has documentation.
+- (Method) undocumented: def undocumented(self: Foo) -> int: ...
+- (Field) x: int
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+// Regression test for https://github.com/facebook/pyrefly/issues/1257.
+// Completion takes its base type from the type trace, and hover rendering of a bound method
+// shows the `self` parameter that ordinary display strips. Both the detail string and the
+// property's type therefore expose whatever the trace holds, so this pins that no solver
+// variable reaches either.
+#[test]
+fn dot_complete_var_crash_regression() {
+    let code = r#"
+class C[T]:
+    def m(self) -> None: ...
+
+    @property
+    def p(self) -> T: ...
+
+def f[T]() -> C[T]: ...
+f().
+#   ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    assert_eq!(
+        r#"
+# main.py
+9 | f().
+        ^
+Completion Results:
+- (Method) m: def m(self: C[Unknown]) -> None: ...
+- (Field) p: Unknown
+"#
+        .trim(),
+        report.trim(),
+    );
+}
+
+#[test]
+fn test_no_completion_in_comments() {
+    let code = r#"
+# This is a comment
+#      ^
+import sys
+x = sys.version
+#       ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, true);
+    let handle = handles.get("main").unwrap();
+    let positions = extract_cursors_for_test(code);
+    let txn = state.transaction();
+
+    // Position 0: inside comment - should return empty
+    let comment_completions =
+        txn.completion(handle, positions[0], ImportFormat::Absolute, true, None);
+    assert!(
+        comment_completions.is_empty(),
+        "Expected no completions in comment, but got {} completions",
+        comment_completions.len()
+    );
+
+    // Position 1: normal code - should return completions
+    let normal_completions =
+        txn.completion(handle, positions[1], ImportFormat::Absolute, true, None);
+    assert!(
+        !normal_completions.is_empty(),
+        "Expected completions in normal code but got none"
+    );
+}
+
+#[test]
+fn completion_before_comment_with_crlf_line_endings() {
+    let code = concat!(
+        "class Foo:\r\n",
+        "    x: int\r\n",
+        "foo = Foo()\r\n",
+        "foo.\r\n",
+        "# comment\r\n",
+    );
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = TextSize::try_from(
+        code.find("foo.\r\n").expect("completion line must exist") + "foo.".len(),
+    )
+    .expect("completion position must fit in TextSize");
+    let completions =
+        state
+            .transaction()
+            .completion(handle, position, ImportFormat::Absolute, true, None);
+
+    assert!(
+        completions.iter().any(|item| item.label == "x"),
+        "Expected attribute completions before a comment, got {completions:?}"
+    );
+}
+
+#[test]
+fn completion_sorts_incompatible_call_argument_last() {
+    let code = r#"
+class Base:
+    pass
+
+class Derived(Base):
+    pass
+
+class Other:
+    pass
+
+def needs_base(x: Base) -> None:
+    pass
+
+val_exact = Base()
+val_compatible = Derived()
+val_incompatible = Other()
+val = val_exact
+
+needs_base(val)
+#           ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, true);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let completions = txn.completion(handle, position, ImportFormat::Absolute, true, None);
+
+    let exact_index = completions
+        .iter()
+        .position(|item| item.label == "val_exact");
+    let compatible_index = completions
+        .iter()
+        .position(|item| item.label == "val_compatible");
+    let incompatible_index = completions
+        .iter()
+        .position(|item| item.label == "val_incompatible");
+
+    let exact = exact_index.and_then(|idx| completions.get(idx));
+    let compatible = compatible_index.and_then(|idx| completions.get(idx));
+    let incompatible = incompatible_index.and_then(|idx| completions.get(idx));
+
+    assert!(
+        exact.is_some() && compatible.is_some() && incompatible.is_some(),
+        "Expected completions for exact_val, compatible_val, and incompatible_val."
+    );
+
+    let exact_sort = exact
+        .and_then(|item| item.sort_text.as_deref())
+        .unwrap_or("");
+    let compatible_sort = compatible
+        .and_then(|item| item.sort_text.as_deref())
+        .unwrap_or("");
+    let incompatible_sort = incompatible
+        .and_then(|item| item.sort_text.as_deref())
+        .unwrap_or("");
+
+    assert!(
+        !exact_sort.ends_with('z'),
+        "Exact type should not be demoted (sort_text={exact_sort:?})."
+    );
+    assert!(
+        !compatible_sort.ends_with('z'),
+        "Compatible type should not be demoted (sort_text={compatible_sort:?})."
+    );
+    assert!(
+        incompatible_sort.ends_with('z'),
+        "Incompatible type should be demoted (sort_text={incompatible_sort:?})."
+    );
+
+    assert!(
+        exact_index.unwrap() < incompatible_index.unwrap(),
+        "Exact type should sort ahead of incompatible type."
+    );
+    assert!(
+        compatible_index.unwrap() < incompatible_index.unwrap(),
+        "Compatible type should sort ahead of incompatible type."
+    );
+}
+
+#[test]
+fn bound_method_completions_include_descriptor_attributes() {
+    // Make sure completions work for bound methods from custom descriptors.
+    // See: https://github.com/facebook/pyrefly/issues/821
+    let code = r#"
+from __future__ import annotations
+from typing import Callable
+
+class CachedMethod:
+    def __init__(self, fn: Callable[[Constraint], int]) -> None:
+        self._fn = fn
+
+    def __get__(self, obj: Constraint | None, owner: type[Constraint]) -> CachedMethod:
+        return self
+
+    def __call__(self, obj: Constraint) -> int:
+        return self._fn(obj)
+
+    def clear_cache(self, obj: Constraint) -> None: ...
+
+def cache_on_self(fn: Callable[[Constraint], int]) -> CachedMethod:
+    return CachedMethod(fn)
+
+class Constraint:
+    @cache_on_self
+    def pointwise_read_writes(self) -> int:
+        return 0
+
+    def use_cached_method(self) -> None:
+        self.pointwise_read_writes.
+#                                  ^
+"#;
+    let (handles, state) = mk_multi_file_state(&[("main", code)], Require::Exports, false);
+    let handle = handles.get("main").unwrap();
+    let position = extract_cursors_for_test(code)[0];
+    let txn = state.transaction();
+    let completions = txn.completion(handle, position, ImportFormat::Absolute, true, None);
+
+    let completion_labels: Vec<_> = completions.iter().map(|c| c.label.as_str()).collect();
+
+    // The descriptor's `clear_cache` method should appear in completions
+    assert!(
+        completion_labels.contains(&"clear_cache"),
+        "Expected `clear_cache` in completions for bound method from custom descriptor.\n\
+         This attribute is defined on CachedMethod and should be accessible.\n\
+         Got completions: {:?}",
+        completion_labels
+    );
+}
+
+#[test]
+fn completion_namedtuple_spread_fields() {
+    let code = r#"
+import collections
+
+BaseFieldInfo = collections.namedtuple("BaseFieldInfo", ["name", "type_code", "size"])
+ExtendedFieldInfo = collections.namedtuple(
+    "ExtendedFieldInfo",
+    [*BaseFieldInfo._fields, "extra", "comment"],
+)
+
+info = ExtendedFieldInfo()
+info.
+#    ^
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let trimmed = report.trim();
+    for expected in ["- (Field) extra", "- (Field) comment"] {
+        assert!(
+            trimmed.contains(expected),
+            "missing {expected} in completions:\n{trimmed}"
+        );
+    }
+}
+
+#[test]
+fn dot_complete_method_chain_with_import_error() {
+    // Reproduces the benchmark failure: trailing dot on method call chain
+    // when the file has an unresolvable import used in the same function.
+    let code = r#"
+from nonexistent import request
+class Response:
+    status_code: int = 200
+class Client:
+    def get(self, url: str) -> Response:
+        return Response()
+client = Client()
+def users() -> None:
+    x = request.args
+    resp = client.get("url").
+    #                        ^
+    return None
+"#;
+    let report =
+        get_batched_lsp_operations_report_allow_error(&[("main", code)], get_default_test_report());
+    let trimmed = report.trim();
+    assert!(
+        trimmed.contains("status_code"),
+        "missing status_code in completions:\n{trimmed}"
+    );
+}
+
+#[test]
+fn dataframe_column_completion_from_lazy_groupby_agg() {
+    let code = r#"
+import polars as pl
+df = pl.DataFrame({"nm_produto": ["A"], "volume": [2]})
+df.lazy().group_by("nm_produto").agg(pl.col(""))
+#                                            ^
+"#;
+    assert_eq!(
+        polars_column_completion_labels(code),
+        vec!["nm_produto".to_owned(), "volume".to_owned()]
+    );
+}
+
+#[test]
+fn dataframe_column_completion_groupby_agg_non_polars() {
+    let code = r#"
+class Custom:
+    def group_by(self, key: str) -> "Custom":
+        return self
+
+    def agg(self, value: str) -> None:
+        pass
+
+obj = Custom()
+obj.group_by("category").agg("")
+#                             ^
+"#;
+    assert_eq!(polars_column_completion_labels(code), Vec::<String>::new());
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 12621235,
+      "login": "hauntsaninja",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T00:30:20Z",
+      "committer_at": "2026-10-23T00:30:20Z",
+      "tree_sha": "9fb0af6e6c89b5a5c43c208a4057be25dcc494f1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8fdf43736393353c6c7291d1cd33c7d9dc112acc"
+  },
+  "observed_at": "2026-10-27T15:27:24.312337+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "41bc59b0711eaca47679ba724cba4e9fd6c02efcd659662505dea8d9aa211fe5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "31f91b215192b5b74a76d444944ebe47b1e97dccd9a9d9b693bff283a9fe9182",
+  "source_url": "https://api.github.com/repos/python/mypy/commits/8fdf43736393353c6c7291d1cd33c7d9dc112acc?per_page=100",
+  "status_code": 200
+}

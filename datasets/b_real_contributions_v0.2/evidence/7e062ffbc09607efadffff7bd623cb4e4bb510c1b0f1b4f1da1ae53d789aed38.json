@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "google/gson",
+    "id": 32538871,
+    "language": "Java",
+    "private": false,
+    "size": 23554
+  },
+  "observed_at": "2026-10-26T07:05:48.291925+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2771b526d158c22b2862a19a23f17057059d09c1ecec52379bb5791a7505a8e9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4b6689bd77d556936c01fdbf7e0de38c2b7ae9c35387e3740329128ba702b42c",
+  "source_url": "https://api.github.com/repos/google/gson",
+  "status_code": 200
+}

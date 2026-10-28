@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 9087854,
+      "login": "AA-Turner",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T22:21:57Z",
+      "committer_at": "2026-10-23T22:21:57Z",
+      "tree_sha": "d72996acf864ab53c7afcaaf9e4160dcc02f331f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1ddf1981c4aac4ff72bfb4a97e05909d55c3a149"
+  },
+  "observed_at": "2026-10-27T16:10:07.891942+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "895587d52abf98ddc702e0a8b8475f6f10467da1dcffa264616e1fb71de4fd66",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f145411088b493fbbf3d25ad05a0e263e411c633b41943abc4241a8a6490443",
+  "source_url": "https://api.github.com/repos/sphinx-doc/sphinx/commits/1ddf1981c4aac4ff72bfb4a97e05909d55c3a149?per_page=100",
+  "status_code": 200
+}

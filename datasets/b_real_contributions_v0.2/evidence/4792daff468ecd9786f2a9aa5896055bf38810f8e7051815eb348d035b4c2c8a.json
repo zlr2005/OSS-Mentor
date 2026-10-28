@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e8f54aa6870ded301cb9bf53826101fc8580f12d",
+    "size": 1405
+  },
+  "observed_at": "2026-10-26T07:58:46.089596+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "55ab71ec41107fd5002a87d098c0c648086c93c7eb8e17822aadffe2dff96dc0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "18221abb29f784dbc044bfda9a4b0fc61463207fbabc937d607329016de088d5",
+  "source_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/e8f54aa6870ded301cb9bf53826101fc8580f12d",
+  "status_code": 200
+}

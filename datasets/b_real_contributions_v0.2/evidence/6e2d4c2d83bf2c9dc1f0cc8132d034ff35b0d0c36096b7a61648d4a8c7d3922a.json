@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3797675,
+      "login": "stefanprodan",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T08:12:42Z",
+      "committer_at": "2026-10-25T08:12:42Z",
+      "tree_sha": "f9d67ae1d91d1a659a26fe1e130893e45410d106"
+    },
+    "committer": {
+      "id": 3797675,
+      "login": "stefanprodan",
+      "type": "User"
+    },
+    "sha": "3ed80127dd6dde870c5bca04454ed063e91b6f2e"
+  },
+  "observed_at": "2026-10-26T06:49:43.659209+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "575af5b90bd4ef3fd6543ef57d48274a005f16297cd2477fc5cba5df7b755971",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "65d779dd42845239b27434c777fdc98ac8b9b6d2307b50ca439b5708e2d8f68d",
+  "source_url": "https://api.github.com/repos/fluxcd/flux2/commits/3ed80127dd6dde870c5bca04454ed063e91b6f2e?per_page=100",
+  "status_code": 200
+}

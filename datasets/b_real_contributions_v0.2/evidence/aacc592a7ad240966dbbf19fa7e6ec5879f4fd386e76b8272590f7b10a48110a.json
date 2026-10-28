@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 60867165,
+      "login": "maleksware",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T17:06:42Z",
+      "committer_at": "2026-10-25T17:06:42Z",
+      "tree_sha": "ebcebc40ebe9dedc80b4591e435a7a631ba8cf52"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5a92076609360abc334dc6b1186f3da9a228f306"
+  },
+  "observed_at": "2026-10-26T07:42:28.699759+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5507b5198904c184bf02717b42ebae73a44e50d2619a25600fefdc65ff4bb1ae",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4aaf3c0be1d48b4e20940ce45aa415d5bc3da36c69b0284551bdc9a0f3c6468d",
+  "source_url": "https://api.github.com/repos/JabRef/jabref/commits/5a92076609360abc334dc6b1186f3da9a228f306?per_page=100",
+  "status_code": 200
+}

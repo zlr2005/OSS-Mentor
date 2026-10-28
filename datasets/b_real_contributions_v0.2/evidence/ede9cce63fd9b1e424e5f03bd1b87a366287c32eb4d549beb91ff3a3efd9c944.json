@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "2627c586144cfe0176afc4ae6fd5e57cc1952466",
+    "size": 1396
+  },
+  "observed_at": "2026-10-26T05:22:02.258668+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f38c79d4c351a6c93ded3180eec095990278059407ba1646b626e99d24bc6725",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0bd4d102137f1015779d8333bcdadbacebe15bc9ef943f820cfda377d6d6f4fe",
+  "source_url": "https://api.github.com/repos/apache/linkis/git/blobs/2627c586144cfe0176afc4ae6fd5e57cc1952466",
+  "status_code": 200
+}

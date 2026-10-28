@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 490484,
+      "login": "snicoll",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T13:35:07Z",
+      "committer_at": "2026-10-23T13:35:07Z",
+      "tree_sha": "073fd44d86da85a36ca3f77b27163292269f7810"
+    },
+    "committer": {
+      "id": 490484,
+      "login": "snicoll",
+      "type": "User"
+    },
+    "sha": "f2ffba784085ae4c1f8fcd6ac7f9c850e722cecc"
+  },
+  "observed_at": "2026-10-26T14:14:47.856732+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5e40814d0723dfb6eee71c83e9ba7462b27fd265fb968e14af2ee9ffe6a3edab",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a2b6e29c8ae36a5523cbcecb378b226d844e37dbe9cd39e8ce1fcc9b4ce0fa65",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-boot/commits/f2ffba784085ae4c1f8fcd6ac7f9c850e722cecc?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6312314,
+      "login": "voonhous",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T02:56:31Z",
+      "committer_at": "2026-10-23T02:56:31Z",
+      "tree_sha": "cd4cc06a55e0f00cc5452e6efcabcb204b2be4d6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1c54bd382ad9b37a004ba7ec785ca3ebc3c70a84"
+  },
+  "observed_at": "2026-10-26T05:15:17.215481+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2b63f7bc03d3cde680a6878285a5d714e74968d28eabd43c863b2f61b833d355",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c0bb8727d3ea96d24e731f8962494c54f172dbf872a794e666a21ba0972d76d9",
+  "source_url": "https://api.github.com/repos/apache/hudi/commits/1c54bd382ad9b37a004ba7ec785ca3ebc3c70a84?per_page=100",
+  "status_code": 200
+}

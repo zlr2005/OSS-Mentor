@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7f5d4ee1edcee2a6e122bad02a21cb2039bd65ba",
+    "size": 1771
+  },
+  "observed_at": "2026-10-26T08:34:12.745222+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cb224b540726d62beb43478c048bd2cc33f502b6cfb9222829535bf734703b27",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cc457e0327c4264a8923b1cfbe41ec36a75f036c4e8b2ccebdc4b89f7106c06c",
+  "source_url": "https://api.github.com/repos/open-telemetry/opentelemetry-go/git/blobs/7f5d4ee1edcee2a6e122bad02a21cb2039bd65ba",
+  "status_code": 200
+}

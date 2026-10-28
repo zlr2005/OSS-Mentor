@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MPL-2.0",
+    "full_name": "vectordotdev/vector",
+    "id": 146327667,
+    "language": "Rust",
+    "private": false,
+    "size": 150440
+  },
+  "observed_at": "2026-10-26T15:30:15.903748+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b274e47e4bad1343de21b3285c6ab51ce0b9e353184aae4f0adbc9173ace22d0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8783ff765f5c2ca9fa5720f5acb932eaa79928c5c9cecc4a263591216f659ca1",
+  "source_url": "https://api.github.com/repos/vectordotdev/vector",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 71849938,
+      "login": "omer-cengel",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-22T03:37:04Z",
+      "committer_at": "2026-06-22T03:37:04Z",
+      "tree_sha": "d73b32e2c61a5b053c817d907149e9f93c7cada2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1d6ce99528060be18a42be09aca8d39efcb47f28"
+  },
+  "observed_at": "2026-10-26T06:56:52.786588+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6b7a6e8176db3dc2226d56699d81e49b5e995da9f2df785a5bc6a6e57835154f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c86aac47c5c3f28937949cafb583c61ade40d0a45aa23760cc6dd1f33737c7dc",
+  "source_url": "https://api.github.com/repos/go-gorm/gorm/commits/1d6ce99528060be18a42be09aca8d39efcb47f28?per_page=100",
+  "status_code": 200
+}

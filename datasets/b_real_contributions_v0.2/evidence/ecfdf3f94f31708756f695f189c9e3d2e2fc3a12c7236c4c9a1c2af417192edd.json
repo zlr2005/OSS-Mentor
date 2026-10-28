@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "microsoft/pyright",
+    "id": 175129788,
+    "language": "Python",
+    "private": false,
+    "size": 139420
+  },
+  "observed_at": "2026-10-26T08:14:44.246236+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "818fc0fe1996d0db6087b5a5ef8ea13c361296077d16759c76a0edce60727dae",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e18027141c2824c9e18c354ae6ade96b8bb8b71c9909446679eb01026fb6c7ea",
+  "source_url": "https://api.github.com/repos/microsoft/pyright",
+  "status_code": 200
+}

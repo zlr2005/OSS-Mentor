@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 614704,
+      "login": "lizthegrey",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-30T19:53:52Z",
+      "committer_at": "2026-10-25T23:58:09Z",
+      "tree_sha": "98a41e307c931164ccd8de99837d2e74c391d626"
+    },
+    "committer": {
+      "id": 8566911,
+      "login": "gopherbot",
+      "type": "User"
+    },
+    "sha": "a300e279c5a16a4eb8151094ad94fbe8e008bad5"
+  },
+  "observed_at": "2026-10-26T07:00:14.342923+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "be9f4228d3e371787645e3f747b7d9c3739102894cc01021117dec541e5c3d3f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bdf2ddaf5421e79a88ea223f01612430ede4803a424f798d1b60280c0f1dc8ab",
+  "source_url": "https://api.github.com/repos/golang/go/commits/a300e279c5a16a4eb8151094ad94fbe8e008bad5?per_page=100",
+  "status_code": 200
+}

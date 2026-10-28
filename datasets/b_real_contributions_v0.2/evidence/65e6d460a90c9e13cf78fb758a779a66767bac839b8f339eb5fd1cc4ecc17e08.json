@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "3cb312522c8247f5b3384df1c8653c8b19b2305e",
+    "size": 27889
+  },
+  "observed_at": "2026-10-26T15:15:50.731455+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "958a7e5b32a1e0c459bb4ace614c02e4e2e73aab2af617013275317e1dee8069",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a620607a376e485da2e51f90a7d7b96fbdc4a3133c0077d80a5cdfb74c077114",
+  "source_url": "https://api.github.com/repos/tokio-rs/tracing/git/blobs/3cb312522c8247f5b3384df1c8653c8b19b2305e",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "openai/openai-node",
+    "id": 438419937,
+    "language": "TypeScript",
+    "private": false,
+    "size": 21056
+  },
+  "observed_at": "2026-10-26T08:34:20.929474+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a76f20779db9dd9204e268024e058bee8469cc330db09e96c4089b92231a670d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3598160591e915c7704ef2ce35376fa35fdb79f46c57008f6d4ac67637ce4f0d",
+  "source_url": "https://api.github.com/repos/openai/openai-node",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "5f3f537202e2b4c93f15e3aee0fed8c42aa4fd13",
+    "size": 3609
+  },
+  "observed_at": "2026-10-26T05:38:54.128016+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0334aee86d04210e7f0889430d8252c6cd91574472d92eec555486123cc2cf67",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "01fe30e7a5ae204ca9a429586a6bf58514e728ac0115fd93c35e1d31a7e103fe",
+  "source_url": "https://api.github.com/repos/apache/shenyu/git/blobs/5f3f537202e2b4c93f15e3aee0fed8c42aa4fd13",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1024902,
+      "login": "tracyboehrer",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T15:46:46Z",
+      "committer_at": "2026-10-21T15:46:46Z",
+      "tree_sha": "ad6dcba5fde2bade74ab3c29d7f756e4025ab596"
+    },
+    "committer": {
+      "id": 1024902,
+      "login": "tracyboehrer",
+      "type": "User"
+    },
+    "sha": "ce4f9b3ece2b2f733670c851423f2215356567f2"
+  },
+  "observed_at": "2026-10-26T08:09:27.025644+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4fa3080b73d59dbc1ebd5e4d3bf5aa824e968b79015b1bcd82ef76d6678979e1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b5d183d577a6ae2fd3f32008794d7506d03508308fcb132cc5f3a1f306ebcd08",
+  "source_url": "https://api.github.com/repos/microsoft/Agents-for-net/commits/ce4f9b3ece2b2f733670c851423f2215356567f2?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 269036200,
+      "login": "jbeckwith-oai",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T05:00:56Z",
+      "committer_at": "2026-10-23T05:00:56Z",
+      "tree_sha": "18393d98d506da12e23362b0f192234139bc8388"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "4c11b87c3e5e4fcddeeffc85b55502b2296f49fd"
+  },
+  "observed_at": "2026-10-26T08:34:37.548359+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "401c3df2cd11faadccee981dbe2c48cc1dac43bcf63b1b2fb68f9cbc504a4a7c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "12fa2c7abf4512a6f52a7cb9798f116a0b4ce545be04269fe39cf0f541d2ecc7",
+  "source_url": "https://api.github.com/repos/openai/openai-node/commits/4c11b87c3e5e4fcddeeffc85b55502b2296f49fd?per_page=100",
+  "status_code": 200
+}

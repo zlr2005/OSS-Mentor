@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "tokio-rs/axum",
+    "id": 372172254,
+    "language": "Rust",
+    "private": false,
+    "size": 6370
+  },
+  "observed_at": "2026-10-26T15:10:17.421021+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6281b400065939c64923cfda2696373a3c6035403dc485ea5fa9ffe0a870113f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bad13ae491717730a438e17a943c7efa682dc07fdb70bc41736206363bf143e7",
+  "source_url": "https://api.github.com/repos/tokio-rs/axum",
+  "status_code": 200
+}

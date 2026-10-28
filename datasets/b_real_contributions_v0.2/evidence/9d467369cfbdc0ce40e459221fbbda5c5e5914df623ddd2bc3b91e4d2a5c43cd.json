@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {
+      "id": 163471603,
+      "login": "markhbrady",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T19:33:38Z",
+      "committer_at": "2026-10-19T19:35:15Z",
+      "tree_sha": "37f99af59fdb4c8012db8b76780506eb1f74f36e"
+    },
+    "committer": {},
+    "sha": "0a9708634f5683865cfc30e08c1ebaf694c8c0ba"
+  },
+  "observed_at": "2026-10-26T07:05:12.031044+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2d32a0fb5b82e6eec957c92a0f58cc16a816872f53957bdccda4bce6b59848b6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "073272c2e9b47c4f10a19d9faed52d7d8852ac89062caa5a70dc5ab7b02460d2",
+  "source_url": "https://api.github.com/repos/google/error-prone/commits/0a9708634f5683865cfc30e08c1ebaf694c8c0ba?per_page=100",
+  "status_code": 200
+}

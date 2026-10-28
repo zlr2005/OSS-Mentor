@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 15078782,
+      "login": "SarahFrench",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T12:52:38Z",
+      "committer_at": "2026-10-23T12:52:38Z",
+      "tree_sha": "91b464531a0879c8e35b2629e8fd34afb61ab855"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a060ad5a1ba172c1971012a8ddeceacebae2ec92"
+  },
+  "observed_at": "2026-10-27T13:42:14.429931+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "407b87e656e96e17177f3eb056ae5dcba488e46f981af577153e4fa30bce73f6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "967db3fd0ed8ad16eeead5014780d150352355ada8b8ddd4d5ebafac040f0207",
+  "source_url": "https://api.github.com/repos/hashicorp/terraform/commits/a060ad5a1ba172c1971012a8ddeceacebae2ec92?per_page=100",
+  "status_code": 200
+}

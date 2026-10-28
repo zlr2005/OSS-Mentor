@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 12766327,
+      "login": "lisjin",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-15T23:17:25Z",
+      "committer_at": "2026-10-15T23:17:25Z",
+      "tree_sha": "a54f61064a2eeda5fe426a441cd306e654faf0a3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5d763d6e0d07a97d164295431d8dfa64208caa1b"
+  },
+  "observed_at": "2026-10-27T15:34:44.265288+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "20aa56b2ce07bf4bedb8f718d1c9802360e4a3232ff23c64056414856b469c1e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c767d4ee43b48e8359ffda9355b3726b692db9208fe17c261bbdf09f5be8be79",
+  "source_url": "https://api.github.com/repos/pytorch/ao/commits/5d763d6e0d07a97d164295431d8dfa64208caa1b?per_page=100",
+  "status_code": 200
+}

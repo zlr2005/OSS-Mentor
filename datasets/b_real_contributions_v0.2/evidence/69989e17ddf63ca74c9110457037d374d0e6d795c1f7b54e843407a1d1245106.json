@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-18T13:34:12Z",
+      "committer_at": "2026-10-18T13:34:12Z",
+      "tree_sha": "c9a2e89a0f1a07afd157cceca2245e4f485d7ca7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "04f7f55a7b5ddb2ecd79a8d813b2256c1113b8a9"
+  },
+  "observed_at": "2026-10-26T06:54:18.672833+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2fa94d3d45aefc8578f1183ba1c12fc9ac01051c9fed2271903b6ce567fd3104",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9f4cf97e4c7411e917df17076583800787fd4c4bf23931cfab8baa2567fddcdd",
+  "source_url": "https://api.github.com/repos/go-chi/chi/commits/04f7f55a7b5ddb2ecd79a8d813b2256c1113b8a9?per_page=100",
+  "status_code": 200
+}

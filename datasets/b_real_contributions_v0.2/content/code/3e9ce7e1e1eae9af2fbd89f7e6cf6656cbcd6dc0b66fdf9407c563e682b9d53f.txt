@@ -1,0 +1,800 @@
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::fmt;
+use core::ops::Deref;
+
+use kernel::KernelConnection;
+use pki_types::FipsStatus;
+
+use crate::client::ClientSide;
+use crate::common_state::{
+    CommonState, ConnectionOutput, ConnectionOutputs, Event, Output, OutputEvent,
+};
+use crate::crypto::VerifiedIdentity;
+use crate::crypto::cipher::{OutboundPlain, Payload};
+use crate::error::{ApiMisuse, Error};
+use crate::kernel::KernelState;
+use crate::msgs::{Delocator, Message, Random, ServerExtensionsInput};
+use crate::quic::{self, QuicOutput};
+use crate::server::{ChooseConfig, ServerConfig, ServerSide};
+use crate::suites::{ExtractedSecrets, PartiallyExtractedSecrets};
+use crate::sync::Arc;
+use crate::tls13::key_schedule::KeyScheduleTrafficSend;
+
+// pub so that it can be re-exported from the crate root
+pub mod kernel;
+
+mod handshake;
+pub use handshake::{Accepted, Tcp, Transport, VerifyPeerIdentity};
+pub(crate) use handshake::{ClientNext, ServerNext, sealed};
+
+mod receive;
+pub(crate) use receive::{
+    DataKind, Input, MessageIter, MessageIterMode, ReceivePath, TrafficTemperCounters,
+};
+pub use receive::{SliceInput, TlsInputBuffer, VecInput};
+
+mod send;
+pub(crate) use send::{Encrypter, SendOutput, SendPath};
+
+pub(crate) mod split;
+use split::SplitConnection;
+
+/// A TLS connection, parametrized by the side ([`ClientSide`] or [`ServerSide`]).
+///
+/// This is one of the core abstractions of the rustls API. It represents a single connection
+/// to a peer, and holds all the state associated with that connection. Note that it does
+/// not hold any IO objects: the application is responsible for reading and writing TLS records.
+///
+/// This object is generic over the `Side` type parameter, which must be either [`ClientSide`]
+/// or [`ServerSide`]. While most of the API for a connection is shared between both types, some
+/// API is asymmetric, which is reflected by the type parameter. As such, some methods
+/// (including constructors) are specific on the `Side` type. See the implementations
+/// for [`ClientSide`](#impl-Connection<ClientSide>) and [`ServerSide`](#impl-Connection<ServerSide>) below.
+///
+/// [`ClientSide`]: crate::client::ClientSide
+/// [`ServerSide`]: crate::server::ServerSide
+pub struct Connection<Side: SideData, T: Transport> {
+    pub(crate) state: Result<Side::State, Error>,
+    pub(crate) side: Side,
+    pub(crate) common: CommonState,
+    pub(crate) transport: T,
+}
+
+impl<Side: SideData, T: Transport> Connection<Side, T> {
+    pub(crate) fn process(
+        &mut self,
+        input: &mut dyn TlsInputBuffer,
+        tls: &mut Vec<u8>,
+    ) -> Result<(), Error> {
+        let mut iter = MessageIter::new(input, tls, self, MessageIterMode::Handshake);
+        let result = loop {
+            match iter.next(false) {
+                Some(Ok(_)) => {}
+                Some(Err(e)) => break Err(e),
+                None => break Ok(()),
+            };
+        };
+
+        input.discard(self.common.recv.deframer.take_discard());
+
+        result?;
+        Ok(())
+    }
+
+    #[doc = include_str!("../doc/exporter.md")]
+    pub fn exporter(&mut self) -> Result<KeyingMaterialExporter, Error> {
+        match self.common.is_handshaking() {
+            true => Err(Error::HandshakeNotComplete),
+            false => self.common.outputs.exporter(),
+        }
+    }
+
+    /// Returns data learned during the connection.
+    pub fn side(&self) -> &Side {
+        &self.side
+    }
+
+    /// Return the FIPS validation status of the connection.
+    ///
+    /// This is different from [`CryptoProvider::fips()`][]:
+    /// it is concerned only with cryptography, whereas this _also_ covers TLS-level
+    /// configuration that NIST recommends, as well as ECH HPKE suites if applicable.
+    ///
+    /// [`CryptoProvider::fips()`]: crate::crypto::CryptoProvider::fips()
+    pub fn fips(&self) -> FipsStatus {
+        self.common.fips
+    }
+
+    /// Returns true if the connection is currently performing the TLS handshake.
+    ///
+    /// During this time, [`Self::write()`] will return an error.
+    pub fn is_handshaking(&self) -> bool {
+        self.common.is_handshaking()
+    }
+}
+
+impl<Side: SideData> Connection<Side, Tcp> {
+    /// Build a [`MessageHandler`] to process messages from the `input` buffer.
+    ///
+    /// Any data appended to `tls` should be sent to the peer.
+    pub fn read_tls<'a, 'm>(
+        &'a mut self,
+        input: &'m mut dyn TlsInputBuffer,
+        tls: &'a mut Vec<u8>,
+    ) -> MessageHandler<'a, 'm, Side> {
+        MessageHandler::new(input, tls, self)
+    }
+
+    /// Writes the application data from `plaintext` into TLS records and appends them to `tls`.
+    ///
+    /// Any data appended to `tls` should be sent to the peer.
+    ///
+    /// This will fail if either the handshake is not complete yet (because we don't yet have the
+    /// keys to encrypt application data) or if the send path has been closed by sending a
+    /// `close_notify` alert.
+    ///
+    /// For TLS 1.2, this also fails with [`Error::EncryptError`] if encrypting `plaintext` would
+    /// exceed the negotiated cipher suite's
+    /// [`confidentiality_limit`][crate::crypto::CipherSuiteCommon::confidentiality_limit]. In that
+    /// case, none of `plaintext` is sent; a `close_notify` alert is appended to `tls` instead.
+    ///
+    /// If the connection previously encountered a fatal error (for example, while processing
+    /// received data in [`Self::read_tls()`]), this returns that error, even if `plaintext`
+    /// is empty.
+    pub fn write(&mut self, plaintext: OutboundPlain<'_>, tls: &mut Vec<u8>) -> Result<(), Error> {
+        if let Err(err) = &self.state {
+            return Err(err.clone());
+        } else if plaintext.is_empty() {
+            return Ok(());
+        }
+
+        self.common
+            .send
+            .send_appdata_encrypt(DataKind::Traffic(plaintext), tls)?;
+
+        Ok(())
+    }
+
+    /// Sends a TLS1.3 `key_update` message into `tls` to refresh a connection's keys.
+    ///
+    /// The main reason to call this manually is to roll keys when it is known
+    /// a connection will be idle for a long period.
+    ///
+    /// rustls implicitly and automatically refreshes traffic keys when needed
+    /// according to the selected cipher suite's cryptographic constraints.  There
+    /// is therefore no need to call this manually to avoid cryptographic keys
+    /// "wearing out".
+    ///
+    /// This call refreshes our encryption keys. Once the peer receives the message,
+    /// it refreshes _its_ encryption and decryption keys and sends a response.
+    /// Once we receive that response, we refresh our decryption keys to match.
+    /// At the end of this process, keys in both directions have been refreshed.
+    ///
+    /// This fails with [`Error::HandshakeNotComplete`] if called before the initial
+    /// handshake is complete, or if a version prior to TLS1.3 is negotiated.
+    ///
+    /// # Usage advice
+    /// Note that other implementations (including rustls) may enforce limits on
+    /// the number of `key_update` messages allowed on a given connection to prevent
+    /// denial of service.  Therefore, this should be called sparingly.
+    ///
+    /// rustls only allows one outstanding request at a time; this function succeeds
+    /// but sends nothing if a request is already in-flight.
+    pub fn refresh_traffic_keys(&mut self, tls: &mut Vec<u8>) -> Result<(), Error> {
+        self.common
+            .send
+            .refresh_traffic_keys(tls)
+    }
+
+    /// Split a post-handshake connection into a [`SplitConnection`].
+    ///
+    /// This allows the two directions (transmit and receive) of the connection to be progressed
+    /// separately (including by different threads, which would allow dedicating a CPU core for each
+    /// direction rather than one per connection; this can dramatically improve performance for
+    /// full-duplex protocols).
+    ///
+    /// It also separates out the [`ConnectionOutputs`] which gives the application direct control
+    /// of how long this is kept.
+    ///
+    /// This fails if:
+    ///
+    /// - the handshake is not complete. Check with [`Connection::is_handshaking()`].
+    /// - there is any buffered TLS data to send.  Obtain it first with [`Connection::write()`].
+    pub fn split(self) -> Result<SplitConnection<Side>, Error> {
+        SplitConnection::try_from(self)
+    }
+
+    #[doc = include_str!("../doc/early_exporter.md")]
+    pub fn early_exporter(&mut self) -> Result<KeyingMaterialExporter, Error> {
+        self.common.early_exporter()
+    }
+
+    /// Extract secrets, so they can be used when configuring kTLS, for example.
+    ///
+    /// Should be used with care as it exposes secret key material.
+    ///
+    /// All TLS data previously written into caller-provided buffers must be sent to the peer before
+    /// calling this function.
+    ///
+    /// This fails with [`ApiMisuse::KernelConnectionWithPendingSendData`] if the
+    /// connection has pending data to send, which would otherwise be lost.
+    /// Write out that pending data before calling this function.
+    pub fn dangerous_extract_secrets(self) -> Result<ExtractedSecrets, Error> {
+        Ok(self
+            .dangerous_into_kernel_connection()?
+            .0)
+    }
+
+    pub(crate) fn dangerous_into_kernel_connection(
+        self,
+    ) -> Result<(ExtractedSecrets, KernelConnection<Side>), Error> {
+        if self.common.is_handshaking() {
+            return Err(Error::HandshakeNotComplete);
+        }
+        Self::from_parts_into_kernel_connection(
+            self.common.send,
+            self.common.recv,
+            self.common.outputs,
+            self.state?,
+        )
+    }
+
+    pub(crate) fn from_parts_into_kernel_connection(
+        send: SendPath,
+        recv: ReceivePath,
+        outputs: ConnectionOutputs,
+        state: Side::State,
+    ) -> Result<(ExtractedSecrets, KernelConnection<Side>), Error> {
+        // a queued key_update response has consumed a send sequence number so
+        // discarding it would leave the extracted secrets ahead of what the
+        // peer receives.
+        if send.has_queued_key_update() {
+            return Err(ApiMisuse::KernelConnectionWithPendingSendData.into());
+        }
+
+        let read_seq = recv.decrypt_state.read_seq();
+        let (write_seq, tls13_key_schedule) = send.export()?;
+
+        let (secrets, state) = state.into_external_state(&tls13_key_schedule)?;
+        let secrets = ExtractedSecrets {
+            tx: (write_seq, secrets.tx),
+            rx: (read_seq, secrets.rx),
+        };
+        let external = KernelConnection::new(state, outputs, tls13_key_schedule)?;
+
+        Ok((secrets, external))
+    }
+
+    /// Writes a `close_notify` warning alert into `tls`.
+    ///
+    /// This informs the peer that the connection is being closed.
+    ///
+    /// Does nothing if any `close_notify` or fatal alert was already sent.
+    pub fn send_close_notify(&mut self, tls: &mut Vec<u8>) -> Result<(), Error> {
+        self.common.send_close_notify(tls)
+    }
+}
+
+impl<T: Transport> Connection<ClientSide, T> {
+    /// Returns the number of TLS1.3 tickets that have been received.
+    pub fn tls13_tickets_received(&self) -> u32 {
+        self.common.recv.tls13_tickets_received
+    }
+}
+
+impl<T: Transport> Connection<ServerSide, T> {
+    pub(crate) fn accepted(
+        &mut self,
+        choose: Box<ChooseConfig>,
+        exts: ServerExtensionsInput,
+        config: Arc<ServerConfig>,
+        tls: &mut Vec<u8>,
+    ) -> Result<(), Error> {
+        self.common
+            .send
+            .set_max_fragment_size(config.max_fragment_size)?;
+        self.common.fips = config.fips();
+
+        let mut output = SideCommonOutput {
+            side: &mut self.side,
+            quic: self.transport.quic(),
+            common: &mut self.common,
+            tls,
+        };
+
+        self.state = Ok(choose.use_config(config, exts, &mut output)?);
+        Ok(())
+    }
+
+    /// Set the resumption data to embed in future resumption tickets supplied to the client.
+    ///
+    /// Defaults to the empty byte string. Must be less than 2^15 bytes to allow room for other
+    /// data. Should be called while `is_handshaking` returns true to ensure all transmitted
+    /// resumption tickets are affected.
+    ///
+    /// Integrity will be assured by rustls, but the data will be visible to the client. If secrecy
+    /// from the client is desired, encrypt the data separately.
+    pub fn set_resumption_data(&mut self, data: &[u8]) -> Result<(), Error> {
+        if data.len() >= (1 << 15) {
+            return Err(ApiMisuse::ResumptionDataTooLarge.into());
+        }
+        match &mut self.state {
+            Ok(st) => st.set_resumption_data(data),
+            Err(e) => Err(e.clone()),
+        }
+    }
+}
+
+impl<Side: SideData> Connection<Side, Tcp> {
+    fn into_handshake(self) -> Result<Side::Handshake, Error> {
+        Side::Handshake::try_from(self)
+    }
+}
+
+impl<S: SideData, T: Transport> fmt::Debug for Connection<S, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Self {
+            state: _,
+            side,
+            common,
+            transport: _,
+        } = self;
+
+        f.debug_struct("Connection")
+            .field("side", side)
+            .field("common", common)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<Side: SideData, T: Transport> Deref for Connection<Side, T> {
+    type Target = CommonState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.common
+    }
+}
+
+/// Driver for handling messages from the [`TlsInputBuffer`].
+///
+/// Must be driven to completion to make progress, by calling either [`Self::handle_all()`] or
+/// repeatedly calling [`Self::next_payload()`] until it returns `None`.
+///
+/// Backpressure is provided by the [`TlsInputBuffer`] implementation. When using a [`VecInput`]
+/// buffer, [`VecInput::read()`] will not ingest more data once the internal buffer is full.
+#[must_use]
+pub struct MessageHandler<'a, 'm, Side: SideData> {
+    iter: MessageIter<'a, 'm, Side, SendPath>,
+    done: bool,
+}
+
+impl<'a, 'm, Side: SideData> MessageHandler<'a, 'm, Side> {
+    pub(crate) fn new(
+        input: &'m mut dyn TlsInputBuffer,
+        tls: &'a mut Vec<u8>,
+        conn: &'a mut Connection<Side, impl Transport>,
+    ) -> Self {
+        Self {
+            iter: MessageIter::new(input, tls, conn, MessageIterMode::All),
+            done: false,
+        }
+    }
+}
+
+impl<'a, 'm, Side: SideData> MessageHandler<'a, 'm, Side> {
+    /// Handles all complete messages from the input buffer.
+    ///
+    /// Writes any plaintext application data from the input into `buf`, and returns the I/O
+    /// state of the connection after processing the last message. If an error is returned,
+    /// the connection is in a fatal error state and no further progress can be made. After
+    /// an error is received from this function, you should not continue to fill up the buffer.
+    ///
+    /// However, you may call the other methods on the connection, including
+    /// [`Connection::send_close_notify()`]. Any alert produced by the error will have
+    /// been appended to the `tls` buffer; most likely you will want to send that data
+    /// to the peer and then close the underlying connection.
+    pub fn handle_all(mut self, buf: &mut Vec<u8>) -> Result<IoState, Error> {
+        while let Some(result) = self.next_payload() {
+            buf.extend_from_slice(result?.bytes());
+        }
+
+        Ok(self.state())
+    }
+
+    /// Yields the first payload of plaintext application data from the input buffer.
+    ///
+    /// Should be called repeatedly until it returns `None`, at which point the input buffer no
+    /// longer contains any complete messages and should be refilled by the application.
+    ///
+    /// Early ("0-RTT") data received by a server while the handshake is still in progress
+    /// is not yielded here; it is only available from
+    /// [`next_early_data()`][MessageHandler::next_early_data] and is dropped if
+    /// encountered by this method.
+    pub fn next_payload(&mut self) -> Option<Result<Payload<'_>, Error>> {
+        if self.done {
+            return None;
+        }
+
+        let Some(result) = self.iter.next(false) else {
+            self.done = true;
+            return None;
+        };
+
+        let payload = match result {
+            Ok(payload) => payload,
+            Err(err) => {
+                self.done = true;
+                return Some(Err(err));
+            }
+        };
+
+        Some(Ok(
+            payload.reborrow(&Delocator::new(self.iter.input.slice_mut()))
+        ))
+    }
+
+    /// The I/O state of the connection after processing the last message.
+    pub fn state(self) -> IoState {
+        IoState::new(self.iter.recv)
+    }
+}
+
+impl<'a, 'm> MessageHandler<'a, 'm, ServerSide> {
+    /// Yields the next payload application data received from the client.
+    ///
+    /// Early data is only received during the handshake, from clients resuming an earlier
+    /// session, and only if the connection was configured with a non-zero
+    /// [`ServerConfig::max_early_data_size`][crate::ServerConfig::max_early_data_size].
+    ///
+    /// **Beware** that early data is subject to replay by an attacker; see [RFC 8446
+    /// appendix E.5][] for more detail.
+    ///
+    /// Call this until it returns `None` before processing regular application data with
+    /// [`next_payload()`][MessageHandler::next_payload] or
+    /// [`handle_all()`][MessageHandler::handle_all]: early data encountered by those
+    /// methods is dropped.
+    ///
+    /// `None` means no early data is currently available: the early data phase may have
+    /// ended, or processing may require further input.
+    ///
+    /// If this yields an error, stop calling it: the same error will also be reported by
+    /// [`next_payload()`][MessageHandler::next_payload] and
+    /// [`handle_all()`][MessageHandler::handle_all], so it can be ignored here.
+    ///
+    /// [RFC 8446 appendix E.5]: https://datatracker.ietf.org/doc/html/rfc8446#appendix-E.5
+    pub fn next_early_data(&mut self) -> Option<Result<Payload<'_>, Error>> {
+        if self.done {
+            return None;
+        }
+
+        if let Ok(state) = &self.iter.state {
+            if state.is_traffic() {
+                return None; // early data phase has ended
+            }
+        }
+
+        // Not marking the handler as done: traffic data may still follow in the input buffer.
+        let result = self.iter.next(true)?;
+        let payload = match result {
+            Ok(payload) => payload,
+            Err(err) => return Some(Err(err)),
+        };
+
+        Some(Ok(
+            payload.reborrow(&Delocator::new(self.iter.input.slice_mut()))
+        ))
+    }
+}
+
+impl<'a, 'm, Side: SideData + private::Side> Drop for MessageHandler<'a, 'm, Side> {
+    fn drop(&mut self) {
+        let MessageIter { input, recv, .. } = &mut self.iter;
+        input.discard(recv.deframer.take_discard());
+    }
+}
+
+impl<S: SideData> fmt::Debug for MessageHandler<'_, '_, S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MessageHandler")
+            .field("done", &self.done)
+            .finish_non_exhaustive()
+    }
+}
+
+/// More data needs to be supplied to make progress.
+///
+/// Provide the data to [`Self::process()`].
+pub struct NeedsInput<Side: SideData>(pub(crate) Connection<Side, Tcp>);
+
+impl<Side: SideData> NeedsInput<Side> {
+    pub(crate) fn new(inner: Connection<Side, Tcp>) -> Self {
+        Self(inner)
+    }
+
+    /// Progress the handshake by receiving further data.
+    ///
+    /// The data is obtained via `input`.  Any output produced is appended to `tls` and
+    /// should be sent to the peer (including if this function returns an error, because
+    /// `tls` may contain an alert.)
+    ///
+    /// An error from this function is otherwise fatal to the connection, as it consumes
+    /// the [`NeedsInput`] object.
+    ///
+    /// On success, this returns a handshake object specifying what to do to progress
+    /// the connection.  If this contains another [`NeedsInput`] object then obtaining more
+    /// input (eg, from a socket or other source) is certainly necessary.
+    pub fn process(
+        mut self,
+        input: &mut dyn TlsInputBuffer,
+        tls: &mut Vec<u8>,
+    ) -> Result<Side::Handshake, Error> {
+        self.0.process(input, tls)?;
+        self.0.into_handshake()
+    }
+
+    #[doc = include_str!("../doc/early_exporter.md")]
+    pub fn early_exporter(&mut self) -> Result<KeyingMaterialExporter, Error> {
+        self.0.common.early_exporter()
+    }
+}
+
+impl<S: SideData> fmt::Debug for NeedsInput<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NeedsInput")
+            .finish_non_exhaustive()
+    }
+}
+
+/// Dynamically-dispatched state machine, to maintain static unreachability of
+/// per-protocol-version code.
+pub(crate) trait State<Side: SideData>: Send + Sync {
+    /// Advance the state machine using `input` and emitting data to `output`.
+    fn handle<'m>(
+        self: Box<Self>,
+        input: Input<'m>,
+        output: &mut dyn Output<'m>,
+    ) -> Result<Side::State, Error>;
+
+    fn is_traffic(&self) -> bool {
+        false
+    }
+
+    fn handle_decrypt_error(&mut self) {}
+
+    fn into_external_state(
+        self: Box<Self>,
+        _send_keys: &Option<Box<KeyScheduleTrafficSend>>,
+    ) -> Result<(PartiallyExtractedSecrets, Box<dyn KernelState + 'static>), Error> {
+        Err(Error::HandshakeNotComplete)
+    }
+}
+
+/// Trait to maintain static unreachablity of per-protocol-version code.
+pub(crate) trait VerifySidePeerIdentity<Side: SideData>: Send + Sync {
+    fn presented_identity(&self) -> Result<Side::PeerIdentity<'_>, Error>;
+    fn verify_with_config(&self) -> Result<VerifiedIdentity<'static>, Error>;
+    fn continue_with(
+        self: Box<Self>,
+        verified: VerifiedIdentity<'static>,
+        output: &mut dyn Output<'_>,
+    ) -> Result<Side::State, Error>;
+}
+
+/// An object of this type can export keying material.
+pub struct KeyingMaterialExporter {
+    pub(crate) inner: Box<dyn Exporter>,
+}
+
+impl KeyingMaterialExporter {
+    /// Derives key material from the agreed connection secrets.
+    ///
+    /// This function fills in `output` with `output.len()` bytes of key
+    /// material derived from a master connection secret using `label`
+    /// and `context` for diversification. Ownership of the buffer is taken
+    /// by the function and returned via the Ok result to ensure no key
+    /// material leaks if the function fails.
+    ///
+    /// See [RFC 5705][] for more details on what this does and is for.  In
+    /// other libraries this is often named `SSL_export_keying_material()`
+    /// or `SslExportKeyingMaterial()`.
+    ///
+    /// This function is not meaningful if `output.len()` is zero and will
+    /// return an error in that case.
+    ///
+    /// [RFC 5705]: https://datatracker.ietf.org/doc/html/rfc5705
+    pub fn derive<T: AsMut<[u8]>>(
+        &self,
+        label: &[u8],
+        context: Option<&[u8]>,
+        mut output: T,
+    ) -> Result<T, Error> {
+        if output.as_mut().is_empty() {
+            return Err(ApiMisuse::ExporterOutputZeroLength.into());
+        }
+
+        self.inner
+            .derive(label, context, output.as_mut())
+            .map(|_| output)
+    }
+}
+
+impl fmt::Debug for KeyingMaterialExporter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("KeyingMaterialExporter")
+            .finish_non_exhaustive()
+    }
+}
+
+/// This trait is for any object that can export keying material.
+///
+/// The terminology comes from [RFC 5705](https://datatracker.ietf.org/doc/html/rfc5705)
+/// but doesn't really involve "exporting" key material (in the usual meaning of "export"
+/// -- of moving an artifact from one domain to another) but is best thought of as key
+/// diversification using an existing secret.  That secret is implicit in this interface,
+/// so is assumed to be held by `self`. The secret should be zeroized in `drop()`.
+///
+/// There are several such internal implementations, depending on the context
+/// and protocol version.
+pub(crate) trait Exporter: Send + Sync {
+    /// Fills in `output` with derived keying material.
+    ///
+    /// This is deterministic depending on a base secret (implicit in `self`),
+    /// plus the `label` and `context` values.
+    ///
+    /// Must fill in `output` entirely, or return an error.
+    fn derive(&self, label: &[u8], context: Option<&[u8]>, output: &mut [u8]) -> Result<(), Error>;
+}
+
+#[derive(Debug)]
+pub(crate) struct ConnectionRandoms {
+    pub(crate) client: [u8; 32],
+    pub(crate) server: [u8; 32],
+}
+
+impl ConnectionRandoms {
+    pub(crate) fn new(client: Random, server: Random) -> Self {
+        Self {
+            client: client.0,
+            server: server.0,
+        }
+    }
+}
+
+/// Describes the current I/O state of a TLS connection.
+///
+/// Values of this structure are returned from operations on [`MessageHandler`]s.
+#[derive(Debug, Eq, PartialEq)]
+pub struct IoState {
+    peer_has_closed: bool,
+}
+
+impl IoState {
+    pub(crate) fn new(recv: &ReceivePath) -> Self {
+        Self {
+            peer_has_closed: recv.has_received_close_notify,
+        }
+    }
+
+    /// True if the peer has sent us a close_notify alert.
+    ///
+    /// This is the TLS mechanism to securely half-close a TLS connection, and signifies that
+    /// the peer will not send any further data on this connection.
+    pub fn peer_has_closed(&self) -> bool {
+        self.peer_has_closed
+    }
+}
+
+pub(crate) struct SideCommonOutput<'a, 'q> {
+    pub(crate) side: &'a mut dyn SideOutput,
+    pub(crate) quic: Option<&'q mut dyn QuicOutput>,
+    pub(crate) common: &'a mut CommonState,
+    pub(crate) tls: &'a mut Vec<u8>,
+}
+
+impl<'q> Output<'_> for SideCommonOutput<'_, 'q> {
+    fn emit(&mut self, ev: Event) {
+        self.side.emit(ev);
+    }
+
+    fn output(&mut self, ev: OutputEvent<'_>) {
+        if let OutputEvent::ProtocolVersion(ver) = ev {
+            self.common.recv.negotiated_version = Some(ver);
+            self.common.send.negotiated_version(ver);
+        }
+        self.common.outputs.handle(ev);
+    }
+
+    fn send_msg(&mut self, m: Message<'_>, must_encrypt: bool) -> Result<(), Error> {
+        match self.quic() {
+            Some(quic) => {
+                quic.send_msg(m, must_encrypt);
+                Ok(())
+            }
+            None => self
+                .common
+                .send
+                .send_msg(m, must_encrypt, self.tls),
+        }
+    }
+
+    fn quic(&mut self) -> Option<&mut dyn QuicOutput> {
+        match self.quic.as_mut() {
+            Some(q) => Some(&mut **q),
+            None => None,
+        }
+    }
+
+    fn start_traffic(&mut self) {
+        self.common
+            .recv
+            .may_receive_application_data = true;
+        self.common
+            .send
+            .start_outgoing_traffic();
+    }
+
+    fn receive(&mut self) -> &mut ReceivePath {
+        &mut self.common.recv
+    }
+
+    fn send(&mut self) -> &mut dyn SendOutput {
+        &mut self.common.send
+    }
+}
+
+/// Data specific to the peer's side (client or server).
+#[expect(private_bounds)]
+pub trait SideData: SideOutput + fmt::Debug + private::Side + Sized + 'static {
+    /// Type representing an in-progress TCP handshake.
+    type Handshake: TryFrom<Connection<Self, Tcp>, Error = Error>;
+    /// Type representing an in-progress QUIC handshake.
+    type QuicHandshake: quic::FromConn<Self>;
+
+    /// Type representing the peer's identity.
+    type PeerIdentity<'a>;
+}
+
+pub(crate) mod private {
+    use super::*;
+
+    pub(crate) trait Side: fmt::Debug {
+        /// State machine type.
+        type State: StateMachine;
+    }
+
+    pub(crate) trait SideOutput {
+        fn emit(&mut self, ev: Event);
+    }
+}
+
+use private::SideOutput;
+
+pub(crate) trait StateMachine: Sized {
+    /// Advance the state machine using `input` and emitting data to `output`.
+    fn handle<'m>(self, input: Input<'m>, output: &mut dyn Output<'m>) -> Result<Self, Error>;
+
+    /// Return true if the current state requires input to be provided via `handle()`.
+    fn wants_input(&self) -> bool;
+
+    /// Advance the state machine using no input, emitting data to `output`.
+    ///
+    /// This should return `Ok(self)` if the current state requires input.
+    fn handle_without_input(self, output: &mut dyn Output<'_>) -> Result<Self, Error>;
+
+    fn is_traffic(&self) -> bool;
+    fn handle_decrypt_error(&mut self);
+    fn into_external_state(
+        self,
+        send_keys: &Option<Box<KeyScheduleTrafficSend>>,
+    ) -> Result<(PartiallyExtractedSecrets, Box<dyn KernelState + 'static>), Error>;
+}
+
+/// When to take action to avoid sequence space exhaustion.
+///
+/// This gives a margin in which any action can have an effect, prior to `SEQ_HARD_LIMIT`
+/// being reached.
+const SEQ_SOFT_LIMIT: u64 = u64::MAX - 0xffff;
+
+/// When to refuse further encryptions.
+const SEQ_HARD_LIMIT: u64 = u64::MAX - 1;

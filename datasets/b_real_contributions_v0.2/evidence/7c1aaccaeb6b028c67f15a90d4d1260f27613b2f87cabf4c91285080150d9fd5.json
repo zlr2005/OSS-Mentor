@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "OpenRefine/OpenRefine",
+    "id": 6220644,
+    "language": "Java",
+    "private": false,
+    "size": 407945
+  },
+  "observed_at": "2026-10-26T08:37:38.200940+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2243e3cba4083389994e2235c4cb1d0f034af2c7e9793368780bc458f0d9b997",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "70d24deca5ef4ce9c155e0764f512efa5da36f898be4a3538d0e5ca212b8b649",
+  "source_url": "https://api.github.com/repos/OpenRefine/OpenRefine",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 45283723,
+      "login": "oliver139",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-06T02:54:49Z",
+      "committer_at": "2026-10-06T02:54:49Z",
+      "tree_sha": "3728a1f5edcb3fddc0e22063b29d7f59eff22f18"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "44692d76296acb14b0657e3c82e09b4aa7326e12"
+  },
+  "observed_at": "2026-10-26T15:39:22.877584+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "25f1e3f905c84e0bd64792bbfdf62f2abd0bd7651fcbb0419cc497d9f7ccf37f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fb42caf11e87ec01533fc1b7c87142cd62f3aff6aa09a231f7b723aeb06f5fbe",
+  "source_url": "https://api.github.com/repos/vueuse/vueuse/commits/44692d76296acb14b0657e3c82e09b4aa7326e12?per_page=100",
+  "status_code": 200
+}

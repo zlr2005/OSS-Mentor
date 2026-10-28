@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "swagger-api/swagger-parser",
+    "id": 18997610,
+    "language": "Java",
+    "private": false,
+    "size": 9548
+  },
+  "observed_at": "2026-10-26T14:50:54.273814+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a86e0e5379c7cf555af9ff813bb9df076a0e4b8a77296619117877340390484f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5a1ede66a2c06fc17ad487883103145718e9a5361f832086dbf4030ba52ed635",
+  "source_url": "https://api.github.com/repos/swagger-api/swagger-parser",
+  "status_code": 200
+}

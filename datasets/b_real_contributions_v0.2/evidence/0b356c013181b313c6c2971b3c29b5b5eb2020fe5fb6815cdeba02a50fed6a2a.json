@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "vueuse/vueuse",
+    "id": 227978903,
+    "language": "TypeScript",
+    "private": false,
+    "size": 17946
+  },
+  "observed_at": "2026-10-26T15:38:02.998441+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2f5a740a577fdd6fbc10e4a4893a53e2db26f4577376a91c8be08727ac0e52c6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c59efa9871a0ee649482beb633f1ec7f834a5f36cdf3c42b513b43175b968a94",
+  "source_url": "https://api.github.com/repos/vueuse/vueuse",
+  "status_code": 200
+}

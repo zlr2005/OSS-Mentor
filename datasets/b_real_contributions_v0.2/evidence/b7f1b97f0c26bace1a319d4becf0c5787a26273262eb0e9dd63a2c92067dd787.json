@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "python/typeshed",
+    "id": 31696383,
+    "language": "Python",
+    "private": false,
+    "size": 33801
+  },
+  "observed_at": "2026-10-26T13:18:24.470695+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9b4d8ce32cf99e26386ce27e94d9c951364e2576cc1fa5a1630767b876d58063",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9f7feaa3436c7b2f3262461e06f965bef0122603775e5596ddcbdfa1e6c26788",
+  "source_url": "https://api.github.com/repos/python/typeshed",
+  "status_code": 200
+}

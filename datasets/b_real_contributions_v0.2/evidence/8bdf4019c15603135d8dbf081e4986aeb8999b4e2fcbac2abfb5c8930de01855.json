@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 266888224,
+      "login": "jiwoo1222",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T15:17:02Z",
+      "committer_at": "2026-10-19T15:17:02Z",
+      "tree_sha": "5020ae64a3e3e5e380b295a0c326b920a29822b7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a982d5b20b013d540a5a979a6335d782dcdcbd78"
+  },
+  "observed_at": "2026-10-26T14:54:49.059994+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "13768f318d0bbfc6be676f607e5b2aafd8733ad80e0e43c3690d83f91ebf0867",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5b16f9e15abebd31cd92bb70d28f365fc9c91882a58b48a54bbb483d880ed1d6",
+  "source_url": "https://api.github.com/repos/tailwindlabs/tailwindcss/commits/a982d5b20b013d540a5a979a6335d782dcdcbd78?per_page=100",
+  "status_code": 200
+}

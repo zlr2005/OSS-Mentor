@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "98955b57060ed54dc1be965a3f0d8276c6bc85b1",
+    "size": 3288
+  },
+  "observed_at": "2026-10-26T08:29:51.271273+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bc30dbf835bd15f7044e15ff16a9432152a62d1b404715c889ae8dd39f41e571",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aa2accaf19413e9c2099c8ec50bf38a21835c1ec875da20f0036ddb29f038375",
+  "source_url": "https://api.github.com/repos/nodejs/undici/git/blobs/98955b57060ed54dc1be965a3f0d8276c6bc85b1",
+  "status_code": 200
+}

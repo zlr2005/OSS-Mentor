@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "numpy/numpydoc",
+    "id": 11639513,
+    "language": "Python",
+    "private": false,
+    "size": 900
+  },
+  "observed_at": "2026-10-26T08:31:26.781706+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "058bf9fc940bc073152bf0adcecc6ea6bd8a2c42b6f7fd598f6e11bb551dd9c8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0110a05873fafd115b6432cc9ca6c7a5dc2010350b984b4cdc07f14783c4aeb9",
+  "source_url": "https://api.github.com/repos/numpy/numpydoc",
+  "status_code": 200
+}

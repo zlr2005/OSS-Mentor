@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "ISC",
+    "full_name": "npm/node-semver",
+    "id": 1357199,
+    "language": "JavaScript",
+    "private": false,
+    "size": 1408
+  },
+  "observed_at": "2026-10-26T08:29:57.079232+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d7c3a717181a7ec52c5ddd4d11a6552044a74b966a2e3069dcf47cbc432ff8cf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6d751faff3cecf81647723306c6423d0e56ac88adaf87fa1972fee04dbb19231",
+  "source_url": "https://api.github.com/repos/npm/node-semver",
+  "status_code": 200
+}

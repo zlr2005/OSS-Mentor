@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a29e77f226793c24ebc46e2f67ca4f5e961e0d81",
+    "size": 31949
+  },
+  "observed_at": "2026-10-26T15:30:03.325352+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c44edddab739f892ef86a73d94cdc136be74c53a0f4667d87bc47967d607a850",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4e63d80da36d4b67ec1b34fe343290a1b132841c5ab550c1130d60cccae64c69",
+  "source_url": "https://api.github.com/repos/vavr-io/vavr/git/blobs/a29e77f226793c24ebc46e2f67ca4f5e961e0d81",
+  "status_code": 200
+}

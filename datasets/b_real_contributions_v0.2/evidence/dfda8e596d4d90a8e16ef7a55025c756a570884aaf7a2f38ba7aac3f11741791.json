@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "denoland/deno",
+    "id": 133442384,
+    "language": "Rust",
+    "private": false,
+    "size": 253885
+  },
+  "observed_at": "2026-10-26T06:17:27.132560+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6eb49ae90a19955db2c40f4535eb9af46a852804b9230766e40e602902d2698c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "490a20147e338ced24dfe14c9d545b52488cdbb1dba0c65528f3ff1599b4d763",
+  "source_url": "https://api.github.com/repos/denoland/deno",
+  "status_code": 200
+}

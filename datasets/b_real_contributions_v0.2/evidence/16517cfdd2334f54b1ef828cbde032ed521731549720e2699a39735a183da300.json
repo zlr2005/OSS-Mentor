@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1242887,
+      "login": "davidism",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T18:41:56Z",
+      "committer_at": "2026-10-25T22:50:57Z",
+      "tree_sha": "f133bcb3e1b5679d775a3107a53420842bf0c84f"
+    },
+    "committer": {
+      "id": 1242887,
+      "login": "davidism",
+      "type": "User"
+    },
+    "sha": "c2bc20f67343e8997c6582c57a0cc6c5f4f45556"
+  },
+  "observed_at": "2026-10-26T08:41:45.269052+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "878286192d0872e96b49cf6b8ec20210f5e053f9e429cce0495f2fe14d5ea6d4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0432ed4d04ec2dce98e4b0fa218fc88135b299058305c458742330b3d8a41b86",
+  "source_url": "https://api.github.com/repos/pallets/werkzeug/commits/c2bc20f67343e8997c6582c57a0cc6c5f4f45556?per_page=100",
+  "status_code": 200
+}

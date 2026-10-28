@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "543370ad21c0ab0b83e636277b55725ec74b071e",
+    "size": 4250
+  },
+  "observed_at": "2026-10-26T08:39:43.372709+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c6a3f246c567068f823112003fc0d5a0931fd4dd01dc5cc3b8cd211869bf5f9b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "546723032c192d674b891fa002fa6e9010efe7022c36fb74f923f6816e772c58",
+  "source_url": "https://api.github.com/repos/opentofu/opentofu/git/blobs/543370ad21c0ab0b83e636277b55725ec74b071e",
+  "status_code": 200
+}

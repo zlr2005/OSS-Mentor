@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5717874,
+      "login": "drempapis",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T05:24:51Z",
+      "committer_at": "2026-10-24T05:24:51Z",
+      "tree_sha": "a42e5f7878830ba77e67be6ee4c0fb2656703252"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5a62eae42c2002b83a09d3c1d88571dc12e79072"
+  },
+  "observed_at": "2026-10-27T13:10:26.357488+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2cc64f8c1ef8fccde4b05388193a22a7458a382320d22c16f766480ceb50e937",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ed8183e66e2e11730a74d4b506e42c9af3725de2b1d496e2aa6e4086d3d11574",
+  "source_url": "https://api.github.com/repos/elastic/elasticsearch/commits/5a62eae42c2002b83a09d3c1d88571dc12e79072?per_page=100",
+  "status_code": 200
+}

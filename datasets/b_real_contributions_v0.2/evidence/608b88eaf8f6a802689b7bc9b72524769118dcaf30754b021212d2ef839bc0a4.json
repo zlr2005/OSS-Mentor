@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b5034cd60be139c058b38f3fc138b8e0e9895893",
+    "size": 13408
+  },
+  "observed_at": "2026-10-27T13:47:05.704613+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ebd9d545739c293285eed636cc511ba4993b207e0b698a0da2cbd6df3ad4f54d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9bab1029f036ec2e062ebfafb7405f5a08381fc272a1a4ed3b1c920f63a4ec6c",
+  "source_url": "https://api.github.com/repos/lodash/lodash/git/blobs/b5034cd60be139c058b38f3fc138b8e0e9895893",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 293932686,
+      "login": "mohamed-rdr",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T03:43:10Z",
+      "committer_at": "2026-10-24T03:43:10Z",
+      "tree_sha": "240cd8156d0ebe8ddcfe168b11c005debce4b9e2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "046bb4c6fe413a32ecb6d51eb3ecaa56c8c15b87"
+  },
+  "observed_at": "2026-10-26T08:28:10.082320+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fd2edbe4ceb0d9450348b13617f105a53273b96c2cf41838787bfb6e3e2a20bf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1df6ee5bce35c7493041bd10b5e529bc6fe92829a06eb94d739e9d4306810d86",
+  "source_url": "https://api.github.com/repos/nodejs/undici/commits/046bb4c6fe413a32ecb6d51eb3ecaa56c8c15b87?per_page=100",
+  "status_code": 200
+}

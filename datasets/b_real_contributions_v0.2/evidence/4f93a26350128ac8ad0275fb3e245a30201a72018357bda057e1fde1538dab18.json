@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 104798,
+      "login": "sbrannen",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T14:48:49Z",
+      "committer_at": "2026-10-25T14:48:49Z",
+      "tree_sha": "ed9c60c091a95813e453d3164813739071586295"
+    },
+    "committer": {
+      "id": 104798,
+      "login": "sbrannen",
+      "type": "User"
+    },
+    "sha": "5b62b2cc717830e20a250becabf853017025cfb3"
+  },
+  "observed_at": "2026-10-26T14:23:35.835341+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cb817d86c4351ed4be6e2f34295966d6fc86e0cdcbd727489d328c0306f7723f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6f3b8e80e676090d6024a9fa7d2cfb3c13e8d7a61006a8c2868acfdd6e4c613d",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-framework/commits/5b62b2cc717830e20a250becabf853017025cfb3?per_page=100",
+  "status_code": 200
+}

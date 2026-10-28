@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 62500,
+      "login": "merlimat",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T02:35:11Z",
+      "committer_at": "2026-10-24T02:35:11Z",
+      "tree_sha": "cb383ccfd5c656b847ee2af6e666d363832f528c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8ed1409e3e27bcf564e68463d2afa057288235c5"
+  },
+  "observed_at": "2026-10-26T05:31:24.223067+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f2a334991ae1462243862e7e08a7634a4e937f51d5baa5b01bd31984f51c8294",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2f22154820028af0c6bf8d2a19df1c5ea2f0d9b0b712c02ff0c5e8834a4a02b7",
+  "source_url": "https://api.github.com/repos/apache/pulsar/commits/8ed1409e3e27bcf564e68463d2afa057288235c5?per_page=100",
+  "status_code": 200
+}

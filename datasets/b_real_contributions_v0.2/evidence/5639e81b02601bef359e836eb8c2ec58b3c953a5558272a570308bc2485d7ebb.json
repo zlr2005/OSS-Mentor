@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "etcd-io/etcd",
+    "id": 11225014,
+    "language": "Go",
+    "private": false,
+    "size": 99831
+  },
+  "observed_at": "2026-10-26T06:35:11.197446+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "795918962c6a64d45b9db04f33b17b3e28b4cdb856ae7589d60b79b4717fb9b9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9813c969fa1286d6103282aced2ae8a4df4cdac2e1903c1c8c25f881b7f5fbe5",
+  "source_url": "https://api.github.com/repos/etcd-io/etcd",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 382613,
+      "login": "joel-costigliola",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T12:56:52Z",
+      "committer_at": "2026-10-21T13:00:01Z",
+      "tree_sha": "46735024ee3cbcad3cd61de6bdd6526bc465cae3"
+    },
+    "committer": {
+      "id": 382613,
+      "login": "joel-costigliola",
+      "type": "User"
+    },
+    "sha": "055eb8aaa2dd0c9eede5aeeba9273202a6834030"
+  },
+  "observed_at": "2026-10-26T05:43:53.868617+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6697fb883e6f3268cc1a57263c51bc07178e688ba55044642483eddd43238d21",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f0c234f917af93f7d2fa80ea3bb0aad7a8f9860961cd36f48827b29129f838e",
+  "source_url": "https://api.github.com/repos/assertj/assertj/commits/055eb8aaa2dd0c9eede5aeeba9273202a6834030?per_page=100",
+  "status_code": 200
+}

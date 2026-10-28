@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "AGPL-3.0",
+    "full_name": "BigPizzaV3/CodexPlusPlus",
+    "id": 1230751102,
+    "language": "Rust",
+    "private": false,
+    "size": 67875
+  },
+  "observed_at": "2026-10-26T05:54:44.150150+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7f62ca1de6b8400337666b3846aead3f7be572ba78a1dadcc1d3e3c376492ccb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "60042063d91153dac323e608fb2a30077ffb2139c193ae8950bdc5f798367790",
+  "source_url": "https://api.github.com/repos/BigPizzaV3/CodexPlusPlus",
+  "status_code": 200
+}

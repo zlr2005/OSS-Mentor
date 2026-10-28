@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "angular/angular",
+    "id": 24195339,
+    "language": "TypeScript",
+    "private": false,
+    "size": 669436
+  },
+  "observed_at": "2026-10-26T05:04:28.064590+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4fc4fec03e09a48e2f0d746d2a5f44ff5e0ffc4eb392f9f901032560eb9080b0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "36da0c3a5f6cf7cc179d2d3e943a7bcfa327fc3ca05eda1c4f5660b481d0d20f",
+  "source_url": "https://api.github.com/repos/angular/angular",
+  "status_code": 200
+}

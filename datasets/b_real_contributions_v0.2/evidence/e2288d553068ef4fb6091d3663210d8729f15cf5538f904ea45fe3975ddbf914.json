@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2133137,
+      "login": "andrewor14",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T19:30:51Z",
+      "committer_at": "2026-10-22T19:30:51Z",
+      "tree_sha": "f66ad5f6024715b628b28b5cc28949a17e0a67e1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "6d99941b3a433e27ad086f402cb4e8d2963ee52c"
+  },
+  "observed_at": "2026-10-27T15:34:24.279247+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "60d66f0c167a7c4b6883491fb09affcddfd09c469dfaa8fdf1817f493546d5a2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "57fc2544b6344bcd3c2e86818a21fe1284ed27f1fbca8ae2421bfea0b9c971f3",
+  "source_url": "https://api.github.com/repos/pytorch/ao/commits/6d99941b3a433e27ad086f402cb4e8d2963ee52c?per_page=100",
+  "status_code": 200
+}

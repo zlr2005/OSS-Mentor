@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "diesel-rs/diesel",
+    "id": 41609775,
+    "language": "Rust",
+    "private": false,
+    "size": 154465
+  },
+  "observed_at": "2026-10-26T06:19:45.204881+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f7223f36b205914d4e9ed603bda2d651dea02a791cf6a08a617acc169539c5f1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c90efc93bad661ad296b44f486541bca8c5ebd607d30e33ef703e5b25b7acb6f",
+  "source_url": "https://api.github.com/repos/diesel-rs/diesel",
+  "status_code": 200
+}

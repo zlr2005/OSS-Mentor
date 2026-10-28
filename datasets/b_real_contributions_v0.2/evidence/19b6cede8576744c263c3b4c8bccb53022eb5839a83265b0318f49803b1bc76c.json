@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "crossbeam-rs/crossbeam",
+    "id": 35566048,
+    "language": "Rust",
+    "private": false,
+    "size": 4459
+  },
+  "observed_at": "2026-10-26T06:13:26.704063+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d5bd77c466d3cef25fe9afe289b50d9a8a0340d84ee58e856aa056b2c5486373",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e1b515a0624ce8bd07c5ad7b889383ffb35286494eb2c38e9aa5abf74cc60b02",
+  "source_url": "https://api.github.com/repos/crossbeam-rs/crossbeam",
+  "status_code": 200
+}

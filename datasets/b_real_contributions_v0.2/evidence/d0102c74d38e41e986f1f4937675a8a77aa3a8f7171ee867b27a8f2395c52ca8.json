@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pypa/pip",
+    "id": 1446467,
+    "language": "Python",
+    "private": false,
+    "size": 75925
+  },
+  "observed_at": "2026-10-26T13:09:56.883598+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "406a32de36a527a41dc9258ac05fbb1cfa231f919fe78d3b8cea6084f00d3ed1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fe2cec02fcf2a6099f641670c87f6b373f2f26d633cc4fde929bbdd908591d02",
+  "source_url": "https://api.github.com/repos/pypa/pip",
+  "status_code": 200
+}

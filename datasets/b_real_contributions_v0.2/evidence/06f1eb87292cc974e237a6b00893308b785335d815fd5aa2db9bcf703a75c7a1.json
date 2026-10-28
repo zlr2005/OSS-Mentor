@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": null,
+    "full_name": "acornjs/acorn",
+    "id": 5932749,
+    "language": "JavaScript",
+    "private": false,
+    "size": 6641
+  },
+  "observed_at": "2026-10-26T04:59:59.715996+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "86c97e30108577f2dcd8bad212e9b64f7e612428490af0d367b51b4562748a20",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e34f2ba5d7edd69e6209d4b1a9d10db217cb8d43cdaa021d8c21d67b127e80cd",
+  "source_url": "https://api.github.com/repos/acornjs/acorn",
+  "status_code": 200
+}

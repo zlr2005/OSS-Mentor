@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "283b115409743768a3f250b7a7d4a98efc9898d1",
+    "size": 2925
+  },
+  "observed_at": "2026-10-26T15:28:56.781863+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1a7c148b0a9bbdf6cf08067c60bd90b995cfeba935694e05cd9b01658113418a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "916df15623b0b50158394350bd122abf3ec00e9c720666091d84bd5c7a7afdb6",
+  "source_url": "https://api.github.com/repos/validatorjs/validator.js/git/blobs/283b115409743768a3f250b7a7d4a98efc9898d1",
+  "status_code": 200
+}

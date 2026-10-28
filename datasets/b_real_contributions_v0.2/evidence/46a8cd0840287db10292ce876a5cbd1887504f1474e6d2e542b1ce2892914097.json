@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-2-Clause",
+    "full_name": "numba/numba",
+    "id": 3659275,
+    "language": "Python",
+    "private": false,
+    "size": 87668
+  },
+  "observed_at": "2026-10-26T08:30:47.567399+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fd479d2bebd08de0347430e076be4f3c1f1779a0836f61d3735498522d819509",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "435e95224cc30d2fafaa46d25b65768b36db65507547704992858ad38867666e",
+  "source_url": "https://api.github.com/repos/numba/numba",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 124257101,
+      "login": "pikammmmm",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-27T01:02:03Z",
+      "committer_at": "2026-08-27T01:02:03Z",
+      "tree_sha": "2602ffc2ccd1f324ec1c8f5a268eef6004e7af8b"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3fd8e9486b30b3e6c8121d5ea136556838d010d5"
+  },
+  "observed_at": "2026-10-26T07:23:09.875710+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "50e55bb00b1843a0e260ab6a388305b65ef135553d85e57896cd148967990db6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f00c9de8e14967a1e04457086ba945d790aae3c81c9cb035b7019d27cd456650",
+  "source_url": "https://api.github.com/repos/highlightjs/highlight.js/commits/3fd8e9486b30b3e6c8121d5ea136556838d010d5?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8f51d274654d51e9ffc4f8f4f20f8d34342bcf4b",
+    "size": 5315
+  },
+  "observed_at": "2026-10-26T05:33:08.326780+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dbd5aeaa059c757a75a2abae5c322cda2e13f68f3fbf4136620dbf66a5699aca",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0201a9ee86a20fc1cfa987b8223d9df261a546de414b39d85d2e72f26ad8ee3d",
+  "source_url": "https://api.github.com/repos/apache/rocketmq/git/blobs/8f51d274654d51e9ffc4f8f4f20f8d34342bcf4b",
+  "status_code": 200
+}

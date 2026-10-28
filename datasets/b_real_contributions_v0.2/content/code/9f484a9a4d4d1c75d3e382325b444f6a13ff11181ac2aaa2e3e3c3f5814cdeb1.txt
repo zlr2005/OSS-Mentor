@@ -1,0 +1,464 @@
+from __future__ import annotations
+
+import asyncio
+from typing import TYPE_CHECKING, Any
+from unittest import mock
+
+import pytest
+from twisted.internet.defer import CancelledError, Deferred, DeferredList
+from twisted.python import failure
+
+from scrapy import Spider, signals
+from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
+from scrapy.exceptions import CannotResolveHostError, IgnoreRequest, NotConfigured
+from scrapy.http import Request, Response, TextResponse
+from scrapy.http.request import NO_CALLBACK
+from scrapy.settings import Settings
+from scrapy.utils.asyncio import call_later, sleep
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
+from tests.utils.robotstxt import rerp_available
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from tests.mockserver.http import MockServer
+
+
+class TestRobotsTxtMiddleware:
+    def setup_method(self) -> None:
+        self.crawler: mock.MagicMock = mock.MagicMock()
+        self.crawler.settings = Settings()
+        self.crawler.engine.download_async = mock.AsyncMock()
+        self.crawler.signals.send_catch_log_async = mock.AsyncMock(return_value=[])
+
+    def teardown_method(self):
+        del self.crawler
+
+    def test_robotstxt_settings(self):
+        self.crawler.settings = Settings()
+        self.crawler.settings.set("USER_AGENT", "CustomAgent")
+        with pytest.raises(NotConfigured):
+            build_from_crawler(RobotsTxtMiddleware, self.crawler)
+
+    def _get_successful_crawler(self) -> mock.MagicMock:
+        crawler = self.crawler
+        crawler.settings.set("ROBOTSTXT_OBEY", True)
+        ROBOTS = """
+User-Agent: *
+Disallow: /admin/
+Disallow: /static/
+# taken from https://en.wikipedia.org/robots.txt
+Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
+Disallow: /wiki/Käyttäjä:
+User-Agent: UnicödeBöt
+Disallow: /some/randome/page.html
+""".encode()
+        response = TextResponse("http://site.local/robots.txt", body=ROBOTS)
+
+        async def return_response(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.callback, response)
+            return await maybe_deferred_to_future(deferred)
+
+        crawler.engine.download_async.side_effect = return_response
+        return crawler
+
+    @coroutine_test
+    async def test_robotstxt(self):
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        self.assertRobotsTxtRequested("http://site.local")
+        await self.assertIgnored(Request("http://site.local/admin/main"), middleware)
+        await self.assertIgnored(Request("http://site.local/static/"), middleware)
+        await self.assertIgnored(
+            Request("http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:"), middleware
+        )
+        await self.assertIgnored(
+            Request("http://site.local/wiki/Käyttäjä:"), middleware
+        )
+
+    @coroutine_test
+    async def test_robotstxt_emits_robots_parsed_signal(self):
+        crawler = self._get_successful_crawler()
+        middleware = RobotsTxtMiddleware(crawler)
+        request = Request("http://site.local/allowed")
+        await self.assertNotIgnored(request, middleware)
+        calls = [
+            kwargs
+            for _, kwargs in crawler.signals.send_catch_log_async.call_args_list
+            if kwargs.get("signal") is signals.robots_parsed
+        ]
+        assert len(calls) == 1
+        assert calls[0]["request"] is request
+        assert calls[0]["robotparser"] is not None
+        assert calls[0]["response"].url == "http://site.local/robots.txt"
+
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        d1 = deferred_from_coro(
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        )
+        d2 = deferred_from_coro(
+            self.assertIgnored(Request("http://site.local/admin/main"), middleware)
+        )
+        d3 = deferred_from_coro(
+            self.assertIgnored(Request("http://site.local/static/"), middleware)
+        )
+        await maybe_deferred_to_future(
+            DeferredList([d1, d2, d3], fireOnOneErrback=True)
+        )
+
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_asyncio(self) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        await asyncio.gather(
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware),
+            self.assertIgnored(Request("http://site.local/admin/main"), middleware),
+            self.assertIgnored(Request("http://site.local/static/"), middleware),
+        )
+
+    @coroutine_test
+    async def test_robotstxt_multiple_reqs_cancelled(self) -> None:
+        """Cancelling one request doesn't affect others."""
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        release: Deferred[None] = Deferred()
+
+        async def return_response(request: Request) -> Response:
+            await maybe_deferred_to_future(release)
+            return TextResponse(request.url, body=b"User-Agent: *\nDisallow: /admin/")
+
+        self.crawler.engine.download_async.side_effect = return_response
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        d1 = deferred_from_coro(
+            self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        )
+        d2 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/admin/1"))
+        )
+        d3 = deferred_from_coro(
+            self.assertIgnored(Request("http://site.local/admin/2"), middleware)
+        )
+        await sleep(0)
+        d2.cancel()
+        with pytest.raises((CancelledError, asyncio.CancelledError)):
+            await maybe_deferred_to_future(d2)
+        release.callback(None)
+        await maybe_deferred_to_future(DeferredList([d1, d3], fireOnOneErrback=True))
+
+    @coroutine_test
+    async def test_robotstxt_ready_parser(self):
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+
+    @coroutine_test
+    async def test_robotstxt_meta(self):
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        meta = {"dont_obey_robotstxt": True}
+        await self.assertNotIgnored(
+            Request("http://site.local/allowed", meta=meta), middleware
+        )
+        await self.assertNotIgnored(
+            Request("http://site.local/admin/main", meta=meta), middleware
+        )
+        await self.assertNotIgnored(
+            Request("http://site.local/static/", meta=meta), middleware
+        )
+
+    def _get_garbage_crawler(self) -> mock.MagicMock:
+        crawler = self.crawler
+        crawler.settings.set("ROBOTSTXT_OBEY", True)
+        response = Response(
+            "http://site.local/robots.txt", body=b"GIF89a\xd3\x00\xfe\x00\xa2"
+        )
+
+        async def return_response(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.callback, response)
+            return await maybe_deferred_to_future(deferred)
+
+        crawler.engine.download_async.side_effect = return_response
+        return crawler
+
+    @coroutine_test
+    async def test_robotstxt_garbage(self):
+        # garbage response should be discarded, equal 'allow all'
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_garbage_crawler()
+        )
+        await self.assertNotIgnored(Request("http://site.local"), middleware)
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        await self.assertNotIgnored(Request("http://site.local/admin/main"), middleware)
+        await self.assertNotIgnored(Request("http://site.local/static/"), middleware)
+
+    def _get_emptybody_crawler(self) -> mock.MagicMock:
+        crawler = self.crawler
+        crawler.settings.set("ROBOTSTXT_OBEY", True)
+        response = Response("http://site.local/robots.txt")
+
+        async def return_response(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.callback, response)
+            return await maybe_deferred_to_future(deferred)
+
+        crawler.engine.download_async.side_effect = return_response
+        return crawler
+
+    @coroutine_test
+    async def test_robotstxt_empty_response(self):
+        # empty response should equal 'allow all'
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_emptybody_crawler()
+        )
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        await self.assertNotIgnored(Request("http://site.local/admin/main"), middleware)
+        await self.assertNotIgnored(Request("http://site.local/static/"), middleware)
+
+    @coroutine_test
+    async def test_robotstxt_error(self, caplog: pytest.LogCaptureFixture) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        err = CannotResolveHostError("Robotstxt address not found")
+
+        async def return_failure(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.errback, failure.Failure(err))
+            return await maybe_deferred_to_future(deferred)
+
+        self.crawler.engine.download_async.side_effect = return_failure
+
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        await middleware.process_request(Request("http://site.local"))
+        assert "Robotstxt address not found" in caplog.text
+
+    @coroutine_test
+    async def test_robotstxt_immediate_error(self):
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        err = CannotResolveHostError("Robotstxt address not found")
+
+        async def immediate_failure(request):
+            raise err
+
+        self.crawler.engine.download_async.side_effect = immediate_failure
+
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        await self.assertNotIgnored(Request("http://site.local"), middleware)
+
+    @coroutine_test
+    async def test_robotstxt_request_download_error(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        request = Request("http://site.local/robots.txt")
+        await middleware.process_request(request)
+        err = CannotResolveHostError("Robotstxt address not found")
+        await middleware.process_exception(request, err)
+        assert "Robotstxt address not found" in caplog.text
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+
+    @coroutine_test
+    async def test_robotstxt_process_exception_ignores_unrelated_request(
+        self,
+    ) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        err = CannotResolveHostError("Unrelated request failed")
+        with mock.patch(
+            "scrapy.downloadermiddlewares.robotstxt.logger"
+        ) as mw_module_logger:
+            await middleware.process_exception(
+                Request("http://site.local/allowed"), err
+            )
+            assert not mw_module_logger.error.called
+
+    @coroutine_test
+    async def test_ignore_robotstxt_request(self):
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+
+        async def ignore_request(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
+            call_later(0, deferred.errback, failure.Failure(IgnoreRequest()))
+            return await maybe_deferred_to_future(deferred)
+
+        self.crawler.engine.download_async.side_effect = ignore_request
+
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        with mock.patch(
+            "scrapy.downloadermiddlewares.robotstxt.logger"
+        ) as mw_module_logger:
+            await self.assertNotIgnored(
+                Request("http://site.local/allowed"), middleware
+            )
+            assert not mw_module_logger.error.called
+
+    def test_robotstxt_user_agent_setting(self):
+        crawler = self._get_successful_crawler()
+        crawler.settings.set("ROBOTSTXT_USER_AGENT", "Examplebot")
+        crawler.settings.set("USER_AGENT", "Mozilla/5.0 (X11; Linux x86_64)")
+        middleware = build_from_crawler(RobotsTxtMiddleware, crawler)
+        rp = mock.MagicMock(return_value=True)
+        middleware.process_request_2(rp, Request("http://site.local/allowed"))
+        rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
+
+    @coroutine_test
+    async def test_robotstxt_user_agent_none(self):
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        headers = {"User-Agent": None}
+        await self.assertNotIgnored(
+            Request("http://site.local/allowed", headers=headers), middleware
+        )
+        await self.assertIgnored(
+            Request("http://site.local/admin/main", headers=headers), middleware
+        )
+
+    @coroutine_test
+    async def test_robotstxt_local_file(self):
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_emptybody_crawler()
+        )
+        middleware.process_request_2 = mock.MagicMock()  # type: ignore[method-assign]
+
+        await middleware.process_request(Request("data:text/plain,Hello World data"))
+        assert not middleware.process_request_2.called
+
+        await middleware.process_request(
+            Request("file:///tests/sample_data/test_site/nothinghere.html")
+        )
+        assert not middleware.process_request_2.called
+
+        await middleware.process_request(Request("http://site.local/allowed"))
+        assert middleware.process_request_2.called
+
+    @coroutine_test
+    async def test_robotstxt_download_handler(self) -> None:
+        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        await self.assertNotIgnored(
+            Request("http://site.local/allowed", meta={"download_handler": "named"}),
+            middleware,
+        )
+        robotsreq = self.crawler.engine.download_async.call_args_list[0][0][0]
+        assert robotsreq.meta["download_handler"] == "named"
+        assert robotsreq.meta["is_robotstxt_request"] is True
+
+    async def assertNotIgnored(
+        self, request: Request, middleware: RobotsTxtMiddleware
+    ) -> None:
+        try:
+            await middleware.process_request(request)
+        except IgnoreRequest:
+            pytest.fail("IgnoreRequest was raised unexpectedly")
+
+    async def assertIgnored(
+        self, request: Request, middleware: RobotsTxtMiddleware
+    ) -> None:
+        with pytest.raises(IgnoreRequest):
+            await middleware.process_request(request)
+
+    def assertRobotsTxtRequested(self, base_url: str) -> None:
+        calls = self.crawler.engine.download_async.call_args_list
+        request = calls[0][0][0]
+        assert request.url == f"{base_url}/robots.txt"
+        assert request.callback == NO_CALLBACK
+
+
+class _IgnoreSpider(Spider):
+    name = "test"
+
+    def parse(self, response: Response) -> None:
+        pass
+
+
+class _FollowSpider(Spider):
+    name = "test"
+
+    def parse(self, response: Response) -> Iterable[Request]:
+        yield response.follow("/deny/a")
+
+
+class TestRobotsTxtDeniedCloseReason:
+    @staticmethod
+    async def _finish_reason(
+        spider_cls: type[Spider], settings: dict[str, Any] | None = None, **kwargs: Any
+    ) -> Any:
+        crawler = get_crawler(
+            spider_cls, settings_dict={"ROBOTSTXT_OBEY": True, **(settings or {})}
+        )
+        await crawler.crawl_async(**kwargs)
+        assert crawler.stats
+        return crawler.stats.get_value("finish_reason")
+
+    @coroutine_test
+    async def test_all_denied(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/deny/b")],
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_all_denied_low_concurrency(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            settings={"CONCURRENT_REQUESTS": 1},
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/deny/b")],
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_all_denied_after_redirect(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider, start_urls=[mockserver.url("/redirect-to?goto=/deny/a")]
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_denied_and_download_failure(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            settings={"RETRY_ENABLED": False},
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/drop")],
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_some_denied(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/text")],
+        )
+        assert reason == "finished"
+
+    @coroutine_test
+    async def test_denied_follow_up_request(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _FollowSpider, start_urls=[mockserver.url("/text")]
+        )
+        assert reason == "finished"
+
+
+@pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
+class TestRobotsTxtMiddlewareWithRerp(TestRobotsTxtMiddleware):
+    def setup_method(self):
+        super().setup_method()
+        self.crawler.settings.set(
+            "ROBOTSTXT_PARSER", "scrapy.robotstxt.RerpRobotParser"
+        )

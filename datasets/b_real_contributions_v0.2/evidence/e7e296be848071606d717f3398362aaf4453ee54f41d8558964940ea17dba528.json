@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4261c30aa96bdf210e6b84b14382a4edcc289c7b",
+    "size": 67147
+  },
+  "observed_at": "2026-10-27T13:45:43.716151+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "51213047218ce4e9dfd268f803429dcb3fa64c3a997dc7fcd48f2dc9b9d67442",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "07a7d242c51dec8ff6a78defff215b821a659dec1014200ae077b8a0da4097cf",
+  "source_url": "https://api.github.com/repos/jqlang/jq/git/blobs/4261c30aa96bdf210e6b84b14382a4edcc289c7b",
+  "status_code": 200
+}

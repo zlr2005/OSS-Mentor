@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": null,
+    "full_name": "ComposioHQ/awesome-claude-skills",
+    "id": 1078079172,
+    "language": "Python",
+    "private": false,
+    "size": 3663
+  },
+  "observed_at": "2026-10-26T06:12:18.284081+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c23fab77a67b31b71d571f736c2416517d7d7b2383b68f2389474679f6576bd4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "010e763548713c04ad5218f43ee28ff2c5e23a56461b20103cee540b5b6dc4d7",
+  "source_url": "https://api.github.com/repos/ComposioHQ/awesome-claude-skills",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 66626,
+      "login": "graemerocher",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T18:15:49Z",
+      "committer_at": "2026-10-22T18:15:49Z",
+      "tree_sha": "086c72d3d503280c48bb9fc39ef8bf41e96af9e0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1217d5e496334f87f43cbe46337c79fa02cfa367"
+  },
+  "observed_at": "2026-10-26T08:07:45.308307+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3ecdc7b568ea2e7b07defca364f77a1562cb4421cc13b2125451ca8858ba85e0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "88e1743b83842c4d19ca47100614b34c5c183fddb31116fd9027e8e3651b921d",
+  "source_url": "https://api.github.com/repos/micronaut-projects/micronaut-core/commits/1217d5e496334f87f43cbe46337c79fa02cfa367?per_page=100",
+  "status_code": 200
+}

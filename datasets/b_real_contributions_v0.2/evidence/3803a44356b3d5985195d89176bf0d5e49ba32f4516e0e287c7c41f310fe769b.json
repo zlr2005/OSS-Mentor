@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4b57345da9e158babfa74341f542cb45b9abfc69",
+    "size": 20899
+  },
+  "observed_at": "2026-10-26T06:45:39.220415+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "91adb426a78aaef27d29d772aea120109426da81213191c47f8b481d928058e6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4f3151c295ab103cd2c1c275280e75f32ec8ab62e1c798dd1dfb7f5b502ebbda",
+  "source_url": "https://api.github.com/repos/fastify/fast-json-stringify/git/blobs/4b57345da9e158babfa74341f542cb45b9abfc69",
+  "status_code": 200
+}

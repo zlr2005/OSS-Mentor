@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "75c54ecf93eb5ca1a6168410eddc725b685e0e29",
+    "size": 1936
+  },
+  "observed_at": "2026-10-26T15:02:38.729379+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f59dab4cbb42f7e7216e676c8f63f66fcf0ce757fb4681e9f173cf18f66e345c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7bfabc8de4cdd94c3ad2cb1bde6c7828ed47733aba801f14d7f257d040f8e2c5",
+  "source_url": "https://api.github.com/repos/TanStack/router/git/blobs/75c54ecf93eb5ca1a6168410eddc725b685e0e29",
+  "status_code": 200
+}

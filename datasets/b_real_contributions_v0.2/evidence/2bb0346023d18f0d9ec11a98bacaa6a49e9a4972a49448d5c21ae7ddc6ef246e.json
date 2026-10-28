@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9432568eba359bc90343f6fbac1d588763bfb4a3",
+    "size": 9897
+  },
+  "observed_at": "2026-10-26T06:09:43.996074+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b47f0b7e69a2c99cee407f62421af9e9c89f7f1b5fe9b83054f5eb0530c3a5ea",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0f57798a1f9165849c76d6cf5c3949ccc22cb48e4559be7e51923f8a84660398",
+  "source_url": "https://api.github.com/repos/clap-rs/clap/git/blobs/9432568eba359bc90343f6fbac1d588763bfb4a3",
+  "status_code": 200
+}

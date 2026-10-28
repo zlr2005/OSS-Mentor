@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5212218,
+      "login": "nscheer",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-18T13:36:23Z",
+      "committer_at": "2026-10-18T13:36:23Z",
+      "tree_sha": "f8860061675f40dca743fdf1cb1ff3d72174c3fd"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b4be15a7d9c68b8855db23395bb8e75fa21bd66e"
+  },
+  "observed_at": "2026-10-26T13:44:40.418098+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1c25b5d5fcedf46337176b689f29b7ed6491a416745e25fd0f76145e8eb7d746",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1ed09d608864a00fb375e87692f24e0e2f961519e1bc6154c3571be3d2ee0737",
+  "source_url": "https://api.github.com/repos/restic/restic/commits/b4be15a7d9c68b8855db23395bb8e75fa21bd66e?per_page=100",
+  "status_code": 200
+}

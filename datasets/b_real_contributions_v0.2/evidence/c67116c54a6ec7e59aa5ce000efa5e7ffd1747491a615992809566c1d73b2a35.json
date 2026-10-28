@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "nocodb/nocodb",
+    "id": 108761645,
+    "language": "TypeScript",
+    "private": false,
+    "size": 1504632
+  },
+  "observed_at": "2026-10-26T08:28:03.906189+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "868eaa5dacd6374ccbacdef8c3fb19d216d4823a1f53d8034afe1ba294bdeb8b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "adc80e7950720eec4bf3f3d175bb80767cc5f6f3826bbd1ede5ee356a4adcca9",
+  "source_url": "https://api.github.com/repos/nocodb/nocodb",
+  "status_code": 200
+}

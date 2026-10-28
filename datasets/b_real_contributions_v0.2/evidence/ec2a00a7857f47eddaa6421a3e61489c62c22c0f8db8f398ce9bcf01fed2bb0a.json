@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 67291205,
+      "login": "Rowlando13",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-23T04:07:17Z",
+      "committer_at": "2026-09-23T04:07:17Z",
+      "tree_sha": "44ab4cead92424f4ab3fb96c9f98e11af34fe636"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "06b2a678741131fd577ce170e23e5ca0aeba0309"
+  },
+  "observed_at": "2026-10-26T08:40:01.478816+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2f4e46421fb880d306997f8b5b0328e554eaa357bcbe75c93732c8b6f2db6512",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3dd449015c2e7b7252c18fb3cdd7d5b0ed2fef28a731891932e4ca902bf1cf00",
+  "source_url": "https://api.github.com/repos/pallets/click/commits/06b2a678741131fd577ce170e23e5ca0aeba0309?per_page=100",
+  "status_code": 200
+}

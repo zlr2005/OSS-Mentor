@@ -1,0 +1,2526 @@
+//! Assorted public API tests.
+
+#![allow(clippy::disallowed_types, clippy::duplicate_mod)]
+
+use core::fmt::Debug;
+use std::borrow::Cow;
+use std::io;
+use std::sync::{Arc, Mutex};
+
+use pki_types::{DnsName, FipsStatus, SubjectPublicKeyInfoDer};
+use provider::cipher_suite;
+use rustls::client::{EchConfig, EchGreaseConfig, EchMode, EchStatus, Resumption};
+use rustls::crypto::cipher::{EncodableVersion, Payload, Record};
+use rustls::crypto::kx::NamedGroup;
+use rustls::crypto::{
+    CipherSuite, Credentials, CryptoProvider, Identity, InconsistentKeys, SelectedCredential,
+    SignatureScheme, Signer, SigningKey,
+};
+use rustls::enums::{ApplicationProtocol, ContentType, HandshakeType, ProtocolVersion};
+use rustls::error::{
+    AlertDescription, ApiMisuse, CertificateError, Error, PeerIncompatible, PeerMisbehaved,
+};
+use rustls::pki_types::EchConfigListBytes;
+use rustls::server::{
+    ClientHello, ParsedCertificate, PreferServerOrder, ServerCredentialResolver, ServerHandshake,
+};
+use rustls::{
+    ClientConfig, ClientSide, Connection, HandshakeKind, KeyingMaterialExporter, ServerConfig,
+    ServerSide, SliceInput, SupportedCipherSuite, Tcp, VecInput,
+};
+use rustls_aws_lc_rs::hpke::ALL_SUPPORTED_SUITES;
+use rustls_test::{
+    Altered, ClientConfigExt, ClientStorage, ClientStorageOp, CountingSubscriber, ErrorFromPeer,
+    KeyType, MockServerVerifier, MultiTest, RawTls, ServerConfigExt, do_handshake,
+    do_handshake_until_error, do_suite_and_kx_test, encoding, make_client_config, make_pair,
+    make_pair_for_arc_configs, make_pair_for_configs, make_server_config, provider_with_one_suite,
+    provider_with_suites, server_name, transfer, transfer_altered,
+    unsafe_plaintext_crypto_provider,
+};
+
+use super::{provider, provider_is_aws_lc_rs, provider_is_fips, provider_is_ring};
+
+#[test]
+fn alpn() {
+    for (client_config, server_config, _) in MultiTest::new(provider::DEFAULT_PROVIDER) {
+        // no support
+        assert_eq!(
+            alpn_test(vec![], vec![], &server_config, &client_config),
+            Ok(None)
+        );
+
+        // server support
+        assert_eq!(
+            alpn_test(
+                vec![b"server-proto".into()],
+                vec![],
+                &server_config,
+                &client_config,
+            ),
+            Ok(None)
+        );
+
+        // client support
+        assert_eq!(
+            alpn_test(
+                vec![],
+                vec![b"client-proto".into()],
+                &server_config,
+                &client_config,
+            ),
+            Ok(None)
+        );
+
+        // no overlap
+        assert_eq!(
+            alpn_test(
+                vec![b"server-proto".into()],
+                vec![b"client-proto".into()],
+                &server_config,
+                &client_config,
+            ),
+            Err(ErrorFromPeer::Server(Error::NoApplicationProtocol))
+        );
+
+        // server chooses preference
+        assert_eq!(
+            alpn_test(
+                vec![b"server-proto".into(), b"client-proto".into()],
+                vec![b"client-proto".into(), b"server-proto".into()],
+                &server_config,
+                &client_config,
+            ),
+            Ok(Some(b"server-proto".into()))
+        );
+
+        // case sensitive
+        assert_eq!(
+            alpn_test(
+                vec![b"PROTO".into()],
+                vec![b"proto".into()],
+                &server_config,
+                &client_config,
+            ),
+            Err(ErrorFromPeer::Server(Error::NoApplicationProtocol))
+        );
+    }
+}
+
+fn alpn_test(
+    server_protos: Vec<ApplicationProtocol<'static>>,
+    client_protos: Vec<ApplicationProtocol<'static>>,
+    server_config: &Arc<ServerConfig>,
+    client_config: &Arc<ClientConfig>,
+) -> Result<Option<ApplicationProtocol<'static>>, ErrorFromPeer> {
+    let mut server_config = Arc::unwrap_or_clone(server_config.clone());
+    server_config.alpn_protocols = server_protos.clone();
+
+    let mut client_config = Arc::unwrap_or_clone(client_config.clone());
+    client_config
+        .alpn_protocols
+        .clone_from(&client_protos);
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+
+    assert_eq!(client.alpn_protocol(), None);
+    assert_eq!(server.alpn_protocol(), None);
+    let error = do_handshake_until_error(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+    assert_eq!(client.alpn_protocol(), server.alpn_protocol());
+    error.map(|_| client.alpn_protocol().cloned())
+}
+
+#[test]
+fn connection_level_alpn_protocols() {
+    let provider = provider::DEFAULT_PROVIDER;
+    let mut server_config = make_server_config(KeyType::default(), &provider);
+    server_config.alpn_protocols = vec![b"h2".into(), b"http/1.1".into()];
+    let server_config = Arc::new(server_config);
+
+    // Config specifies `h2`
+    let mut client_config = make_client_config(KeyType::default(), &provider);
+    client_config.alpn_protocols = vec![b"h2".into()];
+    let client_config = Arc::new(client_config);
+
+    // Client relies on config-specified `h2`, server agrees
+    let mut client_output = Vec::new();
+    let mut client = client_config
+        .connect(server_name("localhost"))
+        .build(&mut client_output)
+        .unwrap();
+    let mut server = Connection::new(server_config.clone()).unwrap();
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    let mut server_output = Vec::new();
+    do_handshake_until_error(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    )
+    .unwrap();
+    assert_eq!(client.alpn_protocol(), Some(&ApplicationProtocol::Http2));
+
+    // Specify `http/1.1` for the connection, server agrees
+    let mut client_output = Vec::new();
+    let mut client = client_config
+        .connect(server_name("localhost"))
+        .with_alpn(vec![ApplicationProtocol::Http11])
+        .build(&mut client_output)
+        .unwrap();
+    let mut server = Connection::new(server_config).unwrap();
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    let mut server_output = Vec::new();
+    do_handshake_until_error(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    )
+    .unwrap();
+    assert_eq!(client.alpn_protocol(), Some(&ApplicationProtocol::Http11));
+}
+
+#[test]
+fn server_selects_unoffered_alpn_checked() {
+    let result = unoffered_alpn_test(true);
+    assert_eq!(
+        result.err(),
+        Some(PeerMisbehaved::SelectedUnofferedApplicationProtocol.into())
+    );
+}
+
+#[test]
+fn server_selects_unoffered_alpn_unchecked() {
+    let result = unoffered_alpn_test(false);
+    assert_ne!(
+        result.err(),
+        Some(PeerMisbehaved::SelectedUnofferedApplicationProtocol.into())
+    );
+}
+
+fn unoffered_alpn_test(check_selected_alpn: bool) -> Result<rustls::IoState, Error> {
+    let mut config = make_client_config(KeyType::default(), &provider::DEFAULT_PROVIDER);
+    config.check_selected_alpn = check_selected_alpn;
+    let mut client_output = Vec::new();
+    let mut client = Arc::new(config)
+        .connect(server_name("localhost"))
+        .with_alpn(vec![ApplicationProtocol::Http11])
+        .build(&mut client_output)
+        .unwrap();
+    client_output.clear();
+
+    let mut input = VecInput::default();
+    input
+        .read(
+            &mut encoding::record_framing(
+                ContentType::Handshake,
+                ProtocolVersion::TLSv1_2,
+                encoding::server_hello(
+                    ProtocolVersion::TLSv1_2,
+                    &[b'a'; 32],
+                    &[0],
+                    CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                    vec![encoding::Extension::new_alpn(b"\x05blorp")],
+                ),
+            )
+            .as_slice(),
+        )
+        .unwrap();
+
+    let state = client
+        .read_tls(&mut input, &mut client_output)
+        .handle_all(&mut Vec::new())?;
+    Ok(state)
+}
+
+fn version_test(
+    client_versions: &[ProtocolVersion],
+    server_versions: &[ProtocolVersion],
+    result: Option<ProtocolVersion>,
+) {
+    let provider = provider::DEFAULT_PROVIDER;
+    let client_provider = apply_versions(provider.clone(), client_versions);
+    let server_provider = apply_versions(provider, server_versions);
+
+    let client_config = make_client_config(KeyType::default(), &client_provider);
+    let server_config = make_server_config(KeyType::default(), &server_provider);
+
+    println!("version {client_versions:?} {server_versions:?} -> {result:?}");
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+
+    assert_eq!(client.protocol_version(), None);
+    assert_eq!(server.protocol_version(), None);
+    if result.is_none() {
+        let err = do_handshake_until_error(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert!(err.is_err());
+    } else {
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert_eq!(client.protocol_version(), result);
+        assert_eq!(server.protocol_version(), result);
+    }
+}
+
+fn apply_versions(provider: CryptoProvider, versions: &[ProtocolVersion]) -> CryptoProvider {
+    match versions {
+        []
+        | [ProtocolVersion::TLSv1_3, ProtocolVersion::TLSv1_2]
+        | [ProtocolVersion::TLSv1_2, ProtocolVersion::TLSv1_3] => provider,
+        [ProtocolVersion::TLSv1_3] => CryptoProvider {
+            tls12_cipher_suites: Cow::Borrowed(&[]),
+            ..provider
+        },
+        [ProtocolVersion::TLSv1_2] => CryptoProvider {
+            tls13_cipher_suites: Cow::Borrowed(&[]),
+            ..provider
+        },
+        _ => panic!("unhandled versions {versions:?}"),
+    }
+}
+
+#[test]
+fn versions() {
+    // default -> 1.3
+    version_test(&[], &[], Some(ProtocolVersion::TLSv1_3));
+
+    // client default, server 1.2 -> 1.2
+    version_test(
+        &[],
+        &[ProtocolVersion::TLSv1_2],
+        Some(ProtocolVersion::TLSv1_2),
+    );
+
+    // client 1.2, server default -> 1.2
+    version_test(
+        &[ProtocolVersion::TLSv1_2],
+        &[],
+        Some(ProtocolVersion::TLSv1_2),
+    );
+
+    // client 1.2, server 1.3 -> fail
+    version_test(
+        &[ProtocolVersion::TLSv1_2],
+        &[ProtocolVersion::TLSv1_3],
+        None,
+    );
+
+    // client 1.3, server 1.2 -> fail
+    version_test(
+        &[ProtocolVersion::TLSv1_3],
+        &[ProtocolVersion::TLSv1_2],
+        None,
+    );
+
+    // client 1.3, server 1.2+1.3 -> 1.3
+    version_test(
+        &[ProtocolVersion::TLSv1_3],
+        &[ProtocolVersion::TLSv1_2, ProtocolVersion::TLSv1_3],
+        Some(ProtocolVersion::TLSv1_3),
+    );
+
+    // client 1.2+1.3, server 1.2 -> 1.2
+    version_test(
+        &[ProtocolVersion::TLSv1_3, ProtocolVersion::TLSv1_2],
+        &[ProtocolVersion::TLSv1_2],
+        Some(ProtocolVersion::TLSv1_2),
+    );
+}
+
+#[test]
+fn server_does_not_negotiate_tls12_after_hrr() {
+    let (_, mut server) = make_pair(
+        KeyType::Rsa2048,
+        &provider::DEFAULT_PROVIDER,
+        &mut Vec::new(),
+    );
+
+    // first client hello requires a HRR
+    let mut server_output = Vec::new();
+    let mut input = encoding::record_framing(
+        ContentType::Handshake,
+        ProtocolVersion::TLSv1_2,
+        encoding::client_hello_with_extensions(vec![
+            encoding::Extension::new_sig_algs(),
+            encoding::Extension::new_kx_groups(),
+            encoding::Extension::new_versions(),
+            encoding::Extension {
+                typ: encoding::Extension::KEY_SHARE,
+                body: vec![0, 0],
+            },
+        ]),
+    );
+    server
+        .read_tls(&mut SliceInput::new(&mut input), &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap();
+
+    assert!(
+        &server_output[11..43] == HRR_RANDOM_VALUE,
+        "server didn't reply with a HRR"
+    );
+    server_output.clear();
+
+    // second client hello only offers TLS1.2
+    let mut input = encoding::record_framing(
+        ContentType::Handshake,
+        ProtocolVersion::TLSv1_2,
+        encoding::client_hello_with_extensions(vec![
+            encoding::Extension::new_sig_algs(),
+            encoding::Extension::new_kx_groups(),
+        ]),
+    );
+    assert_eq!(
+        server
+            .read_tls(&mut SliceInput::new(&mut input), &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        PeerIncompatible::SupportedVersionsExtensionRequired.into()
+    );
+}
+
+const HRR_RANDOM_VALUE: &[u8] = &[
+    0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11, 0xbe, 0x1d, 0x8c, 0x02, 0x1e, 0x65, 0xb8, 0x91,
+    0xc2, 0xa2, 0x11, 0x16, 0x7a, 0xbb, 0x8c, 0x5e, 0x07, 0x9e, 0x09, 0xe2, 0xc8, 0xa8, 0x33, 0x9c,
+];
+
+#[test]
+fn config_builder_for_client_rejects_empty_kx_groups() {
+    assert_eq!(
+        ClientConfig::builder(
+            CryptoProvider {
+                kx_groups: Cow::Borrowed(&[]),
+                ..provider::DEFAULT_PROVIDER
+            }
+            .into()
+        )
+        .with_root_certificates(KeyType::default().client_root_store())
+        .with_no_client_auth()
+        .err(),
+        Some(ApiMisuse::NoKeyExchangeGroupsConfigured.into())
+    );
+}
+
+#[test]
+fn config_builder_for_client_rejects_empty_cipher_suites() {
+    assert_eq!(
+        ClientConfig::builder(
+            CryptoProvider {
+                tls12_cipher_suites: Cow::Borrowed(&[]),
+                tls13_cipher_suites: Cow::Borrowed(&[]),
+                ..provider::DEFAULT_PROVIDER
+            }
+            .into()
+        )
+        .with_root_certificates(KeyType::default().client_root_store())
+        .with_no_client_auth()
+        .err(),
+        Some(ApiMisuse::NoCipherSuitesConfigured.into())
+    );
+}
+
+#[test]
+fn config_builder_for_server_rejects_empty_kx_groups() {
+    assert_eq!(
+        ServerConfig::builder(
+            CryptoProvider {
+                kx_groups: Cow::Borrowed(&[]),
+                ..provider::DEFAULT_PROVIDER
+            }
+            .into()
+        )
+        .with_no_client_auth()
+        .with_single_cert(KeyType::default().identity(), KeyType::default().key())
+        .err(),
+        Some(ApiMisuse::NoKeyExchangeGroupsConfigured.into())
+    );
+}
+
+#[test]
+fn config_builder_for_server_rejects_empty_cipher_suites() {
+    assert_eq!(
+        ServerConfig::builder(
+            CryptoProvider {
+                tls12_cipher_suites: Cow::Borrowed(&[]),
+                tls13_cipher_suites: Cow::Borrowed(&[]),
+                ..provider::DEFAULT_PROVIDER
+            }
+            .into()
+        )
+        .with_no_client_auth()
+        .with_single_cert(KeyType::default().identity(), KeyType::default().key())
+        .err(),
+        Some(ApiMisuse::NoCipherSuitesConfigured.into())
+    );
+}
+
+#[test]
+fn config_builder_for_client_with_time() {
+    ClientConfig::builder_with_details(
+        provider::DEFAULT_PROVIDER.into(),
+        Arc::new(rustls::time_provider::DefaultTimeProvider),
+    );
+}
+
+#[test]
+fn config_builder_for_server_with_time() {
+    ServerConfig::builder_with_details(
+        provider::DEFAULT_PROVIDER.into(),
+        Arc::new(rustls::time_provider::DefaultTimeProvider),
+    );
+}
+
+#[test]
+fn client_can_get_server_cert() {
+    for (client_config, server_config, expect) in MultiTest::new(provider::DEFAULT_PROVIDER) {
+        let mut client_output = Vec::new();
+        let mut server_output = Vec::new();
+        let (mut client, mut server) =
+            make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert_eq!(
+            client.peer_identity().unwrap(),
+            &*expect.key_type.identity()
+        );
+    }
+}
+
+#[test]
+fn client_can_get_server_cert_after_resumption() {
+    for (client_config, server_config, _) in MultiTest::new(provider::DEFAULT_PROVIDER) {
+        let mut client_output = Vec::new();
+        let mut server_output = Vec::new();
+        let (mut client, mut server) =
+            make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert_eq!(client.handshake_kind(), Some(HandshakeKind::Full));
+
+        let original_certs = client.peer_identity();
+
+        let mut client_output = Vec::new();
+        let mut server_output = Vec::new();
+        let (mut client, mut server) =
+            make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert_eq!(client.handshake_kind(), Some(HandshakeKind::Resumed));
+
+        let resumed_certs = client.peer_identity();
+
+        assert_eq!(original_certs, resumed_certs);
+    }
+}
+
+#[test]
+fn server_can_get_client_cert() {
+    for (client_config, server_config, expect) in
+        MultiTest::new(provider::DEFAULT_PROVIDER).require_client_auth()
+    {
+        let mut client_output = Vec::new();
+        let mut server_output = Vec::new();
+        let (mut client, mut server) =
+            make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert_eq!(
+            server.peer_identity().unwrap(),
+            &*expect.key_type.client_identity()
+        );
+    }
+}
+
+#[test]
+fn server_can_get_client_cert_after_resumption() {
+    for (client_config, server_config, _) in
+        MultiTest::new(provider::DEFAULT_PROVIDER).require_client_auth()
+    {
+        let mut client_output = Vec::new();
+        let mut server_output = Vec::new();
+        let (mut client, mut server) =
+            make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        let original_certs = server.peer_identity();
+
+        let mut client_output = Vec::new();
+        let mut server_output = Vec::new();
+        let (mut client, mut server) =
+            make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        let resumed_certs = server.peer_identity();
+        assert_eq!(original_certs, resumed_certs);
+    }
+}
+
+#[test]
+fn test_config_builders_debug() {
+    if !provider_is_ring() {
+        return;
+    }
+
+    let b = ServerConfig::builder(
+        CryptoProvider {
+            tls13_cipher_suites: Cow::Owned(vec![cipher_suite::TLS13_CHACHA20_POLY1305_SHA256]),
+            kx_groups: Cow::Owned(vec![provider::kx_group::X25519]),
+            ..provider::DEFAULT_PROVIDER
+        }
+        .into(),
+    );
+    let _ = format!("{b:?}");
+    let b = ServerConfig::builder(provider::DEFAULT_TLS13_PROVIDER.into());
+    let _ = format!("{b:?}");
+    let b = b.with_no_client_auth();
+    let _ = format!("{b:?}");
+
+    let b = ClientConfig::builder(
+        CryptoProvider {
+            tls13_cipher_suites: Cow::Owned(vec![cipher_suite::TLS13_CHACHA20_POLY1305_SHA256]),
+            kx_groups: Cow::Owned(vec![provider::kx_group::X25519]),
+            ..provider::DEFAULT_PROVIDER
+        }
+        .into(),
+    );
+    let _ = format!("{b:?}");
+    let b = ClientConfig::builder(provider::DEFAULT_TLS13_PROVIDER.into());
+    let _ = format!("{b:?}");
+}
+
+#[test]
+fn test_tls13_valid_early_plaintext_alert() {
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (_client, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut server_input = VecInput::default();
+
+    // Perform the start of a TLS 1.3 handshake, sending a client hello to the server.
+    // The client will not have written a CCS or any encrypted messages to the server yet.
+    transfer(&mut client_output, &mut server_input);
+    server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap();
+
+    // Inject a plaintext alert from the client. The server should accept this since:
+    //  * It hasn't decrypted any messages from the peer yet.
+    //  * The message content type is Alert.
+    //  * The payload size is indicative of a plaintext alert message.
+    //  * The negotiated protocol version is TLS 1.3.
+    let mut alert = encoding::alert(AlertDescription::UnknownCa, &[]);
+
+    // The server should process the plaintext alert without error.
+    assert_eq!(
+        server
+            .read_tls(&mut SliceInput::new(&mut alert), &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::AlertReceived(AlertDescription::UnknownCa),
+    );
+}
+
+#[test]
+fn test_tls13_too_short_early_plaintext_alert() {
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (_client, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut server_input = VecInput::default();
+
+    // Perform the start of a TLS 1.3 handshake, sending a client hello to the server.
+    // The client will not have written a CCS or any encrypted messages to the server yet.
+    transfer(&mut client_output, &mut server_input);
+    server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap();
+
+    // Inject a plaintext alert from the client. The server should attempt to decrypt this message
+    // because the payload length is too large to be considered an early plaintext alert.
+    let mut alert = encoding::alert(AlertDescription::UnknownCa, &[0xff]);
+
+    // The server should produce a decrypt error trying to decrypt the plaintext alert.
+    assert_eq!(
+        server
+            .read_tls(&mut SliceInput::new(&mut alert), &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::DecryptError,
+    );
+}
+
+#[test]
+fn test_tls13_late_plaintext_alert() {
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+
+    // Complete a bi-directional TLS1.3 handshake. After this point no plaintext messages
+    // should occur.
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    // Inject a plaintext alert from the client. The server should attempt to decrypt this message.
+    let mut alert = encoding::alert(AlertDescription::UnknownCa, &[]);
+
+    // The server should produce a decrypt error, trying to decrypt a plaintext alert.
+    assert_eq!(
+        server
+            .read_tls(&mut SliceInput::new(&mut alert), &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::DecryptError,
+    );
+}
+
+#[test]
+fn server_rejects_empty_post_handshake_alert_fragment() {
+    let provider = provider::DEFAULT_TLS13_PROVIDER;
+    let mut client_config = make_client_config(KeyType::default(), &provider);
+    client_config.enable_secret_extraction = true;
+    let server_config = make_server_config(KeyType::default(), &provider);
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let (mut client_input, mut server_input) = (VecInput::default(), VecInput::default());
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    // Encrypt and send an alert record whose (decrypted) fragment is empty.
+    // Per RFC 9846 section 5.4, empty handshake and alert fragments must be rejected.
+    let mut raw_client = RawTls::new_client(client);
+    raw_client.encrypt_and_send(
+        &Record {
+            typ: ContentType::Alert,
+            version: EncodableVersion::Legacy(ProtocolVersion::TLSv1_3),
+            payload: Payload::new(vec![]),
+        },
+        &mut server_input,
+    );
+    assert_eq!(
+        server
+            .read_tls(&mut server_input, &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        PeerMisbehaved::EmptyFragment.into(),
+    );
+
+    // The server signals the misbehavior with a fatal unexpected_message alert.
+    raw_client.receive_and_decrypt(&mut server_output, |m| {
+        assert_eq!(m.typ, ContentType::Alert);
+        assert_eq!(m.payload, &[2, AlertDescription::UnexpectedMessage.into()]);
+    });
+}
+
+#[test]
+fn client_error_is_sticky() {
+    let mut client_output = Vec::new();
+    let (mut client, _) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut client_input = VecInput::default();
+    client_input
+        .read(&mut b"\x16\x03\x03\x00\x08\x0f\x00\x00\x04junk".as_ref())
+        .unwrap();
+    client
+        .read_tls(&mut client_input, &mut client_output)
+        .handle_all(&mut Vec::new())
+        .unwrap_err();
+    client
+        .read_tls(&mut client_input, &mut client_output)
+        .handle_all(&mut Vec::new())
+        .unwrap_err();
+}
+
+#[test]
+fn server_error_is_sticky() {
+    let mut client_output = Vec::new();
+    let (_, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut server_input = VecInput::default();
+    let mut server_output = Vec::new();
+    server_input
+        .read(&mut b"\x16\x03\x03\x00\x08\x0f\x00\x00\x04junk".as_ref())
+        .unwrap();
+    server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap_err();
+    server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap_err();
+}
+
+#[test]
+fn write_reports_sticky_error() {
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    // corrupt a record, so the server fails and sends a fatal alert
+    client
+        .write(b"hello".into(), &mut client_output)
+        .unwrap();
+    *client_output.last_mut().unwrap() ^= 1;
+    transfer(&mut client_output, &mut server_input);
+    assert_eq!(
+        server
+            .read_tls(&mut server_input, &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::DecryptError
+    );
+
+    let mut tls = Vec::new();
+    assert_eq!(
+        server
+            .write(b"world".into(), &mut tls)
+            .unwrap_err(),
+        Error::DecryptError
+    );
+    assert_eq!(
+        server
+            .write(b"".into(), &mut tls)
+            .unwrap_err(),
+        Error::DecryptError
+    );
+    assert!(tls.is_empty());
+
+    // the client receives the alert, but has not sent one itself
+    transfer(&mut server_output, &mut client_input);
+    let expected = Error::AlertReceived(AlertDescription::BadRecordMac);
+    assert_eq!(
+        client
+            .read_tls(&mut client_input, &mut client_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        expected
+    );
+    assert!(client_output.is_empty());
+
+    assert_eq!(
+        client
+            .write(b"world".into(), &mut tls)
+            .unwrap_err(),
+        expected
+    );
+    assert!(tls.is_empty());
+}
+
+#[allow(clippy::unnecessary_operation)]
+#[test]
+fn server_is_send_and_sync() {
+    let mut client_output = Vec::new();
+    let (_, server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    &server as &dyn Send;
+    &server as &dyn Sync;
+}
+
+#[allow(clippy::unnecessary_operation)]
+#[test]
+fn client_is_send_and_sync() {
+    let mut client_output = Vec::new();
+    let (client, _) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    &client as &dyn Send;
+    &client as &dyn Sync;
+}
+
+#[test]
+fn server_config_is_clone() {
+    let _ = make_server_config(KeyType::default(), &provider::DEFAULT_PROVIDER);
+}
+
+#[test]
+fn client_config_is_clone() {
+    let _ = make_client_config(KeyType::default(), &provider::DEFAULT_PROVIDER);
+}
+
+#[test]
+fn client_connection_is_debug() {
+    let mut client_output = Vec::new();
+    let (client, _) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    println!("{client:?}");
+}
+
+#[test]
+fn server_connection_is_debug() {
+    let mut client_output = Vec::new();
+    let (_, server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    println!("{server:?}");
+}
+
+#[test]
+fn server_exposes_offered_sni() {
+    for (client_config, server_config, _) in MultiTest::new(provider::DEFAULT_PROVIDER) {
+        let mut client_output = Vec::new();
+        let mut client = client_config
+            .connect(server_name("second.testserver.com"))
+            .build(&mut client_output)
+            .unwrap();
+
+        let mut server = Connection::new(server_config).unwrap();
+        assert_eq!(None, server.side().server_name());
+
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        let mut server_output = Vec::new();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert_eq!(
+            Some(&DnsName::try_from("second.testserver.com").unwrap()),
+            server.side().server_name()
+        );
+    }
+}
+
+#[test]
+fn server_exposes_offered_sni_smashed_to_lowercase() {
+    // webpki actually does this for us in its DnsName type
+    for (client_config, server_config, _) in MultiTest::new(provider::DEFAULT_PROVIDER) {
+        let mut client_output = Vec::new();
+        let mut client = client_config
+            .connect(server_name("SECOND.TESTServer.com"))
+            .build(&mut client_output)
+            .unwrap();
+
+        let mut server = Connection::new(server_config).unwrap();
+
+        assert_eq!(None, server.side().server_name());
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        let mut server_output = Vec::new();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+        assert_eq!(
+            Some(&DnsName::try_from("second.testserver.com").unwrap()),
+            server.side().server_name()
+        );
+    }
+}
+
+#[test]
+fn test_keys_match() {
+    // Consistent: Both of these should have the same SPKI values
+    Credentials::new(KeyType::Rsa2048.identity(), Box::new(SigningKeySomeSpki)).unwrap();
+    Credentials::new(
+        Arc::new(Identity::RawPublicKey(KeyType::Rsa2048.spki())),
+        Box::new(SigningKeySomeSpki),
+    )
+    .unwrap();
+
+    // Inconsistent: These should not have the same SPKI values
+    assert!(matches!(
+        Credentials::new(KeyType::EcdsaP256.identity(), Box::new(SigningKeySomeSpki)),
+        Err(Error::InconsistentKeys(InconsistentKeys::KeyMismatch))
+    ));
+    assert!(matches!(
+        Credentials::new(
+            Arc::new(Identity::RawPublicKey(KeyType::EcdsaP256.spki())),
+            Box::new(SigningKeySomeSpki)
+        ),
+        Err(Error::InconsistentKeys(InconsistentKeys::KeyMismatch))
+    ));
+
+    // Unknown: This signing key returns None for its SPKI, so we can't tell if the certified key is consistent
+    assert!(matches!(
+        Credentials::new(KeyType::Rsa2048.identity(), Box::new(SigningKeyNoneSpki)),
+        Err(Error::InconsistentKeys(InconsistentKeys::Unknown))
+    ));
+}
+
+/// Represents a SigningKey that returns None for its SPKI via the default impl.
+#[derive(Debug)]
+struct SigningKeyNoneSpki;
+
+impl SigningKey for SigningKeyNoneSpki {
+    fn choose_scheme(&self, _offered: &[SignatureScheme]) -> Option<Box<dyn Signer>> {
+        unimplemented!("Not meant to be called during tests")
+    }
+
+    fn public_key(&self) -> Option<SubjectPublicKeyInfoDer<'_>> {
+        None
+    }
+}
+
+/// Represents a SigningKey that returns Some for its SPKI.
+#[derive(Debug)]
+struct SigningKeySomeSpki;
+
+impl SigningKey for SigningKeySomeSpki {
+    fn public_key(&self) -> Option<SubjectPublicKeyInfoDer<'_>> {
+        let Identity::X509(identity) = &*KeyType::Rsa2048.identity() else {
+            panic!("expected X509 identity");
+        };
+
+        let cert = ParsedCertificate::try_from(&identity.end_entity).unwrap();
+        Some(
+            cert.subject_public_key_info()
+                .into_owned(),
+        )
+    }
+
+    fn choose_scheme(&self, _offered: &[SignatureScheme]) -> Option<Box<dyn Signer>> {
+        unimplemented!("Not meant to be called during tests")
+    }
+}
+
+fn do_exporter_test(
+    client_config: ClientConfig,
+    server_config: ServerConfig,
+) -> (KeyingMaterialExporter, KeyingMaterialExporter) {
+    let mut client_secret = [0u8; 64];
+    let mut server_secret = [0u8; 64];
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+
+    assert_eq!(Some(Error::HandshakeNotComplete), client.exporter().err());
+    assert_eq!(Some(Error::HandshakeNotComplete), server.exporter().err());
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    let client_exporter = client.exporter().unwrap();
+    let server_exporter = server.exporter().unwrap();
+
+    assert_eq!(
+        client.exporter().err(),
+        Some(Error::ApiMisuse(ApiMisuse::ExporterNotAvailable)),
+    );
+    assert_eq!(
+        server.exporter().err(),
+        Some(Error::ApiMisuse(ApiMisuse::ExporterNotAvailable)),
+    );
+
+    client_exporter
+        .derive(b"label", Some(b"context"), &mut client_secret)
+        .unwrap();
+    server_exporter
+        .derive(b"label", Some(b"context"), &mut server_secret)
+        .unwrap();
+    assert_eq!(client_secret.to_vec(), server_secret.to_vec());
+
+    let mut empty = vec![];
+    assert_eq!(
+        client_exporter
+            .derive(b"label", Some(b"context"), &mut empty)
+            .err(),
+        Some(ApiMisuse::ExporterOutputZeroLength.into())
+    );
+    assert_eq!(
+        server_exporter
+            .derive(b"label", Some(b"context"), &mut empty)
+            .err(),
+        Some(ApiMisuse::ExporterOutputZeroLength.into())
+    );
+
+    client_exporter
+        .derive(b"label", None, &mut client_secret)
+        .unwrap();
+    assert_ne!(client_secret.to_vec(), server_secret.to_vec());
+    server_exporter
+        .derive(b"label", None, &mut server_secret)
+        .unwrap();
+    assert_eq!(client_secret.to_vec(), server_secret.to_vec());
+
+    // RFC 5705 does not forbid an empty label, and neither does rustls.
+    client_exporter
+        .derive(b"", Some(b"context"), &mut client_secret)
+        .unwrap();
+    server_exporter
+        .derive(b"", Some(b"context"), &mut server_secret)
+        .unwrap();
+    assert_eq!(client_secret.to_vec(), server_secret.to_vec());
+
+    (client_exporter, server_exporter)
+}
+
+#[test]
+fn test_tls12_exporter() {
+    let provider = provider::DEFAULT_TLS12_PROVIDER;
+    for kt in KeyType::all_for_provider(&provider) {
+        let client_config = make_client_config(*kt, &provider);
+        let server_config = make_server_config(*kt, &provider);
+
+        let (client_exporter, _) = do_exporter_test(client_config, server_config);
+
+        // additionally, tls1.2 contexts over 0xffff bytes in length are not prefix-free,
+        // so outlaw them.
+        client_exporter
+            .derive(b"label", Some(&[0; 0xffff]), &mut [0])
+            .unwrap();
+        assert_eq!(
+            Error::ApiMisuse(ApiMisuse::ExporterContextTooLong),
+            client_exporter
+                .derive(b"label", Some(&[0; 0x10000]), &mut [0])
+                .unwrap_err()
+        );
+    }
+}
+
+#[test]
+fn test_tls13_exporter() {
+    let provider = provider::DEFAULT_TLS13_PROVIDER;
+    for kt in KeyType::all_for_provider(&provider) {
+        let client_config = make_client_config(*kt, &provider);
+        let server_config = make_server_config(*kt, &provider);
+
+        do_exporter_test(client_config, server_config);
+    }
+}
+
+#[test]
+fn test_extended_main_secret_reporting() {
+    // TLS 1.2: rustls always offers the Extended Main Secret extension, so a
+    // rustls<->rustls 1.2 handshake negotiates it and reports `Some(true)` on
+    // both ends.
+    let provider = provider::DEFAULT_TLS12_PROVIDER;
+    let client_config = make_client_config(KeyType::default(), &provider);
+    let server_config = make_server_config(KeyType::default(), &provider);
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    assert_eq!(client.extended_main_secret(), None);
+    assert_eq!(server.extended_main_secret(), None);
+
+    let (mut client_input, mut server_input) = (VecInput::default(), VecInput::default());
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+    assert_eq!(client.extended_main_secret(), Some(true));
+    assert_eq!(server.extended_main_secret(), Some(true));
+
+    // TLS 1.3 has no Extended Main Secret extension (the property is intrinsic
+    // to its key schedule), so it is reported as `None`.
+    let provider = provider::DEFAULT_TLS13_PROVIDER;
+    let client_config = make_client_config(KeyType::default(), &provider);
+    let server_config = make_server_config(KeyType::default(), &provider);
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let (mut client_input, mut server_input) = (VecInput::default(), VecInput::default());
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+    assert_eq!(client.extended_main_secret(), None);
+    assert_eq!(server.extended_main_secret(), None);
+}
+
+#[test]
+fn test_tls13_exporter_maximum_output_length() {
+    let provider = provider::DEFAULT_TLS13_PROVIDER;
+    let client_config = make_client_config(KeyType::default(), &provider);
+    let server_config = make_server_config(KeyType::default(), &provider);
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    assert_eq!(
+        client.negotiated_cipher_suite(),
+        Some(find_suite(CipherSuite::TLS13_AES_128_GCM_SHA256))
+    );
+
+    let client_exporter = client.exporter().unwrap();
+    let server_exporter = server.exporter().unwrap();
+
+    let mut maximum_allowed_output_client = [0u8; 255 * 32];
+    let mut maximum_allowed_output_server = [0u8; 255 * 32];
+
+    client_exporter
+        .derive(
+            b"label",
+            Some(b"context"),
+            &mut maximum_allowed_output_client,
+        )
+        .unwrap();
+    server_exporter
+        .derive(
+            b"label",
+            Some(b"context"),
+            &mut maximum_allowed_output_server,
+        )
+        .unwrap();
+
+    assert_eq!(maximum_allowed_output_client, maximum_allowed_output_server);
+
+    let mut too_long_output = [0u8; 255 * 48 + 1];
+    assert_eq!(
+        client_exporter
+            .derive(b"label", Some(b"context"), &mut too_long_output)
+            .err(),
+        Some(ApiMisuse::ExporterOutputTooLong.into())
+    );
+    assert_eq!(
+        server_exporter
+            .derive(b"label", Some(b"context"), &mut too_long_output)
+            .err(),
+        Some(ApiMisuse::ExporterOutputTooLong.into())
+    );
+}
+
+fn find_suite(suite: CipherSuite) -> SupportedCipherSuite {
+    if let Some(found) = provider::ALL_TLS12_CIPHER_SUITES
+        .iter()
+        .find(|cs| cs.common.suite == suite)
+    {
+        return SupportedCipherSuite::Tls12(found);
+    }
+
+    if let Some(found) = provider::ALL_TLS13_CIPHER_SUITES
+        .iter()
+        .find(|cs| cs.common.suite == suite)
+    {
+        return SupportedCipherSuite::Tls13(found);
+    }
+
+    panic!("find_suite given unsupported suite {suite:?}");
+}
+
+fn test_ciphersuites() -> Vec<(ProtocolVersion, KeyType, CipherSuite)> {
+    let mut v = vec![
+        (
+            ProtocolVersion::TLSv1_3,
+            KeyType::Rsa2048,
+            CipherSuite::TLS13_AES_256_GCM_SHA384,
+        ),
+        (
+            ProtocolVersion::TLSv1_3,
+            KeyType::Rsa2048,
+            CipherSuite::TLS13_AES_128_GCM_SHA256,
+        ),
+        (
+            ProtocolVersion::TLSv1_2,
+            KeyType::EcdsaP384,
+            CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+        ),
+        (
+            ProtocolVersion::TLSv1_2,
+            KeyType::EcdsaP384,
+            CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+        ),
+        (
+            ProtocolVersion::TLSv1_2,
+            KeyType::Rsa2048,
+            CipherSuite::TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+        ),
+        (
+            ProtocolVersion::TLSv1_2,
+            KeyType::Rsa2048,
+            CipherSuite::TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+        ),
+    ];
+
+    if !provider_is_fips() {
+        v.extend_from_slice(&[
+            (
+                ProtocolVersion::TLSv1_3,
+                KeyType::Rsa2048,
+                CipherSuite::TLS13_CHACHA20_POLY1305_SHA256,
+            ),
+            (
+                ProtocolVersion::TLSv1_2,
+                KeyType::EcdsaP256,
+                CipherSuite::TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+            ),
+            (
+                ProtocolVersion::TLSv1_2,
+                KeyType::Rsa2048,
+                CipherSuite::TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+            ),
+        ]);
+    }
+
+    v
+}
+
+#[test]
+fn negotiated_ciphersuite_default() {
+    let provider = provider::DEFAULT_PROVIDER;
+    for kt in KeyType::all_for_provider(&provider) {
+        do_suite_and_kx_test(
+            make_client_config(*kt, &provider),
+            make_server_config(*kt, &provider),
+            find_suite(CipherSuite::TLS13_AES_128_GCM_SHA256),
+            expected_kx_for_version(ProtocolVersion::TLSv1_3),
+            ProtocolVersion::TLSv1_3,
+        );
+    }
+}
+
+#[test]
+fn all_suites_covered() {
+    assert_eq!(
+        provider::DEFAULT_TLS12_CIPHER_SUITES.len() + provider::DEFAULT_TLS13_CIPHER_SUITES.len(),
+        test_ciphersuites().len()
+    );
+}
+
+#[test]
+fn negotiated_ciphersuite_client() {
+    for (version, kt, suite) in test_ciphersuites() {
+        let scs = find_suite(suite);
+        let client_config =
+            ClientConfig::builder(provider_with_one_suite(&provider::DEFAULT_PROVIDER, scs).into())
+                .finish(kt);
+
+        do_suite_and_kx_test(
+            client_config,
+            make_server_config(kt, &provider::DEFAULT_PROVIDER),
+            scs,
+            expected_kx_for_version(version),
+            version,
+        );
+    }
+}
+
+#[test]
+fn negotiated_ciphersuite_server() {
+    for (version, kt, suite) in test_ciphersuites() {
+        let scs = find_suite(suite);
+        let server_config =
+            ServerConfig::builder(provider_with_one_suite(&provider::DEFAULT_PROVIDER, scs).into())
+                .finish(kt);
+
+        do_suite_and_kx_test(
+            make_client_config(kt, &provider::DEFAULT_PROVIDER),
+            server_config,
+            scs,
+            expected_kx_for_version(version),
+            version,
+        );
+    }
+}
+
+#[test]
+fn negotiated_ciphersuite_server_ignoring_client_preference() {
+    for (version, kt, suite) in test_ciphersuites() {
+        let scs = find_suite(suite);
+
+        // choose a distinct other suite for the same version
+        let scs_other = match (version, scs.suite()) {
+            (_, CipherSuite::TLS13_AES_256_GCM_SHA384) => {
+                find_suite(CipherSuite::TLS13_AES_128_GCM_SHA256)
+            }
+            (ProtocolVersion::TLSv1_3, _) => find_suite(CipherSuite::TLS13_AES_256_GCM_SHA384),
+            (_, CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384) => {
+                find_suite(CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256)
+            }
+            (_, _) => find_suite(CipherSuite::TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384),
+        };
+        assert_ne!(scs, scs_other);
+
+        let mut server_config = ServerConfig::builder(
+            provider_with_suites(&provider::DEFAULT_PROVIDER, &[scs, scs_other]).into(),
+        )
+        .finish(kt);
+        server_config.cipher_suite_selector = &PreferServerOrder;
+
+        let client_config = ClientConfig::builder(
+            provider_with_suites(&provider::DEFAULT_PROVIDER, &[scs_other, scs]).into(),
+        )
+        .finish(kt);
+
+        do_suite_and_kx_test(
+            client_config,
+            server_config,
+            scs,
+            expected_kx_for_version(version),
+            version,
+        );
+    }
+}
+
+fn expected_kx_for_version(version: ProtocolVersion) -> NamedGroup {
+    match (version, provider_is_aws_lc_rs(), provider_is_fips()) {
+        (ProtocolVersion::TLSv1_3, true, _) => NamedGroup::X25519MLKEM768,
+        (_, _, true) => NamedGroup::secp256r1,
+        (_, _, _) => NamedGroup::X25519,
+    }
+}
+
+fn assert_lt(left: usize, right: usize) {
+    if left >= right {
+        panic!("expected {left} < {right}");
+    }
+}
+
+#[test]
+fn connection_types_are_not_huge() {
+    // Arbitrary sizes
+    assert_lt(size_of::<Connection<ServerSide, Tcp>>(), 1600);
+    assert_lt(size_of::<Connection<ClientSide, Tcp>>(), 1600);
+}
+
+#[test]
+fn test_client_rejects_illegal_tls13_ccs() {
+    fn corrupt_ccs(record: &mut Record<Vec<u8>>) -> Altered {
+        if record.typ == ContentType::ChangeCipherSpec {
+            println!("seen CCS {:?}", record.typ);
+            return Altered::Raw(encoding::record_framing(
+                ContentType::ChangeCipherSpec,
+                ProtocolVersion::TLSv1_2,
+                vec![0x01, 0x02],
+            ));
+        }
+        Altered::InPlace
+    }
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    transfer(&mut client_output, &mut server_input);
+    server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap();
+
+    transfer_altered(&mut server_output, corrupt_ccs, &mut client_input);
+    assert_eq!(
+        client
+            .read_tls(&mut client_input, &mut client_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::PeerMisbehaved(PeerMisbehaved::IllegalMiddleboxChangeCipherSpec),
+    );
+}
+
+#[test]
+fn test_no_warning_logging_during_successful_sessions() {
+    let counts = CountingSubscriber::new();
+    for (client_config, server_config, _) in MultiTest::new(provider::DEFAULT_PROVIDER) {
+        let mut client_output = Vec::new();
+        let mut server_output = Vec::new();
+        let (mut client, mut server) =
+            make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+        let mut client_input = VecInput::default();
+        let mut server_input = VecInput::default();
+        do_handshake(
+            &mut client_input,
+            &mut client_output,
+            &mut client,
+            &mut server_input,
+            &mut server_output,
+            &mut server,
+        );
+    }
+
+    let c = counts.sample();
+
+    if cfg!(feature = "tracing") {
+        println!("After tests: {c:?}");
+        assert!(c.warn.is_empty());
+        assert!(c.error.is_empty());
+        assert!(c.info.is_empty());
+        assert!(!c.trace.is_empty());
+        assert!(!c.debug.is_empty());
+    } else {
+        println!("After tests: {c:?}");
+        assert!(c.warn.is_empty());
+        assert!(c.error.is_empty());
+        assert!(c.info.is_empty());
+        assert!(c.trace.is_empty());
+        assert!(c.debug.is_empty());
+    }
+}
+
+#[cfg(feature = "ring")]
+#[test]
+fn test_explicit_provider_selection() {
+    let client_config =
+        ClientConfig::builder(rustls_ring::DEFAULT_PROVIDER.into()).finish(KeyType::default());
+
+    let server_config =
+        ServerConfig::builder(rustls_aws_lc_rs::DEFAULT_PROVIDER.into()).finish(KeyType::default());
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+}
+
+#[derive(Debug)]
+struct FaultyRandom {
+    // when empty, `fill_random` requests return `GetRandomFailed`
+    rand_queue: Mutex<&'static [u8]>,
+}
+
+impl rustls::crypto::SecureRandom for FaultyRandom {
+    fn fill(&self, output: &mut [u8]) -> Result<(), rustls::crypto::GetRandomFailed> {
+        let mut queue = self.rand_queue.lock().unwrap();
+
+        println!(
+            "fill_random request for {} bytes (got {})",
+            output.len(),
+            queue.len()
+        );
+
+        if queue.len() < output.len() {
+            return Err(rustls::crypto::GetRandomFailed);
+        }
+
+        let fixed_output = &queue[..output.len()];
+        output.copy_from_slice(fixed_output);
+        *queue = &queue[output.len()..];
+        Ok(())
+    }
+}
+
+#[test]
+fn test_client_construction_fails_if_random_source_fails_in_first_request() {
+    static FAULTY_RANDOM: FaultyRandom = FaultyRandom {
+        rand_queue: Mutex::new(b""),
+    };
+
+    let client_config = ClientConfig::builder(
+        CryptoProvider {
+            secure_random: &FAULTY_RANDOM,
+            ..provider::DEFAULT_PROVIDER
+        }
+        .into(),
+    )
+    .finish(KeyType::default());
+
+    assert_eq!(
+        Arc::new(client_config)
+            .connect(server_name("localhost"))
+            .build(&mut Vec::new())
+            .unwrap_err(),
+        Error::FailedToGetRandomBytes
+    );
+}
+
+#[test]
+fn test_client_construction_fails_if_random_source_fails_in_second_request() {
+    static FAULTY_RANDOM: FaultyRandom = FaultyRandom {
+        rand_queue: Mutex::new(b"nice random number generator huh"),
+    };
+
+    let client_config = ClientConfig::builder(
+        CryptoProvider {
+            secure_random: &FAULTY_RANDOM,
+            ..provider::DEFAULT_PROVIDER
+        }
+        .into(),
+    )
+    .finish(KeyType::default());
+
+    assert_eq!(
+        Arc::new(client_config)
+            .connect(server_name("localhost"))
+            .build(&mut Vec::new())
+            .unwrap_err(),
+        Error::FailedToGetRandomBytes
+    );
+}
+
+#[test]
+fn test_client_construction_requires_66_bytes_of_random_material() {
+    static FAULTY_RANDOM: FaultyRandom = FaultyRandom {
+        rand_queue: Mutex::new(
+            b"nice random number generator !!!!!\
+                                 it's really not very good is it?",
+        ),
+    };
+
+    let client_config = ClientConfig::builder(
+        CryptoProvider {
+            secure_random: &FAULTY_RANDOM,
+            ..provider::DEFAULT_PROVIDER
+        }
+        .into(),
+    )
+    .finish(KeyType::default());
+
+    Arc::new(client_config)
+        .connect(server_name("localhost"))
+        .build(&mut Vec::new())
+        .expect("check how much random material Connection<ClientSide, Tcp>::new consumes");
+}
+
+#[test]
+fn test_client_removes_tls12_session_if_server_sends_undecryptable_first_record() {
+    fn inject_corrupt_finished_record(record: &mut Record<Vec<u8>>) -> Altered {
+        if record.typ == ContentType::ChangeCipherSpec {
+            // interdict "real" ChangeCipherSpec with its encoding, plus a faulty encrypted Finished.
+            let mut raw_change_cipher_spec = encoding::record_framing(
+                ContentType::ChangeCipherSpec,
+                ProtocolVersion::TLSv1_2,
+                vec![0x01],
+            );
+            let mut corrupt_finished = encoding::record_framing(
+                ContentType::Handshake,
+                ProtocolVersion::TLSv1_2,
+                vec![0u8; 0x28],
+            );
+
+            let mut both = vec![];
+            both.append(&mut raw_change_cipher_spec);
+            both.append(&mut corrupt_finished);
+
+            Altered::Raw(both)
+        } else {
+            Altered::InPlace
+        }
+    }
+
+    let provider = provider::DEFAULT_TLS12_PROVIDER;
+    let mut client_config = make_client_config(KeyType::default(), &provider);
+    let storage = Arc::new(ClientStorage::new());
+    client_config.resumption = Resumption::store(storage.clone());
+    let client_config = Arc::new(client_config);
+    let server_config = Arc::new(make_server_config(KeyType::default(), &provider));
+
+    // successful handshake to allow resumption
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    // resumption
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_arc_configs(&client_config, &server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    transfer(&mut client_output, &mut server_input);
+    server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap();
+    transfer_altered(
+        &mut server_output,
+        inject_corrupt_finished_record,
+        &mut client_input,
+    );
+
+    // discard storage operations up to this point, to observe the one we want to test for.
+    storage.ops_and_reset();
+
+    // client cannot decrypt faulty Finished, and deletes saved session in case
+    // server resumption is buggy.
+    assert_eq!(
+        Some(Error::DecryptError),
+        client
+            .read_tls(&mut client_input, &mut client_output)
+            .handle_all(&mut Vec::new())
+            .err()
+    );
+
+    assert!(matches!(
+        storage.ops()[0],
+        ClientStorageOp::RemoveTls12Session(_)
+    ));
+}
+
+#[test]
+fn test_client_fips_service_indicator() {
+    match make_client_config(KeyType::default(), &provider::DEFAULT_PROVIDER).fips() {
+        FipsStatus::Pending | FipsStatus::Certified { .. } if provider_is_fips() => {}
+        FipsStatus::Unvalidated if !provider_is_fips() => {}
+        other => panic!(
+            "unexpected fips status {other:?} (expected fips={:?})",
+            provider_is_fips()
+        ),
+    }
+}
+
+#[test]
+fn test_server_fips_service_indicator() {
+    match make_server_config(KeyType::default(), &provider::DEFAULT_PROVIDER).fips() {
+        FipsStatus::Pending | FipsStatus::Certified { .. } if provider_is_fips() => {}
+        FipsStatus::Unvalidated if !provider_is_fips() => {}
+        other => panic!(
+            "unexpected fips status {other:?} (expected fips={:?})",
+            provider_is_fips()
+        ),
+    }
+}
+
+#[test]
+fn test_connection_fips_service_indicator() {
+    let provider = provider::DEFAULT_PROVIDER;
+    let client_config = Arc::new(make_client_config(KeyType::default(), &provider));
+    let server_config = Arc::new(make_server_config(KeyType::default(), &provider));
+    let conn_pair = make_pair_for_arc_configs(&client_config, &server_config, &mut Vec::new());
+    // Each connection's FIPS status should reflect the FIPS status of the config it was created
+    // from.
+    assert_eq!(client_config.fips(), conn_pair.0.fips());
+    assert_eq!(server_config.fips(), conn_pair.1.fips());
+}
+
+#[test]
+fn test_client_fips_service_indicator_includes_require_ems() {
+    if !provider_is_fips() {
+        return;
+    }
+
+    let mut client_config = make_client_config(KeyType::default(), &provider::DEFAULT_PROVIDER);
+    assert!(matches!(
+        client_config.fips(),
+        FipsStatus::Pending | FipsStatus::Certified { .. }
+    ));
+    client_config.require_ems = false;
+    assert!(matches!(client_config.fips(), FipsStatus::Unvalidated));
+}
+
+#[test]
+fn test_server_fips_service_indicator_includes_require_ems() {
+    if !provider_is_fips() {
+        return;
+    }
+
+    let mut server_config = make_server_config(KeyType::default(), &provider::DEFAULT_PROVIDER);
+    assert!(matches!(
+        server_config.fips(),
+        FipsStatus::Pending | FipsStatus::Certified { .. }
+    ));
+    server_config.require_ems = false;
+    assert!(matches!(server_config.fips(), FipsStatus::Unvalidated));
+}
+
+#[test]
+fn test_client_fips_service_indicator_includes_ech_hpke_suite() {
+    if !provider_is_fips() {
+        return;
+    }
+
+    for suite in ALL_SUPPORTED_SUITES {
+        let suite_id = suite.suite();
+        let config_path = format!(
+            "tests/data/{:?}-{:?}-{:?}-echconfigs.bin",
+            suite_id.kem, suite_id.sym.kdf_id, suite_id.sym.aead_id
+        );
+
+        let ech_config = EchConfig::new(
+            EchConfigListBytes::from(std::fs::read(&config_path).unwrap()),
+            &[*suite],
+        )
+        .unwrap();
+
+        // A ECH client configuration should only be considered FIPS approved if the
+        // ECH HPKE suite is itself FIPS approved.
+        let config = ClientConfig::builder(provider::DEFAULT_TLS13_PROVIDER.into())
+            .with_ech(EchMode::Enable(ech_config));
+        let config = config.finish(KeyType::default());
+        assert_eq!(config.fips(), suite.fips());
+
+        // The same applies if an ECH GREASE client configuration is used.
+        let (public_key, _) = suite.generate_key_pair().unwrap();
+        let config = ClientConfig::builder(provider::DEFAULT_TLS13_PROVIDER.into())
+            .with_ech(EchMode::Grease(EchGreaseConfig::new(*suite, public_key)));
+        let config = Arc::new(config.finish(KeyType::default()));
+        assert_eq!(config.fips(), suite.fips());
+
+        // And a connection made from a client config should retain the fips status of the
+        // config w.r.t the HPKE suite.
+        let conn = config
+            .connect(server_name("example.org"))
+            .build(&mut Vec::new())
+            .unwrap();
+        assert_eq!(conn.fips(), suite.fips());
+    }
+}
+
+#[test]
+fn test_client_sends_no_application_data_after_ech_rejection() {
+    // The server has no ECH keys, so it rejects ECH and completes the outer handshake
+    // with a certificate that is valid for the ECH config's `public_name` only.
+    let suite = ALL_SUPPORTED_SUITES[0];
+    let (public_key, _) = suite.generate_key_pair().unwrap();
+    let ech_config = EchConfig::new(
+        encoding::ech_config_list(suite.suite(), &public_key.0, "testserver.com"),
+        &[suite],
+    )
+    .unwrap();
+
+    let provider = provider::DEFAULT_TLS13_PROVIDER;
+    let client_config = ClientConfig::builder(provider.clone().into())
+        .with_ech(EchMode::Enable(ech_config))
+        .finish(KeyType::default());
+    let server_config = make_server_config(KeyType::default(), &provider);
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let mut client = Arc::new(client_config)
+        .connect(server_name("private.example"))
+        .build(&mut client_output)
+        .unwrap();
+    let mut server = Connection::new(Arc::new(server_config)).unwrap();
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+
+    let err = do_handshake_until_error(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    )
+    .unwrap_err();
+    assert!(matches!(err, ErrorFromPeer::Client(Error::RejectedEch(_))));
+    assert_eq!(client.side().ech_status(), EchStatus::Rejected);
+
+    // The connection is only authenticated for the `public_name`, so it must not become
+    // usable for application data intended for the inner server name.
+    assert!(client.is_handshaking());
+    assert!(client.peer_identity().is_none());
+    assert_eq!(client.exporter().unwrap_err(), Error::HandshakeNotComplete);
+
+    let queued = client_output.len();
+    assert!(matches!(
+        client
+            .write(b"ech-inner-secret".into(), &mut client_output)
+            .unwrap_err(),
+        Error::RejectedEch(_)
+    ));
+    assert_eq!(
+        client
+            .refresh_traffic_keys(&mut client_output)
+            .unwrap_err(),
+        Error::HandshakeNotComplete
+    );
+    assert_eq!(client_output.len(), queued);
+
+    let mut server_received = Vec::new();
+    transfer(&mut client_output, &mut server_input);
+    let err = server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut server_received)
+        .unwrap_err();
+    assert_eq!(
+        err,
+        Error::AlertReceived(AlertDescription::EncryptedClientHelloRequired)
+    );
+    assert!(server_received.is_empty());
+}
+
+#[test]
+fn test_illegal_server_renegotiation_attempt_after_tls13_handshake() {
+    let provider = provider::DEFAULT_TLS13_PROVIDER;
+    let client_config = make_client_config(KeyType::default(), &provider);
+    let mut server_config = make_server_config(KeyType::default(), &provider);
+    server_config.enable_secret_extraction = true;
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    let mut raw_server = RawTls::new_server(server);
+
+    let record = Record {
+        typ: ContentType::Handshake,
+        version: EncodableVersion::Legacy(ProtocolVersion::TLSv1_3),
+        payload: Payload::new(encoding::handshake_framing(
+            HandshakeType::HelloRequest,
+            vec![],
+        )),
+    };
+    raw_server.encrypt_and_send(&record, &mut client_input);
+    let err = client
+        .read_tls(&mut client_input, &mut client_output)
+        .handle_all(&mut Vec::new())
+        .unwrap_err();
+    assert_eq!(
+        err,
+        Error::InappropriateHandshakeMessage {
+            expect_types: vec![HandshakeType::NewSessionTicket, HandshakeType::KeyUpdate],
+            got_type: HandshakeType::HelloRequest
+        }
+    );
+}
+
+#[test]
+fn test_illegal_server_renegotiation_attempt_after_tls12_handshake() {
+    let provider = provider::DEFAULT_TLS12_PROVIDER;
+    let client_config = make_client_config(KeyType::default(), &provider);
+    let mut server_config = make_server_config(KeyType::default(), &provider);
+    server_config.enable_secret_extraction = true;
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    let mut raw_server = RawTls::new_server(server);
+
+    let record = Record {
+        typ: ContentType::Handshake,
+        version: EncodableVersion::Legacy(ProtocolVersion::TLSv1_3),
+        payload: Payload::new(encoding::handshake_framing(
+            HandshakeType::HelloRequest,
+            vec![],
+        )),
+    };
+
+    // one is allowed (and elicits a warning alert)
+    raw_server.encrypt_and_send(&record, &mut client_input);
+    client
+        .read_tls(&mut client_input, &mut client_output)
+        .handle_all(&mut Vec::new())
+        .unwrap();
+    raw_server.receive_and_decrypt(&mut client_output, |m| {
+        assert_eq!(m.version.version(), ProtocolVersion::TLSv1_2);
+        assert_eq!(m.typ, ContentType::Alert);
+        assert_eq!(m.payload, &[0x01, 100]); // Warning=1, NoRenegotiation=100
+    });
+
+    // second is fatal
+    raw_server.encrypt_and_send(&record, &mut client_input);
+    assert_eq!(
+        client
+            .read_tls(&mut client_input, &mut client_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::PeerMisbehaved(PeerMisbehaved::TooManyRenegotiationRequests)
+    );
+}
+
+#[test]
+fn test_illegal_client_renegotiation_attempt_after_tls13_handshake() {
+    let provider = provider::DEFAULT_TLS13_PROVIDER;
+    let mut client_config = make_client_config(KeyType::default(), &provider);
+    client_config.enable_secret_extraction = true;
+    let server_config = make_server_config(KeyType::default(), &provider);
+
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (mut client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+    let mut client_input = VecInput::default();
+    let mut server_input = VecInput::default();
+    do_handshake(
+        &mut client_input,
+        &mut client_output,
+        &mut client,
+        &mut server_input,
+        &mut server_output,
+        &mut server,
+    );
+
+    let mut raw_client = RawTls::new_client(client);
+
+    let record = Record {
+        typ: ContentType::Handshake,
+        version: EncodableVersion::Legacy(ProtocolVersion::TLSv1_3),
+        payload: Payload::new(encoding::basic_client_hello(vec![])),
+    };
+    raw_client.encrypt_and_send(&record, &mut server_input);
+    let err = server
+        .read_tls(&mut server_input, &mut server_output)
+        .handle_all(&mut Vec::new())
+        .unwrap_err();
+    assert_eq!(
+        format!("{err:?}"),
+        "InappropriateHandshakeMessage { expect_types: [KeyUpdate], got_type: ClientHello }"
+    );
+}
+
+#[test]
+fn test_illegal_client_renegotiation_attempt_during_tls12_handshake() {
+    let provider = provider::DEFAULT_TLS12_PROVIDER;
+    let server_config = make_server_config(KeyType::default(), &provider);
+    let client_config = make_client_config(KeyType::default(), &provider);
+    let mut client_output = Vec::new();
+    let mut server_output = Vec::new();
+    let (_client, mut server) =
+        make_pair_for_configs(client_config, server_config, &mut client_output);
+
+    // two copies of the same hello
+    let mut input = [&client_output[..], &client_output[..]].concat();
+    assert_eq!(
+        server
+            .read_tls(&mut SliceInput::new(&mut input), &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::InappropriateHandshakeMessage {
+            expect_types: vec![HandshakeType::ClientKeyExchange],
+            got_type: HandshakeType::ClientHello
+        }
+    );
+}
+
+#[test]
+fn tls13_packed_handshake() {
+    // transcript requires selection of X25519
+    if provider_is_fips() {
+        return;
+    }
+
+    // regression test for https://github.com/rustls/rustls/issues/2040
+    // (did not affect the buffered api)
+    let client_config = Arc::new(
+        ClientConfig::builder(unsafe_plaintext_crypto_provider(provider::DEFAULT_PROVIDER))
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(MockServerVerifier::rejects_certificate(
+                CertificateError::UnknownIssuer.into(),
+            )))
+            .with_no_client_auth()
+            .unwrap(),
+    );
+
+    let mut client_output = Vec::new();
+    let mut client = client_config
+        .connect(server_name("localhost"))
+        .build(&mut client_output)
+        .unwrap();
+    let mut first_flight = include_bytes!("../data/bug2040-message-1.bin").to_vec();
+    // the recording predates this connection's `session_id`
+    encoding::echo_session_id(&client_output, &mut first_flight);
+    client_output.clear();
+
+    client
+        .read_tls(&mut SliceInput::new(&mut first_flight), &mut client_output)
+        .handle_all(&mut Vec::new())
+        .unwrap();
+
+    let mut second_flight = include_bytes!("../data/bug2040-message-2.bin").to_vec();
+    assert_eq!(
+        client
+            .read_tls(&mut SliceInput::new(&mut second_flight), &mut client_output)
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        Error::InvalidCertificate(CertificateError::UnknownIssuer),
+    );
+}
+
+#[test]
+fn large_client_hello() {
+    let mut client_output = Vec::new();
+    let (_, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut client_output,
+    );
+    let mut server_input = VecInput::default();
+    let mut server_output = Vec::new();
+    let hello = include_bytes!("../data/bug2227-clienthello.bin");
+    let mut cursor = io::Cursor::new(hello);
+    loop {
+        if server_input.read(&mut cursor).unwrap() == 0 {
+            break;
+        }
+        server
+            .read_tls(&mut server_input, &mut server_output)
+            .handle_all(&mut Vec::new())
+            .unwrap();
+    }
+}
+
+#[test]
+fn large_client_hello_acceptor() {
+    let mut state = ServerHandshake::NeedsInput(ServerHandshake::start());
+    let mut input = VecInput::default();
+    let hello = include_bytes!("../data/bug2227-clienthello.bin");
+    let mut cursor = io::Cursor::new(hello);
+
+    loop {
+        input.read(&mut cursor).unwrap();
+
+        state = match state {
+            ServerHandshake::NeedsInput(receive) => receive
+                .process(&mut input, &mut vec![])
+                .unwrap(),
+            ServerHandshake::Accepted(accepted) => {
+                println!("{accepted:?}");
+                break;
+            }
+            other => panic!("unexpected {other:?}"),
+        };
+    }
+}
+
+#[test]
+fn acceptor_with_illegal_max_fragment_size() {
+    let mut server_config = make_server_config(KeyType::default(), &provider::DEFAULT_PROVIDER);
+    server_config.max_fragment_size = Some(31);
+
+    let receive = ServerHandshake::start();
+    let mut input = VecInput::default();
+    input
+        .read(
+            &mut encoding::record_framing(
+                ContentType::Handshake,
+                ProtocolVersion::TLSv1_2,
+                encoding::basic_client_hello(vec![]),
+            )
+            .as_slice(),
+        )
+        .unwrap();
+
+    let mut output = vec![];
+    let ServerHandshake::Accepted(accepted) = receive
+        .process(&mut input, &mut output)
+        .unwrap()
+    else {
+        panic!("unexpected receive state");
+    };
+
+    accepted
+        .choose_config(Arc::new(server_config), &mut output)
+        .err()
+        .unwrap();
+
+    assert!(
+        output.is_empty(),
+        "illegal max fragment size should not send an alert, as it is a local configuration issue"
+    );
+}
+
+#[test]
+fn excess_client_hello_acceptor() {
+    // this is a trivial ClientHello, followed by a fragment of a ClientHello
+    let mut hello = encoding::basic_client_hello(vec![]);
+    hello.extend(&hello[..10].to_vec());
+    let mut hello =
+        encoding::record_framing(ContentType::Handshake, ProtocolVersion::TLSv1_2, hello);
+
+    let receive = ServerHandshake::start();
+    let mut output = vec![];
+    let error = receive
+        .process(&mut SliceInput::new(&mut hello), &mut output)
+        .unwrap_err();
+    assert_eq!(error, PeerMisbehaved::KeyEpochWithPendingFragment.into());
+    assert_eq!(
+        output,
+        encoding::alert(AlertDescription::UnexpectedMessage, &[])
+    );
+}
+
+#[test]
+fn client_hello_acceptor_rejects_record_containing_subsequent_messages() {
+    let mut hello = encoding::basic_client_hello(vec![]);
+    hello.extend(encoding::handshake_framing(
+        HandshakeType::EncryptedExtensions,
+        vec![0, 0],
+    ));
+    hello.extend(encoding::handshake_framing(
+        HandshakeType::Finished,
+        vec![0; 32],
+    ));
+    let mut hello =
+        encoding::record_framing(ContentType::Handshake, ProtocolVersion::TLSv1_2, hello);
+
+    let receive = ServerHandshake::start();
+    let mut output = vec![];
+    let error = receive
+        .process(&mut SliceInput::new(&mut hello), &mut output)
+        .unwrap_err();
+    assert_eq!(error, PeerMisbehaved::KeyEpochWithPendingFragment.into());
+    assert_eq!(
+        output,
+        encoding::alert(AlertDescription::UnexpectedMessage, &[])
+    );
+}
+
+#[test]
+fn client_connection_rejects_record_containing_subsequent_messages() {
+    let mut server_flight = encoding::server_hello(
+        ProtocolVersion::TLSv1_2,
+        &[b'a'; 32],
+        &[0],
+        CipherSuite::TLS13_AES_128_GCM_SHA256,
+        vec![
+            encoding::Extension::new_versions_server_tls13(),
+            encoding::Extension::new_dummy_key_share_server(),
+        ],
+    );
+    server_flight.extend(encoding::handshake_framing(
+        HandshakeType::EncryptedExtensions,
+        vec![0, 0],
+    ));
+    server_flight.extend(encoding::handshake_framing(
+        HandshakeType::Finished,
+        vec![0; 32],
+    ));
+    let mut server_flight = encoding::record_framing(
+        ContentType::Handshake,
+        ProtocolVersion::TLSv1_2,
+        server_flight,
+    );
+
+    let mut client_output = Vec::new();
+    let (mut client, _) = make_pair(
+        KeyType::default(),
+        &CryptoProvider {
+            kx_groups: Cow::Owned(vec![provider::kx_group::SECP256R1]),
+            ..provider::DEFAULT_PROVIDER
+        },
+        &mut client_output,
+    );
+    // the client requires its `session_id` back before it looks further
+    encoding::echo_session_id(&client_output, &mut server_flight);
+    assert_eq!(
+        client
+            .read_tls(&mut SliceInput::new(&mut server_flight), &mut Vec::new())
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        PeerMisbehaved::KeyEpochWithPendingFragment.into()
+    );
+}
+
+#[test]
+fn server_connection_rejects_record_containing_subsequent_messages() {
+    let mut client_flight = encoding::basic_client_hello(vec![]);
+    client_flight.extend(encoding::handshake_framing(
+        HandshakeType::Finished,
+        vec![0; 32],
+    ));
+
+    let mut client_flight = encoding::record_framing(
+        ContentType::Handshake,
+        ProtocolVersion::TLSv1_2,
+        client_flight,
+    );
+
+    let (_, mut server) = make_pair(
+        KeyType::default(),
+        &provider::DEFAULT_PROVIDER,
+        &mut Vec::new(),
+    );
+    assert_eq!(
+        server
+            .read_tls(&mut SliceInput::new(&mut client_flight), &mut Vec::new())
+            .handle_all(&mut Vec::new())
+            .unwrap_err(),
+        PeerMisbehaved::KeyEpochWithPendingFragment.into()
+    );
+}
+
+#[test]
+fn server_invalid_sni_policy() {
+    const SERVER_NAME_GOOD: &str = "LXXXxxxXXXR";
+    const SERVER_NAME_BAD: &str = "[XXXxxxXXX]";
+    const SERVER_NAME_IPV4: &str = "10.11.12.13";
+
+    fn replace_sni(sni_replacement: &str) -> impl Fn(&mut Record<Vec<u8>>) -> Altered + '_ {
+        assert_eq!(sni_replacement.len(), SERVER_NAME_GOOD.len());
+        move |record: &mut Record<Vec<u8>>| {
+            if record.typ != ContentType::Handshake {
+                return Altered::InPlace;
+            }
+
+            let Some(start) = record
+                .payload
+                .windows(SERVER_NAME_GOOD.len())
+                .position(|w| w == SERVER_NAME_GOOD.as_bytes())
+            else {
+                return Altered::InPlace;
+            };
+
+            record.payload[start..][..SERVER_NAME_GOOD.len()]
+                .copy_from_slice(sni_replacement.as_bytes());
+            Altered::InPlace
+        }
+    }
+
+    #[derive(Debug)]
+    enum ExpectedResult {
+        Accept,
+        AcceptNoSni,
+        Reject,
+    }
+    use ExpectedResult::*;
+    use rustls::server::InvalidSniPolicy as Policy;
+    let test_cases = [
+        (Policy::RejectAll, SERVER_NAME_GOOD, Accept),
+        (Policy::RejectAll, SERVER_NAME_IPV4, Reject),
+        (Policy::RejectAll, SERVER_NAME_BAD, Reject),
+        (Policy::IgnoreAll, SERVER_NAME_GOOD, Accept),
+        (Policy::IgnoreAll, SERVER_NAME_IPV4, AcceptNoSni),
+        (Policy::IgnoreAll, SERVER_NAME_BAD, AcceptNoSni),
+        (Policy::IgnoreIpAddresses, SERVER_NAME_GOOD, Accept),
+        (Policy::IgnoreIpAddresses, SERVER_NAME_IPV4, AcceptNoSni),
+        (Policy::IgnoreIpAddresses, SERVER_NAME_BAD, Reject),
+    ];
+
+    let accept_result = Error::NoSuitableCertificate;
+    let reject_result = Error::PeerMisbehaved(PeerMisbehaved::ServerNameMustContainOneHostName);
+
+    for (policy, sni, expected_result) in test_cases {
+        let provider = provider::DEFAULT_PROVIDER;
+        let client_config = make_client_config(KeyType::default(), &provider);
+        let mut server_config = make_server_config(KeyType::default(), &provider);
+
+        server_config.cert_resolver = Arc::new(ServerCheckSni {
+            expect_sni: matches!(expected_result, Accept),
+        });
+        server_config.invalid_sni_policy = policy;
+
+        let mut client_output = Vec::new();
+        let _client = Arc::new(client_config)
+            .connect(server_name(SERVER_NAME_GOOD))
+            .build(&mut client_output)
+            .unwrap();
+        let mut server = Connection::new(Arc::new(server_config)).unwrap();
+        let mut server_input = VecInput::default();
+        let mut server_output = Vec::new();
+
+        transfer_altered(&mut client_output, replace_sni(sni), &mut server_input);
+        assert_eq!(
+            &server
+                .read_tls(&mut server_input, &mut server_output)
+                .handle_all(&mut Vec::new())
+                .unwrap_err(),
+            match expected_result {
+                Accept | AcceptNoSni => &accept_result,
+                Reject => &reject_result,
+            }
+        );
+        println!(
+            "test case (policy: {policy:?}, sni: {sni:?}, expected_result: {expected_result:?}) succeeded!"
+        );
+    }
+}
+
+#[derive(Debug)]
+struct ServerCheckSni {
+    expect_sni: bool,
+}
+
+impl ServerCredentialResolver for ServerCheckSni {
+    fn resolve(&self, client_hello: &ClientHello<'_>) -> Result<SelectedCredential, Error> {
+        assert_eq!(client_hello.server_name().is_some(), self.expect_sni);
+        Err(Error::NoSuitableCertificate)
+    }
+}

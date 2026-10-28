@@ -1,0 +1,145 @@
+// Copyright 2023 The Gitea Authors. All rights reserved.
+// SPDX-License-Identifier: MIT
+
+package httplib
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+
+	"gitea.dev/modules/typesniffer"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestServeUserContentByReader(t *testing.T) {
+	data := "0123456789abcdef"
+
+	test := func(t *testing.T, expectedStatusCode int, expectedContent string) {
+		_, rangeStr, _ := strings.Cut(t.Name(), "_range_")
+		r := &http.Request{Header: http.Header{}, Form: url.Values{}}
+		if rangeStr != "" {
+			r.Header.Set("Range", "bytes="+rangeStr)
+		}
+		reader := strings.NewReader(data)
+		w := httptest.NewRecorder()
+		ServeUserContentByReader(r, w, int64(len(data)), reader, ServeHeaderOptions{})
+		assert.Equal(t, expectedStatusCode, w.Code)
+		if expectedStatusCode == http.StatusPartialContent || expectedStatusCode == http.StatusOK {
+			assert.Equal(t, strconv.Itoa(len(expectedContent)), w.Header().Get("Content-Length"))
+			assert.Equal(t, expectedContent, w.Body.String())
+		}
+	}
+
+	t.Run("_range_", func(t *testing.T) {
+		test(t, http.StatusOK, data)
+	})
+	t.Run("_range_0-", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data)
+	})
+	t.Run("_range_0-15", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data)
+	})
+	t.Run("_range_1-", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data[1:])
+	})
+	t.Run("_range_1-3", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data[1:3+1])
+	})
+	t.Run("_range_16-", func(t *testing.T) {
+		test(t, http.StatusRequestedRangeNotSatisfiable, "")
+	})
+	t.Run("_range_1-99999", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data[1:])
+	})
+}
+
+func TestServeUserContentByFile(t *testing.T) {
+	data := "0123456789abcdef"
+	tmpFile := t.TempDir() + "/test"
+	err := os.WriteFile(tmpFile, []byte(data), 0o644)
+	assert.NoError(t, err)
+
+	test := func(t *testing.T, expectedStatusCode int, expectedContent string) {
+		_, rangeStr, _ := strings.Cut(t.Name(), "_range_")
+		r := &http.Request{Header: http.Header{}, Form: url.Values{}}
+		if rangeStr != "" {
+			r.Header.Set("Range", "bytes="+rangeStr)
+		}
+
+		seekReader, err := os.OpenFile(tmpFile, os.O_RDONLY, 0o644)
+		require.NoError(t, err)
+		defer seekReader.Close()
+
+		w := httptest.NewRecorder()
+		ServeUserContentByFile(r, w, seekReader, ServeHeaderOptions{})
+		assert.Equal(t, expectedStatusCode, w.Code)
+		if expectedStatusCode == http.StatusPartialContent || expectedStatusCode == http.StatusOK {
+			assert.Equal(t, strconv.Itoa(len(expectedContent)), w.Header().Get("Content-Length"))
+			assert.Equal(t, expectedContent, w.Body.String())
+		}
+	}
+
+	t.Run("_range_", func(t *testing.T) {
+		test(t, http.StatusOK, data)
+	})
+	t.Run("_range_0-", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data)
+	})
+	t.Run("_range_0-15", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data)
+	})
+	t.Run("_range_1-", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data[1:])
+	})
+	t.Run("_range_1-3", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data[1:3+1])
+	})
+	t.Run("_range_16-", func(t *testing.T) {
+		test(t, http.StatusRequestedRangeNotSatisfiable, "")
+	})
+	t.Run("_range_1-99999", func(t *testing.T) {
+		test(t, http.StatusPartialContent, data[1:])
+	})
+}
+
+func TestServeSetHeaderContentRelated(t *testing.T) {
+	cases := []struct {
+		contentType string
+		csp         string
+	}{
+		{"", serveHeaderCspDefault},
+		{"any", serveHeaderCspDefault},
+		{"application/pdf", serveHeaderCspPdf},
+		{"application/pdf; charset=binary", serveHeaderCspPdf},
+		{"audio/mp4", serveHeaderCspAudioVideo},
+		{"video/ogg; codecs=theora", serveHeaderCspAudioVideo},
+		{"video/mp4;,text/html", serveHeaderCspDefault},
+		{typesniffer.MimeTypeImageSvg, serveHeaderCspDefault},
+	}
+	for _, c := range cases {
+		w := httptest.NewRecorder()
+		serveSetHeaderContentRelated(w, c.contentType)
+		csp := w.Header().Get("Content-Security-Policy")
+		assert.Equal(t, c.csp, csp, "content-type: %s", c.contentType)
+		assert.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options")) // it should always be there
+	}
+
+	// make sure sandboxed
+	require.Contains(t, serveHeaderCspDefault, "sandbox")
+	require.NotContains(t, serveHeaderCspDefault, "allow-same-origin")
+}
+
+func TestServeSetHeaders(t *testing.T) {
+	w := httptest.NewRecorder()
+	ServeSetHeaders(w, ServeHeaderOptions{Filename: "foo.zip"})
+	assert.Equal(t, "attachment; filename=foo.zip", w.Header().Get("Content-Disposition"))
+	ServeSetHeaders(w, ServeHeaderOptions{Filename: "foo.zip", ContentDisposition: ContentDispositionInline})
+	assert.Equal(t, "inline; filename=foo.zip", w.Header().Get("Content-Disposition"))
+}

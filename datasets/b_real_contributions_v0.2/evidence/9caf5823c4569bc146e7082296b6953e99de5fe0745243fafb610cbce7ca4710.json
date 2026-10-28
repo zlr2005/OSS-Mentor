@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "3332dbf77279d6dcd597e903a2b628dabe811349",
+    "size": 97173
+  },
+  "observed_at": "2026-10-26T05:45:44.968451+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "96dd91a3eac066da3e7fb570fc489284659c7fe8250ab946f6d60a8f911a1083",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "67e4735200da5b1278c7cf9b8ef7b3b040bb9bd46d49abe5875594c8d2a09490",
+  "source_url": "https://api.github.com/repos/astral-sh/ruff/git/blobs/3332dbf77279d6dcd597e903a2b628dabe811349",
+  "status_code": 200
+}

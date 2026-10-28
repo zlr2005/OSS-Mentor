@@ -1,0 +1,1221 @@
+/*
+ * Copyright 2024-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.springframework.data.jpa.repository.query;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.metamodel.Metamodel;
+
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+import org.hibernate.annotations.Array;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.FieldSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Range;
+import org.springframework.data.domain.Score;
+import org.springframework.data.domain.ScrollPosition;
+import org.springframework.data.domain.Similarity;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Vector;
+import org.springframework.data.domain.VectorScoringFunctions;
+import org.springframework.data.jpa.domain.sample.EmbeddedIdExampleDepartment;
+import org.springframework.data.jpa.domain.sample.EmbeddedIdExampleEmployee;
+import org.springframework.data.jpa.domain.sample.EmbeddedIdExampleEmployeePK;
+import org.springframework.data.jpa.domain.sample.ReferencingEmbeddedIdExampleEmployee;
+import org.springframework.data.jpa.repository.support.JpqlQueryTemplates;
+import org.springframework.data.jpa.util.JpaAdapter;
+import org.springframework.data.jpa.util.TestMetaModel;
+import org.springframework.data.projection.ProjectionFactory;
+import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
+import org.springframework.data.repository.query.ParameterAccessor;
+import org.springframework.data.repository.query.ReturnedType;
+import org.springframework.data.repository.query.parser.PartTree;
+import org.springframework.data.util.Lazy;
+
+/**
+ * Unit tests for {@link JpaQueryCreator}.
+ *
+ * @author Christoph Strobl
+ * @author Mark Paluch
+ * @author Oualid Bouh
+ * @author masiljangajji
+ */
+class JpaQueryCreatorTests {
+
+	private static final TestMetaModel ORDER = TestMetaModel.hibernateModel(Order.class, LineItem.class, Product.class);
+	private static final TestMetaModel PERSON = TestMetaModel.hibernateModel(Person.class, EmailAddress.class);
+	private static final TestMetaModel REFERENCE_IDS = TestMetaModel.hibernateModel(
+			ReferencingEmbeddedIdExampleEmployee.class, EmbeddedIdExampleEmployee.class, EmbeddedIdExampleEmployeePK.class,
+			EmbeddedIdExampleDepartment.class);
+
+	static List<JpqlQueryTemplates> ignoreCaseTemplates = List.of(JpqlQueryTemplates.LOWER, JpqlQueryTemplates.UPPER);
+
+	private static final TestMetaModel ORDER_WITH_RELATIONS = TestMetaModel.hibernateModel(OrderWithRelations.class,
+			Customer.class, Supplier.class);
+
+	private static final TestMetaModel VECTOR = TestMetaModel.hibernateModel(WithVector.class);
+
+	@Test // GH-3588
+	void simpleProperty() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountry") //
+				.withParameters("AT") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country = ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void simpleNullProperty() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountry") //
+				.withParameterTypes(String.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country IS NULL", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void negatingSimpleProperty() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountryNot") //
+				.withParameters("US") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country != ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void negatingSimpleNullProperty() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountryIsNot") //
+				.withParameterTypes(String.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country IS NOT NULL", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-4171
+	void simplePropertyAndNull() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findByIdAndCompleted") //
+				.withParameterTypes(Long.class, Boolean.class).withParameters(null, false) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.id IS NULL AND o.completed = ?1",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void simpleAnd() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountryAndDate") //
+				.withParameters("GB", new Date()) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country = ?1 AND o.date = ?2",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void simpleOr() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountryOrDate") //
+				.withParameters("BE", new Date()) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country = ?1 OR o.date = ?2",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void simpleAndOr() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountryAndDateOrCompleted") //
+				.withParameters("IT", new Date(), Boolean.FALSE) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country = ?1 AND o.date = ?2 OR o.completed = ?3",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void distinct() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findDistinctOrderByCountry") //
+				.withParameters("AU") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT DISTINCT o FROM %s o WHERE o.country = ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void count() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "countOrderByCountry") //
+				.returning(Long.class) //
+				.withParameters("AU") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT COUNT(o) FROM %s o WHERE o.country = ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void countWithJoins() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "countOrderByLineItemsQuantityGreaterThan") //
+				.returning(Long.class) //
+				.withParameterTypes(Integer.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT COUNT(o) FROM %s o LEFT JOIN o.lineItems l WHERE l.quantity > ?1",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void countDistinct() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "countDistinctOrderByCountry") //
+				.returning(Long.class) //
+				.withParameters("AU") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT COUNT(DISTINCT o) FROM %s o WHERE o.country = ?1",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void simplePropertyIgnoreCase(JpqlQueryTemplates ignoreCaseTemplate) {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountryIgnoreCase") //
+				.ignoreCaseAs(ignoreCaseTemplate) //
+				.withParameters("BB") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE %s(o.country) = %s(?1)", DefaultJpaEntityMetadata.unqualify(Order.class),
+						ignoreCaseTemplate.getIgnoreCaseOperator(), ignoreCaseTemplate.getIgnoreCaseOperator()) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void simplePropertyAllIgnoreCase(JpqlQueryTemplates ignoreCaseTemplate) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameAndProductTypeAllIgnoreCase") //
+				.ignoreCaseAs(ignoreCaseTemplate) //
+				.withParameters("spring", "data") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE %s(p.name) = %s(?1) AND %s(p.productType) = %s(?2)",
+						DefaultJpaEntityMetadata.unqualify(Product.class), ignoreCaseTemplate.getIgnoreCaseOperator(),
+						ignoreCaseTemplate.getIgnoreCaseOperator(), ignoreCaseTemplate.getIgnoreCaseOperator(),
+						ignoreCaseTemplate.getIgnoreCaseOperator()) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void simplePropertyMixedCase(JpqlQueryTemplates ignoreCaseTemplate) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameAndProductTypeIgnoreCase") //
+				.ignoreCaseAs(ignoreCaseTemplate) //
+				.withParameters("spring", "data") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name = ?1 AND %s(p.productType) = %s(?2)",
+						DefaultJpaEntityMetadata.unqualify(Product.class), ignoreCaseTemplate.getIgnoreCaseOperator(),
+						ignoreCaseTemplate.getIgnoreCaseOperator(), ignoreCaseTemplate.getIgnoreCaseOperator()) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void lessThan() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateLessThan") //
+				.withParameterTypes(Date.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date < ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void lessThanEqual() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateLessThanEqual") //
+				.withParameterTypes(Date.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date <= ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void greaterThan() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateGreaterThan") //
+				.withParameterTypes(Date.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date > ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void before() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateBefore") //
+				.withParameterTypes(Date.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date < ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void after() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateAfter") //
+				.withParameterTypes(Date.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date > ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void between() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateBetween") //
+				.withParameterTypes(Date.class, Date.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date BETWEEN ?1 AND ?2",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void isNull() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateIsNull") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date IS NULL", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void isNotNull() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateIsNotNull") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date IS NOT NULL", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@ValueSource(strings = { "", "spring", "%spring", "spring%", "%spring%" })
+	void like(String parameterValue) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameLike") //
+				.withParameters(parameterValue) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name LIKE ?1 ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", parameterValue) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void containingString() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameContaining") //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name LIKE ?1 ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", "%spring%") //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void notContainingString() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameNotContaining") //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name NOT LIKE ?1 ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", "%spring%") //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void in() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameIn") //
+				.withParameters(List.of("spring", "data")) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name IN ?1", DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", List.of("spring", "data")) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void notIn() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameNotIn") //
+				.withParameters(List.of("spring", "data")) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name NOT IN ?1", DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", List.of("spring", "data")) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void containingSingleEntryElementCollection() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByCategoriesContaining") //
+				.withParameterTypes(String.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE ?1 MEMBER OF p.categories",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void notContainingSingleEntryElementCollection() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByCategoriesNotContaining") //
+				.withParameterTypes(String.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE ?1 NOT MEMBER OF p.categories",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void likeWithIgnoreCase(JpqlQueryTemplates ignoreCaseTemplate) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameLikeIgnoreCase") //
+				.ignoreCaseAs(ignoreCaseTemplate) //
+				.withParameters("%spring%") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE %s(p.name) LIKE %s(?1) ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class), ignoreCaseTemplate.getIgnoreCaseOperator(),
+						ignoreCaseTemplate.getIgnoreCaseOperator()) //
+				.expectPlaceholderValue("?1", "%spring%") //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@ValueSource(strings = { "", "spring", "%spring", "spring%", "%spring%" })
+	void notLike(String parameterValue) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameNotLike") //
+				.withParameters(parameterValue) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name NOT LIKE ?1 ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", parameterValue) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void notLikeWithIgnoreCase(JpqlQueryTemplates ignoreCaseTemplate) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameNotLikeIgnoreCase") //
+				.ignoreCaseAs(ignoreCaseTemplate) //
+				.withParameters("%spring%") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE %s(p.name) NOT LIKE %s(?1) ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class), ignoreCaseTemplate.getIgnoreCaseOperator(),
+						ignoreCaseTemplate.getIgnoreCaseOperator()) //
+				.expectPlaceholderValue("?1", "%spring%") //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void startingWith() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameStartingWith") //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name LIKE ?1 ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", "spring%") //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void startingWithIgnoreCase(JpqlQueryTemplates ignoreCaseTemplate) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameStartingWithIgnoreCase") //
+				.ignoreCaseAs(ignoreCaseTemplate) //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE %s(p.name) LIKE %s(?1) ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class), ignoreCaseTemplate.getIgnoreCaseOperator(),
+						ignoreCaseTemplate.getIgnoreCaseOperator()) //
+				.expectPlaceholderValue("?1", "spring%") //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void endingWith() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameEndingWith") //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.name LIKE ?1 ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.expectPlaceholderValue("?1", "%spring") //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void endingWithIgnoreCase(JpqlQueryTemplates ignoreCaseTemplate) {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProductByNameEndingWithIgnoreCase") //
+				.ignoreCaseAs(ignoreCaseTemplate) //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE %s(p.name) LIKE %s(?1) ESCAPE '\\'",
+						DefaultJpaEntityMetadata.unqualify(Product.class), ignoreCaseTemplate.getIgnoreCaseOperator(),
+						ignoreCaseTemplate.getIgnoreCaseOperator()) //
+				.expectPlaceholderValue("?1", "%spring") //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void greaterThanEqual() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByDateGreaterThanEqual") //
+				.withParameterTypes(Date.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.date >= ?1", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void isTrue() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCompletedIsTrue") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.completed = TRUE", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void isFalse() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCompletedIsFalse") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.completed = FALSE", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void empty() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByLineItemsEmpty") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.lineItems IS EMPTY", DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void notEmpty() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByLineItemsNotEmpty") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.lineItems IS NOT EMPTY",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void sortBySingle() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByCountryOrderByDate") //
+				.withParameters("CA") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o WHERE o.country = ?1 ORDER BY o.date asc",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void sortByMulti() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByOrderByCountryAscDateDesc") //
+				.withParameters() //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o ORDER BY o.country asc, o.date desc",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Disabled("should we support this?")
+	@ParameterizedTest // GH-3588
+	@FieldSource("ignoreCaseTemplates")
+	void sortBySingleIgnoreCase(JpqlQueryTemplates ignoreCase) {
+
+		String jpql = queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByOrderByCountryAscAllIgnoreCase") //
+				.render();
+
+		assertThat(jpql).isEqualTo("SELECT o FROM %s o ORDER BY %s(o.date) asc",
+				DefaultJpaEntityMetadata.unqualify(Order.class), ignoreCase.getIgnoreCaseOperator());
+	}
+
+	@Test // GH-3588
+	void matchSimpleJoin() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByLineItemsQuantityGreaterThan") //
+				.withParameterTypes(Integer.class) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o LEFT JOIN o.lineItems l WHERE l.quantity > ?1",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void matchSimpleNestedJoin() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByLineItemsProductNameIs") //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT o FROM %s o LEFT JOIN o.lineItems l LEFT JOIN l.product p WHERE p.name = ?1",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void matchMultiOnNestedJoin() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByLineItemsQuantityGreaterThanAndLineItemsProductNameIs") //
+				.withParameters(10, "spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql(
+						"SELECT o FROM %s o LEFT JOIN o.lineItems l LEFT JOIN l.product p WHERE l.quantity > ?1 AND p.name = ?2",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void matchSameEntityMultipleTimes() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByLineItemsProductNameIsAndLineItemsProductNameIsNot") //
+				.withParameters("spring", "sukrauq") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql(
+						"SELECT o FROM %s o LEFT JOIN o.lineItems l LEFT JOIN l.product p WHERE p.name = ?1 AND p.name != ?2",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void matchSameEntityMultipleTimesViaDifferentProperties() {
+
+		queryCreator(ORDER) //
+				.forTree(Order.class, "findOrderByLineItemsProductNameIsAndLineItemsProduct2NameIs") //
+				.withParameters(10, "spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql(
+						"SELECT o FROM %s o LEFT JOIN o.lineItems l LEFT JOIN l.product p LEFT JOIN l.product2 p_0 WHERE p.name = ?1 AND p_0.name = ?2",
+						DefaultJpaEntityMetadata.unqualify(Order.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void dtoProjection() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProjectionByNameIs") //
+				.returning(DtoProductProjection.class) //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT new %s(p.name, p.productType) FROM %s p WHERE p.name = ?1",
+						DtoProductProjection.class.getName(), DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void interfaceProjection() {
+
+		queryCreator(ORDER) //
+				.forTree(Product.class, "findProjectionByNameIs") //
+				.returning(InterfaceProductProjection.class) //
+				.withParameters("spring") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p.name AS name, p.productType AS productType FROM %s p WHERE p.name = ?1",
+						DefaultJpaEntityMetadata.unqualify(Product.class)) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@ValueSource(classes = { Tuple.class, Map.class })
+	void tupleProjection(Class<?> resultType) {
+
+		queryCreator(PERSON) //
+				.forTree(Person.class, "findProjectionByFirstnameIs") //
+				.returning(resultType) //
+				.withParameters("chris") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql(
+						"SELECT p.id AS id, p.emailAddress AS emailAddress, p.firstname AS firstname, p.lastname AS lastname FROM %s p WHERE p.firstname = ?1",
+						DefaultJpaEntityMetadata.unqualify(Person.class)) //
+				.validateQuery();
+	}
+
+	@ParameterizedTest // GH-3588
+	@ValueSource(classes = { Long.class, List.class, Person.class })
+	void delete(Class<?> resultType) {
+
+		queryCreator(PERSON) //
+				.forTree(Person.class, "deletePersonByFirstname") //
+				.returning(resultType) //
+				.withParameters("chris") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p FROM %s p WHERE p.firstname = ?1", DefaultJpaEntityMetadata.unqualify(Person.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void exists() {
+
+		queryCreator(PERSON) //
+				.forTree(Person.class, "existsPersonByFirstname") //
+				.returning(Long.class).withParameters("chris") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT p.id FROM %s p WHERE p.firstname = ?1", DefaultJpaEntityMetadata.unqualify(Person.class)) //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void doesNotCreateJoinForRelationshipEmbeddedId() {
+
+		queryCreator(REFERENCE_IDS) //
+				.forTree(ReferencingEmbeddedIdExampleEmployee.class, "findByEmployee_EmployeePk_EmployeeId") //
+				.withParameters(1L) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql("SELECT r FROM ReferencingEmbeddedIdExampleEmployee r WHERE r.employee.employeePk.employeeId = ?1") //
+				.validateQuery();
+	}
+
+	@Test // GH-3588
+	void createsJoinForReferenceName() {
+
+		queryCreator(REFERENCE_IDS) //
+				.forTree(ReferencingEmbeddedIdExampleEmployee.class, "findByEmployee_Department_Name") //
+				.withParameters("foo") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql(
+						"SELECT r FROM ReferencingEmbeddedIdExampleEmployee r LEFT JOIN r.employee e LEFT JOIN e.department d WHERE d.name = ?1") //
+				.validateQuery();
+	}
+
+	@Test // GH-4087
+	void considersLeafPropertyTypeForIgnoreCase() {
+
+		queryCreator(PERSON) //
+				.forTree(Person.class, "findByEmailAddress_EmailIgnoreCase") //
+				.withParameters("foo") //
+				.as(QueryCreatorTester::create) //
+				.expectJpql(
+						"SELECT p FROM JpaQueryCreatorTests$Person p INNER JOIN p.emailAddress e WHERE UPPER(e.email) = UPPER(?1)") //
+				.validateQuery();
+	}
+
+	@Test // GH-4385
+	void withinRangeConsidersLowerBoundOnlyRange() {
+
+		Range<Similarity> range = Range.rightUnbounded(Range.Bound.inclusive(Similarity.of(0.8, VectorScoringFunctions.COSINE)));
+
+		assertThat(renderVectorWithinQuery(range)).isEqualTo(
+				"SELECT w FROM %s w WHERE cosine_distance(w.embedding, ?1) <= ?2",
+				DefaultJpaEntityMetadata.unqualify(WithVector.class));
+	}
+
+	@Test // GH-4385
+	void withinRangeConsidersUpperBoundOnlyRange() {
+
+		Range<Similarity> range = Range.leftUnbounded(Range.Bound.inclusive(Similarity.of(0.8, VectorScoringFunctions.COSINE)));
+
+		assertThat(renderVectorWithinQuery(range)).isEqualTo(
+				"SELECT w FROM %s w WHERE cosine_distance(w.embedding, ?1) >= ?2",
+				DefaultJpaEntityMetadata.unqualify(WithVector.class));
+	}
+
+	private String renderVectorWithinQuery(Range<Similarity> range) {
+
+		Vector vector = Vector.of(0.1f, 0.2f, 0.3f, 0.4f, 0.5f);
+
+		return queryCreator(VECTOR) //
+				.forTree(WithVector.class, "findByEmbeddingNear") //
+				.withParameters(vector, range) //
+				.render();
+	}
+
+	QueryCreatorBuilder queryCreator(Metamodel metamodel) {
+		return new DefaultCreatorBuilder(metamodel);
+	}
+
+	JpaQueryCreator queryCreator(PartTree tree, ReturnedType returnedType, Metamodel metamodel,
+			JpqlQueryTemplates templates, JpaParametersParameterAccessor parameterAccessor) {
+
+		EntityManager entityManager = mock(EntityManager.class);
+		when(entityManager.getMetamodel()).thenReturn(metamodel);
+
+		ParameterMetadataProvider parameterMetadataProvider = new ParameterMetadataProvider(parameterAccessor,
+				EscapeCharacter.DEFAULT, templates);
+		return new JpaQueryCreator(tree, false, returnedType, parameterMetadataProvider, templates,
+				entityManager.getMetamodel());
+	}
+
+	@Entity
+	class SampleEntity {
+		@Id Long id;
+		int isDeleted;
+	}
+
+	@jakarta.persistence.Entity
+	static class Order {
+
+		@Id Long id;
+		Date date;
+		String country;
+		Boolean completed;
+
+		@OneToMany List<LineItem> lineItems;
+	}
+
+	@jakarta.persistence.Entity
+	static class LineItem {
+
+		@Id Long id;
+
+		@ManyToOne Product product;
+		@ManyToOne Product product2;
+		int quantity;
+
+	}
+
+	@jakarta.persistence.Entity
+	static class Person {
+		@Id Long id;
+		String firstname;
+		String lastname;
+
+		@Embedded EmailAddress emailAddress;
+	}
+
+	@Embeddable
+	static class EmailAddress {
+		String email;
+	}
+
+	@jakarta.persistence.Entity
+	static class Product {
+
+		@Id Long id;
+
+		String name;
+		String productType;
+
+		@ElementCollection List<String> categories;
+	}
+
+	@jakarta.persistence.Entity
+	static class WithVector {
+
+		@Id Long id;
+
+		@JdbcTypeCode(SqlTypes.VECTOR)
+		@Array(length = 5) float[] embedding;
+	}
+
+	static class DtoProductProjection {
+
+		String name;
+		String productType;
+
+		DtoProductProjection(String name, String productType) {
+			this.name = name;
+			this.productType = productType;
+		}
+	}
+
+	interface InterfaceProductProjection {
+		String getName();
+
+		String getProductType();
+	}
+
+	static class QueryCreatorTester {
+
+		QueryCreatorBuilder builder;
+		Lazy<String> jpql;
+
+		private QueryCreatorTester(QueryCreatorBuilder builder) {
+			this.builder = builder;
+			this.jpql = Lazy.of(builder::render);
+		}
+
+		static QueryCreatorTester create(QueryCreatorBuilder builder) {
+			return new QueryCreatorTester(builder);
+		}
+
+		QueryCreatorTester expectJpql(String jpql, Object... args) {
+
+			assertThat(this.jpql.get()).isEqualTo(jpql, args);
+			return this;
+		}
+
+		QueryCreatorTester expectPlaceholderValue(String placeholder, Object value) {
+			return expectBindingAt(builder.bindingIndexFor(placeholder), value);
+		}
+
+		QueryCreatorTester expectBindingAt(int position, Object value) {
+
+			Object current = builder.bindableParameters().getBindableValue(position - 1);
+			assertThat(current).isEqualTo(value);
+			return this;
+		}
+
+		QueryCreatorTester validateQuery() {
+
+			if (builder instanceof DefaultCreatorBuilder dcb && dcb.metamodel instanceof TestMetaModel tmm) {
+				return validateQuery(tmm.entityManager());
+			}
+
+			throw new IllegalStateException("No EntityManager found, please provide one via [verify(EntityManager)]");
+		}
+
+		QueryCreatorTester validateQuery(EntityManager entityManager) {
+
+			if (builder instanceof DefaultCreatorBuilder dcb) {
+				entityManager.createQuery(this.jpql.get(), dcb.returnedType.getReturnedType());
+			} else {
+				JpaAdapter.createQuery(entityManager, this.jpql.get());
+			}
+			return this;
+		}
+
+	}
+
+	interface QueryCreatorBuilder {
+
+		QueryCreatorBuilder returning(ReturnedType returnedType);
+
+		QueryCreatorBuilder forTree(Class<?> root, String querySource);
+
+		QueryCreatorBuilder withParameters(Object... arguments);
+
+		QueryCreatorBuilder withParameterTypes(Class<?>... argumentTypes);
+
+		QueryCreatorBuilder ignoreCaseAs(JpqlQueryTemplates queryTemplate);
+
+		default <T> T as(Function<QueryCreatorBuilder, T> transformer) {
+			return transformer.apply(this);
+		}
+
+		default String render() {
+			return render(null);
+		}
+
+		ParameterAccessor bindableParameters();
+
+		int bindingIndexFor(String placeholder);
+
+		String render(@Nullable Sort sort);
+
+		QueryCreatorBuilder returning(Class<?> type);
+	}
+
+	private class DefaultCreatorBuilder implements QueryCreatorBuilder {
+
+		private static final ProjectionFactory PROJECTION_FACTORY = new SpelAwareProxyProjectionFactory();
+
+		private final Metamodel metamodel;
+		private ReturnedType returnedType;
+		private PartTree partTree;
+		private Object[] arguments;
+		private Class<?>[] argumentTypes;
+		private JpqlQueryTemplates queryTemplates;
+		private Lazy<JpaQueryCreator> queryCreator = Lazy.of(this::initJpaQueryCreator);
+		private Lazy<JpaParametersParameterAccessor> parameterAccessor = Lazy.of(this::initParameterAccessor);
+
+		public DefaultCreatorBuilder(Metamodel metamodel) {
+			this.metamodel = metamodel;
+			arguments = new Object[0];
+			queryTemplates = JpqlQueryTemplates.UPPER;
+		}
+
+		@Override
+		public QueryCreatorBuilder returning(ReturnedType returnedType) {
+			this.returnedType = returnedType;
+			return this;
+		}
+
+		@Override
+		public QueryCreatorBuilder returning(Class<?> type) {
+
+			if (this.returnedType != null) {
+				return returning(ReturnedType.of(type, returnedType.getDomainType(), PROJECTION_FACTORY));
+			}
+
+			return returning(ReturnedType.of(type, type, PROJECTION_FACTORY));
+		}
+
+		@Override
+		public QueryCreatorBuilder forTree(Class<?> root, String querySource) {
+
+			this.partTree = new PartTree(querySource, root);
+			if (returnedType == null) {
+				returnedType = ReturnedType.of(root, root, PROJECTION_FACTORY);
+			}
+			return this;
+		}
+
+		@Override
+		public QueryCreatorBuilder withParameters(Object... arguments) {
+			this.arguments = arguments;
+			return this;
+		}
+
+		@Override
+		public QueryCreatorBuilder withParameterTypes(Class<?>... argumentTypes) {
+			this.argumentTypes = argumentTypes;
+			return this;
+		}
+
+		@Override
+		public QueryCreatorBuilder ignoreCaseAs(JpqlQueryTemplates queryTemplate) {
+			this.queryTemplates = queryTemplate;
+			return this;
+		}
+
+		@Override
+		public String render(@Nullable Sort sort) {
+			return queryCreator.get().createQuery(sort != null ? sort : Sort.unsorted());
+		}
+
+		@Override
+		public int bindingIndexFor(String placeholder) {
+
+			return queryCreator.get().getBindings().stream().filter(binding -> {
+
+				if (binding.getIdentifier().hasPosition() && placeholder.startsWith("?")) {
+					return binding.getPosition() == Integer.parseInt(placeholder.substring(1));
+				}
+
+				if (!binding.getIdentifier().hasName()) {
+					return false;
+				}
+
+				return binding.getIdentifier().getName().equals(placeholder);
+			}).findFirst().map(ParameterBinding::getPosition).orElse(-1);
+		}
+
+		@Override
+		public ParameterAccessor bindableParameters() {
+
+			return new ParameterAccessor() {
+				@Override
+				public @Nullable Vector getVector() {
+					return null;
+				}
+
+				@Override
+				public @Nullable Score getScore() {
+					return null;
+				}
+
+				@Override
+				public @Nullable Range<Score> getScoreRange() {
+					return null;
+				}
+
+				@Override
+				public @Nullable ScrollPosition getScrollPosition() {
+					return null;
+				}
+
+				@Override
+				public Pageable getPageable() {
+					return null;
+				}
+
+				@Override
+				public Sort getSort() {
+					return null;
+				}
+
+				@Override
+				public @Nullable Class<?> findDynamicProjection() {
+					return null;
+				}
+
+				@Override
+				public @Nullable Object getBindableValue(int index) {
+
+					ParameterBinding parameterBinding = queryCreator.get().getBindings().get(index);
+					return parameterBinding.prepare(parameterAccessor.get().getBindableValue(index));
+				}
+
+				@Override
+				public boolean hasBindableNullValue() {
+					return false;
+				}
+
+				@Override
+				public Iterator<Object> iterator() {
+					return null;
+				}
+			};
+
+		}
+
+		JpaParametersParameterAccessor initParameterAccessor() {
+
+			if (arguments.length > 0 || argumentTypes == null) {
+				return StubJpaParameterParameterAccessor.accessor(arguments);
+			}
+			return StubJpaParameterParameterAccessor.accessor(argumentTypes);
+		}
+
+		JpaQueryCreator initJpaQueryCreator() {
+
+			if (arguments.length > 0 || argumentTypes == null) {
+				return queryCreator(partTree, returnedType, metamodel, queryTemplates, parameterAccessor.get());
+			}
+			return queryCreator(partTree, returnedType, metamodel, queryTemplates, parameterAccessor.get());
+		}
+	}
+
+	@Test // GH-4135
+	void interfaceProjectionShouldGenerateUniqueSelectionAliases() {
+
+		queryCreator(ORDER_WITH_RELATIONS).forTree(OrderWithRelations.class, "findProjectionById")
+				.returning(OrderSummaryProjection.class) //
+				.withParameters(1L) //
+				.as(QueryCreatorTester::create) //
+				.expectJpql(
+						"SELECT o.id AS id, c.id AS customerId, s.id AS supplierId, c.name AS customerName, s.name AS supplierName FROM %s o LEFT JOIN o.customer c LEFT JOIN o.supplier s WHERE o.id = ?1",
+						DefaultJpaEntityMetadata.unqualify(OrderWithRelations.class))
+				.validateQuery();
+	}
+
+	@Entity
+	static class OrderWithRelations {
+		@Id Long id;
+		@ManyToOne Customer customer;
+		@ManyToOne Supplier supplier;
+	}
+
+	@Entity
+	static class Customer {
+		@Id Long id;
+		String name;
+	}
+
+	@Entity
+	static class Supplier {
+		@Id Long id;
+		String name;
+	}
+
+	interface OrderSummaryProjection {
+
+		Long getId();
+
+		Long getCustomerId(); // customer.id
+
+		Long getSupplierId(); // supplier.id
+
+		String getCustomerName(); // customer.name
+
+		String getSupplierName(); // supplier.name
+	}
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/skywalking",
+    "id": 45721011,
+    "language": "Java",
+    "private": false,
+    "size": 181723
+  },
+  "observed_at": "2026-10-26T05:39:05.358149+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e3065ef2d065c5c288a868a7c39f190abe00715df36c2533419e54e3c04d51df",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d1c19e9c832a96bfde8bfda86bdfde57ad65ba9e49f74010088da39efab6fbe2",
+  "source_url": "https://api.github.com/repos/apache/skywalking",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 892136,
+      "login": "cam72cam",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T15:29:41Z",
+      "committer_at": "2026-10-23T10:56:28Z",
+      "tree_sha": "dc27383fb8bd4a13014cbfeaf7a6a59a50383e97"
+    },
+    "committer": {
+      "id": 892136,
+      "login": "cam72cam",
+      "type": "User"
+    },
+    "sha": "8830c516e05478f1cb69407d9b60118dbfad3af2"
+  },
+  "observed_at": "2026-10-26T08:38:39.149756+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e5fdc3ba73ab0e36b1b8b373af68efce7caf69435b7f52415fae0c9c2ecedc9b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2753f9f3633ad234e3a8b21205c1ea08ca96844684b173a64829c5ec45a46f6f",
+  "source_url": "https://api.github.com/repos/opentofu/opentofu/commits/8830c516e05478f1cb69407d9b60118dbfad3af2?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "facebook/pyrefly",
+    "id": 935685654,
+    "language": "Rust",
+    "private": false,
+    "size": 2138901
+  },
+  "observed_at": "2026-10-26T06:43:12.438741+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "43c2fbb36d509932d4c46245182373c27b78b0e6dbc34c5b0814c89c7185db23",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "72713b2f043be8411d05c0d3c37a949e65ff9ed75d2611fc363a8d2650348baf",
+  "source_url": "https://api.github.com/repos/facebook/pyrefly",
+  "status_code": 200
+}

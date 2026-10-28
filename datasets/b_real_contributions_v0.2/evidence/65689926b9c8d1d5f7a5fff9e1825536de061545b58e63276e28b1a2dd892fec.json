@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "hyperium/hyper",
+    "id": 23500865,
+    "language": "Rust",
+    "private": false,
+    "size": 20951
+  },
+  "observed_at": "2026-10-26T07:38:54.311073+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "07c6cdbf3dc1f33b35cc5b9941e70c0059f048645b063b3fea1c7147d65baa72",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a6d9d23b2c1892ddb4a1bc159418e8e4fc587435f3debde230a9056da519ef69",
+  "source_url": "https://api.github.com/repos/hyperium/hyper",
+  "status_code": 200
+}

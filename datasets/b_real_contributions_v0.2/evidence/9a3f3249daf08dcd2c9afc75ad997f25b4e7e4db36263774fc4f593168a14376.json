@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "3990d7c0689b43b45d9a70d4b811cd047194b9af",
+    "size": 12603
+  },
+  "observed_at": "2026-10-26T15:36:28.931714+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2f4544345f56569b3ee44f4956c74cfdc85d45bad55a812db32238c8dc8ade9c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5726b684d599c9758efca1f3f6e3a6bac6c5add752e1d9fed7a4595eca6c9f93",
+  "source_url": "https://api.github.com/repos/vitest-dev/vitest/git/blobs/3990d7c0689b43b45d9a70d4b811cd047194b9af",
+  "status_code": 200
+}

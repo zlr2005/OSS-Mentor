@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 132773,
+      "login": "eskatos",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T11:41:52Z",
+      "committer_at": "2026-10-24T20:16:51Z",
+      "tree_sha": "b821d0a3eb3b767a8e8fdc81279e9485e4245bad"
+    },
+    "committer": {
+      "id": 132773,
+      "login": "eskatos",
+      "type": "User"
+    },
+    "sha": "7ee6ca0624c8a63447ebb0e76a367a7cb03e6c61"
+  },
+  "observed_at": "2026-10-27T13:26:25.711237+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0f8092253d6fc9a9a5c3d146f27f0813e621d67d340fa6e427a99eeece6fef77",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "20c46ae4e37773a9800de119ca0254ab1f2321f0dcba83fe79013374571fa56f",
+  "source_url": "https://api.github.com/repos/gradle/gradle/commits/7ee6ca0624c8a63447ebb0e76a367a7cb03e6c61?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5832902,
+      "login": "krassowski",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T16:20:45Z",
+      "committer_at": "2026-10-21T16:20:45Z",
+      "tree_sha": "13198e6726dfdc225151a7a4cf84efe1e82c7434"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "6fa672c4e4ab414dc498924a4a22f2830d48ae15"
+  },
+  "observed_at": "2026-10-26T07:49:50.431255+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4269a3e939c7327f0c5e88ffb0769759d707037411ff25b819b647565f765f41",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "91f51e06a36ef69ec17245b55729fd085faaa8a4978eee3ade4ac0cc4c4fa341",
+  "source_url": "https://api.github.com/repos/jupyterlab/jupyterlab/commits/6fa672c4e4ab414dc498924a4a22f2830d48ae15?per_page=100",
+  "status_code": 200
+}

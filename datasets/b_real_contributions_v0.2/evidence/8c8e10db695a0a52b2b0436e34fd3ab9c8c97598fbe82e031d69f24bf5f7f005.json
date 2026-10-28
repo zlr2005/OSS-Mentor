@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 84632330,
+      "login": "aoto-tech",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T14:21:06Z",
+      "committer_at": "2026-10-23T14:21:06Z",
+      "tree_sha": "fa55de0e65aba1b19d29d66cd4b22d162ce96f61"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "be7d0f696e28acd4f44fdfc7274f9badcb0c13c2"
+  },
+  "observed_at": "2026-10-27T15:06:45.379495+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ff5876fe60f6e0e4ac4f2debacb4c008e0984305a3f4db0e99d6a39cb2132ea6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "04493a47e4e51b97011b95454bbbf89b191b3970e2aa6aef1cff9a835577bfd3",
+  "source_url": "https://api.github.com/repos/pmd/pmd/commits/be7d0f696e28acd4f44fdfc7274f9badcb0c13c2?per_page=100",
+  "status_code": 200
+}

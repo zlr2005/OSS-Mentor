@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "rayon-rs/rayon",
+    "id": 24725038,
+    "language": "Rust",
+    "private": false,
+    "size": 3654
+  },
+  "observed_at": "2026-10-26T13:24:45.043755+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7f99030895914a92ed3bff098701fdc19d05098f26ec2bd90d19e4c4268c0b52",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e8ff32798d2bf308ed4f8f0fe5eae9715b204d987f4b4776bbce975ee6d3dd41",
+  "source_url": "https://api.github.com/repos/rayon-rs/rayon",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7a324165d5d59ca795cfbb03e8dcdb4ed4ff57d6",
+    "size": 14742
+  },
+  "observed_at": "2026-10-26T06:01:59.816979+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "06c4fcd7fab430a6bfa2d869989c4132280375e22f3ed013a4280de4b1966928",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e147ad3949a061127c062640a71a39f98550a928be4db4dfbd5fac7306564dd9",
+  "source_url": "https://api.github.com/repos/caddyserver/caddy/git/blobs/7a324165d5d59ca795cfbb03e8dcdb4ed4ff57d6",
+  "status_code": 200
+}

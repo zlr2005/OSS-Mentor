@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 45432694,
+      "login": "patchback[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-10T23:17:21Z",
+      "committer_at": "2026-10-10T23:17:21Z",
+      "tree_sha": "fcc91564d36f4a172aa686c2381ce83658c076e9"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2b7e678fb9de0878422447b5ceeb860e3fcbba41"
+  },
+  "observed_at": "2026-10-26T16:46:59.425345+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c0dc3d73f820764a4ee40188c024a049ed946719b6d4ea4270663015edfa475f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a6cf562d36b2f83ce5e9e7131d40a38d293fff92fe218ceaa7037888186afbff",
+  "source_url": "https://api.github.com/repos/aio-libs/aiohttp/commits/2b7e678fb9de0878422447b5ceeb860e3fcbba41?per_page=100",
+  "status_code": 200
+}

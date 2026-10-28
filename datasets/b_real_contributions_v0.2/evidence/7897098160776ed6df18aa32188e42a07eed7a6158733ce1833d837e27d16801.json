@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 125426,
+      "login": "calmh",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T19:54:38Z",
+      "committer_at": "2026-10-20T19:54:38Z",
+      "tree_sha": "236ee19cfe12651b968f7caaf72a172ed3b954f5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d6d0181f7d466381c4b39ec8fd944c364f939b32"
+  },
+  "observed_at": "2026-10-26T14:52:47.850358+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "78bd968fea7f883d4ddd69175e9e48cdcc27a05f74543a7ab0579da488a5790e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "28bbc57832782501dfb3c923281c282e9c70cbe8cbeaae1ffe4b6af1503f8a9b",
+  "source_url": "https://api.github.com/repos/syncthing/syncthing/commits/d6d0181f7d466381c4b39ec8fd944c364f939b32?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 219851604,
+      "login": "konlue",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T01:08:32Z",
+      "committer_at": "2026-10-25T01:08:32Z",
+      "tree_sha": "0ab93aceadf7796d1940824351ac91a31a027c4d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f41d26fb2657bc92807cdce40bbc0fc5cb3f984d"
+  },
+  "observed_at": "2026-10-26T05:38:03.948946+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bf480547211b82cdf3c6f9908d000fd882f147858ebc61a3f3d9948feeb83513",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "10852d9e7bb2432d5770d803a4a843bf0da41ed46374b38115a4f619a61f97b6",
+  "source_url": "https://api.github.com/repos/apache/shenyu/commits/f41d26fb2657bc92807cdce40bbc0fc5cb3f984d?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-06-18T16:38:24Z",
+      "committer_at": "2026-06-18T16:54:35Z",
+      "tree_sha": "03224583898984fbca4ae505f8c6c2272100a20c"
+    },
+    "committer": {},
+    "sha": "c7f6935c5c96a6e6c1ca0b91400351f23067955b"
+  },
+  "observed_at": "2026-10-27T14:42:54.785986+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4ef0b31b048fe2733fb508b5b527d44b11a589f23bb2afbf900032f648063d2b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f4b841f653e9367efb9260174d4699e4711b66bc150d73bb53d4a178da97be72",
+  "source_url": "https://api.github.com/repos/npm/make-fetch-happen/commits/c7f6935c5c96a6e6c1ca0b91400351f23067955b?per_page=100",
+  "status_code": 200
+}

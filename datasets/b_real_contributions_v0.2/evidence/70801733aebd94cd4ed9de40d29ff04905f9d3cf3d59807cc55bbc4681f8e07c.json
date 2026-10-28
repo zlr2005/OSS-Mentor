@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9ff25e2aa6206e7c73a1695f9e7e18ba18dd1827",
+    "size": 52032
+  },
+  "observed_at": "2026-10-27T14:11:37.410635+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0112303abe666c8d9354128629585f7ea4982e242cfe530e6571b2371a003c87",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b3f5c3d12c3d66ac2dd686e8a43fc83b799b57a21ee9d5cb2f81ea716290d47c",
+  "source_url": "https://api.github.com/repos/microsoft/rushstack/git/blobs/9ff25e2aa6206e7c73a1695f9e7e18ba18dd1827",
+  "status_code": 200
+}

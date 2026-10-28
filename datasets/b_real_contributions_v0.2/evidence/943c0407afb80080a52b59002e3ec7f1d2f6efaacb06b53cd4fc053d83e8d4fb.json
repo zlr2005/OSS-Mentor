@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4615424429c2cdebc502a58a7a1051a7e1856c20",
+    "size": 2581
+  },
+  "observed_at": "2026-10-26T06:05:52.305354+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5f5638d61cf5913bf98c2c5e45ee0bb69317620b024c37c702eb066b04198b41",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bd7ae7aa317295db389e8cac08eebca66a714fdd39c49f4f9e97f519d6b2232a",
+  "source_url": "https://api.github.com/repos/ChatGPTNextWeb/NextChat/git/blobs/4615424429c2cdebc502a58a7a1051a7e1856c20",
+  "status_code": 200
+}

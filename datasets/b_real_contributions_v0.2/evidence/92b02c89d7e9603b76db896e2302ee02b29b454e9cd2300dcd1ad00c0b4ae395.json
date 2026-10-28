@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "48d62d8abbd75629a0fbeb07386cfaf7ec491867",
+    "size": 3417
+  },
+  "observed_at": "2026-10-26T15:18:23.295812+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "72a0e92807ce6bb58c319953051b3eac57935e662f6776d1bcdfb2457b151fdc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "974933c6676a1526a513f63586d8cc8e16dce233bdedea27ab9d0cb419b882e4",
+  "source_url": "https://api.github.com/repos/tracel-ai/burn/git/blobs/48d62d8abbd75629a0fbeb07386cfaf7ec491867",
+  "status_code": 200
+}
