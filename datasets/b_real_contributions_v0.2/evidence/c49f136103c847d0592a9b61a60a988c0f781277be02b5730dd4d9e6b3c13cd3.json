@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "5dd334929dcca3f4087ca174bbb72eb21b87b22e",
+    "size": 87516
+  },
+  "observed_at": "2026-10-26T05:43:12.305665+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6199c355e27e4a8dd8e660c716309b0194660c693accc3b37d9b3d98ae6fc6e4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "92eb28acda2edb9c98fe7e976ea28a4d340260d51859fc73a1b4d99a6f41425d",
+  "source_url": "https://api.github.com/repos/argoproj/argo-cd/git/blobs/5dd334929dcca3f4087ca174bbb72eb21b87b22e",
+  "status_code": 200
+}

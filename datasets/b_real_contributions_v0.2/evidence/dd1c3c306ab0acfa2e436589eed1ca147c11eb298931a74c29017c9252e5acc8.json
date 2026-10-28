@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7000710,
+      "login": "nicolo-ribaudo",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:36:47Z",
+      "committer_at": "2026-10-23T20:36:47Z",
+      "tree_sha": "c840566ad02cc4f8e4c254f9719f7b2f029eb0b1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "c694bb5f3f816e594fb64dca93f18a4ef017fa42"
+  },
+  "observed_at": "2026-10-26T05:50:48.855414+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d3634ca5888b78a556833ee3068167f6f936c72b04bd967e530b1c979d1a9050",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8de2cca2749d816383402e4e3bda25611176163c891afbc776fc71b5b9bcd57b",
+  "source_url": "https://api.github.com/repos/babel/babel/commits/c694bb5f3f816e594fb64dca93f18a4ef017fa42?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "stretchr/testify",
+    "id": 6247705,
+    "language": "Go",
+    "private": false,
+    "size": 2066
+  },
+  "observed_at": "2026-10-26T14:43:17.862212+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1c266a3fe03fb8aebe389ad4a8f563dad217249356f1a8571eb9cf394dae866b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "65987e934504d85302b31237947984eb872c0235a4bede86dbaaed303551f93e",
+  "source_url": "https://api.github.com/repos/stretchr/testify",
+  "status_code": 200
+}

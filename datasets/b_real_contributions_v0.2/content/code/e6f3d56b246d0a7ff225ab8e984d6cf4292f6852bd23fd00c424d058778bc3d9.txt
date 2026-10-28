@@ -1,0 +1,274 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ */
+
+package org.springframework.integration.ftp.session;
+
+import java.io.IOException;
+import java.net.Proxy;
+import java.time.Duration;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPClientConfig;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPReply;
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.integration.file.remote.session.SessionFactory;
+import org.springframework.messaging.MessagingException;
+import org.springframework.util.Assert;
+
+/**
+ * Base class for FTP SessionFactory implementations.
+ *
+ * @param <T> The {@link FTPClient} type
+ *
+ * @author Iwein Fuld
+ * @author Mark Fisher
+ * @author Oleg Zhurakousky
+ * @author Sharang Gupta
+ *
+ * @since 2.0
+ */
+public abstract class AbstractFtpSessionFactory<T extends FTPClient> implements SessionFactory<FTPFile> {
+
+	protected final Log logger = LogFactory.getLog(this.getClass()); // NOSONAR
+
+	private @Nullable FTPClientConfig config;
+
+	private @Nullable String username;
+
+	private @Nullable String host;
+
+	private @Nullable String password;
+
+	private int port = FTP.DEFAULT_PORT;
+
+	private int bufferSize = 2048; // NOSONAR magic number. See https://issues.apache.org/jira/browse/NET-207
+
+	private int clientMode = FTPClient.ACTIVE_LOCAL_DATA_CONNECTION_MODE;
+
+	private int fileType = FTP.BINARY_FILE_TYPE;
+
+	private String controlEncoding = FTP.DEFAULT_CONTROL_ENCODING;
+
+	private @Nullable Integer connectTimeout;
+
+	private @Nullable Integer defaultTimeout;
+
+	private @Nullable Integer dataTimeout;
+
+	private @Nullable Proxy proxy;
+
+	/**
+	 * File types defined by {@link org.apache.commons.net.ftp.FTP} constants:
+	 * <ul>
+	 * <li>{@link org.apache.commons.net.ftp.FTP#ASCII_FILE_TYPE}</li>
+	 * <li>{@link org.apache.commons.net.ftp.FTP#EBCDIC_FILE_TYPE}</li>
+	 * <li>{@link org.apache.commons.net.ftp.FTP#BINARY_FILE_TYPE} (DEFAULT)</li>
+	 * <li>{@link org.apache.commons.net.ftp.FTP#LOCAL_FILE_TYPE}</li>
+	 * </ul>.
+	 * @param fileType The file type.
+	 */
+	public void setFileType(int fileType) {
+		this.fileType = fileType;
+	}
+
+	public void setControlEncoding(String controlEncoding) {
+		Assert.hasText(controlEncoding, "'controlEncoding' must not be empty");
+		this.controlEncoding = controlEncoding;
+	}
+
+	public void setConfig(FTPClientConfig config) {
+		Assert.notNull(config, "'config' must not be null");
+		this.config = config;
+	}
+
+	public void setBufferSize(int bufferSize) {
+		this.bufferSize = bufferSize;
+	}
+
+	public void setHost(String host) {
+		Assert.hasText(host, "'host' must not be empty");
+		this.host = host;
+	}
+
+	public void setPort(int port) {
+		Assert.isTrue(port > 0, "Port number should be > 0");
+		this.port = port;
+	}
+
+	public void setUsername(String user) {
+		Assert.hasText(user, "'user' should be a nonempty string");
+		this.username = user;
+	}
+
+	public void setPassword(String pass) {
+		Assert.notNull(pass, "password should not be null");
+		this.password = pass;
+	}
+
+	/**
+	 * ACTIVE_LOCAL_DATA_CONNECTION_MODE = 0 <br>
+	 * A constant indicating the FTP session is expecting all transfers
+	 * to occur between the client (local) and server and that the server
+	 * should connect to the client's data port to initiate a data transfer.
+	 * This is the default data connection mode when and FTPClient instance
+	 * is created.
+	 * PASSIVE_LOCAL_DATA_CONNECTION_MODE = 2 <br>
+	 * A constant indicating the FTP session is expecting all transfers
+	 * to occur between the client (local) and server and that the server
+	 * is in passive mode, requiring the client to connect to the
+	 * server's data port to initiate a transfer.
+	 *
+	 * @param clientMode The client mode.
+	 */
+	public void setClientMode(int clientMode) {
+		Assert.isTrue(clientMode == FTPClient.ACTIVE_LOCAL_DATA_CONNECTION_MODE ||
+						clientMode == FTPClient.PASSIVE_LOCAL_DATA_CONNECTION_MODE,
+				"Only local modes are supported. Was: " + clientMode);
+		this.clientMode = clientMode;
+	}
+
+	/**
+	 * Set the connect timeout for the socket.
+	 * @param connectTimeout the timeout
+	 */
+	public void setConnectTimeout(int connectTimeout) {
+		this.connectTimeout = connectTimeout;
+	}
+
+	/**
+	 * Set the (socket option) timeout on the command socket.
+	 * @param defaultTimeout the timeout.
+	 */
+	public void setDefaultTimeout(int defaultTimeout) {
+		this.defaultTimeout = defaultTimeout;
+	}
+
+	/**
+	 * Set the (socket option) timeout on the data connection.
+	 * @param dataTimeout the timeout.
+	 */
+	public void setDataTimeout(int dataTimeout) {
+		this.dataTimeout = dataTimeout;
+	}
+
+	/**
+	 * Set the proxy to connect to the server through.
+	 * The proxy is used for the control connection and for the data connections,
+	 * therefore this setter also switches the {@code clientMode} to the
+	 * {@link FTPClient#PASSIVE_LOCAL_DATA_CONNECTION_MODE}:
+	 * the server cannot connect back to the client through a proxy.
+	 * If the {@code clientMode} is changed afterwards to another mode, the {@link #getSession()} fails.
+	 * A {@link Proxy.Type#SOCKS} proxy is used as is.
+	 * A {@link Proxy.Type#HTTP} proxy is used with the HTTP {@code CONNECT} tunneling of the JVM;
+	 * the credentials for such a proxy, if any, have to be provided through a {@link java.net.Authenticator}.
+	 * See the {@link FtpHttpProxySessionFactory} for an HTTP proxy with credentials.
+	 * @param proxy the proxy.
+	 * @since 7.2
+	 * @see FTPClient#setProxy(Proxy)
+	 */
+	public void setProxy(Proxy proxy) {
+		Assert.notNull(proxy, "'proxy' must not be null");
+		this.proxy = proxy;
+		this.clientMode = FTPClient.PASSIVE_LOCAL_DATA_CONNECTION_MODE;
+	}
+
+	@Override
+	public FtpSession getSession() {
+		Assert.state(this.proxy == null || this.clientMode == FTPClient.PASSIVE_LOCAL_DATA_CONNECTION_MODE,
+				"The 'clientMode' must be 'FTPClient.PASSIVE_LOCAL_DATA_CONNECTION_MODE' when a proxy is used, " +
+						"because the server cannot connect back to the client through a proxy");
+		try {
+			return new FtpSession(this.createClient());
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("failed to create FTPClient", e);
+		}
+	}
+
+	private T createClient() throws IOException {
+		final T client = createClientInstance();
+		Assert.notNull(client, "client must not be null");
+		client.configure(this.config);
+		Assert.hasText(this.username, "username is required");
+		if (this.connectTimeout != null) {
+			client.setConnectTimeout(this.connectTimeout);
+		}
+		if (this.defaultTimeout != null) {
+			client.setDefaultTimeout(this.defaultTimeout);
+		}
+		if (this.dataTimeout != null) {
+			client.setDataTimeout(Duration.ofMillis(this.dataTimeout));
+		}
+		client.setControlEncoding(this.controlEncoding);
+		if (this.proxy != null) {
+			client.setProxy(this.proxy);
+		}
+
+		this.postProcessClientBeforeConnect(client);
+
+		// Connect
+		client.connect(this.host, this.port);
+
+		if (!FTPReply.isPositiveCompletion(client.getReplyCode())) {
+			throw new MessagingException("Connecting to server [" +
+					this.host + ":" + this.port + "] failed. Please check the connection.");
+		}
+		this.logger.debug("Connected to server [" + this.host + ":" + this.port + "]");
+
+		// Login
+		if (!client.login(this.username, this.password)) {
+			throw new IllegalStateException("Login failed. The response from the server is: " +
+					client.getReplyString());
+		}
+
+		this.postProcessClientAfterConnect(client);
+
+		this.updateClientMode(client);
+		client.setFileType(this.fileType);
+		client.setBufferSize(this.bufferSize);
+		return client;
+	}
+
+	/**
+	 * Set the mode of the connection. Only local modes are supported.
+	 */
+	private void updateClientMode(FTPClient client) {
+		switch (this.clientMode) {
+			case FTPClient.ACTIVE_LOCAL_DATA_CONNECTION_MODE -> client.enterLocalActiveMode();
+			case FTPClient.PASSIVE_LOCAL_DATA_CONNECTION_MODE -> client.enterLocalPassiveMode();
+			default -> {
+				throw new IllegalArgumentException("Only 'FTPClient.ACTIVE_LOCAL_DATA_CONNECTION_MODE' " +
+						"and 'FTPClient.PASSIVE_LOCAL_DATA_CONNECTION_MODE' are supported for 'clientMode'");
+			}
+		}
+	}
+
+	protected abstract T createClientInstance();
+
+	/**
+	 * Will handle additional initialization after client.connect() method was invoked,
+	 * but before any action on the client has been taken.
+	 * @param t The client.
+	 * @throws IOException Any IOException
+	 */
+	protected void postProcessClientAfterConnect(T t) throws IOException {
+		// NOOP
+	}
+
+	/**
+	 * Will handle additional initialization before client.connect() method was invoked.
+	 *
+	 * @param client The client.
+	 * @throws IOException Any IOException.
+	 */
+	protected void postProcessClientBeforeConnect(T client) throws IOException {
+		// NOOP
+	}
+
+}

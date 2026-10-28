@@ -1,0 +1,5517 @@
+import argparse
+import asyncio
+import os
+import re
+import sys
+import time
+import typing
+from collections import OrderedDict
+from collections.abc import MutableMapping, MutableSequence
+from datetime import date
+from decimal import Decimal
+from enum import Enum, IntEnum
+from pathlib import Path, PureWindowsPath
+from string import ascii_letters
+from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, Tuple, TypeVar, Union  # noqa: UP035
+
+import pytest
+import typing_extensions
+from pydantic import (
+    AliasChoices,
+    AliasGenerator,
+    AliasPath,
+    BaseModel,
+    ConfigDict,
+    DirectoryPath,
+    Discriminator,
+    Field,
+    GetCoreSchemaHandler,
+    IPvAnyAddress,
+    RootModel,
+    SecretStr,
+    Tag,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
+from pydantic import (
+    dataclasses as pydantic_dataclasses,
+)
+from pydantic._internal._repr import Representation
+from pydantic_core import CoreSchema, core_schema
+
+from pydantic_settings import (
+    BaseSettings,
+    CliApp,
+    ForceDecode,
+    NoDecode,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+    SettingsError,
+)
+from pydantic_settings.sources import (
+    CLI_SUPPRESS,
+    CliDualFlag,
+    CliExplicitFlag,
+    CliImplicitFlag,
+    CliMutuallyExclusiveGroup,
+    CliPositionalArg,
+    CliSettingsSource,
+    CliSubCommand,
+    CliSuppress,
+    CliToggleFlag,
+    CliUnknownArgs,
+    CliVariadicArg,
+    get_subcommand,
+)
+from pydantic_settings.sources.providers.cli import _get_model_description
+
+ARGPARSE_OPTIONS_TEXT = 'options'
+
+
+@pytest.fixture(autouse=True)
+def cli_test_env_autouse(cli_test_env):
+    pass
+
+
+def foobar(a, b, c=4):
+    pass
+
+
+class FruitsEnum(IntEnum):
+    pear = 0
+    kiwi = 1
+    lime = 2
+
+
+T = TypeVar('T')
+
+
+class LoggedVar(Generic[T]):
+    def get(self) -> T: ...
+
+
+class SimpleSettings(BaseSettings):
+    apple: str
+
+
+class SettingWithIgnoreEmpty(BaseSettings):
+    apple: str = 'default'
+
+    model_config = SettingsConfigDict(env_ignore_empty=True)
+
+
+class CliDummyArgGroup(BaseModel, arbitrary_types_allowed=True):
+    group: argparse._ArgumentGroup
+
+    def add_argument(self, *args: Any, **kwargs: Any) -> None:
+        self.group.add_argument(*args, **kwargs)
+
+
+class CliDummySubParsers(BaseModel, arbitrary_types_allowed=True):
+    sub_parser: argparse._SubParsersAction
+
+    def add_parser(self, *args: Any, **kwargs: Any) -> 'CliDummyParser':
+        return CliDummyParser(parser=self.sub_parser.add_parser(*args, **kwargs))
+
+
+class CliDummyParser(BaseModel, arbitrary_types_allowed=True):
+    parser: argparse.ArgumentParser = Field(default_factory=lambda: argparse.ArgumentParser())
+
+    def add_argument(self, *args: Any, **kwargs: Any) -> None:
+        self.parser.add_argument(*args, **kwargs)
+
+    def add_argument_group(self, *args: Any, **kwargs: Any) -> CliDummyArgGroup:
+        return CliDummyArgGroup(group=self.parser.add_argument_group(*args, **kwargs))
+
+    def add_subparsers(self, *args: Any, **kwargs: Any) -> CliDummySubParsers:
+        return CliDummySubParsers(sub_parser=self.parser.add_subparsers(*args, **kwargs))
+
+    def parse_args(self, *args: Any, **kwargs: Any) -> argparse.Namespace:
+        return self.parser.parse_args(*args, **kwargs)
+
+
+def test_cli_validation_alias_with_cli_prefix():
+    class Settings(BaseSettings, cli_exit_on_error=False):
+        foobar: str = Field(validation_alias='foo')
+
+        model_config = SettingsConfigDict(cli_prefix='p')
+
+    with pytest.raises(SettingsError, match='error parsing CLI: unrecognized arguments: --foo bar'):
+        CliApp.run(Settings, cli_args=['--foo', 'bar'])
+
+    assert CliApp.run(Settings, cli_args=['--p.foo', 'bar']).foobar == 'bar'
+
+
+def test_cli_validation_alias_differs_from_alias():
+    class Settings(BaseSettings, cli_exit_on_error=False):
+        database_url: str = Field('sqlite://', alias='dbAlias', validation_alias='DATABASE_URL')
+
+    assert CliApp.run(Settings, cli_args=['--DATABASE_URL', 'postgres://prod']).database_url == 'postgres://prod'
+    # Pydantic doesn't validate input by `alias` when `validation_alias` is set, so it isn't a CLI flag either
+    with pytest.raises(SettingsError, match='error parsing CLI: unrecognized arguments: --dbAlias postgres://prod'):
+        CliApp.run(Settings, cli_args=['--dbAlias', 'postgres://prod'])
+    assert '--dbalias' not in CliApp.format_help(Settings).lower()
+    args = CliApp.serialize(Settings(DATABASE_URL='postgres://prod'))
+    assert args == ['--DATABASE_URL', 'postgres://prod']
+    assert CliApp.run(Settings, cli_args=args).database_url == 'postgres://prod'
+
+
+def test_cli_validation_alias_choices_and_path_differ_from_alias():
+    class Settings(BaseSettings, cli_exit_on_error=False):
+        choices: str = Field('default', alias='choicesAlias', validation_alias=AliasChoices('CHOICE_A', 'CHOICE_B'))
+        path: str = Field('default', alias='pathAlias', validation_alias=AliasPath('PATH_LIST', 0))
+
+    s = CliApp.run(Settings, cli_args=['--CHOICE_B', 'b', '--PATH_LIST', '["p"]'])
+    assert s.choices == 'b'
+    assert s.path == 'p'
+    help_text = CliApp.format_help(Settings).lower()
+    assert '--choicesalias' not in help_text
+    assert '--pathalias' not in help_text
+    with pytest.raises(SettingsError, match=r'(?i)error parsing CLI: unrecognized arguments: --choicesalias x'):
+        CliApp.run(Settings, cli_args=['--choicesAlias', 'x'])
+    with pytest.raises(SettingsError, match=r'(?i)error parsing CLI: unrecognized arguments: --pathalias x'):
+        CliApp.run(Settings, cli_args=['--pathAlias', 'x'])
+
+
+@pytest.mark.parametrize(
+    'alias_generator',
+    [
+        AliasGenerator(validation_alias=lambda s: AliasChoices(s, s.replace('_', '-'))),
+        AliasGenerator(validation_alias=lambda s: AliasChoices(s.replace('_', '-'), s)),
+    ],
+)
+def test_cli_alias_resolution_consistency_with_env(env, alias_generator):
+    class SubModel(BaseModel):
+        v1: str = 'model default'
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            env_nested_delimiter='__',
+            nested_model_default_partial_update=True,
+            alias_generator=alias_generator,
+        )
+
+        sub_model: SubModel = SubModel(v1='top default')
+
+    assert CliApp.run(Settings, cli_args=[]).model_dump() == {'sub_model': {'v1': 'top default'}}
+
+    env.set('SUB_MODEL__V1', 'env default')
+    assert CliApp.run(Settings, cli_args=[]).model_dump() == {'sub_model': {'v1': 'env default'}}
+
+    assert CliApp.run(Settings, cli_args=['--sub-model.v1=cli default']).model_dump() == {
+        'sub_model': {'v1': 'cli default'}
+    }
+
+
+def test_cli_nested_arg():
+    class SubSubValue(BaseModel):
+        v6: str
+
+    class SubValue(BaseModel):
+        v4: str
+        v5: int
+        sub_sub: SubSubValue
+
+    class TopValue(BaseModel):
+        v1: str
+        v2: str
+        v3: str
+        sub: SubValue
+
+    class Cfg(BaseSettings):
+        v0: str
+        v0_union: SubValue | int
+        top: TopValue
+
+    args: list[str] = []
+    args += ['--top', '{"v1": "json-1", "v2": "json-2", "sub": {"v5": "xx"}}']
+    args += ['--top.sub.v5', '5']
+    args += ['--v0', '0']
+    args += ['--top.v2', '2']
+    args += ['--top.v3', '3']
+    args += ['--v0_union', '0']
+    args += ['--top.sub.sub_sub.v6', '6']
+    args += ['--top.sub.v4', '4']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {
+        'v0': '0',
+        'v0_union': 0,
+        'top': {
+            'v1': 'json-1',
+            'v2': '2',
+            'v3': '3',
+            'sub': {'v4': '4', 'v5': 5, 'sub_sub': {'v6': '6'}},
+        },
+    }
+
+
+def test_cli_source_prioritization(env):
+    class CfgDefault(BaseSettings):
+        foo: str
+
+    class CfgPrioritized(BaseSettings):
+        foo: str
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return env_settings, CliSettingsSource(settings_cls, cli_parse_args=['--foo', 'FOO FROM CLI'])
+
+    env.set('FOO', 'FOO FROM ENV')
+
+    cfg = CliApp.run(CfgDefault, cli_args=['--foo', 'FOO FROM CLI'])
+    assert cfg.model_dump() == {'foo': 'FOO FROM CLI'}
+
+    cfg = CfgPrioritized()
+    assert cfg.model_dump() == {'foo': 'FOO FROM ENV'}
+
+
+def test_cli_alias_subcommand_and_positional_args(capsys, monkeypatch):
+    class SubCmd(BaseModel):
+        pos_arg: CliPositionalArg[str] = Field(validation_alias='pos-arg')
+
+    class Cfg(BaseSettings, cli_prog_name='example.py'):
+        sub_cmd: CliSubCommand[SubCmd] = Field(validation_alias='sub-cmd')
+
+    cfg = Cfg(**{'sub-cmd': {'pos-arg': 'howdy'}})
+    assert cfg.model_dump() == {'sub_cmd': {'pos_arg': 'howdy'}}
+
+    cfg = CliApp.run(Cfg, cli_args=['sub-cmd', 'howdy'])
+    assert cfg.model_dump() == {'sub_cmd': {'pos_arg': 'howdy'}}
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Cfg)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] {{sub-cmd}} ...
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+
+subcommands:
+  {{sub-cmd}}
+    sub-cmd
+"""
+        )
+        m.setattr(sys, 'argv', ['example.py', 'sub-cmd', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Cfg)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py sub-cmd [-h] POS-ARG
+
+positional arguments:
+  POS-ARG
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+"""
+        )
+
+
+@pytest.mark.parametrize('avoid_json', [True, False])
+def test_cli_alias_arg(capsys, monkeypatch, avoid_json):
+    class Cfg(BaseSettings, cli_avoid_json=avoid_json):
+        alias_choice_w_path: str = Field(validation_alias=AliasChoices('a', AliasPath('path0', 1)))
+        alias_choice_w_only_path: str = Field(validation_alias=AliasChoices(AliasPath('path1', 1)))
+        alias_choice_no_path: str = Field(validation_alias=AliasChoices('b', 'c'))
+        alias_path: str = Field(validation_alias=AliasPath('path2', 'deep', 1))
+        alias_extra_deep: str = Field(validation_alias=AliasPath('path3', 'deep', 'extra', 'deep', 1))
+        alias_str: str = Field(validation_alias='str')
+
+    cfg = CliApp.run(
+        Cfg,
+        cli_args=[
+            '-a',
+            'a',
+            '-b',
+            'b',
+            '--str',
+            'str',
+            '--path0',
+            'a0,b0,c0',
+            '--path1',
+            'a1,b1,c1',
+            '--path2',
+            '{"deep": ["a2","b2","c2"]}',
+            '--path3',
+            '{"deep": {"extra": {"deep": ["a3","b3","c3"]}}}',
+        ],
+    )
+    assert cfg.model_dump() == {
+        'alias_choice_w_path': 'a',
+        'alias_choice_w_only_path': 'b1',
+        'alias_choice_no_path': 'b',
+        'alias_path': 'b2',
+        'alias_extra_deep': 'b3',
+        'alias_str': 'str',
+    }
+
+    serialized_cli_args = CliApp.serialize(cfg)
+    assert serialized_cli_args == [
+        '-a',
+        'a',
+        '--path1',
+        '["", "b1"]',
+        '-b',
+        'b',
+        '--path2',
+        '{"deep": ["", "b2"]}',
+        '--path3',
+        '{"deep": {"extra": {"deep": ["", "b3"]}}}',
+        '--str',
+        'str',
+    ]
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+
+
+@pytest.mark.parametrize('avoid_json', [True, False])
+def test_cli_alias_nested_arg(capsys, monkeypatch, avoid_json):
+    class Nested(BaseModel):
+        alias_choice_w_path: str = Field(validation_alias=AliasChoices('a', AliasPath('path0', 1)))
+        alias_choice_w_only_path: str = Field(validation_alias=AliasChoices(AliasPath('path1', 1)))
+        alias_choice_no_path: str = Field(validation_alias=AliasChoices('b', 'c'))
+        alias_path: str = Field(validation_alias=AliasPath('path2', 'deep', 1))
+        alias_extra_deep: str = Field(validation_alias=AliasPath('path3', 'deep', 'extra', 'deep', 1))
+        alias_str: str = Field(validation_alias='str')
+
+    class Cfg(BaseSettings, cli_avoid_json=avoid_json):
+        nest: Nested
+
+    cfg = CliApp.run(
+        Cfg,
+        cli_args=[
+            '--nest.a',
+            'a',
+            '--nest.b',
+            'b',
+            '--nest.str',
+            'str',
+            '--nest.path0',
+            '["a0","b0","c0"]',
+            '--nest.path1',
+            '["a1","b1","c1"]',
+            '--nest.path2',
+            '{"deep": ["a2","b2","c2"]}',
+            '--nest.path3',
+            '{"deep": {"extra": {"deep": ["a3","b3","c3"]}}}',
+        ],
+    )
+    assert cfg.model_dump() == {
+        'nest': {
+            'alias_choice_w_path': 'a',
+            'alias_choice_w_only_path': 'b1',
+            'alias_choice_no_path': 'b',
+            'alias_path': 'b2',
+            'alias_extra_deep': 'b3',
+            'alias_str': 'str',
+        }
+    }
+
+    serialized_cli_args = CliApp.serialize(cfg)
+    assert serialized_cli_args == [
+        '--nest.a',
+        'a',
+        '--nest.path1',
+        '["", "b1"]',
+        '--nest.b',
+        'b',
+        '--nest.path2',
+        '{"deep": ["", "b2"]}',
+        '--nest.path3',
+        '{"deep": {"extra": {"deep": ["", "b3"]}}}',
+        '--nest.str',
+        'str',
+    ]
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+
+
+def test_cli_alias_exceptions(capsys, monkeypatch):
+    with pytest.raises(SettingsError, match=re.escape('subcommand argument BadCliSubCommand.foo has multiple aliases')):
+
+        class SubCmd(BaseModel):
+            v0: int
+
+        class BadCliSubCommand(BaseSettings):
+            foo: CliSubCommand[SubCmd] = Field(validation_alias=AliasChoices('bar', 'boo'))
+
+        CliApp.run(BadCliSubCommand)
+
+    with pytest.raises(
+        SettingsError, match=re.escape('positional argument BadCliPositionalArg.foo has multiple alias')
+    ):
+
+        class BadCliPositionalArg(BaseSettings):
+            foo: CliPositionalArg[int] = Field(validation_alias=AliasChoices('bar', 'boo'))
+
+        CliApp.run(BadCliPositionalArg)
+
+
+@pytest.mark.parametrize(
+    'config_override',
+    [
+        {'validate_by_name': True},
+        {'populate_by_name': True},
+    ],
+)
+def test_cli_populate_by_name_with_alias_choices(config_override):
+    class Cfg(BaseSettings, cli_exit_on_error=False, cli_kebab_case=True, **config_override):
+        project_id: str = Field(
+            'default',
+            validation_alias=AliasChoices('gcp_project_id', 'uno_metadata_project_id'),
+        )
+
+    # Field name works as CLI arg
+    cfg = CliApp.run(Cfg, cli_args=['--project-id', 'val1'])
+    assert cfg.project_id == 'val1'
+
+    # Aliases still work
+    cfg = CliApp.run(Cfg, cli_args=['--gcp-project-id', 'val2'])
+    assert cfg.project_id == 'val2'
+
+    cfg = CliApp.run(Cfg, cli_args=['--uno-metadata-project-id', 'val3'])
+    assert cfg.project_id == 'val3'
+
+    # Without the config, field name should not be recognized
+    class CfgNoByName(BaseSettings, cli_exit_on_error=False, cli_kebab_case=True):
+        project_id: str = Field(
+            'default',
+            validation_alias=AliasChoices('gcp_project_id', 'uno_metadata_project_id'),
+        )
+
+    with pytest.raises(SettingsError, match='error parsing CLI'):
+        CliApp.run(CfgNoByName, cli_args=['--project-id', 'val1'])
+
+    # Field name also works inside subcommand models
+    class SubModel(BaseModel):
+        project_id: str = Field(
+            'default',
+            validation_alias=AliasChoices('gcp_project_id', 'uno_metadata_project_id'),
+        )
+
+    class CfgWithSubCmd(BaseSettings, cli_kebab_case=True, **config_override):
+        sub: CliSubCommand[SubModel]
+
+    cfg = CliApp.run(CfgWithSubCmd, cli_args=['sub', '--project-id', 'sub_val1'])
+    assert cfg.sub.project_id == 'sub_val1'
+
+    cfg = CliApp.run(CfgWithSubCmd, cli_args=['sub', '--gcp-project-id', 'sub_val2'])
+    assert cfg.sub.project_id == 'sub_val2'
+
+
+def test_cli_case_insensitive_arg():
+    class Cfg(BaseSettings, cli_exit_on_error=False):
+        foo: str = Field(validation_alias=AliasChoices('F', 'Foo'))
+        bar: str = Field(validation_alias=AliasChoices('B', 'Bar'))
+
+    cfg = CliApp.run(
+        Cfg,
+        cli_args=[
+            '--FOO=--VAL',
+            '--BAR',
+            '"--VAL"',
+        ],
+    )
+    assert cfg.model_dump() == {'foo': '--VAL', 'bar': '"--VAL"'}
+
+    cfg = CliApp.run(
+        Cfg,
+        cli_args=[
+            '-f=-V',
+            '-b',
+            '"-V"',
+        ],
+    )
+    assert cfg.model_dump() == {'foo': '-V', 'bar': '"-V"'}
+
+    cfg = Cfg(_cli_parse_args=['--Foo=--VAL', '--Bar', '"--VAL"'], _case_sensitive=True)
+    assert cfg.model_dump() == {'foo': '--VAL', 'bar': '"--VAL"'}
+
+    cfg = Cfg(_cli_parse_args=['-F=-V', '-B', '"-V"'], _case_sensitive=True)
+    assert cfg.model_dump() == {'foo': '-V', 'bar': '"-V"'}
+
+    with pytest.raises(SettingsError, match='error parsing CLI: unrecognized arguments: --FOO=--VAL --BAR "--VAL"'):
+        Cfg(_cli_parse_args=['--FOO=--VAL', '--BAR', '"--VAL"'], _case_sensitive=True)
+
+    with pytest.raises(SettingsError, match='error parsing CLI: unrecognized arguments: -f=-V -b "-V"'):
+        Cfg(_cli_parse_args=['-f=-V', '-b', '"-V"'], _case_sensitive=True)
+
+    with pytest.raises(SettingsError, match='Case-insensitive matching is only supported on the internal root parser'):
+        CliSettingsSource(Cfg, root_parser=CliDummyParser(), case_sensitive=False)
+
+
+def test_cli_case_insensitive_preserves_non_option_args():
+    class Positional(BaseSettings, cli_exit_on_error=False):
+        name: str = 'x'
+        files: CliPositionalArg[list[str]]
+
+    cfg = CliApp.run(Positional, cli_args=['--NAME', 'Bob', '--', '-Report.PDF', '--KEEP=Case'])
+    assert cfg.model_dump() == {'name': 'Bob', 'files': ['-Report.PDF', '--KEEP=Case']}
+
+    class Passthrough(BaseSettings, cli_exit_on_error=False, cli_ignore_unknown_args=True):
+        name: str = 'x'
+        extra: CliUnknownArgs
+
+    cfg = CliApp.run(Passthrough, cli_args=['--NAME', 'Bob', '-Xmx4G', '--Dfoo=Bar'])
+    assert cfg.model_dump() == {'name': 'Bob', 'extra': ['-Xmx4G', '--Dfoo=Bar']}
+
+    class Sub(BaseModel):
+        port: int = 0
+
+    class WithSubCommand(BaseSettings, cli_exit_on_error=False):
+        sub: CliSubCommand[Sub]
+
+    cfg = CliApp.run(WithSubCommand, cli_args=['sub', '--PORT', '1'])
+    assert cfg.sub.port == 1
+
+
+def test_cli_case_insensitive_short_option_with_attached_value():
+    class Settings(BaseSettings, cli_exit_on_error=False, cli_implicit_flags=True, cli_ignore_unknown_args=True):
+        name: str = Field('x', validation_alias=AliasChoices('n', 'name'))
+        verbose: bool = Field(False, validation_alias=AliasChoices('v', 'verbose'))
+        quiet: bool = Field(False, validation_alias=AliasChoices('q', 'quiet'))
+        extra: CliUnknownArgs
+
+    assert CliApp.run(Settings, cli_args=['-NBob']).name == 'Bob'
+    assert CliApp.run(Settings, cli_args=['-nBob']).name == 'Bob'
+    assert CliApp.run(Settings, cli_args=['-VNBob']).model_dump() == {
+        'name': 'Bob',
+        'verbose': True,
+        'quiet': False,
+        'extra': [],
+    }
+    assert CliApp.run(Settings, cli_args=['-VQ']).model_dump() == {
+        'name': 'x',
+        'verbose': True,
+        'quiet': True,
+        'extra': [],
+    }
+    assert CliApp.run(Settings, cli_args=['-NBob', '-Xmx4G']).model_dump() == {
+        'name': 'Bob',
+        'verbose': False,
+        'quiet': False,
+        'extra': ['-Xmx4G'],
+    }
+
+
+def test_cli_case_insensitive_options_scoped_to_subcommand():
+    class Serve(BaseModel):
+        port: int = 0
+        name: str = Field('x', validation_alias=AliasChoices('n', 'name'))
+        extra: CliUnknownArgs
+
+    class Check(BaseModel):
+        name: bool = Field(False, validation_alias=AliasChoices('n', 'name'))
+        verbose: bool = Field(False, validation_alias=AliasChoices('v', 'verbose'))
+
+    class Settings(BaseSettings, cli_exit_on_error=False, cli_implicit_flags=True, cli_ignore_unknown_args=True):
+        tag: str = 'x'
+        extra: CliUnknownArgs
+        serve: CliSubCommand[Serve]
+        check: CliSubCommand[Check]
+
+    # `--port` is only a `serve` option, so it isn't lowercased before the subcommand
+    cfg = CliApp.run(Settings, cli_args=['--PORT=MiX', 'serve', '--PORT', '1'])
+    assert cfg.extra == ['--PORT=MiX']
+    assert cfg.serve.port == 1
+
+    # `-n` takes a value in `serve` and is a flag in `check`
+    assert CliApp.run(Settings, cli_args=['serve', '-NBob']).serve.name == 'Bob'
+    assert CliApp.run(Settings, cli_args=['check', '-NV']).check.model_dump() == {'name': True, 'verbose': True}
+
+    # a value that matches a subcommand name doesn't select the subcommand
+    cfg = CliApp.run(Settings, cli_args=['--TAG', 'serve', 'check', '-N'])
+    assert cfg.tag == 'serve'
+    assert cfg.check.name is True
+
+
+@pytest.mark.parametrize('case_sensitive', [True, False])
+@pytest.mark.parametrize('alias', [None, 'Serve'])
+def test_cli_subcommand_preserves_case(case_sensitive, alias):
+    class Command(BaseModel):
+        value: CliPositionalArg[str]
+
+    class Settings(BaseSettings):
+        Run: CliSubCommand[Command] = Field(alias=alias)
+
+    command_name = alias or 'Run'
+    settings = Settings(
+        _case_sensitive=case_sensitive,
+        _cli_parse_args=[command_name, 'MiXeD'],
+        _cli_exit_on_error=False,
+    )
+    assert settings.Run.value == 'MiXeD'
+
+    with pytest.raises(SettingsError, match=f"invalid choice: '{command_name.lower()}'"):
+        Settings(
+            _case_sensitive=case_sensitive,
+            _cli_parse_args=[command_name.lower(), 'MiXeD'],
+            _cli_exit_on_error=False,
+        )
+
+
+def test_cli_help_differentiation(capsys, monkeypatch):
+    class Cfg(BaseSettings, cli_prog_name='example.py'):
+        foo: str
+        bar: int = 123
+        boo: int = Field(default_factory=lambda: 456)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Cfg)
+
+        assert (
+            re.sub(r'0x\w+', '0xffffffff', capsys.readouterr().out, flags=re.MULTILINE)
+            == f"""usage: example.py [-h] [--foo str] [--bar int] [--boo int]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+  --foo str   (required)
+  --bar int   (default: 123)
+  --boo int   (default factory: <lambda>)
+"""
+        )
+
+
+def test_cli_help_string_format(capsys, monkeypatch):
+    class Cfg(BaseSettings, cli_parse_args=True, cli_prog_name='example.py'):
+        date_str: str = '%Y-%m-%d'
+
+    class MultilineDoc(BaseSettings, cli_parse_args=True, cli_prog_name='example.py'):
+        """
+        My
+        Multiline
+        Doc
+        """
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Cfg()
+
+        assert (
+            re.sub(r'0x\w+', '0xffffffff', capsys.readouterr().out, flags=re.MULTILINE)
+            == f"""usage: example.py [-h] [--date_str str]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help      show this help message and exit
+  --date_str str  (default: %Y-%m-%d)
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            MultilineDoc()
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h]
+
+My
+Multiline
+Doc
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            cli_settings_source = CliSettingsSource(MultilineDoc, formatter_class=argparse.HelpFormatter)
+            MultilineDoc(_cli_settings_source=cli_settings_source(args=True))
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h]
+
+My Multiline Doc
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+"""
+        )
+
+
+def test_cli_show_env_vars_off_by_default():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', env_prefix='MYAPP_')
+
+        foo: str
+
+    assert (
+        CliApp.format_help(Settings, strip_ansi_color=True)
+        == f"""usage: example.py [-h] [--foo str]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+  --foo str   (required)
+"""
+    )
+
+
+def test_cli_show_env_vars_with_env_prefix():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', env_prefix='MYAPP_', cli_show_env_vars=True)
+
+        foo: str = Field(description='Foo value')
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert 'Foo value (required) [env: MYAPP_FOO]' in help_text
+
+
+def test_cli_show_env_vars_nested_model_validates_by_alias():
+    class Sub(BaseModel):
+        foo: str = Field('bar', alias='fooAlias')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py', cli_show_env_vars=True, env_nested_delimiter='__', validate_by_alias=False
+        )
+
+        sub: Sub = Sub()
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    # `Sub` validates by alias only, so `SUB__FOO` would be ignored and must not be advertised
+    assert '[env: SUB__FOOALIAS]' in help_text
+
+
+def test_cli_show_env_vars_nested_model_validates_by_name(env):
+    class Sub(BaseModel):
+        model_config = ConfigDict(validate_by_name=True)
+
+        foo: str = Field('bar', alias='fooAlias')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', cli_show_env_vars=True, env_nested_delimiter='__')
+
+        sub: Sub = Sub()
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '[env: SUB__FOOALIAS | SUB__FOO]' in help_text
+    env.set('SUB__FOO', 'baz')
+    assert Settings().sub.foo == 'baz'
+
+
+def test_cli_show_env_vars_mutually_exclusive_group():
+    class Choice(CliMutuallyExclusiveGroup):
+        api_token: str | None = None
+        api_key: str | None = None
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_nested_delimiter='__',
+            env_prefix='MYAPP_',
+        )
+
+        choice: Choice
+
+    cli_settings = CliSettingsSource(Settings, cli_show_env_vars=True)
+    help_text = CliApp.format_help(Settings, cli_settings_source=cli_settings, strip_ansi_color=True)
+
+    assert 'choice options (mutually exclusive):' in help_text
+    assert 'set choice from JSON string (default: {}) [env:' in help_text
+    assert 'MYAPP_CHOICE]' in help_text
+    assert '(default: null) [env: MYAPP_CHOICE__API_TOKEN]' in help_text
+    assert '(default: null) [env: MYAPP_CHOICE__API_KEY]' in help_text
+    assert cli_settings.env_var_names == {
+        'choice': ('MYAPP_CHOICE',),
+        'choice.api_token': ('MYAPP_CHOICE__API_TOKEN',),
+        'choice.api_key': ('MYAPP_CHOICE__API_KEY',),
+    }
+
+
+def test_cli_show_env_vars_secret_str():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', env_prefix='MYAPP_', cli_show_env_vars=True)
+
+        password: SecretStr
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '--password SecretStr' in help_text
+    assert '(required) [env: MYAPP_PASSWORD]' in help_text
+
+
+def test_cli_show_env_vars_optional_field():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', env_prefix='MYAPP_', cli_show_env_vars=True)
+
+        optional_token: str | None = None
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '--optional_token {str,null}' in help_text
+    assert '(default: null) [env: MYAPP_OPTIONAL_TOKEN]' in help_text
+
+
+def test_cli_show_env_vars_kebab_case():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            cli_kebab_case=True,
+            env_prefix='MYAPP_',
+        )
+
+        api_token: str
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '--api-token str' in help_text
+    assert '(required) [env: MYAPP_API_TOKEN]' in help_text
+
+
+def test_cli_show_env_vars_alias_choices():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', cli_show_env_vars=True)
+
+        token: str = Field(validation_alias=AliasChoices('TOKEN', 'LEGACY_TOKEN'))
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '[env: TOKEN | LEGACY_TOKEN]' in help_text
+
+
+def test_cli_show_env_vars_alias_choices_deduplicated():
+    """Aliases that render to the same env var name are only listed once."""
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_prefix='MYAPP_',
+            case_sensitive=False,
+        )
+
+        foo: str = Field('x', validation_alias=AliasChoices('foo', 'FOO'))
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '[env: FOO]' in help_text
+
+
+def test_cli_show_env_vars_nested_alias_gets_prefix():
+    """A nested field whose alias drops the prefix still gets the nested prefix applied."""
+
+    class Nested(BaseModel):
+        inner: str = Field('x', validation_alias='INNER_ALIAS')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_prefix='MYAPP_',
+            env_nested_delimiter='__',
+        )
+
+        nested: Nested = Nested()
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '[env: MYAPP_NESTED__INNER_ALIAS]' in help_text
+
+
+def test_cli_show_env_vars_nested_model():
+    class Database(BaseModel):
+        url: str
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_nested_delimiter='__',
+            env_prefix='MYAPP_',
+        )
+
+        database: Database
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '--database [JSON]' in help_text
+    assert '[env:' in help_text
+    assert 'MYAPP_DATABASE]' in help_text
+    assert '--database.url str' in help_text
+    assert '[env: MYAPP_DATABASE__URL]' in help_text
+
+
+def test_cli_show_env_vars_deep_nesting():
+    class Credentials(BaseModel):
+        username: str
+
+    class Database(BaseModel):
+        credentials: Credentials
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_nested_delimiter='__',
+            env_prefix='MYAPP_',
+        )
+
+        database: Database
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '--database.credentials.username str' in help_text
+    assert 'MYAPP_DATABASE__CREDENTIALS__USERNAME' in help_text
+
+
+@pytest.mark.parametrize(
+    ('env_prefix_target', 'expected_alias_env', 'expected_variable_env'),
+    [
+        ('alias', 'TARGET_FOOALIAS', 'BAR'),
+        ('variable', 'FOOALIAS', 'TARGET_BAR'),
+        ('all', 'TARGET_FOOALIAS', 'TARGET_BAR'),
+    ],
+)
+def test_cli_show_env_vars_env_prefix_target(env_prefix_target, expected_alias_env, expected_variable_env):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_prefix='TARGET_',
+            env_prefix_target=env_prefix_target,
+        )
+
+        foo: str = Field(alias='FooAlias')
+        bar: str
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert f'[env: {expected_alias_env}]' in help_text
+    assert f'[env: {expected_variable_env}]' in help_text
+
+
+def test_cli_show_env_vars_discriminated_union():
+    class Cat(BaseModel):
+        pet_type: Literal['cat']
+        meows: int
+
+    class Dog(BaseModel):
+        pet_type: Literal['dog']
+        barks: float
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_nested_delimiter='__',
+            env_prefix='MYAPP_',
+        )
+
+        pet: Cat | Dog = Field(discriminator='pet_type')
+
+    help_text = CliApp.format_help(Settings, strip_ansi_color=True)
+
+    assert '[env: MYAPP_PET__PET_TYPE]' in help_text
+    assert '[env: MYAPP_PET__MEOWS]' in help_text
+    assert '[env: MYAPP_PET__BARKS]' in help_text
+
+
+def test_cli_show_env_vars_alias_only_and_positional_skip():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', cli_show_env_vars=True)
+
+        aliased: str = Field(alias='ALIASED')
+        positional: CliPositionalArg[str]
+
+    cli_settings = CliSettingsSource(Settings, cli_show_env_vars=True)
+    help_text = CliApp.format_help(Settings, cli_settings_source=cli_settings, strip_ansi_color=True)
+
+    assert '[env: ALIASED]' in help_text
+    assert '[env: ]' not in help_text
+    assert cli_settings.env_var_names == {'ALIASED': ('ALIASED',)}
+
+
+def test_cli_show_env_vars_case_sensitive_display():
+    class CaseInsensitive(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_prefix='myapp_',
+            case_sensitive=False,
+        )
+
+        foo_bar: str
+
+    class CaseSensitive(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_prefix='myapp_',
+            case_sensitive=True,
+        )
+
+        foo_bar: str
+
+    assert '[env: MYAPP_FOO_BAR]' in CliApp.format_help(CaseInsensitive, strip_ansi_color=True)
+    # On Windows, os.environ is case-insensitive, so case_sensitive has no effect for
+    # environment variables and the canonical (upper-cased) name is displayed (see #295).
+    expected_case_sensitive_env = 'MYAPP_FOO_BAR' if os.name == 'nt' else 'myapp_foo_bar'
+    assert f'[env: {expected_case_sensitive_env}]' in CliApp.format_help(CaseSensitive, strip_ansi_color=True)
+
+
+def test_cli_show_env_vars_subcommand(capsys):
+    class SubCommand(BaseModel):
+        foo: str
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_nested_delimiter='__',
+            env_prefix='MYAPP_',
+        )
+
+        sub: CliSubCommand[SubCommand]
+
+    with pytest.raises(SystemExit):
+        CliApp.run(Settings, cli_args=['sub', '--help'])
+
+    assert '[env: MYAPP_SUB__FOO]' in capsys.readouterr().out
+
+
+def test_cli_show_env_vars_without_env_nested_delimiter():
+    class Database(BaseModel):
+        url: str
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            cli_show_env_vars=True,
+            env_prefix='MYAPP_',
+        )
+
+        database: Database
+
+    cli_settings = CliSettingsSource(Settings, cli_show_env_vars=True)
+    help_text = CliApp.format_help(Settings, cli_settings_source=cli_settings, strip_ansi_color=True)
+
+    assert 'MYAPP_DATABASE' in help_text
+    assert '--database.url str' in help_text
+    assert 'MYAPP_DATABASE__URL' not in help_text
+    assert cli_settings.env_var_names.get('database') == ('MYAPP_DATABASE',)
+    assert 'database.url' not in cli_settings.env_var_names
+
+
+def test_cli_run_subcommand_show_env_vars_outside_cli_stack():
+    class SubCommand(BaseModel):
+        value: str
+
+        def cli_cmd(self) -> None:
+            pass
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_prog_name='example.py',
+            env_prefix='MYAPP_',
+        )
+
+        foo: str = 'foo'
+        sub: CliSubCommand[SubCommand]
+
+    with pytest.raises(SettingsError, match='Error: CLI subcommand is required') as exc_info:
+        CliApp.run_subcommand(
+            Settings.model_construct(foo='foo', sub=None), cli_show_env_vars=True, cli_exit_on_error=False
+        )
+
+    assert 'MYAPP_FOO' in str(exc_info.value)
+
+
+def test_cli_show_env_vars_cli_app_runtime_override(capsys):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_prog_name='example.py', env_prefix='MYAPP_')
+
+        foo: str
+
+    with pytest.raises(SystemExit):
+        CliApp.run(Settings, cli_args=['--help'], cli_show_env_vars=True)
+
+    assert '[env: MYAPP_FOO]' in capsys.readouterr().out
+
+
+def test_cli_help_union_of_models(capsys, monkeypatch):
+    class Cat(BaseModel):
+        meow: str = 'meow'
+
+    class Dog(BaseModel):
+        bark: str = 'bark'
+
+    class Bird(BaseModel):
+        caww: str = 'caww'
+        tweet: str
+
+    class Tiger(Cat):
+        roar: str = 'roar'
+
+    class Car(BaseSettings, cli_parse_args=True, cli_prog_name='example.py'):
+        driver: Cat | Dog | Bird = Tiger(meow='purr')
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Car()
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--driver [JSON]] [--driver.meow str]
+                  [--driver.bark str] [--driver.caww str] [--driver.tweet str]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help          show this help message and exit
+
+driver options:
+  --driver [JSON]     set driver from JSON string (default: {{}})
+  --driver.meow str   (default: purr)
+  --driver.bark str   (default: bark)
+  --driver.caww str   (default: caww)
+  --driver.tweet str  (ifdef: required)
+"""
+        )
+
+
+def test_cli_help_default_or_none_model(capsys, monkeypatch):
+    class DeeperSubModel(BaseModel):
+        flag: bool
+
+    class DeepSubModel(BaseModel):
+        flag: bool
+        deeper: DeeperSubModel | None = None
+
+    class SubModel(BaseModel):
+        flag: bool
+        deep: DeepSubModel = DeepSubModel(flag=True)
+
+    class Settings(BaseSettings, cli_parse_args=True, cli_prog_name='example.py'):
+        flag: bool = True
+        toggle: CliToggleFlag[bool] = True
+        toggle_description: CliToggleFlag[bool] = Field(False, description='Bool Toggle')
+        sub_model: SubModel = SubModel(flag=False)
+        opt_model: DeepSubModel | None = Field(None, description='Group Doc')
+        fact_model: SubModel = Field(default_factory=lambda: SubModel(flag=True))
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings()
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--flag bool] [--no-toggle] [--toggle_description]
+                  [--sub_model [JSON]] [--sub_model.flag bool]
+                  [--sub_model.deep [JSON]] [--sub_model.deep.flag bool]
+                  [--sub_model.deep.deeper [{{JSON,null}}]]
+                  [--sub_model.deep.deeper.flag bool]
+                  [--opt_model [{{JSON,null}}]] [--opt_model.flag bool]
+                  [--opt_model.deeper [{{JSON,null}}]]
+                  [--opt_model.deeper.flag bool] [--fact_model [JSON]]
+                  [--fact_model.flag bool] [--fact_model.deep [JSON]]
+                  [--fact_model.deep.flag bool]
+                  [--fact_model.deep.deeper [{{JSON,null}}]]
+                  [--fact_model.deep.deeper.flag bool]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+  --flag bool           (default: True)
+  --no-toggle
+  --toggle_description  Bool Toggle
+
+sub_model options:
+  --sub_model [JSON]    set sub_model from JSON string (default: {{}})
+  --sub_model.flag bool
+                        (default: False)
+
+sub_model.deep options:
+  --sub_model.deep [JSON]
+                        set sub_model.deep from JSON string (default: {{}})
+  --sub_model.deep.flag bool
+                        (default: True)
+
+sub_model.deep.deeper options:
+  default: null (undefined)
+
+  --sub_model.deep.deeper [{{JSON,null}}]
+                        set sub_model.deep.deeper from JSON string (default:
+                        {{}})
+  --sub_model.deep.deeper.flag bool
+                        (ifdef: required)
+
+opt_model options:
+  default: null (undefined)
+  Group Doc
+
+  --opt_model [{{JSON,null}}]
+                        set opt_model from JSON string (default: {{}})
+  --opt_model.flag bool
+                        (ifdef: required)
+
+opt_model.deeper options:
+  default: null (undefined)
+
+  --opt_model.deeper [{{JSON,null}}]
+                        set opt_model.deeper from JSON string (default: {{}})
+  --opt_model.deeper.flag bool
+                        (ifdef: required)
+
+fact_model options:
+  --fact_model [JSON]   set fact_model from JSON string (default: {{}})
+  --fact_model.flag bool
+                        (default factory: <lambda>)
+
+fact_model.deep options:
+  --fact_model.deep [JSON]
+                        set fact_model.deep from JSON string (default: {{}})
+  --fact_model.deep.flag bool
+                        (default factory: <lambda>)
+
+fact_model.deep.deeper options:
+  --fact_model.deep.deeper [{{JSON,null}}]
+                        set fact_model.deep.deeper from JSON string (default:
+                        {{}})
+  --fact_model.deep.deeper.flag bool
+                        (default factory: <lambda>)
+"""
+        )
+
+
+def test_cli_nested_dataclass_arg():
+    @pydantic_dataclasses.dataclass
+    class MyDataclass:
+        foo: int
+        bar: str
+
+    class Settings(BaseSettings):
+        n: MyDataclass
+
+    s = CliApp.run(Settings, cli_args=['--n.foo', '123', '--n.bar', 'bar value'])
+    assert isinstance(s.n, MyDataclass)
+    assert s.n.foo == 123
+    assert s.n.bar == 'bar value'
+
+
+def no_add_cli_arg_spaces(arg_str: str, has_quote_comma: bool = False) -> str:
+    return arg_str
+
+
+def add_cli_arg_spaces(arg_str: str, has_quote_comma: bool = False) -> str:
+    arg_str = arg_str.replace('[', ' [ ')
+    arg_str = arg_str.replace(']', ' ] ')
+    arg_str = arg_str.replace('{', ' { ')
+    arg_str = arg_str.replace('}', ' } ')
+    arg_str = arg_str.replace(':', ' : ')
+    if not has_quote_comma:
+        arg_str = arg_str.replace(',', ' , ')
+    else:
+        arg_str = arg_str.replace('",', '" , ')
+    return f' {arg_str} '
+
+
+@pytest.mark.parametrize('arg_spaces', [no_add_cli_arg_spaces, add_cli_arg_spaces])
+@pytest.mark.parametrize('prefix', ['', 'child.'])
+def test_cli_list_arg(prefix, arg_spaces):
+    class Obj(BaseModel):
+        val: int
+
+    class Child(BaseModel):
+        num_list: list[int] | None = None
+        obj_list: list[Obj] | None = None
+        str_list: list[str] | None = None
+        union_list: list[Obj | int] | None = None
+
+    class Cfg(BaseSettings):
+        num_list: list[int] | None = None
+        obj_list: list[Obj] | None = None
+        union_list: list[Obj | int] | None = None
+        str_list: list[str] | None = None
+        child: Child | None = None
+
+    def check_answer(cfg, prefix, expected):
+        if prefix:
+            assert cfg.model_dump() == {
+                'num_list': None,
+                'obj_list': None,
+                'union_list': None,
+                'str_list': None,
+                'child': expected,
+            }
+        else:
+            expected['child'] = None
+            assert cfg.model_dump() == expected
+
+    args: list[str] = []
+    args = [f'--{prefix}str_list', arg_spaces('["1","2"]')]
+    args += [f'--{prefix}num_list', arg_spaces('["1","2"]')]
+    args += [f'--{prefix}str_list', arg_spaces('"3","4"')]
+    args += [f'--{prefix}num_list', arg_spaces('"3","4"')]
+    args += [f'--{prefix}str_list', '"5"', f'--{prefix}str_list', '"6"']
+    args += [f'--{prefix}num_list', '"5"', f'--{prefix}num_list', '"6"']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    expected = {
+        'num_list': [1, 2, 3, 4, 5, 6],
+        'obj_list': None,
+        'union_list': None,
+        'str_list': ['1', '2', '3', '4', '5', '6'],
+    }
+    check_answer(cfg, prefix, expected)
+
+    args = [arg.replace('"', '') for arg in args]
+    cfg = CliApp.run(Cfg, cli_args=args)
+    expected = {
+        'num_list': [1, 2, 3, 4, 5, 6],
+        'obj_list': None,
+        'union_list': None,
+        'str_list': ['1', '2', '3', '4', '5', '6'],
+    }
+    check_answer(cfg, prefix, expected)
+
+    args = [f'--{prefix}obj_list', arg_spaces('[{"val":1},{"val":2}]')]
+    args += [f'--{prefix}obj_list', arg_spaces('{"val":3},{"val":4}')]
+    args += [f'--{prefix}obj_list', arg_spaces('{"val":5}'), f'--{prefix}obj_list', arg_spaces('{"val":6}')]
+    cfg = CliApp.run(Cfg, cli_args=args)
+    expected = {
+        'num_list': None,
+        'obj_list': [{'val': 1}, {'val': 2}, {'val': 3}, {'val': 4}, {'val': 5}, {'val': 6}],
+        'union_list': None,
+        'str_list': None,
+    }
+    check_answer(cfg, prefix, expected)
+
+    args = [f'--{prefix}union_list', arg_spaces('[{"val":1},2]'), f'--{prefix}union_list', arg_spaces('[3,{"val":4}]')]
+    args += [f'--{prefix}union_list', arg_spaces('{"val":5},6'), f'--{prefix}union_list', arg_spaces('7,{"val":8}')]
+    args += [f'--{prefix}union_list', arg_spaces('{"val":9}'), f'--{prefix}union_list', '10']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    expected = {
+        'num_list': None,
+        'obj_list': None,
+        'union_list': [{'val': 1}, 2, 3, {'val': 4}, {'val': 5}, 6, 7, {'val': 8}, {'val': 9}, 10],
+        'str_list': None,
+    }
+    check_answer(cfg, prefix, expected)
+
+    args = [f'--{prefix}str_list', arg_spaces('["0,0","1,1"]', has_quote_comma=True)]
+    args += [f'--{prefix}str_list', arg_spaces('"2,2","3,3"', has_quote_comma=True)]
+    args += [
+        f'--{prefix}str_list',
+        arg_spaces('"4,4"', has_quote_comma=True),
+        f'--{prefix}str_list',
+        arg_spaces('"5,5"', has_quote_comma=True),
+    ]
+    cfg = CliApp.run(Cfg, cli_args=args)
+    expected = {
+        'num_list': None,
+        'obj_list': None,
+        'union_list': None,
+        'str_list': ['0,0', '1,1', '2,2', '3,3', '4,4', '5,5'],
+    }
+    check_answer(cfg, prefix, expected)
+
+
+@pytest.mark.parametrize('empty_array', ['[]', ' [ \t ] '])
+@pytest.mark.parametrize(
+    'field_type,expected',
+    [
+        (list[str], []),
+        (list[int], []),
+        (list[str] | None, []),
+        (tuple[str, ...], ()),
+        (set[str], set()),
+    ],
+)
+def test_cli_empty_json_list(empty_array, field_type, expected):
+    class Cfg(BaseSettings, cli_kebab_case=True):
+        include_roles: field_type
+
+    assert Cfg(_cli_parse_args=[f'--include-roles={empty_array}']).include_roles == expected
+
+
+@pytest.mark.parametrize('field_type', [dict[str, str], dict[str, str] | None, MutableMapping[str, str]])
+@pytest.mark.parametrize('value', ['[]', ' [ \t ] ', '', '{}'])
+def test_cli_empty_json_list_preserves_mapping_behavior(field_type, value):
+    class Cfg(BaseSettings):
+        values: field_type
+
+    # Preserve the existing mapping parser behavior; empty-list handling is list-specific.
+    assert CliApp.run(Cfg, cli_args=['--values', value]).values == {}
+
+
+@pytest.mark.parametrize('empty_array', ['[]', ' [ \t ] '])
+def test_cli_empty_json_list_preserves_mapping_union(empty_array):
+    class Cfg(BaseSettings):
+        values: dict[str, str] | list[str] = {}
+
+    # An empty array must not flip a mapping union over to its list branch, since that would
+    # reinterpret every other argument for the field.
+    assert CliApp.run(Cfg, cli_args=['--values', empty_array]).values == {}
+    assert CliApp.run(Cfg, cli_args=['--values', empty_array, '--values', 'k1=a']).values == {'k1': 'a'}
+    assert CliApp.run(Cfg, cli_args=['--values', 'k1=a', '--values', empty_array]).values == {'k1': 'a'}
+    assert CliApp.run(Cfg, cli_args=['--values', '{"k1":"a"}', '--values', empty_array]).values == {'k1': 'a'}
+    assert CliApp.run(Cfg, cli_args=['--values', '["a"]', '--values', empty_array]).values == ['a']
+
+
+@pytest.mark.parametrize(
+    'values,expected',
+    [
+        (['[]', '[]'], []),
+        (['[]', 'first,second'], ['first', 'second']),
+        (['first,second', '[]'], ['first', 'second']),
+        (['[]', '["first"]', '[]', 'second'], ['first', 'second']),
+        (['[""]'], ['']),
+        ([''], ['']),
+        (['[,]'], ['', '']),
+        (['["[]"]'], ['[]']),
+    ],
+)
+def test_cli_empty_json_list_merging(values, expected):
+    class Cfg(BaseSettings):
+        values: list[str]
+
+    args = [arg for value in values for arg in ('--values', value)]
+    assert CliApp.run(Cfg, cli_args=args).values == expected
+
+
+def test_cli_empty_json_list_overrides_other_sources(env):
+    class Cfg(BaseSettings):
+        values: list[str] = ['default']
+
+    env.set('VALUES', '["environment"]')
+    assert Cfg(_cli_parse_args=['--values', '[]'], values=['init']).values == []
+
+
+def test_cli_empty_json_list_nested():
+    class Child(BaseModel):
+        values: list[list[int]]
+
+    class Cfg(BaseSettings):
+        child: Child
+
+    assert CliApp.run(Cfg, cli_args=['--child.values', '[]']).child.values == []
+    assert CliApp.run(Cfg, cli_args=['--child.values', '[[]]']).child.values == [[]]
+
+
+def test_cli_empty_json_list_serialize_roundtrip():
+    class Cfg(BaseSettings):
+        values: list[str] = ['default']
+
+    cfg = Cfg(values=[])
+    assert CliApp.run(Cfg, cli_args=CliApp.serialize(cfg, list_style='json')) == cfg
+
+
+class _MQTTVersion(IntEnum):
+    v31 = 3
+    v311 = 4
+
+
+class _Priority(int, Enum):
+    low = 1
+    high = 3
+
+
+class _Threshold(float, Enum):
+    low = 0.25
+    high = 0.75
+
+
+@pytest.mark.parametrize(
+    'field_type,default,cli_val,expected',
+    [
+        pytest.param(
+            Literal[_MQTTVersion.v31, _MQTTVersion.v311],
+            _MQTTVersion.v311,
+            '3',
+            _MQTTVersion.v31,
+            id='IntEnum',
+        ),
+        pytest.param(
+            Literal[_Priority.low, _Priority.high],
+            _Priority.low,
+            '3',
+            _Priority.high,
+            id='int_Enum_mixin',
+        ),
+        pytest.param(
+            Literal[_Threshold.low, _Threshold.high],
+            _Threshold.low,
+            '0.75',
+            _Threshold.high,
+            id='float_Enum_mixin',
+        ),
+        pytest.param(
+            Literal[_MQTTVersion.v31, _MQTTVersion.v311] | None,
+            None,
+            '4',
+            _MQTTVersion.v311,
+            id='Optional_IntEnum',
+        ),
+        pytest.param(
+            Annotated[Literal[_MQTTVersion.v31, _MQTTVersion.v311], Field(description='MQTT version')],
+            _MQTTVersion.v311,
+            '3',
+            _MQTTVersion.v31,
+            id='Annotated_IntEnum',
+        ),
+    ],
+)
+def test_cli_literal_numeric_enum(field_type, default, cli_val, expected):
+    """Literal[numeric Enum member] should parse from CLI numeric strings."""
+
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(cli_kebab_case=True)
+        val: field_type = default  # type: ignore[valid-type]
+
+    cfg = CliApp.run(Cfg, cli_args=['--val', cli_val])
+    assert cfg.val is expected
+
+
+def test_cli_set_arg():
+    class Cfg(BaseSettings):
+        str_set: set[str] | None = None
+        num_set: set[int] | None = None
+
+    cfg = CliApp.run(Cfg, cli_args=['--str_set', 'a,b', '--str_set', 'c'])
+    assert cfg.model_dump() == {'str_set': {'a', 'b', 'c'}, 'num_set': None}
+
+    cfg = CliApp.run(Cfg, cli_args=['--num_set', '1,2', '--num_set', '3'])
+    assert cfg.model_dump() == {'str_set': None, 'num_set': {1, 2, 3}}
+
+
+@pytest.mark.parametrize('arg_spaces', [no_add_cli_arg_spaces, add_cli_arg_spaces])
+def test_cli_list_json_value_parsing(arg_spaces):
+    class Cfg(BaseSettings):
+        json_list: list[str | bool | None]
+
+    assert CliApp.run(
+        Cfg,
+        cli_args=[
+            '--json_list',
+            arg_spaces('true,"true"'),
+            '--json_list',
+            arg_spaces('false,"false"'),
+            '--json_list',
+            arg_spaces('null,"null"'),
+            '--json_list',
+            arg_spaces('hi,"bye"'),
+        ],
+    ).model_dump() == {'json_list': [True, 'true', False, 'false', None, 'null', 'hi', 'bye']}
+
+    assert CliApp.run(Cfg, cli_args=['--json_list', '"","","",""']).model_dump() == {'json_list': ['', '', '', '']}
+    assert CliApp.run(Cfg, cli_args=['--json_list', ',,,']).model_dump() == {'json_list': ['', '', '', '']}
+
+
+@pytest.mark.parametrize('arg_spaces', [no_add_cli_arg_spaces, add_cli_arg_spaces])
+@pytest.mark.parametrize('prefix', ['', 'child.'])
+def test_cli_dict_arg(prefix, arg_spaces):
+    class Child(BaseModel):
+        check_dict: dict[str, str]
+
+    class Cfg(BaseSettings):
+        check_dict: dict[str, str] | None = None
+        child: Child | None = None
+
+    args: list[str] = []
+    args = [f'--{prefix}check_dict', arg_spaces('{"k1":"a","k2":"b"}')]
+    args += [f'--{prefix}check_dict', arg_spaces('{"k3":"c"},{"k4":"d"}')]
+    args += [f'--{prefix}check_dict', arg_spaces('{"k5":"e"}'), f'--{prefix}check_dict', arg_spaces('{"k6":"f"}')]
+    args += [f'--{prefix}check_dict', arg_spaces('[k7=g,k8=h]')]
+    args += [f'--{prefix}check_dict', arg_spaces('k9=i,k10=j')]
+    args += [f'--{prefix}check_dict', arg_spaces('k11=k'), f'--{prefix}check_dict', arg_spaces('k12=l')]
+    args += [
+        f'--{prefix}check_dict',
+        arg_spaces('[{"k13":"m"},k14=n]'),
+        f'--{prefix}check_dict',
+        arg_spaces('[k15=o,{"k16":"p"}]'),
+    ]
+    args += [
+        f'--{prefix}check_dict',
+        arg_spaces('{"k17":"q"},k18=r'),
+        f'--{prefix}check_dict',
+        arg_spaces('k19=s,{"k20":"t"}'),
+    ]
+    args += [f'--{prefix}check_dict', arg_spaces('{"k21":"u"},k22=v,{"k23":"w"}')]
+    args += [f'--{prefix}check_dict', arg_spaces('k24=x,{"k25":"y"},k26=z')]
+    args += [f'--{prefix}check_dict', arg_spaces('[k27="x,y",k28="x,y"]', has_quote_comma=True)]
+    args += [f'--{prefix}check_dict', arg_spaces('k29="x,y",k30="x,y"', has_quote_comma=True)]
+    args += [
+        f'--{prefix}check_dict',
+        arg_spaces('k31="x,y"', has_quote_comma=True),
+        f'--{prefix}check_dict',
+        arg_spaces('k32="x,y"', has_quote_comma=True),
+    ]
+    cfg = CliApp.run(Cfg, cli_args=args)
+    expected: dict[str, Any] = {
+        'check_dict': {
+            'k1': 'a',
+            'k2': 'b',
+            'k3': 'c',
+            'k4': 'd',
+            'k5': 'e',
+            'k6': 'f',
+            'k7': 'g',
+            'k8': 'h',
+            'k9': 'i',
+            'k10': 'j',
+            'k11': 'k',
+            'k12': 'l',
+            'k13': 'm',
+            'k14': 'n',
+            'k15': 'o',
+            'k16': 'p',
+            'k17': 'q',
+            'k18': 'r',
+            'k19': 's',
+            'k20': 't',
+            'k21': 'u',
+            'k22': 'v',
+            'k23': 'w',
+            'k24': 'x',
+            'k25': 'y',
+            'k26': 'z',
+            'k27': 'x,y',
+            'k28': 'x,y',
+            'k29': 'x,y',
+            'k30': 'x,y',
+            'k31': 'x,y',
+            'k32': 'x,y',
+        }
+    }
+    if prefix:
+        expected = {'check_dict': None, 'child': expected}
+    else:
+        expected['child'] = None
+    assert cfg.model_dump() == expected
+
+    with pytest.raises(SettingsError, match=f'Parsing error encountered for {prefix}check_dict: Mismatched quotes'):
+        cfg = CliApp.run(Cfg, cli_args=[f'--{prefix}check_dict', 'k9="i'])
+
+    with pytest.raises(SettingsError, match=f'Parsing error encountered for {prefix}check_dict: Mismatched quotes'):
+        cfg = CliApp.run(Cfg, cli_args=[f'--{prefix}check_dict', 'k9=i"'])
+
+
+def test_cli_union_dict_arg():
+    class Cfg(BaseSettings):
+        union_str_dict: str | dict[str, Any]
+
+    with pytest.raises(ValidationError) as exc_info:
+        args = ['--union_str_dict', 'hello world', '--union_str_dict', 'hello world']
+        cfg = CliApp.run(Cfg, cli_args=args)
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'input': [
+                'hello world',
+                'hello world',
+            ],
+            'loc': (
+                'union_str_dict',
+                'str',
+            ),
+            'msg': 'Input should be a valid string',
+            'type': 'string_type',
+        },
+        {
+            'input': [
+                'hello world',
+                'hello world',
+            ],
+            'loc': (
+                'union_str_dict',
+                'dict[str,any]',
+            ),
+            'msg': 'Input should be a valid dictionary',
+            'type': 'dict_type',
+        },
+    ]
+
+    args = ['--union_str_dict', 'hello world']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_str_dict': 'hello world'}
+
+    args = ['--union_str_dict', '{"hello": "world"}']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_str_dict': {'hello': 'world'}}
+
+    args = ['--union_str_dict', 'hello=world']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_str_dict': {'hello': 'world'}}
+
+    args = ['--union_str_dict', '"hello=world"']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_str_dict': 'hello=world'}
+
+    class Cfg(BaseSettings):
+        union_list_dict: list[str] | dict[str, Any]
+
+    with pytest.raises(ValidationError) as exc_info:
+        args = ['--union_list_dict', 'hello,world']
+        cfg = CliApp.run(Cfg, cli_args=args)
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'input': 'hello,world',
+            'loc': (
+                'union_list_dict',
+                'list[str]',
+            ),
+            'msg': 'Input should be a valid list',
+            'type': 'list_type',
+        },
+        {
+            'input': 'hello,world',
+            'loc': (
+                'union_list_dict',
+                'dict[str,any]',
+            ),
+            'msg': 'Input should be a valid dictionary',
+            'type': 'dict_type',
+        },
+    ]
+
+    args = ['--union_list_dict', 'hello,world', '--union_list_dict', 'hello,world']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_list_dict': ['hello', 'world', 'hello', 'world']}
+
+    args = ['--union_list_dict', '[hello,world]']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_list_dict': ['hello', 'world']}
+
+    args = ['--union_list_dict', '{"hello": "world"}']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_list_dict': {'hello': 'world'}}
+
+    args = ['--union_list_dict', 'hello=world']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_list_dict': {'hello': 'world'}}
+
+    with pytest.raises(ValidationError) as exc_info:
+        args = ['--union_list_dict', '"hello=world"']
+        cfg = CliApp.run(Cfg, cli_args=args)
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'input': 'hello=world',
+            'loc': (
+                'union_list_dict',
+                'list[str]',
+            ),
+            'msg': 'Input should be a valid list',
+            'type': 'list_type',
+        },
+        {
+            'input': 'hello=world',
+            'loc': (
+                'union_list_dict',
+                'dict[str,any]',
+            ),
+            'msg': 'Input should be a valid dictionary',
+            'type': 'dict_type',
+        },
+    ]
+
+    args = ['--union_list_dict', '["hello=world"]']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'union_list_dict': ['hello=world']}
+
+
+def test_cli_nested_dict_arg():
+    class Cfg(BaseSettings):
+        check_dict: dict[str, Any]
+
+    args = ['--check_dict', '{"k1":{"a": 1}},{"k2":{"b": 2}}']
+    cfg = CliApp.run(Cfg, cli_args=args)
+    assert cfg.model_dump() == {'check_dict': {'k1': {'a': 1}, 'k2': {'b': 2}}}
+
+    with pytest.raises(
+        SettingsError,
+        match=re.escape('Parsing error encountered for check_dict: not enough values to unpack (expected 2, got 1)'),
+    ):
+        args = ['--check_dict', '{"k1":{"a": 1}},"k2":{"b": 2}}']
+        cfg = CliApp.run(Cfg, cli_args=args)
+
+    with pytest.raises(SettingsError, match='Parsing error encountered for check_dict: Missing end delimiter "}"'):
+        args = ['--check_dict', '{"k1":{"a": 1}},{"k2":{"b": 2}']
+        cfg = CliApp.run(Cfg, cli_args=args)
+
+
+def test_cli_subcommand_union(capsys, monkeypatch):
+    class AlphaCmd(BaseModel):
+        """Alpha Help"""
+
+        a: str
+
+    class BetaCmd(BaseModel):
+        """Beta Help"""
+
+        b: str
+
+    class GammaCmd(BaseModel):
+        """Gamma Help"""
+
+        g: str
+
+    class Root1(BaseSettings, cli_prog_name='example.py'):
+        """Root Help"""
+
+        subcommand: CliSubCommand[AlphaCmd | BetaCmd | GammaCmd] = Field(description='Field Help')
+
+    alpha = CliApp.run(Root1, cli_args=['AlphaCmd', '-a=alpha'])
+    assert get_subcommand(alpha).model_dump() == {'a': 'alpha'}
+    assert alpha.model_dump() == {'subcommand': {'a': 'alpha'}}
+    beta = CliApp.run(Root1, cli_args=['BetaCmd', '-b=beta'])
+    assert get_subcommand(beta).model_dump() == {'b': 'beta'}
+    assert beta.model_dump() == {'subcommand': {'b': 'beta'}}
+    gamma = CliApp.run(Root1, cli_args=['GammaCmd', '-g=gamma'])
+    assert get_subcommand(gamma).model_dump() == {'g': 'gamma'}
+    assert gamma.model_dump() == {'subcommand': {'g': 'gamma'}}
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Root1)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] {{AlphaCmd,BetaCmd,GammaCmd}} ...
+
+Root Help
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+subcommands:
+  Field Help
+
+  {{AlphaCmd,BetaCmd,GammaCmd}}
+    AlphaCmd
+    BetaCmd
+    GammaCmd
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            Root1(_cli_parse_args=True, _cli_use_class_docs_for_groups=True)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] {{AlphaCmd,BetaCmd,GammaCmd}} ...
+
+Root Help
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+subcommands:
+  Field Help
+
+  {{AlphaCmd,BetaCmd,GammaCmd}}
+    AlphaCmd            Alpha Help
+    BetaCmd             Beta Help
+    GammaCmd            Gamma Help
+"""
+        )
+
+    class Root2(BaseSettings, cli_prog_name='example.py'):
+        """Root Help"""
+
+        subcommand: CliSubCommand[AlphaCmd | GammaCmd] = Field(description='Field Help')
+        beta: CliSubCommand[BetaCmd] = Field(description='Field Beta Help')
+
+    alpha = CliApp.run(Root2, cli_args=['AlphaCmd', '-a=alpha'])
+    assert get_subcommand(alpha).model_dump() == {'a': 'alpha'}
+    assert alpha.model_dump() == {'subcommand': {'a': 'alpha'}, 'beta': None}
+    beta = CliApp.run(Root2, cli_args=['beta', '-b=beta'])
+    assert get_subcommand(beta).model_dump() == {'b': 'beta'}
+    assert beta.model_dump() == {'subcommand': None, 'beta': {'b': 'beta'}}
+    gamma = CliApp.run(Root2, cli_args=['GammaCmd', '-g=gamma'])
+    assert get_subcommand(gamma).model_dump() == {'g': 'gamma'}
+    assert gamma.model_dump() == {'subcommand': {'g': 'gamma'}, 'beta': None}
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Root2, cli_args=True)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] {{AlphaCmd,GammaCmd,beta}} ...
+
+Root Help
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+subcommands:
+  Field Help
+
+  {{AlphaCmd,GammaCmd,beta}}
+    AlphaCmd
+    GammaCmd
+    beta                Field Beta Help
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            Root2(_cli_parse_args=True, _cli_use_class_docs_for_groups=True)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] {{AlphaCmd,GammaCmd,beta}} ...
+
+Root Help
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+subcommands:
+  Field Help
+
+  {{AlphaCmd,GammaCmd,beta}}
+    AlphaCmd            Alpha Help
+    GammaCmd            Gamma Help
+    beta                Beta Help
+"""
+        )
+
+    class Root3(BaseSettings, cli_prog_name='example.py'):
+        """Root Help"""
+
+        beta: CliSubCommand[BetaCmd] = Field(description='Field Beta Help')
+        subcommand: CliSubCommand[AlphaCmd | GammaCmd] = Field(description='Field Help')
+
+    alpha = CliApp.run(Root3, cli_args=['AlphaCmd', '-a=alpha'])
+    assert get_subcommand(alpha).model_dump() == {'a': 'alpha'}
+    assert alpha.model_dump() == {'subcommand': {'a': 'alpha'}, 'beta': None}
+    beta = CliApp.run(Root3, cli_args=['beta', '-b=beta'])
+    assert get_subcommand(beta).model_dump() == {'b': 'beta'}
+    assert beta.model_dump() == {'subcommand': None, 'beta': {'b': 'beta'}}
+    gamma = CliApp.run(Root3, cli_args=['GammaCmd', '-g=gamma'])
+    assert get_subcommand(gamma).model_dump() == {'g': 'gamma'}
+    assert gamma.model_dump() == {'subcommand': {'g': 'gamma'}, 'beta': None}
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Root3)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] {{beta,AlphaCmd,GammaCmd}} ...
+
+Root Help
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+subcommands:
+  {{beta,AlphaCmd,GammaCmd}}
+    beta                Field Beta Help
+    AlphaCmd
+    GammaCmd
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            Root3(_cli_parse_args=True, _cli_use_class_docs_for_groups=True)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] {{beta,AlphaCmd,GammaCmd}} ...
+
+Root Help
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+subcommands:
+  {{beta,AlphaCmd,GammaCmd}}
+    beta                Beta Help
+    AlphaCmd            Alpha Help
+    GammaCmd            Gamma Help
+"""
+        )
+
+
+def test_cli_subcommand_with_positionals():
+    @pydantic_dataclasses.dataclass
+    class FooPlugin:
+        my_feature: bool = False
+
+    @pydantic_dataclasses.dataclass
+    class BarPlugin:
+        my_feature: bool = False
+
+    bar = BarPlugin()
+    with pytest.raises(SystemExit, match=re.escape('Error: CLI subcommand is required but no subcommands were found.')):
+        get_subcommand(bar)
+    with pytest.raises(
+        SettingsError, match=re.escape('Error: CLI subcommand is required but no subcommands were found.')
+    ):
+        get_subcommand(bar, cli_exit_on_error=False)
+
+    @pydantic_dataclasses.dataclass
+    class Plugins:
+        foo: CliSubCommand[FooPlugin]
+        bar: CliSubCommand[BarPlugin]
+
+    class Clone(BaseModel):
+        repository: CliPositionalArg[str]
+        directory: CliPositionalArg[str]
+        local: bool = False
+        shared: bool = False
+
+    class Init(BaseModel):
+        directory: CliPositionalArg[str]
+        quiet: bool = False
+        bare: bool = False
+
+    class Git(BaseSettings):
+        clone: CliSubCommand[Clone]
+        init: CliSubCommand[Init]
+        plugins: CliSubCommand[Plugins]
+
+    git = CliApp.run(Git, cli_args=[])
+    assert git.model_dump() == {
+        'clone': None,
+        'init': None,
+        'plugins': None,
+    }
+    assert get_subcommand(git, is_required=False) is None
+    with pytest.raises(SystemExit, match=re.escape('Error: CLI subcommand is required {clone, init, plugins}')):
+        get_subcommand(git)
+    with pytest.raises(SettingsError, match=re.escape('Error: CLI subcommand is required {clone, init, plugins}')):
+        get_subcommand(git, cli_exit_on_error=False)
+
+    git = CliApp.run(Git, cli_args=['init', '--quiet', 'true', 'dir/path'])
+    assert git.model_dump() == {
+        'clone': None,
+        'init': {'directory': 'dir/path', 'quiet': True, 'bare': False},
+        'plugins': None,
+    }
+    assert get_subcommand(git) == git.init
+    assert get_subcommand(git, is_required=False) == git.init
+
+    git = CliApp.run(Git, cli_args=['clone', 'repo', '.', '--shared', 'true'])
+    assert git.model_dump() == {
+        'clone': {'repository': 'repo', 'directory': '.', 'local': False, 'shared': True},
+        'init': None,
+        'plugins': None,
+    }
+    assert get_subcommand(git) == git.clone
+    assert get_subcommand(git, is_required=False) == git.clone
+
+    git = CliApp.run(Git, cli_args=['plugins', 'bar'])
+    assert git.model_dump() == {
+        'clone': None,
+        'init': None,
+        'plugins': {'foo': None, 'bar': {'my_feature': False}},
+    }
+    assert get_subcommand(git) == git.plugins
+    assert get_subcommand(git, is_required=False) == git.plugins
+    assert get_subcommand(get_subcommand(git)) == git.plugins.bar
+    assert get_subcommand(get_subcommand(git), is_required=False) == git.plugins.bar
+
+    class NotModel: ...
+
+    with pytest.raises(
+        SettingsError, match=re.escape('Error: NotModel is not subclass of BaseModel or pydantic.dataclasses.dataclass')
+    ):
+        get_subcommand(NotModel())
+
+    class NotSettingsConfigDict(BaseModel):
+        model_config = ConfigDict(cli_exit_on_error='not a bool')
+
+    with pytest.raises(SystemExit, match=re.escape('Error: CLI subcommand is required but no subcommands were found.')):
+        get_subcommand(NotSettingsConfigDict())
+
+    with pytest.raises(
+        SettingsError, match=re.escape('Error: CLI subcommand is required but no subcommands were found.')
+    ):
+        get_subcommand(NotSettingsConfigDict(), cli_exit_on_error=False)
+
+
+def test_cli_union_similar_sub_models():
+    class ChildA(BaseModel):
+        name: str = 'child a'
+        diff_a: str = 'child a difference'
+
+    class ChildB(BaseModel):
+        name: str = 'child b'
+        diff_b: str = 'child b difference'
+
+    class Cfg(BaseSettings):
+        child: ChildA | ChildB
+
+    cfg = CliApp.run(Cfg, cli_args=['--child.name', 'new name a', '--child.diff_a', 'new diff a'])
+    assert cfg.model_dump() == {'child': {'name': 'new name a', 'diff_a': 'new diff a'}}
+
+
+def test_cli_nested_discriminated_union():
+    """Test that nested unions like Union[Annotated[Union[A, B], Discriminator(...)], None] are handled by CLI."""
+
+    class A(BaseModel):
+        x: Literal['a'] = 'a'
+        a: int = 1
+
+    class B(BaseModel):
+        x: Literal['b'] = 'b'
+        b: str = 'hello'
+
+    AOrB = Annotated[A | B, Discriminator('x')]
+
+    class Cfg(BaseSettings):
+        a_or_b: AOrB | None = None
+
+    cfg = CliApp.run(Cfg, cli_args=['--a_or_b.x', 'b', '--a_or_b.b', 'world'])
+    assert isinstance(cfg.a_or_b, B)
+    assert cfg.a_or_b.b == 'world'
+
+    cfg = CliApp.run(Cfg, cli_args=['--a_or_b.x', 'a', '--a_or_b.a', '42'])
+    assert isinstance(cfg.a_or_b, A)
+    assert cfg.a_or_b.a == 42
+
+
+def test_cli_optional_positional_arg(env):
+    class Main(BaseSettings):
+        model_config = SettingsConfigDict(
+            cli_parse_args=True,
+            cli_enforce_required=True,
+        )
+
+        value: CliPositionalArg[int] = 123
+
+    assert CliApp.run(Main, cli_args=[]).model_dump() == {'value': 123}
+
+    env.set('VALUE', '456')
+    assert CliApp.run(Main, cli_args=[]).model_dump() == {'value': 456}
+
+    assert CliApp.run(Main, cli_args=['789']).model_dump() == {'value': 789}
+
+
+def test_cli_variadic_positional_arg(env):
+    class MainRequired(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+
+        values: CliPositionalArg[list[int]]
+
+    class MainOptional(MainRequired):
+        values: CliPositionalArg[list[int]] = [1, 2, 3]
+
+    assert CliApp.run(MainOptional, cli_args=[]).model_dump() == {'values': [1, 2, 3]}
+    with pytest.raises(SettingsError, match='error parsing CLI: the following arguments are required: VALUES'):
+        CliApp.run(MainRequired, cli_args=[], cli_exit_on_error=False)
+
+    env.set('VALUES', '[4,5,6]')
+    assert CliApp.run(MainOptional, cli_args=[]).model_dump() == {'values': [4, 5, 6]}
+    with pytest.raises(SettingsError, match='error parsing CLI: the following arguments are required: VALUES'):
+        CliApp.run(MainRequired, cli_args=[], cli_exit_on_error=False)
+
+    assert CliApp.run(MainOptional, cli_args=['7', '8', '9']).model_dump() == {'values': [7, 8, 9]}
+    assert CliApp.run(MainRequired, cli_args=['7', '8', '9']).model_dump() == {'values': [7, 8, 9]}
+
+
+def test_cli_variadic_named_arg():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        param: CliVariadicArg[list[str]] = Field(default_factory=list)
+
+    assert CliApp.run(Settings, cli_args=[]).model_dump() == {'param': []}
+    assert CliApp.run(Settings, cli_args=['--param', 'a', 'b', 'c']).model_dump() == {'param': ['a', 'b', 'c']}
+    assert CliApp.run(Settings, cli_args=['--param', 'a', 'b', '--param', 'c']).model_dump() == {'param': ['c']}
+
+
+def test_cli_variadic_named_arg_no_values():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        param: CliVariadicArg[list[str]] = Field(default_factory=list)
+        options: CliVariadicArg[dict[str, str]] = Field(default_factory=dict)
+
+    assert CliApp.run(Settings, cli_args=['--param']).model_dump() == {'param': [], 'options': {}}
+    assert CliApp.run(Settings, cli_args=['--options']).model_dump() == {'param': [], 'options': {}}
+
+
+def test_cli_variadic_named_arg_required_no_values():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True, cli_enforce_required=True)
+        param: CliVariadicArg[list[str]]
+
+    with pytest.raises(SettingsError, match='error parsing CLI: argument --param: expected at least one argument'):
+        CliApp.run(Settings, cli_args=['--param'], cli_exit_on_error=False)
+    assert CliApp.run(Settings, cli_args=['--param', 'a', 'b']).model_dump() == {'param': ['a', 'b']}
+
+
+def test_cli_variadic_named_arg_no_decode_no_values(env):
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True, env_ignore_empty=True)
+        param: Annotated[CliVariadicArg[list[str]], NoDecode] = Field(default_factory=list)
+
+    # A valueless variadic must resolve to an empty list, not '', otherwise the arg looks unset and a
+    # lower priority source would win over the explicitly provided CLI flag.
+    assert CliApp.run(Settings, cli_args=['--param']).model_dump() == {'param': []}
+
+    # The explicit CLI flag must still win over an environment variable.
+    env.set('PARAM', 'x')
+    assert CliApp.run(Settings, cli_args=['--param']).model_dump() == {'param': []}
+
+
+def test_cli_variadic_named_with_positional():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        param: CliPositionalArg[CliVariadicArg[list[str]]] = Field(default_factory=list)
+
+    assert CliApp.run(Settings, cli_args=['a', 'b', 'c']).model_dump() == {'param': ['a', 'b', 'c']}
+    assert CliApp.run(Settings, cli_args=[]).model_dump() == {'param': []}
+
+
+def test_cli_variadic_named_required_positional():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        param: CliPositionalArg[CliVariadicArg[list[str]]]
+
+    with pytest.raises(SettingsError, match='error parsing CLI: the following arguments are required: PARAM'):
+        CliApp.run(Settings, cli_args=[], cli_exit_on_error=False)
+    assert CliApp.run(Settings, cli_args=['a', 'b']).model_dump() == {'param': ['a', 'b']}
+
+
+def test_cli_variadic_dict_arg():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        options: CliVariadicArg[dict[str, str]] = Field(default_factory=dict)
+
+    assert CliApp.run(Settings, cli_args=['--options', 'a=b', 'c=d']).model_dump() == {'options': {'a': 'b', 'c': 'd'}}
+
+
+def test_cli_variadic_non_collection_raises():
+    with pytest.raises(SettingsError, match='CliVariadicArg requires a Sequence, Set, or Mapping type'):
+
+        class Settings(BaseSettings, cli_parse_args=True):
+            param: CliVariadicArg[str]
+
+        Settings()
+
+
+def test_cli_variadic_not_outermost_raises():
+    with pytest.raises(SettingsError, match='CliVariadicArg is not outermost annotation'):
+
+        class Settings(BaseSettings, cli_parse_args=True):
+            param: int | CliVariadicArg[list[str]]
+
+        Settings()
+
+
+def test_cli_variadic_positional_arg_custom_type():
+    """Test that CliPositionalArg[list[CustomType]] works with custom types that raise non-ValidationError exceptions.
+
+    Regression test for https://github.com/pydantic/pydantic-settings/issues/823
+    """
+
+    class AsciiLetters(str):
+        def __new__(cls, content: object) -> typing_extensions.Self:
+            if not all(c in ascii_letters for c in str(content)):
+                raise Exception('Non-ascii letter')
+            return super().__new__(cls, content)
+
+        @classmethod
+        def __get_pydantic_core_schema__(
+            cls,
+            source_type: Any,
+            handler: GetCoreSchemaHandler,
+        ) -> CoreSchema:
+            return core_schema.no_info_plain_validator_function(
+                cls,
+                serialization=core_schema.to_string_ser_schema(),
+            )
+
+    class App(BaseSettings):
+        args: CliPositionalArg[list[AsciiLetters]]
+
+    assert CliApp.run(App, cli_args=['a', 'b']).model_dump() == {'args': ['a', 'b']}
+    assert CliApp.run(App, cli_args=['hello']).model_dump() == {'args': ['hello']}
+
+
+def test_cli_variadic_named_sequence_subtypes():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        values: CliVariadicArg[tuple[str, ...]] = ()
+        tags: CliVariadicArg[frozenset[str]] = frozenset()
+        items: CliVariadicArg[MutableSequence[str]] = Field(default_factory=list)
+
+    settings = CliApp.run(Settings, cli_args=['--values', 'a', 'b', '--tags', 'x', 'y', '--items', 'i', 'j'])
+    assert settings.model_dump() == {'values': ('a', 'b'), 'tags': frozenset({'x', 'y'}), 'items': ['i', 'j']}
+
+
+def test_cli_variadic_named_mapping_subtype():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        options: CliVariadicArg[OrderedDict[str, str]] = Field(default_factory=OrderedDict)
+
+    settings = CliApp.run(Settings, cli_args=['--options', 'a=b', 'c=d'])
+    assert settings.model_dump() == {'options': {'a': 'b', 'c': 'd'}}
+    assert isinstance(settings.options, OrderedDict)
+
+
+def test_cli_variadic_positional_sequence_subtype():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        values: CliPositionalArg[CliVariadicArg[tuple[str, ...]]] = ()
+
+    assert CliApp.run(Settings, cli_args=['a', 'b']).model_dump() == {'values': ('a', 'b')}
+    assert CliApp.run(Settings, cli_args=[]).model_dump() == {'values': ()}
+
+
+def test_cli_sequence_subtypes_are_repeated_options():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        values: tuple[str, ...] = ()
+        tags: frozenset[str] = frozenset()
+
+    settings = CliApp.run(Settings, cli_args=['--values', 'a', '--values', 'b', '--tags', 'x'])
+    assert settings.model_dump() == {'values': ('a', 'b'), 'tags': frozenset({'x'})}
+    # a plain value is valid for a single element, it does not have to be JSON encoded
+    assert CliApp.run(Settings, cli_args=['--values', 'a']).model_dump() == {'values': ('a',), 'tags': frozenset()}
+
+
+def test_cli_bare_sequence_subtypes_are_repeated_options():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        values: tuple = ()
+        tags: frozenset = frozenset()
+
+    settings = CliApp.run(Settings, cli_args=['--values', 'a', '--values', 'b', '--tags', 'x'])
+    assert settings.model_dump() == {'values': ('a', 'b'), 'tags': frozenset({'x'})}
+
+
+def test_cli_mapping_subtypes_use_dict_args():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        options: OrderedDict[str, str] = Field(default_factory=OrderedDict)
+        extra: MutableMapping[str, str] = Field(default_factory=dict)
+        maybe: OrderedDict[str, str] | None = None
+
+    settings = CliApp.run(Settings, cli_args=['--options', 'a=b', '--extra', 'c=d', '--maybe', 'e=f'])
+    assert settings.model_dump() == {'options': {'a': 'b'}, 'extra': {'c': 'd'}, 'maybe': {'e': 'f'}}
+    assert isinstance(settings.options, OrderedDict)
+    assert isinstance(settings.maybe, OrderedDict)
+
+
+def test_cli_text_types_are_scalar_values():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        name: str = ''
+        blob: bytes = b''
+
+    settings = CliApp.run(Settings, cli_args=['--name', 'a', '--blob', 'b'])
+    assert settings.model_dump() == {'name': 'a', 'blob': b'b'}
+
+    # text and bytes types are sequences themselves, but they take a single value
+    with pytest.raises(SettingsError, match='unrecognized arguments: c'):
+        CliApp.run(Settings, cli_args=['--name', 'a', 'c'], cli_exit_on_error=False)
+
+
+def test_cli_enums(capsys, monkeypatch):
+    class Pet(IntEnum):
+        dog = 0
+        cat = 1
+        bird = 2
+        crow = 2
+
+    class Cfg(BaseSettings, cli_prog_name='example.py'):
+        pet: Pet = Pet.dog
+        union_pet: Pet | int = 43
+
+    cfg = CliApp.run(Cfg, cli_args=['--pet', 'cat', '--union_pet', 'dog'])
+    assert cfg.model_dump() == {'pet': Pet.cat, 'union_pet': Pet.dog}
+
+    cfg = CliApp.run(Cfg, cli_args=['--pet', 'crow', '--union_pet', 'dog'])
+    assert cfg.model_dump() == {'pet': Pet.crow, 'union_pet': Pet.dog}
+
+    with pytest.raises(ValidationError) as exc_info:
+        CliApp.run(Cfg, cli_args=['--pet', 'rock'])
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'type': 'enum',
+            'loc': ('pet',),
+            'msg': 'Input should be 0, 1, 2 or 2',
+            'input': 'rock',
+            'ctx': {'expected': '0, 1, 2 or 2'},
+        }
+    ]
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Cfg)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--pet {{dog,cat,bird,crow}}]
+                  [--union_pet {{{{dog,cat,bird,crow}},int}}]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+  --pet {{dog,cat,bird,crow}}
+                        (default: dog)
+  --union_pet {{{{dog,cat,bird,crow}},int}}
+                        (default: 43)
+"""
+        )
+
+
+def test_cli_literals():
+    class Cfg(BaseSettings):
+        pet: Literal['dog', 'cat', 'bird']
+
+    cfg = CliApp.run(Cfg, cli_args=['--pet', 'cat'])
+    assert cfg.model_dump() == {'pet': 'cat'}
+
+    with pytest.raises(ValidationError) as exc_info:
+        CliApp.run(Cfg, cli_args=['--pet', 'rock'])
+    assert exc_info.value.errors(include_url=False) == [
+        {
+            'ctx': {'expected': "'dog', 'cat' or 'bird'"},
+            'type': 'literal_error',
+            'loc': ('pet',),
+            'msg': "Input should be 'dog', 'cat' or 'bird'",
+            'input': 'rock',
+        }
+    ]
+
+
+def test_cli_annotation_exceptions(monkeypatch):
+    class SubCmdAlt(BaseModel):
+        pass
+
+    class SubCmd(BaseModel):
+        pass
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(
+            SettingsError,
+            match=re.escape('CliSubCommand is not outermost annotation for SubCommandNotOutermost.subcmd'),
+        ):
+
+            class SubCommandNotOutermost(BaseSettings, cli_parse_args=True):
+                subcmd: int | CliSubCommand[SubCmd]
+
+            SubCommandNotOutermost()
+
+        with pytest.raises(
+            SettingsError, match=re.escape('subcommand argument SubCommandHasDefault.subcmd has a default value')
+        ):
+
+            class SubCommandHasDefault(BaseSettings, cli_parse_args=True):
+                subcmd: CliSubCommand[SubCmd] = SubCmd()
+
+            SubCommandHasDefault()
+
+        with pytest.raises(
+            SettingsError,
+            match=re.escape('subcommand argument SubCommandMultipleTypes.subcmd has type not derived from BaseModel'),
+        ):
+
+            class SubCommandMultipleTypes(BaseSettings, cli_parse_args=True):
+                subcmd: CliSubCommand[SubCmd | str]
+
+            SubCommandMultipleTypes()
+
+        with pytest.raises(
+            SettingsError,
+            match=re.escape('subcommand argument SubCommandNotModel.subcmd has type not derived from BaseModel'),
+        ):
+
+            class SubCommandNotModel(BaseSettings, cli_parse_args=True):
+                subcmd: CliSubCommand[str]
+
+            SubCommandNotModel()
+
+        with pytest.raises(
+            SettingsError,
+            match=re.escape('CliPositionalArg is not outermost annotation for PositionalArgNotOutermost.pos_arg'),
+        ):
+
+            class PositionalArgNotOutermost(BaseSettings, cli_parse_args=True):
+                pos_arg: int | CliPositionalArg[str]
+
+            PositionalArgNotOutermost()
+
+        with pytest.raises(
+            SettingsError,
+            match='MultipleVariadicPositionalArgs has multiple variadic positional arguments: strings, numbers',
+        ):
+
+            class MultipleVariadicPositionalArgs(BaseSettings, cli_parse_args=True):
+                strings: CliPositionalArg[list[str]]
+                numbers: CliPositionalArg[list[int]]
+
+            MultipleVariadicPositionalArgs()
+
+        with pytest.raises(
+            SettingsError,
+            match='VariadicPositionalArgAndSubCommand has variadic positional arguments and subcommand arguments: strings, sub_cmd',
+        ):
+
+            class VariadicPositionalArgAndSubCommand(BaseSettings, cli_parse_args=True):
+                strings: CliPositionalArg[list[str]]
+                sub_cmd: CliSubCommand[SubCmd]
+
+            VariadicPositionalArgAndSubCommand()
+
+    with pytest.raises(
+        SettingsError, match=re.escape("cli_parse_args must be a list or tuple of strings, received <class 'str'>")
+    ):
+
+        class InvalidCliParseArgsType(BaseSettings, cli_parse_args='invalid type'):
+            val: int
+
+        InvalidCliParseArgsType()
+
+    with pytest.raises(
+        SettingsError, match=re.escape('CliExplicitFlag argument CliFlagNotBool.flag is not of type bool')
+    ):
+
+        class CliFlagNotBool(BaseSettings, cli_parse_args=True):
+            flag: CliExplicitFlag[int] = False
+
+        CliFlagNotBool()
+
+    with pytest.raises(
+        SettingsError, match=re.escape('CliToggleFlag argument CliToggleNoDefault.flag must have a default bool value')
+    ):
+
+        class CliToggleNoDefault(BaseSettings, cli_parse_args=True):
+            flag: CliToggleFlag[bool]
+
+        CliToggleNoDefault()
+
+
+@pytest.mark.parametrize('enforce_required', [True, False])
+@pytest.mark.parametrize('implicit_flags_mode', [None, True, 'dual', 'toggle'])
+def test_cli_bool_flags(monkeypatch, enforce_required, implicit_flags_mode):
+    class FlagSettings(BaseSettings, cli_implicit_flags=implicit_flags_mode, cli_enforce_required=enforce_required):
+        explicit_req: CliExplicitFlag[bool]
+        explicit_opt: CliExplicitFlag[bool] = False
+        dual_req: CliDualFlag[bool]
+        dual_opt: CliDualFlag[bool] = False
+        toggle_def_t: CliToggleFlag[bool] = True
+        toggle_def_f: CliToggleFlag[bool] = False
+        implicit_req: bool
+        implicit_opt: bool = False
+
+    expected = {
+        'explicit_req': True,
+        'explicit_opt': False,
+        'implicit_req': True,
+        'implicit_opt': False,
+        'dual_req': True,
+        'dual_opt': False,
+        'toggle_def_t': True,
+        'toggle_def_f': False,
+    }
+    flag_args = [
+        '--explicit_req',
+        'True',
+        '--dual_req',
+    ]
+    flag_args += ['--implicit_req'] if implicit_flags_mode is not None else ['--implicit_req', 'True']
+    implicit_settings = CliApp.run(FlagSettings, cli_args=flag_args)
+    assert implicit_settings.model_dump() == expected
+    serialized_args = CliApp.serialize(implicit_settings)
+    assert serialized_args == flag_args
+
+    expected = {
+        'explicit_req': False,
+        'explicit_opt': False,
+        'implicit_req': False,
+        'implicit_opt': False,
+        'dual_req': False,
+        'dual_opt': False,
+        'toggle_def_t': False,
+        'toggle_def_f': False,
+    }
+    flag_args = [
+        '--explicit_req',
+        'False',
+        '--no-dual_req',
+        '--no-toggle_def_t',
+    ]
+    flag_args += ['--no-implicit_req'] if implicit_flags_mode is not None else ['--implicit_req', 'False']
+    implicit_settings = CliApp.run(FlagSettings, cli_args=flag_args)
+    assert implicit_settings.model_dump() == expected
+    serialized_args = CliApp.serialize(implicit_settings)
+    assert serialized_args == flag_args
+
+    expected = {
+        'explicit_req': True,
+        'explicit_opt': True,
+        'implicit_req': True,
+        'implicit_opt': True,
+        'dual_req': True,
+        'dual_opt': True,
+        'toggle_def_t': True,
+        'toggle_def_f': True,
+    }
+    flag_args = [
+        '--explicit_req',
+        'True',
+        '--explicit_opt',
+        'True',
+        '--dual_req',
+        '--dual_opt',
+        '--toggle_def_f',
+    ]
+    flag_args += ['--implicit_req'] if implicit_flags_mode is not None else ['--implicit_req', 'True']
+    flag_args += ['--implicit_opt'] if implicit_flags_mode is not None else ['--implicit_opt', 'True']
+    implicit_settings = CliApp.run(FlagSettings, cli_args=flag_args)
+    assert implicit_settings.model_dump() == expected
+    serialized_args = CliApp.serialize(implicit_settings)
+    assert serialized_args == flag_args
+
+
+def test_cli_avoid_json(capsys, monkeypatch):
+    class SubModel(BaseModel):
+        v1: int
+
+    class Settings(BaseSettings, cli_prog_name='example.py'):
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(cli_parse_args=True)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_avoid_json=False)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--sub_model [JSON]] [--sub_model.v1 int]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help          show this help message and exit
+
+sub_model options:
+  --sub_model [JSON]  set sub_model from JSON string (default: {{}})
+  --sub_model.v1 int  (required)
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_avoid_json=True)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--sub_model.v1 int]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help          show this help message and exit
+
+sub_model options:
+  --sub_model.v1 int  (required)
+"""
+        )
+
+
+def test_cli_remove_empty_groups(capsys, monkeypatch):
+    class SubModel(BaseModel):
+        pass
+
+    class Settings(BaseSettings, cli_prog_name='example.py'):
+        sub_model: SubModel
+
+        model_config = SettingsConfigDict(cli_parse_args=True)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_avoid_json=False)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--sub_model [JSON]]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help          show this help message and exit
+
+sub_model options:
+  --sub_model [JSON]  set sub_model from JSON string (default: {{}})
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_avoid_json=True)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+"""
+        )
+
+
+def test_cli_hide_none_type(capsys, monkeypatch):
+    class Settings(BaseSettings, cli_prog_name='example.py'):
+        v0: str | None
+
+        model_config = SettingsConfigDict(cli_parse_args=True)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_hide_none_type=False)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--v0 {{str,null}}]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help       show this help message and exit
+  --v0 {{str,null}}  (required)
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_hide_none_type=True)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--v0 str]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+  --v0 str    (required)
+"""
+        )
+
+
+def test_cli_use_class_docs_for_groups(capsys, monkeypatch):
+    class SubModel(BaseModel):
+        """The help text from the class docstring"""
+
+        v1: int
+
+    class Settings(BaseSettings, cli_prog_name='example.py'):
+        """My application help text."""
+
+        sub_model: SubModel = Field(description='The help text from the field description')
+
+        model_config = SettingsConfigDict(cli_parse_args=True)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_use_class_docs_for_groups=False)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--sub_model [JSON]] [--sub_model.v1 int]
+
+My application help text.
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help          show this help message and exit
+
+sub_model options:
+  The help text from the field description
+
+  --sub_model [JSON]  set sub_model from JSON string (default: {{}})
+  --sub_model.v1 int  (required)
+"""
+        )
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_use_class_docs_for_groups=True)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--sub_model [JSON]] [--sub_model.v1 int]
+
+My application help text.
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help          show this help message and exit
+
+sub_model options:
+  The help text from the class docstring
+
+  --sub_model [JSON]  set sub_model from JSON string (default: {{}})
+  --sub_model.v1 int  (required)
+"""
+        )
+
+
+def test_cli_enforce_required(env):
+    class MyRootModel(RootModel[str]):
+        root: str
+
+    class Settings(BaseSettings, cli_exit_on_error=False):
+        my_required_field: str
+        my_root_model_required_field: MyRootModel
+
+    env.set('MY_REQUIRED_FIELD', 'hello from environment')
+    env.set('MY_ROOT_MODEL_REQUIRED_FIELD', 'hi from environment')
+
+    assert Settings(_cli_parse_args=[], _cli_enforce_required=False).model_dump() == {
+        'my_required_field': 'hello from environment',
+        'my_root_model_required_field': 'hi from environment',
+    }
+
+    with pytest.raises(
+        SettingsError, match='error parsing CLI: the following arguments are required: --my_required_field'
+    ):
+        Settings(_cli_parse_args=[], _cli_enforce_required=True).model_dump()
+
+    with pytest.raises(
+        SettingsError, match='error parsing CLI: the following arguments are required: --my_root_model_required_field'
+    ):
+        Settings(_cli_parse_args=['--my_required_field', 'hello from cli'], _cli_enforce_required=True).model_dump()
+
+
+def test_cli_exit_on_error(capsys, monkeypatch):
+    class Settings(BaseSettings, cli_parse_args=True, cli_prog_name='example.py'): ...
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--bad-arg'])
+
+        with pytest.raises(SystemExit):
+            Settings()
+        assert (
+            capsys.readouterr().err
+            == """usage: example.py [-h]
+example.py: error: unrecognized arguments: --bad-arg
+"""
+        )
+
+        with pytest.raises(SettingsError, match='error parsing CLI: unrecognized arguments: --bad-arg'):
+            CliApp.run(Settings, cli_exit_on_error=False)
+
+
+@pytest.mark.parametrize('cli_exit_on_error', [True, False])
+@pytest.mark.parametrize('nested', [True, False])
+@pytest.mark.parametrize('use_config', [True, False])
+def test_cli_subcommand_exit_on_error(cli_exit_on_error, nested, use_config):
+    class Child(BaseModel):
+        value: CliPositionalArg[str]
+
+    class Parent(BaseModel):
+        child: CliSubCommand[Child]
+
+    class Settings(BaseSettings, cli_exit_on_error=cli_exit_on_error if use_config else True):
+        child: CliSubCommand[Child]
+        parent: CliSubCommand[Parent]
+
+    cli_args = ['parent', 'child'] if nested else ['child']
+
+    def run() -> None:
+        if use_config:
+            Settings(_cli_parse_args=cli_args)
+        else:
+            CliApp.run(Settings, cli_args=cli_args, cli_exit_on_error=cli_exit_on_error)
+
+    if cli_exit_on_error:
+        with pytest.raises(SystemExit) as exc_info:
+            run()
+        assert exc_info.value.code == 2
+    else:
+        with pytest.raises(SettingsError, match='error parsing CLI: the following arguments are required: VALUE'):
+            run()
+
+
+def test_cli_ignore_unknown_args():
+    class Cfg(BaseSettings, cli_ignore_unknown_args=True):
+        this: str = 'hello'
+        that: int = 123
+        ignored_args: CliUnknownArgs
+
+    cfg = CliApp.run(Cfg, cli_args=['--this=hi', '--that=456'])
+    assert cfg.model_dump() == {'this': 'hi', 'that': 456, 'ignored_args': []}
+
+    cfg = CliApp.run(Cfg, cli_args=['not_my_positional_arg', '--not-my-optional-arg=456'])
+    assert cfg.model_dump() == {
+        'this': 'hello',
+        'that': 123,
+        'ignored_args': ['not_my_positional_arg', '--not-my-optional-arg=456'],
+    }
+
+    cfg = CliApp.run(
+        Cfg, cli_args=['not_my_positional_arg', '--not-my-optional-arg=456', '--this=goodbye', '--that=789']
+    )
+    assert cfg.model_dump() == {
+        'this': 'goodbye',
+        'that': 789,
+        'ignored_args': ['not_my_positional_arg', '--not-my-optional-arg=456'],
+    }
+
+
+def test_cli_unknown_args_are_not_shared_across_depths():
+    class SubCmd(BaseSettings, cli_ignore_unknown_args=True):
+        v0: int = 0
+        unknown_args: CliUnknownArgs
+
+    class Root(BaseSettings, cli_ignore_unknown_args=True):
+        flag: str = 'hello'
+        unknown_args: CliUnknownArgs
+        sub_cmd: CliSubCommand[SubCmd]
+
+    root = CliApp.run(Root, cli_args=['--flag=world', 'sub_cmd', '--v0=2', '--unk=3'])
+    assert root.unknown_args == []
+    assert root.sub_cmd is not None
+    assert root.sub_cmd.unknown_args == ['--unk=3']
+    serialized = CliApp.serialize(root)
+    assert serialized.count('--unk=3') == 1
+    again = CliApp.run(Root, cli_args=serialized)
+    assert again.unknown_args == []
+    assert again.sub_cmd is not None and again.sub_cmd.unknown_args == ['--unk=3']
+
+
+# Reusing a source must not retain an unselected command's leftovers.
+def test_cli_unknown_args_reset_when_source_is_reused():
+    class A(BaseSettings, cli_ignore_unknown_args=True):
+        unknown_args: CliUnknownArgs
+
+    class C(BaseModel):
+        v: int = 0
+
+    class Root(BaseSettings):
+        a: CliSubCommand[A]
+        c: CliSubCommand[C]
+
+    source = CliSettingsSource(Root)
+    first = Root(_cli_settings_source=source(args=['a', '--x']))
+    assert first.a is not None and first.a.unknown_args == ['--x']
+    second = Root(_cli_settings_source=source(args=['c']))
+    assert second.model_dump() == {'a': None, 'c': {'v': 0}}
+
+
+# Models without a capture field leave custom parser methods intact.
+def test_cli_parser_without_unknown_field_is_not_patched():
+    class Root(BaseSettings):
+        v: int = 0
+
+    parser = argparse.ArgumentParser()
+    original = parser.parse_known_args
+    CliSettingsSource(Root, root_parser=parser)
+    assert parser.parse_known_args == original
+
+
+# Externally parsed namespaces cannot retain an unselected command's capture.
+def test_cli_unknown_args_reset_when_external_parser_is_reused():
+    class A(BaseSettings, cli_ignore_unknown_args=True):
+        unknown_args: CliUnknownArgs
+
+    class C(BaseModel):
+        v: int = 0
+
+    class Root(BaseSettings):
+        a: CliSubCommand[A]
+        c: CliSubCommand[C]
+
+    parser = argparse.ArgumentParser()
+    source = CliSettingsSource(Root, root_parser=parser)
+    first = Root(_cli_settings_source=source(parsed_args=parser.parse_args(['a', '--x'])))
+    assert first.a is not None and first.a.unknown_args == ['--x']
+    second = Root(_cli_settings_source=source(parsed_args=parser.parse_args(['c'])))
+    assert second.model_dump() == {'a': None, 'c': {'v': 0}}
+
+
+# A rejected root typo must not leak into a later external parse.
+@pytest.mark.parametrize('as_dict', [False, True])
+def test_cli_external_parse_after_rejected_root_unknown(as_dict):
+    class Sub(BaseSettings, cli_ignore_unknown_args=True):
+        unknown_args: CliUnknownArgs
+
+    class Root(BaseSettings, cli_exit_on_error=False):
+        sub: CliSubCommand[Sub]
+
+    source = CliSettingsSource(Root)
+    with pytest.raises(SettingsError, match='unrecognized arguments: --typo'):
+        source(args=['--typo', 'sub'])
+    clean = source.root_parser.parse_args(['sub'])
+    result = Root(_cli_settings_source=source(parsed_args=vars(clean) if as_dict else clean))
+    assert result.sub is not None and result.sub.unknown_args == []
+    with pytest.raises(SettingsError, match='unrecognized arguments: --another-typo'):
+        source(args=['--another-typo', 'sub'])
+
+
+# Capture wrappers preserve custom parser call signatures.
+def test_cli_unknown_args_capture_forwards_custom_parameters():
+    class Root(BaseSettings, cli_ignore_unknown_args=True):
+        unknown_args: CliUnknownArgs
+
+    class CustomParser(argparse.ArgumentParser):
+        def parse_known_args(self, args=None, namespace=None, *, marker=None):
+            assert marker == 'custom'
+            return super().parse_known_args(args, namespace)
+
+    parser = CustomParser()
+    CliSettingsSource(Root, root_parser=parser)
+    _, unknown = parser.parse_known_args(['--unknown'], marker='custom')
+    assert unknown == ['--unknown']
+
+
+# Root capture still works with a read-only parser method.
+def test_cli_readonly_root_parser_keeps_unknown_args():
+    # A read-only method remains usable when root capture cannot be installed.
+    class Root(BaseSettings, cli_ignore_unknown_args=True):
+        unknown_args: CliUnknownArgs
+
+    class ReadonlyParser(argparse.ArgumentParser):
+        @property
+        def parse_known_args(self):
+            return super().parse_known_args
+
+    parser = ReadonlyParser()
+    source = CliSettingsSource(Root, root_parser=parser)
+    result = Root(_cli_settings_source=source(args=['--unknown']))
+    assert result.unknown_args == ['--unknown']
+
+
+# An unselected command must not authorize a similarly named command.
+def test_cli_unknown_args_do_not_match_similarly_named_subcommand():
+    class A(BaseSettings, cli_ignore_unknown_args=True):
+        unknown_args: CliUnknownArgs
+
+    class BA(BaseModel):
+        v: int = 0
+
+    class Root(BaseSettings):
+        unknown_args: CliUnknownArgs
+        a: CliSubCommand[A]
+        ba: CliSubCommand[BA]
+
+    with pytest.raises(SystemExit):
+        Root(_cli_parse_args=['--typo', 'ba'])
+    assert Root(_cli_parse_args=['ba']).ba is not None
+
+
+def test_cli_root_typo_rejected_when_subcommand_accepts_unknown_args():
+    class Sub(BaseSettings, cli_ignore_unknown_args=True):
+        ignored_args: CliUnknownArgs
+
+    class Root(BaseSettings):
+        sub: CliSubCommand[Sub]
+
+    with pytest.raises(SystemExit):
+        CliApp.run(Root, cli_args=['--typo', 'sub'])
+
+    cmd = CliApp.run(Root, cli_args=['sub', '--typo'])
+    assert cmd.model_dump() == {'sub': {'ignored_args': ['--typo']}}
+
+
+def test_cli_root_unknown_field_keeps_its_own_leftovers():
+    class Sub(BaseSettings, cli_ignore_unknown_args=True):
+        ignored_args: CliUnknownArgs
+
+    class Root(BaseSettings):
+        unknown_args: CliUnknownArgs
+        sub: CliSubCommand[Sub]
+
+    cmd = CliApp.run(Root, cli_args=['--typo', 'sub', '--other'])
+    assert cmd.model_dump() == {'unknown_args': ['--typo'], 'sub': {'ignored_args': ['--other']}}
+
+
+def test_cli_ignore_unknown_args_subcommand():
+    class SubA(BaseSettings):
+        a: CliPositionalArg[str]
+
+    class SubB(BaseSettings, cli_ignore_unknown_args=True):
+        b: CliPositionalArg[str]
+        ignored_args: CliUnknownArgs
+
+    class Cmd(BaseSettings):
+        a: CliSubCommand[SubA]
+        b: CliSubCommand[SubB]
+
+    # Subcommand B should accept unknown args
+    cmd = CliApp.run(Cmd, cli_args=['b', 'blah', '--bad'])
+    assert cmd.model_dump() == {'a': None, 'b': {'b': 'blah', 'ignored_args': ['--bad']}}
+
+    # Subcommand B with no unknown args
+    cmd = CliApp.run(Cmd, cli_args=['b', 'blah'])
+    assert cmd.model_dump() == {'a': None, 'b': {'b': 'blah', 'ignored_args': []}}
+
+    # Subcommand B with multiple unknown args
+    cmd = CliApp.run(Cmd, cli_args=['b', 'blah', '--bad', '--worse', 'val'])
+    assert cmd.model_dump() == {'a': None, 'b': {'b': 'blah', 'ignored_args': ['--bad', '--worse', 'val']}}
+
+    # Subcommand A should still reject unknown args
+    with pytest.raises(SystemExit):
+        CliApp.run(Cmd, cli_args=['a', 'blah', '--bad'])
+
+    # Subcommand A works normally without unknown args
+    cmd = CliApp.run(Cmd, cli_args=['a', 'hello'])
+    assert cmd.model_dump() == {'a': {'a': 'hello'}, 'b': None}
+
+
+def test_cli_ignore_unknown_args_nested_subcommand():
+    class SubB(BaseModel):
+        ignored_args: CliUnknownArgs
+        my_feature: bool = False
+
+    class SubA(BaseModel):
+        my_feature: bool = False
+
+    class Mid(BaseModel):
+        a: CliSubCommand[SubA]
+        b: CliSubCommand[SubB]
+
+    class Root(BaseSettings, cli_exit_on_error=False):
+        mid: CliSubCommand[Mid]
+
+    # "root mid" does not have CliUnknownArgs on path — should reject
+    with pytest.raises(SettingsError, match='error parsing CLI: unrecognized arguments: --bad'):
+        CliApp.run(Root, cli_args=['mid', '--bad'])
+
+    # "root mid b" has CliUnknownArgs on path — should accept
+    cmd = CliApp.run(Root, cli_args=['mid', 'b', '--bad'])
+    assert cmd.model_dump() == {'mid': {'a': None, 'b': {'ignored_args': ['--bad'], 'my_feature': False}}}
+
+    # "root mid a" does not have CliUnknownArgs on path — should reject
+    with pytest.raises(SettingsError, match='error parsing CLI: unrecognized arguments: --bad'):
+        CliApp.run(Root, cli_args=['mid', 'a', '--bad'])
+
+
+def test_cli_unknown_args_rejected_with_non_argparse_root_parser():
+    """A non-argparse root parser cannot call `.error()`, so unknown args raise SystemExit(2)."""
+
+    class SubB(BaseModel):
+        ignored_args: CliUnknownArgs
+        my_feature: bool = False
+
+    class SubA(BaseModel):
+        my_feature: bool = False
+
+    class Root(BaseSettings):
+        a: CliSubCommand[SubA]
+        b: CliSubCommand[SubB]
+
+    class UnknownArgsParser(CliDummyParser):
+        """Mimics the built-in `parse_known_args` upgrade, stashing unknown args."""
+
+        source: Any = None
+
+        def parse_args(self, *args: Any, **kwargs: Any) -> argparse.Namespace:
+            namespace, unknown_args = self.parser.parse_known_args(*args, **kwargs)
+            for dest in self.source._cli_unknown_args:
+                self.source._cli_unknown_args[dest] = unknown_args
+            return namespace
+
+    parser = UnknownArgsParser()
+    cli_settings = CliSettingsSource(
+        Root,
+        root_parser=parser,
+        parse_args_method=UnknownArgsParser.parse_args,
+        add_argument_method=CliDummyParser.add_argument,
+        add_argument_group_method=CliDummyParser.add_argument_group,
+        add_parser_method=CliDummySubParsers.add_parser,
+        add_subparsers_method=CliDummyParser.add_subparsers,
+    )
+    parser.source = cli_settings
+
+    # Subcommand "a" does not accept unknown args, and the root parser is not an
+    # ArgumentParser, so the source exits directly instead of calling parser.error().
+    with pytest.raises(SystemExit) as exc_info:
+        Root(_cli_settings_source=cli_settings(args=['a', '--bad']))
+
+    assert exc_info.value.code == 2
+
+
+def test_cli_slotted_root_parser():
+    class SlottedParser:
+        __slots__ = ('parser',)
+
+        def __init__(self) -> None:
+            self.parser = argparse.ArgumentParser()
+
+        def add_argument(self, *args: Any, **kwargs: Any) -> None:
+            self.parser.add_argument(*args, **kwargs)
+
+        def add_argument_group(self, *args: Any, **kwargs: Any) -> argparse._ArgumentGroup:
+            return self.parser.add_argument_group(*args, **kwargs)
+
+        def parse_known_args(self, *args: Any, **kwargs: Any) -> tuple[argparse.Namespace, list[str]]:
+            return self.parser.parse_known_args(*args, **kwargs)
+
+        def parse_args(self, *args: Any, **kwargs: Any) -> argparse.Namespace:
+            return self.parser.parse_args(*args, **kwargs)
+
+    class Cfg(BaseSettings):
+        pet: str = 'bird'
+
+    cli_settings = CliSettingsSource(
+        Cfg,
+        root_parser=SlottedParser(),
+        parse_args_method=SlottedParser.parse_args,
+        add_argument_method=SlottedParser.add_argument,
+        add_argument_group_method=SlottedParser.add_argument_group,
+        add_parser_method=None,
+        add_subparsers_method=None,
+    )
+
+    assert Cfg(_cli_settings_source=cli_settings(args=['--pet', 'cat'])).pet == 'cat'
+
+
+def test_cli_ignore_unknown_args_nested_subcommand_higher_in_hierarchy():
+    class SubB(BaseModel):
+        my_feature: bool = False
+
+    class SubA(BaseModel):
+        my_feature: bool = False
+
+    class Mid(BaseModel):
+        a: CliSubCommand[SubA]
+        b: CliSubCommand[SubB]
+        ignored_args: CliUnknownArgs
+
+    class Root(BaseSettings):
+        mid: CliSubCommand[Mid]
+
+    # "root mid" has CliUnknownArgs on path — should accept
+    cmd = CliApp.run(Root, cli_args=['mid', '--bad'])
+    assert cmd.model_dump() == {'mid': {'a': None, 'b': None, 'ignored_args': ['--bad']}}
+
+    # "root mid b" — CliUnknownArgs is higher on the path (on Mid) — should accept
+    cmd = CliApp.run(Root, cli_args=['mid', 'b', '--bad'])
+    assert cmd.model_dump() == {'mid': {'a': None, 'b': {'my_feature': False}, 'ignored_args': ['--bad']}}
+
+
+def test_cli_flag_prefix_char():
+    class Cfg(BaseSettings, cli_flag_prefix_char='+'):
+        my_var: str = Field(validation_alias=AliasChoices('m', 'my-var'))
+
+    cfg = CliApp.run(Cfg, cli_args=['++my-var=hello'])
+    assert cfg.model_dump() == {'my_var': 'hello'}
+
+    cfg = CliApp.run(Cfg, cli_args=['+m=hello'])
+    assert cfg.model_dump() == {'my_var': 'hello'}
+
+
+def test_cli_prefix_from_model_config():
+    class Cfg(BaseSettings, cli_prefix='cfg'):
+        my_var: str
+
+    cfg = CliApp.run(Cfg, cli_args=['--cfg.my_var=hello'])
+    assert cfg.model_dump() == {'my_var': 'hello'}
+
+    assert '--cfg.my_var' in CliApp.format_help(Cfg)
+
+    for invalid_prefix in ('.cfg', 'cfg.', '123'):
+
+        class InvalidCfg(BaseSettings, cli_prefix=invalid_prefix):
+            my_var: str = ''
+
+        with pytest.raises(SettingsError, match=f'CLI settings source prefix is invalid: {re.escape(invalid_prefix)}'):
+            CliSettingsSource(InvalidCfg)
+
+
+@pytest.mark.parametrize('parser_type', [pytest.Parser, argparse.ArgumentParser, CliDummyParser])
+@pytest.mark.parametrize('prefix', ['', 'cfg'])
+def test_cli_user_settings_source(parser_type, prefix):
+    class Cfg(BaseSettings):
+        pet: Literal['dog', 'cat', 'bird'] = 'bird'
+
+    if parser_type is pytest.Parser:
+        parser = pytest.Parser(_ispytest=True)
+        parse_args = parser.parse
+        add_arg = parser.addoption
+        cli_cfg_settings = CliSettingsSource(
+            Cfg,
+            cli_prefix=prefix,
+            root_parser=parser,
+            parse_args_method=pytest.Parser.parse,
+            add_argument_method=pytest.Parser.addoption,
+            add_argument_group_method=pytest.Parser.getgroup,
+            add_parser_method=None,
+            add_subparsers_method=None,
+            formatter_class=None,
+        )
+    elif parser_type is CliDummyParser:
+        parser = CliDummyParser()
+        parse_args = parser.parse_args
+        add_arg = parser.add_argument
+        cli_cfg_settings = CliSettingsSource(
+            Cfg,
+            cli_prefix=prefix,
+            root_parser=parser,
+            parse_args_method=CliDummyParser.parse_args,
+            add_argument_method=CliDummyParser.add_argument,
+            add_argument_group_method=CliDummyParser.add_argument_group,
+            add_parser_method=CliDummySubParsers.add_parser,
+            add_subparsers_method=CliDummyParser.add_subparsers,
+        )
+    else:
+        parser = argparse.ArgumentParser()
+        parse_args = parser.parse_args
+        add_arg = parser.add_argument
+        cli_cfg_settings = CliSettingsSource(Cfg, cli_prefix=prefix, root_parser=parser)
+
+    add_arg('--fruit', choices=['pear', 'kiwi', 'lime'])
+    add_arg('--num-list', action='append', type=int)
+    add_arg('--num', type=int)
+
+    args = ['--fruit', 'pear', '--num', '0', '--num-list', '1', '--num-list', '2', '--num-list', '3']
+    parsed_args = parse_args(args)
+    assert CliApp.run(Cfg, cli_args=parsed_args, cli_settings_source=cli_cfg_settings).model_dump() == {'pet': 'bird'}
+    assert CliApp.run(Cfg, cli_args=args, cli_settings_source=cli_cfg_settings).model_dump() == {'pet': 'bird'}
+    assert Cfg(_cli_settings_source=cli_cfg_settings(parsed_args=parsed_args)).model_dump() == {'pet': 'bird'}
+    assert Cfg(_cli_settings_source=cli_cfg_settings(args=args)).model_dump() == {'pet': 'bird'}
+    assert Cfg(_cli_settings_source=cli_cfg_settings(args=False)).model_dump() == {'pet': 'bird'}
+
+    arg_prefix = f'{prefix}.' if prefix else ''
+    args = [
+        '--fruit',
+        'kiwi',
+        '--num',
+        '0',
+        '--num-list',
+        '1',
+        '--num-list',
+        '2',
+        '--num-list',
+        '3',
+        f'--{arg_prefix}pet',
+        'dog',
+    ]
+    parsed_args = parse_args(args)
+    assert CliApp.run(Cfg, cli_args=parsed_args, cli_settings_source=cli_cfg_settings).model_dump() == {'pet': 'dog'}
+    assert CliApp.run(Cfg, cli_args=args, cli_settings_source=cli_cfg_settings).model_dump() == {'pet': 'dog'}
+    assert Cfg(_cli_settings_source=cli_cfg_settings(parsed_args=parsed_args)).model_dump() == {'pet': 'dog'}
+    assert Cfg(_cli_settings_source=cli_cfg_settings(args=args)).model_dump() == {'pet': 'dog'}
+    assert Cfg(_cli_settings_source=cli_cfg_settings(args=False)).model_dump() == {'pet': 'bird'}
+
+    parsed_args = parse_args(
+        [
+            '--fruit',
+            'kiwi',
+            '--num',
+            '0',
+            '--num-list',
+            '1',
+            '--num-list',
+            '2',
+            '--num-list',
+            '3',
+            f'--{arg_prefix}pet',
+            'cat',
+        ]
+    )
+    assert CliApp.run(Cfg, cli_args=vars(parsed_args), cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'cat'
+    }
+    assert Cfg(_cli_settings_source=cli_cfg_settings(parsed_args=vars(parsed_args))).model_dump() == {'pet': 'cat'}
+    assert Cfg(_cli_settings_source=cli_cfg_settings(args=False)).model_dump() == {'pet': 'bird'}
+
+
+@pytest.mark.parametrize('prefix', ['', 'cfg'])
+def test_cli_dummy_user_settings_with_subcommand(prefix):
+    class DogCommands(BaseModel):
+        name: str = 'Bob'
+        command: Literal['roll', 'bark', 'sit'] = 'sit'
+
+    class Cfg(BaseSettings):
+        pet: Literal['dog', 'cat', 'bird'] = 'bird'
+        command: CliSubCommand[DogCommands]
+
+    parser = CliDummyParser()
+    cli_cfg_settings = CliSettingsSource(
+        Cfg,
+        root_parser=parser,
+        cli_prefix=prefix,
+        parse_args_method=CliDummyParser.parse_args,
+        add_argument_method=CliDummyParser.add_argument,
+        add_argument_group_method=CliDummyParser.add_argument_group,
+        add_parser_method=CliDummySubParsers.add_parser,
+        add_subparsers_method=CliDummyParser.add_subparsers,
+    )
+
+    parser.add_argument('--fruit', choices=['pear', 'kiwi', 'lime'])
+
+    args = ['--fruit', 'pear']
+    parsed_args = parser.parse_args(args)
+    assert CliApp.run(Cfg, cli_args=parsed_args, cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'bird',
+        'command': None,
+    }
+    assert CliApp.run(Cfg, cli_args=args, cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'bird',
+        'command': None,
+    }
+
+    arg_prefix = f'{prefix}.' if prefix else ''
+    args = ['--fruit', 'kiwi', f'--{arg_prefix}pet', 'dog']
+    parsed_args = parser.parse_args(args)
+    assert CliApp.run(Cfg, cli_args=parsed_args, cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'dog',
+        'command': None,
+    }
+    assert CliApp.run(Cfg, cli_args=args, cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'dog',
+        'command': None,
+    }
+
+    parsed_args = parser.parse_args(['--fruit', 'kiwi', f'--{arg_prefix}pet', 'cat'])
+    assert CliApp.run(Cfg, cli_args=vars(parsed_args), cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'cat',
+        'command': None,
+    }
+
+    args = ['--fruit', 'kiwi', f'--{arg_prefix}pet', 'dog', 'command', '--name', 'ralph', '--command', 'roll']
+    parsed_args = parser.parse_args(args)
+    assert CliApp.run(Cfg, cli_args=vars(parsed_args), cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'dog',
+        'command': {'name': 'ralph', 'command': 'roll'},
+    }
+    assert CliApp.run(Cfg, cli_args=args, cli_settings_source=cli_cfg_settings).model_dump() == {
+        'pet': 'dog',
+        'command': {'name': 'ralph', 'command': 'roll'},
+    }
+
+
+def test_cli_user_settings_source_exceptions():
+    class Cfg(BaseSettings):
+        pet: Literal['dog', 'cat', 'bird'] = 'bird'
+
+    with pytest.raises(SettingsError, match='`args` and `parsed_args` are mutually exclusive'):
+        args = ['--pet', 'dog']
+        parsed_args = {'pet': 'dog'}
+        cli_cfg_settings = CliSettingsSource(Cfg)
+        Cfg(_cli_settings_source=cli_cfg_settings(args=args, parsed_args=parsed_args))
+
+    with pytest.raises(SettingsError, match=re.escape('CLI settings source prefix is invalid: .cfg')):
+        CliSettingsSource(Cfg, cli_prefix='.cfg')
+
+    with pytest.raises(SettingsError, match=re.escape('CLI settings source prefix is invalid: cfg.')):
+        CliSettingsSource(Cfg, cli_prefix='cfg.')
+
+    with pytest.raises(SettingsError, match='CLI settings source prefix is invalid: 123'):
+        CliSettingsSource(Cfg, cli_prefix='123')
+
+    class Food(BaseModel):
+        fruit: FruitsEnum = FruitsEnum.kiwi
+
+    class CfgWithSubCommand(BaseSettings):
+        pet: Literal['dog', 'cat', 'bird'] = 'bird'
+        food: CliSubCommand[Food]
+
+    with pytest.raises(
+        SettingsError,
+        match='cannot connect CLI settings source root parser: add_subparsers_method is set to `None` but is needed for connecting',
+    ):
+        CliSettingsSource(CfgWithSubCommand, add_subparsers_method=None)
+
+
+def test_cli_enum_default_through_nested_annotation(capsys, monkeypatch):
+    class Cfg(BaseSettings, cli_parse_args=True, cli_prog_name='example.py'):
+        fruit: Annotated[FruitsEnum, Field(description='fruit')] | None = FruitsEnum.kiwi
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Cfg()
+
+        assert '(default: kiwi)' in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    'value,expected',
+    [
+        (str, 'str'),
+        ('foobar', 'str'),
+        ('SomeForwardRefString', 'str'),  # included to document current behavior; could be changed
+        (List['SomeForwardRef'], "List[ForwardRef('SomeForwardRef')]"),  # noqa: F821, UP006
+        (str | int, '{str,int}'),
+        (list, 'list'),
+        (List, 'List'),  # noqa: UP006
+        ([1, 2, 3], 'list'),
+        (List[Dict[str, int]], 'List[Dict[str,int]]'),  # noqa: UP006
+        (Tuple[str, int, float], 'Tuple[str,int,float]'),  # noqa: UP006
+        (Tuple[str, ...], 'Tuple[str,...]'),  # noqa: UP006
+        (int | List[str] | Tuple[str, int], '{int,List[str],Tuple[str,int]}'),  # noqa: UP006
+        (foobar, 'foobar'),
+        (LoggedVar, 'LoggedVar'),
+        (LoggedVar(), 'LoggedVar'),
+        (Representation(), 'Representation()'),
+        (typing.Literal[1, 2, 3], '{1,2,3}'),
+        (typing_extensions.Literal[1, 2, 3], '{1,2,3}'),
+        (typing.Literal['a', 'b', 'c'], '{a,b,c}'),
+        (typing_extensions.Literal['a', 'b', 'c'], '{a,b,c}'),
+        (SimpleSettings, 'JSON'),
+        (SimpleSettings | SettingWithIgnoreEmpty, 'JSON'),
+        (Union[SimpleSettings, str, SettingWithIgnoreEmpty], '{JSON,str}'),  # noqa: UP007
+        (Union[str, SimpleSettings, SettingWithIgnoreEmpty], '{str,JSON}'),  # noqa: UP007
+        (Annotated[SimpleSettings, 'annotation'], 'JSON'),
+        (DirectoryPath, 'Path'),
+        (FruitsEnum, '{pear,kiwi,lime}'),
+        (time.time_ns, 'time_ns'),
+        (CliDummyParser.add_argument, 'CliDummyParser.add_argument'),
+        (lambda: str | int, '{str,int}'),
+        (lambda: list[int], 'list[int]'),
+        (lambda: List[int], 'List[int]'),  # noqa: UP006
+        (lambda: list[dict[str, int]], 'list[dict[str,int]]'),
+        (lambda: list[str | int], 'list[{str,int}]'),
+        (lambda: LoggedVar[int], 'LoggedVar[int]'),
+        (lambda: LoggedVar[Dict[int, str]], 'LoggedVar[Dict[int,str]]'),  # noqa: UP006
+    ],
+)
+@pytest.mark.parametrize('hide_none_type', [True, False])
+def test_cli_metavar_format(hide_none_type, value, expected):
+    if callable(value) and value.__name__ == '<lambda>':
+        value = value()
+
+    cli_settings = CliSettingsSource(SimpleSettings, cli_hide_none_type=hide_none_type)
+    if hide_none_type:
+        if value == [1, 2, 3] or isinstance(value, (LoggedVar, Representation)):
+            pytest.skip()
+        if value in ('foobar', 'SomeForwardRefString'):
+            expected = f"ForwardRef('{value}')"  # forward ref implicit cast
+        if typing_extensions.get_origin(value) is Union:
+            args = typing_extensions.get_args(value)
+            value = Union[args + (None,) if args else (value, None)]  # noqa: UP007
+        else:
+            value = Union[(value, None)]  # noqa: UP007
+    assert cli_settings._metavar_format(value) == expected
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason='requires python 3.12 or higher')
+def test_cli_metavar_format_type_alias_312():
+    exec(
+        """
+type TypeAliasInt = int
+assert CliSettingsSource(SimpleSettings)._metavar_format(TypeAliasInt) == 'TypeAliasInt'
+"""
+    )
+
+
+@pytest.mark.parametrize('use_alias', [False, True], ids=['plain', 'alias'])
+@pytest.mark.parametrize(
+    'annotation,args,expected',
+    [
+        (list[str], ['one', 'two'], ['one', 'two']),
+        (set[str], ['one', 'two'], {'one', 'two'}),
+        (tuple[str, ...], ['one', 'two'], ('one', 'two')),
+        (dict[str, int], ['one=1', 'two=2'], {'one': 1, 'two': 2}),
+        (Annotated[list[str], Field(min_length=2)], ['one', 'two'], ['one', 'two']),
+        (list[dict[str, int]], ['[{"a":1},{"b":2}]'], [{'a': 1}, {'b': 2}]),
+        (list[dict[str, int]], ['[{"a":1}]'], [{'a': 1}]),
+        (list[dict[str, int]], ['{"a":1}', '{"b":2}'], [{'a': 1}, {'b': 2}]),
+        (list[dict[str, int]] | None, ['[{"a":1},{"b":2}]'], [{'a': 1}, {'b': 2}]),
+        (tuple[dict[str, int], ...], ['{"a":1}', '{"b":2}'], ({'a': 1}, {'b': 2})),
+        (dict[str, int] | None, ['one=1', 'two=2'], {'one': 1, 'two': 2}),
+    ],
+    ids=[
+        'list',
+        'set',
+        'tuple',
+        'dict',
+        'annotated-list',
+        'list-of-dict-json',
+        'list-of-dict-json-single',
+        'list-of-dict-repeated',
+        'optional-list-of-dict',
+        'tuple-of-dict',
+        'optional-dict',
+    ],
+)
+def test_cli_collection_type_alias(use_alias, annotation, args, expected):
+    value_type = typing_extensions.TypeAliasType('Value', annotation) if use_alias else annotation
+
+    class Settings(BaseSettings):
+        value: value_type
+
+    cli_args = [arg for value in args for arg in ('--value', value)]
+    assert CliApp.run(Settings, cli_args=cli_args).value == expected
+
+
+def test_cli_generic_collection_type_alias():
+    Values = typing_extensions.TypeAliasType('Values', list[T], type_params=(T,))
+
+    class Settings(BaseSettings):
+        value: Values[int]
+
+    assert CliApp.run(Settings, cli_args=['--value', '1', '--value', '2']).value == [1, 2]
+
+
+def test_cli_nested_collection_type_alias():
+    Values = typing_extensions.TypeAliasType('Values', typing_extensions.TypeAliasType('Inner', list[int]))
+
+    class Settings(BaseSettings):
+        value: Values
+
+    assert CliApp.run(Settings, cli_args=['--value', '1', '--value', '2']).value == [1, 2]
+
+
+@pytest.mark.parametrize(
+    'args,expected',
+    [
+        (['--value', '1', '--value', '2'], [1, 2]),
+        (['--value', 'one=1', '--value', 'two=2'], {'one': 1, 'two': 2}),
+        (['--value', '[1,2]'], [1, 2]),
+    ],
+    ids=['list', 'dict', 'json-list'],
+)
+def test_cli_mapping_or_sequence_union_type_alias(args, expected):
+    Value = typing_extensions.TypeAliasType('Value', dict[str, int] | list[int])
+
+    class Settings(BaseSettings):
+        value: Value
+
+    assert CliApp.run(Settings, cli_args=args).value == expected
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason='requires python 3.12 or higher')
+@pytest.mark.parametrize(
+    'args,expected',
+    [
+        (['--value', '1', '--value', '2'], [1, 2]),
+        (['--value', '{"one": {}}', '--value', '{"two": {"three": {}}}'], {'one': {}, 'two': {'three': {}}}),
+    ],
+    ids=['list', 'dict'],
+)
+def test_cli_recursive_mapping_or_sequence_union_type_alias(args, expected):
+    namespace = {}
+    exec('type Value = dict[str, Value] | list[int]', namespace)
+    Value = namespace['Value']
+
+    class Settings(BaseSettings):
+        value: Value
+
+    assert CliApp.run(Settings, cli_args=args).value == expected
+
+
+def test_cli_scalar_type_alias():
+    Value = typing_extensions.TypeAliasType('Value', str)
+
+    class Settings(BaseSettings):
+        value: Value
+
+    assert CliApp.run(Settings, cli_args=['--value', 'one', '--value', 'two']).value == 'two'
+
+
+def test_cli_type_alias_ip_addresses():
+    IPAddresses = typing_extensions.TypeAliasType('IPAddresses', list[IPvAnyAddress])
+
+    class Settings(BaseModel):
+        addresses: IPAddresses = Field(default_factory=list)
+
+    settings = CliApp.run(Settings, cli_args=['--addresses', '1.2.3.4', '--addresses', '::1'])
+    assert [str(address) for address in settings.addresses] == ['1.2.3.4', '::1']
+
+
+def test_cli_app():
+    class Init(BaseModel):
+        directory: CliPositionalArg[str]
+
+        def cli_cmd(self) -> None:
+            self.directory = 'ran Init.cli_cmd'
+
+        def alt_cmd(self) -> None:
+            self.directory = 'ran Init.alt_cmd'
+
+    class Clone(BaseModel):
+        repository: CliPositionalArg[str]
+        directory: CliPositionalArg[str]
+
+        def cli_cmd(self) -> None:
+            self.repository = 'ran Clone.cli_cmd'
+
+        def alt_cmd(self) -> None:
+            self.repository = 'ran Clone.alt_cmd'
+
+    class Git(BaseModel):
+        clone: CliSubCommand[Clone]
+        init: CliSubCommand[Init]
+
+        def cli_cmd(self) -> None:
+            CliApp.run_subcommand(self)
+
+        def alt_cmd(self) -> None:
+            CliApp.run_subcommand(self, cli_cmd_method_name='alt_cmd')
+
+    assert CliApp.run(Git, cli_args=['init', 'dir']).model_dump() == {
+        'clone': None,
+        'init': {'directory': 'ran Init.cli_cmd'},
+    }
+    assert CliApp.run(Git, cli_args=['init', 'dir'], cli_cmd_method_name='alt_cmd').model_dump() == {
+        'clone': None,
+        'init': {'directory': 'ran Init.alt_cmd'},
+    }
+    assert CliApp.run(Git, cli_args=['clone', 'repo', 'dir']).model_dump() == {
+        'clone': {'repository': 'ran Clone.cli_cmd', 'directory': 'dir'},
+        'init': None,
+    }
+    assert CliApp.run(Git, cli_args=['clone', 'repo', 'dir'], cli_cmd_method_name='alt_cmd').model_dump() == {
+        'clone': {'repository': 'ran Clone.alt_cmd', 'directory': 'dir'},
+        'init': None,
+    }
+
+
+def test_cli_app_async_method_no_existing_loop():
+    class Command(BaseSettings):
+        called: bool = False
+
+        async def cli_cmd(self) -> None:
+            self.called = True
+
+    assert CliApp.run(Command, cli_args=[]).called
+
+
+def test_cli_app_async_method_with_existing_loop():
+    class Command(BaseSettings):
+        called: bool = False
+
+        async def cli_cmd(self) -> None:
+            self.called = True
+
+    async def run_as_coro():
+        return CliApp.run(Command, cli_args=[])
+
+    assert asyncio.run(run_as_coro()).called
+
+
+def test_cli_app_async_method_with_existing_loop_propagates_exception():
+    """An exception raised in the worker thread's loop is re-raised to the caller."""
+
+    class Command(BaseSettings):
+        async def cli_cmd(self) -> None:
+            raise ValueError('boom')
+
+    async def run_as_coro():
+        return CliApp.run(Command, cli_args=[])
+
+    with pytest.raises(ValueError, match='boom'):
+        asyncio.run(run_as_coro())
+
+
+def test_cli_app_exceptions():
+    with pytest.raises(
+        SettingsError,
+        match=re.escape('Error: NotPydanticModel is not subclass of BaseModel or pydantic.dataclasses.dataclass'),
+    ):
+
+        class NotPydanticModel: ...
+
+        CliApp.run(NotPydanticModel)
+
+    with pytest.raises(
+        SettingsError,
+        match=re.escape('Error: `cli_args` must be list[str] or None when `cli_settings_source` is not used'),
+    ):
+
+        class Cfg(BaseModel): ...
+
+        CliApp.run(Cfg, cli_args={'my_arg': 'hello'})
+
+    with pytest.raises(SettingsError, match='Error: Child class is missing cli_cmd entrypoint'):
+
+        class Child(BaseModel):
+            val: str
+
+        class Root(BaseModel):
+            child: CliSubCommand[Child]
+
+            def cli_cmd(self) -> None:
+                CliApp.run_subcommand(self)
+
+        CliApp.run(Root, cli_args=['child', '--val=hello'])
+
+
+def test_cli_suppress(capsys, monkeypatch):
+    class DeepHiddenSubModel(BaseModel):
+        deep_hidden_a: int
+        deep_hidden_b: int
+
+    class HiddenSubModel(BaseModel):
+        hidden_a: int
+        hidden_b: int
+        deep_hidden_obj: DeepHiddenSubModel = Field(description='deep_hidden_obj description')
+
+    class SubModel(BaseModel):
+        visible_a: int
+        visible_b: int
+        deep_hidden_obj: CliSuppress[DeepHiddenSubModel] = Field(description='deep_hidden_obj description')
+
+    class Settings(BaseSettings, cli_parse_args=True, cli_prog_name='example.py'):
+        field_a: CliSuppress[int] = 0
+        field_b: str = Field(default='hi', description=CLI_SUPPRESS)
+        hidden_obj: CliSuppress[HiddenSubModel] = Field(description='hidden_obj description')
+        visible_obj: SubModel
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            CliApp.run(Settings)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--visible_obj [JSON]] [--visible_obj.visible_a int]
+                  [--visible_obj.visible_b int]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+visible_obj options:
+  --visible_obj [JSON]  set visible_obj from JSON string (default: {{}})
+  --visible_obj.visible_a int
+                        (required)
+  --visible_obj.visible_b int
+                        (required)
+"""
+        )
+
+
+def test_cli_mutually_exclusive_group(capsys, monkeypatch):
+    class Circle(CliMutuallyExclusiveGroup):
+        radius: float | None = 21
+        diameter: float | None = 22
+        perimeter: float | None = 23
+
+    class Settings(BaseModel, cli_prog_name='example.py'):
+        circle_optional: Circle = Circle(radius=None, diameter=None, perimeter=24)
+        circle_required: Circle
+
+    assert CliApp.run(Settings, cli_args=['--circle-required.radius=1', '--circle-optional.radius=1']).model_dump() == {
+        'circle_optional': {'radius': 1, 'diameter': None, 'perimeter': 24},
+        'circle_required': {'radius': 1, 'diameter': 22, 'perimeter': 23},
+    }
+
+    with pytest.raises(SystemExit):
+        CliApp.run(Settings, cli_args=['--circle-required.radius=1', '--circle-required.diameter=2'])
+    assert (
+        'error: argument --circle-required.diameter: not allowed with argument --circle-required.radius'
+        in capsys.readouterr().err
+    )
+
+    with pytest.raises(SystemExit):
+        CliApp.run(
+            Settings,
+            cli_args=['--circle-required.radius=1', '--circle-optional.radius=1', '--circle-optional.diameter=2'],
+        )
+    assert (
+        'error: argument --circle-optional.diameter: not allowed with argument --circle-optional.radius'
+        in capsys.readouterr().err
+    )
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+        with pytest.raises(SystemExit):
+            CliApp.run(Settings)
+        usage = (
+            """usage: example.py [-h] [--circle-optional.radius float |
+                  --circle-optional.diameter float |
+                  --circle-optional.perimeter float]
+                  (--circle-required.radius float |
+                  --circle-required.diameter float |
+                  --circle-required.perimeter float)"""
+            if sys.version_info >= (3, 13)
+            else """usage: example.py [-h]
+                  [--circle-optional.radius float | --circle-optional.diameter float | --circle-optional.perimeter float]
+                  (--circle-required.radius float | --circle-required.diameter float | --circle-required.perimeter float)"""
+        )
+        assert (
+            capsys.readouterr().out
+            == f"""{usage}
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+circle-optional options (mutually exclusive):
+  --circle-optional.radius float
+                        (default: None)
+  --circle-optional.diameter float
+                        (default: None)
+  --circle-optional.perimeter float
+                        (default: 24.0)
+
+circle-required options (mutually exclusive):
+  --circle-required.radius float
+                        (default: 21)
+  --circle-required.diameter float
+                        (default: 22)
+  --circle-required.perimeter float
+                        (default: 23)
+"""
+        )
+
+
+def test_cli_mutually_exclusive_group_exceptions():
+    class Circle(CliMutuallyExclusiveGroup):
+        radius: float | None = 21
+        diameter: float | None = 22
+        perimeter: float | None = 23
+
+    class Settings(BaseSettings):
+        circle: Circle
+
+    parser = CliDummyParser()
+    with pytest.raises(
+        SettingsError,
+        match='cannot connect CLI settings source root parser: group object is missing add_mutually_exclusive_group but is needed for connecting',
+    ):
+        CliSettingsSource(
+            Settings,
+            root_parser=parser,
+            parse_args_method=CliDummyParser.parse_args,
+            add_argument_method=CliDummyParser.add_argument,
+            add_argument_group_method=CliDummyParser.add_argument_group,
+            add_parser_method=CliDummySubParsers.add_parser,
+            add_subparsers_method=CliDummyParser.add_subparsers,
+        )
+
+    class SubModel(BaseModel):
+        pass
+
+    class SettingsInvalidUnion(BaseSettings):
+        union: Circle | SubModel
+
+    with pytest.raises(SettingsError, match='cannot use union with CliMutuallyExclusiveGroup'):
+        CliApp.run(SettingsInvalidUnion)
+
+    class CircleInvalidSubModel(Circle):
+        square: SubModel | None = None
+
+    class SettingsInvalidOptSubModel(BaseModel):
+        circle: CircleInvalidSubModel = CircleInvalidSubModel()
+
+    class SettingsInvalidReqSubModel(BaseModel):
+        circle: CircleInvalidSubModel
+
+    for settings in [SettingsInvalidOptSubModel, SettingsInvalidReqSubModel]:
+        with pytest.raises(SettingsError, match='cannot have nested models in a CliMutuallyExclusiveGroup'):
+            CliApp.run(settings)
+
+    class CircleRequiredField(Circle):
+        length: float
+
+    class SettingsOptCircleReqField(BaseModel):
+        circle: CircleRequiredField = CircleRequiredField(length=2)
+
+    assert CliApp.run(SettingsOptCircleReqField, cli_args=[]).model_dump() == {
+        'circle': {'diameter': 22.0, 'length': 2.0, 'perimeter': 23.0, 'radius': 21.0}
+    }
+
+    class SettingsInvalidReqCircleReqField(BaseModel):
+        circle: CircleRequiredField
+
+    with pytest.raises(ValueError, match='mutually exclusive arguments must be optional'):
+        CliApp.run(SettingsInvalidReqCircleReqField)
+
+
+def test_cli_invalid_abbrev():
+    class MySettings(BaseSettings):
+        bacon: str = ''
+        badger: str = ''
+
+    with pytest.raises(
+        SettingsError,
+        match='error parsing CLI: unrecognized arguments: --bac cli abbrev are invalid for internal parser',
+    ):
+        CliApp.run(
+            MySettings, cli_args=['--bac', 'cli abbrev are invalid for internal parser'], cli_exit_on_error=False
+        )
+
+
+def test_cli_subcommand_invalid_abbrev():
+    class Child(BaseModel):
+        bacon: str = ''
+        badger: str = ''
+
+    class MySettings(BaseSettings):
+        child: CliSubCommand[Child]
+
+    with pytest.raises(
+        SettingsError,
+        match='error parsing CLI: unrecognized arguments: --bac cli abbrev are invalid for internal parser',
+    ):
+        CliApp.run(
+            MySettings,
+            cli_args=['child', '--bac', 'cli abbrev are invalid for internal parser'],
+            cli_exit_on_error=False,
+        )
+
+
+def test_cli_submodels_strip_annotated():
+    class PolyA(BaseModel):
+        a: int = 1
+        type: Literal['a'] = 'a'
+
+    class PolyB(BaseModel):
+        b: str = '2'
+        type: Literal['b'] = 'b'
+
+    def _get_type(model: BaseModel | dict) -> str:
+        if isinstance(model, dict):
+            return model.get('type', 'a')
+        return model.type  # type: ignore
+
+    Poly = Annotated[Annotated[PolyA, Tag('a')] | Annotated[PolyB, Tag('b')], Discriminator(_get_type)]
+
+    class WithUnion(BaseSettings):
+        poly: Poly
+
+    assert CliApp.run(WithUnion, ['--poly.type=a']).model_dump() == {'poly': {'a': 1, 'type': 'a'}}
+
+
+def test_cli_bool_with_non_type_metadata():
+    """https://github.com/pydantic/pydantic-settings/issues/782.
+
+    Bool fields with non-type metadata (e.g. CliSuppress) should not crash issubclass.
+    """
+
+    class Settings(BaseSettings):
+        field: CliSuppress[bool] = True
+
+    s = CliApp.run(Settings, cli_args=[])
+    assert s.field is True
+
+
+def test_cli_self_referential_model():
+    """https://github.com/pydantic/pydantic-settings/issues/781.
+
+    Self-referential models should not cause infinite recursion in CLI arg parser.
+    """
+
+    class Foo(BaseModel):
+        foo: Optional['Foo'] = None
+
+    Foo.model_rebuild()
+
+    class RecursiveSettings(BaseSettings):
+        foo: Foo
+
+        def cli_cmd(self):
+            pass
+
+    # Should not raise RecursionError
+    s = CliApp.run(RecursiveSettings, cli_args=['--foo', '{"foo": {"foo": null}}'])
+    assert s.foo.foo == Foo(foo=None)
+    assert s.foo.foo.foo is None
+
+    s = CliApp.run(RecursiveSettings, cli_args=['--foo', '{"foo": null}'])
+    assert s.foo.foo is None
+
+
+def test_cli_mutually_recursive_models():
+    """https://github.com/pydantic/pydantic-settings/issues/781.
+
+    Mutually recursive models (A -> B -> A) via discriminated unions should not
+    cause infinite recursion in CLI arg parser.
+    """
+
+    class A(BaseModel):
+        type: Literal['a'] = 'a'
+
+    AnyBase = Annotated[Union[A, 'B', 'C'], Discriminator('type')]
+
+    class B(BaseModel):
+        type: Literal['b'] = 'b'
+        inner: 'AnyBase' = Field(default_factory=A)
+
+    class C(BaseModel):
+        type: Literal['c'] = 'c'
+        inner: 'AnyBase' = Field(default_factory=A)
+
+    AnyBase = Annotated[A | B | C, Discriminator('type')]
+
+    B.model_rebuild()
+    C.model_rebuild()
+
+    class Container(BaseSettings):
+        base: AnyBase = Field(default_factory=A)
+
+    # Should not raise RecursionError
+    s = CliApp.run(Container, cli_args=[])
+    assert s.base == A()
+
+    s = CliApp.run(Container, cli_args=['--base', '{"type": "b", "inner": {"type": "a"}}'])
+    assert s.base == B(inner=A())
+
+    s = CliApp.run(Container, cli_args=['--base', '{"type": "c", "inner": {"type": "b", "inner": {"type": "a"}}}'])
+    assert s.base == C(inner=B(inner=A()))
+
+
+def test_cli_kebab_case(capsys, monkeypatch):
+    class DeepSubModel(BaseModel):
+        deep_pos_arg: CliPositionalArg[str]
+        deep_arg: str
+
+    class SubModel(BaseModel):
+        sub_subcmd: CliSubCommand[DeepSubModel]
+        sub_other_subcmd: CliSubCommand[DeepSubModel]
+        sub_arg: str
+
+    class Root(BaseModel, cli_prog_name='example.py'):
+        root_subcmd: CliSubCommand[SubModel]
+        other_subcmd: CliSubCommand[SubModel]
+        root_arg: str
+
+    root = CliApp.run(
+        Root,
+        cli_args=[
+            '--root-arg=hi',
+            'root-subcmd',
+            '--sub-arg=hello',
+            'sub-subcmd',
+            'hey',
+            '--deep-arg=bye',
+        ],
+    )
+    assert root.model_dump() == {
+        'root_arg': 'hi',
+        'other_subcmd': None,
+        'root_subcmd': {
+            'sub_arg': 'hello',
+            'sub_subcmd': {'deep_pos_arg': 'hey', 'deep_arg': 'bye'},
+            'sub_other_subcmd': None,
+        },
+    }
+
+    serialized_cli_args = CliApp.serialize(root)
+    assert serialized_cli_args == [
+        '--root-arg',
+        'hi',
+        'root-subcmd',
+        '--sub-arg',
+        'hello',
+        'sub-subcmd',
+        '--deep-arg',
+        'bye',
+        'hey',
+    ]
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+        with pytest.raises(SystemExit):
+            CliApp.run(Root)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] --root-arg str {{root-subcmd,other-subcmd}} ...
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+  --root-arg str        (required)
+
+subcommands:
+  {{root-subcmd,other-subcmd}}
+    root-subcmd
+    other-subcmd
+"""
+        )
+
+        m.setattr(sys, 'argv', ['example.py', 'root-subcmd', '--help'])
+        with pytest.raises(SystemExit):
+            CliApp.run(Root)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py root-subcmd [-h] --sub-arg str
+                              {{sub-subcmd,sub-other-subcmd}} ...
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+  --sub-arg str         (required)
+
+subcommands:
+  {{sub-subcmd,sub-other-subcmd}}
+    sub-subcmd
+    sub-other-subcmd
+"""
+        )
+
+        m.setattr(sys, 'argv', ['example.py', 'root-subcmd', 'sub-subcmd', '--help'])
+        with pytest.raises(SystemExit):
+            CliApp.run(Root)
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py root-subcmd sub-subcmd [-h] --deep-arg str DEEP-POS-ARG
+
+positional arguments:
+  DEEP-POS-ARG
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help      show this help message and exit
+  --deep-arg str  (required)
+"""
+        )
+
+
+def test_cli_kebab_case_enums():
+    class Example1(IntEnum):
+        example_a = 0
+        example_b = 1
+
+    class Example2(IntEnum):
+        example_c = 2
+        example_d = 3
+
+    class SettingsNoEnum(BaseSettings):
+        model_config = SettingsConfigDict(cli_kebab_case='no_enums')
+        example: Example1 | Example2
+        mybool: bool
+
+    class SettingsAll(BaseSettings):
+        model_config = SettingsConfigDict(cli_kebab_case='all')
+        example: Example1 | Example2
+        mybool: bool
+
+    assert CliApp.run(
+        SettingsNoEnum,
+        cli_args=['--example', 'example_a', '--mybool=true'],
+    ).model_dump() == {'example': Example1.example_a, 'mybool': True}
+
+    assert CliApp.run(SettingsAll, cli_args=['--example', 'example-c', '--mybool=true']).model_dump() == {
+        'example': Example2.example_c,
+        'mybool': True,
+    }
+
+    with pytest.raises(ValueError, match='Input should be kebab-case "example-a", not "example_a"'):
+        CliApp.run(SettingsAll, cli_args=['--example', 'example_a', '--mybool=true'])
+
+
+def test_cli_kebab_case_all_with_implicit_flag():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(cli_kebab_case='all')
+        test_bool_flag_a: CliImplicitFlag[bool]
+        test_bool_flag_b: CliToggleFlag[bool] = True
+        test_bool_flag_c: CliToggleFlag[bool] = False
+        test_bool_flag_d: CliDualFlag[bool] = False
+
+    assert CliApp.run(
+        Settings,
+        cli_args=['--test-bool-flag-a', '--test-bool-flag-c', '--test-bool-flag-d'],
+    ).model_dump() == {
+        'test_bool_flag_a': True,
+        'test_bool_flag_b': True,
+        'test_bool_flag_c': True,
+        'test_bool_flag_d': True,
+    }
+
+    assert CliApp.run(
+        Settings,
+        cli_args=['--no-test-bool-flag-a', '--no-test-bool-flag-b', '--no-test-bool-flag-d'],
+    ).model_dump() == {
+        'test_bool_flag_a': False,
+        'test_bool_flag_b': False,
+        'test_bool_flag_c': False,
+        'test_bool_flag_d': False,
+    }
+
+
+def test_cli_with_unbalanced_brackets_in_json_string():
+    class StrToStrDictOptions(BaseSettings):
+        nested: dict[str, str]
+
+    assert CliApp.run(StrToStrDictOptions, cli_args=['--nested={"test": "{"}']).model_dump() == {
+        'nested': {'test': '{'}
+    }
+    assert CliApp.run(StrToStrDictOptions, cli_args=['--nested={"test": "}"}']).model_dump() == {
+        'nested': {'test': '}'}
+    }
+    assert CliApp.run(StrToStrDictOptions, cli_args=['--nested={"test": "["}']).model_dump() == {
+        'nested': {'test': '['}
+    }
+    assert CliApp.run(StrToStrDictOptions, cli_args=['--nested={"test": "]"}']).model_dump() == {
+        'nested': {'test': ']'}
+    }
+
+    class StrToListDictOptions(BaseSettings):
+        nested: dict[str, list[str]]
+
+    assert CliApp.run(StrToListDictOptions, cli_args=['--nested={"test": ["{"]}']).model_dump() == {
+        'nested': {'test': ['{']}
+    }
+    assert CliApp.run(StrToListDictOptions, cli_args=['--nested={"test": ["}"]}']).model_dump() == {
+        'nested': {'test': ['}']}
+    }
+    assert CliApp.run(StrToListDictOptions, cli_args=['--nested={"test": ["["]}']).model_dump() == {
+        'nested': {'test': ['[']}
+    }
+    assert CliApp.run(StrToListDictOptions, cli_args=['--nested={"test": ["]"]}']).model_dump() == {
+        'nested': {'test': [']']}
+    }
+
+
+def test_cli_json_optional_default():
+    class Nested(BaseModel):
+        foo: int = 1
+        bar: int = 2
+
+    class Options(BaseSettings):
+        nested: Nested = Nested(foo=3, bar=4)
+
+    assert CliApp.run(Options, cli_args=[]).model_dump() == {'nested': {'foo': 3, 'bar': 4}}
+    assert CliApp.run(Options, cli_args=['--nested']).model_dump() == {'nested': {'foo': 1, 'bar': 2}}
+    assert CliApp.run(Options, cli_args=['--nested={}']).model_dump() == {'nested': {'foo': 1, 'bar': 2}}
+    assert CliApp.run(Options, cli_args=['--nested.foo=5']).model_dump() == {'nested': {'foo': 5, 'bar': 2}}
+
+
+def test_cli_parse_args_from_model_config_is_respected_with_settings_customise_sources(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    class MySettings(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+
+        foo: str
+
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            return (CliSettingsSource(settings_cls),)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--foo', 'bar'])
+
+        cfg = CliApp.run(MySettings)
+
+        assert cfg.model_dump() == {'foo': 'bar'}
+
+
+def test_cli_shortcuts_on_flat_object():
+    class Settings(BaseSettings):
+        option: str = Field(default='foo')
+        list_option: str = Field(default='fizz')
+
+        model_config = SettingsConfigDict(cli_shortcuts={'option': 'option2', 'list_option': ['list_option2']})
+
+    assert CliApp.run(Settings, cli_args=['--option2', 'bar', '--list_option2', 'buzz']).model_dump() == {
+        'option': 'bar',
+        'list_option': 'buzz',
+    }
+
+
+def test_cli_shortcuts_on_nested_object():
+    class TwiceNested(BaseModel):
+        option: str = Field(default='foo')
+
+    class Nested(BaseModel):
+        twice_nested_option: TwiceNested = TwiceNested()
+        option: str = Field(default='foo')
+
+    class Settings(BaseSettings):
+        nested: Nested = Nested()
+
+        model_config = SettingsConfigDict(
+            cli_shortcuts={'nested.option': 'option2', 'nested.twice_nested_option.option': 'twice_nested_option'}
+        )
+
+    assert CliApp.run(Settings, cli_args=['--option2', 'bar', '--twice_nested_option', 'baz']).model_dump() == {
+        'nested': {'option': 'bar', 'twice_nested_option': {'option': 'baz'}}
+    }
+
+
+def test_cli_shortcuts_alias_collision_applies_to_first_target_field():
+    class Nested(BaseModel):
+        option: str = Field(default='foo')
+
+    class Settings(BaseSettings):
+        nested: Nested = Nested()
+        option2: str = Field(default='foo2')
+
+        model_config = SettingsConfigDict(cli_shortcuts={'option2': 'abc', 'nested.option': 'abc'})
+
+    assert CliApp.run(Settings, cli_args=['--abc', 'bar']).model_dump() == {
+        'nested': {'option': 'bar'},
+        'option2': 'foo2',
+    }
+
+
+def test_cli_serialize_positional_args():
+    class Nested(BaseModel):
+        deep: CliPositionalArg[int]
+
+    class Cfg(BaseSettings):
+        top: CliPositionalArg[int]
+
+        variadic: CliPositionalArg[list[int]]
+
+        nested_0: Nested
+
+        nested_1: Nested
+
+    cfg = CliApp.run(Cfg, cli_args=['0', '1', '2', '3', '4', '5'])
+    assert cfg.model_dump() == {
+        'top': 0,
+        'variadic': [
+            1,
+            2,
+            3,
+        ],
+        'nested_0': {
+            'deep': 4,
+        },
+        'nested_1': {
+            'deep': 5,
+        },
+    }
+
+    serialized_cli_args = CliApp.serialize(cfg)
+    assert serialized_cli_args == ['0', '1', '2', '3', '4', '5']
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+
+
+def test_cli_app_with_separate_parser(monkeypatch):
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(cli_parse_args=True)
+        pet: Literal['dog', 'cat', 'bird']
+
+    parser = argparse.ArgumentParser()
+
+    # The actual parsing of command line argument should not happen here.
+    cli_settings = CliSettingsSource(Cfg, root_parser=parser)
+
+    parser.add_argument('-e', '--extra', dest='extra', default=0, action='count')
+    parser.add_argument('--num-list', action='append', default=[1])
+    parser.add_argument('--str-list', action='append', default=['abc'])
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--pet', 'dog', '-eeee'])
+
+        parsed_args = parser.parse_args()
+
+    assert parsed_args.extra == 4
+    assert parsed_args.num_list == [1]
+    assert parsed_args.str_list == ['abc']
+    # With parsed arguments passed to CliApp.run, the parser should not need to be called again.
+    assert CliApp.run(Cfg, cli_args=parsed_args, cli_settings_source=cli_settings).model_dump() == {'pet': 'dog'}
+    assert parsed_args.extra == 4
+    assert parsed_args.num_list == [1]
+    assert parsed_args.str_list == ['abc']
+
+
+def test_cli_serialize_non_default_values():
+    class Cfg(BaseSettings):
+        default_val: int = 123
+        non_default_val: int
+
+    cfg = Cfg(non_default_val=456)
+    assert cfg.model_dump() == {'default_val': 123, 'non_default_val': 456}
+
+    serialized_cli_args = CliApp.serialize(cfg)
+    assert serialized_cli_args == ['--non_default_val', '456']
+
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+
+
+@pytest.mark.parametrize(
+    'config, expected_none_str',
+    [
+        ({}, 'null'),
+        ({'cli_avoid_json': True}, 'None'),
+        ({'cli_parse_none_str': 'void'}, 'void'),
+        ({'cli_avoid_json': True, 'cli_parse_none_str': 'void'}, 'void'),
+        ({'env_parse_none_str': 'unset', 'cli_parse_none_str': 'void'}, 'unset'),
+    ],
+)
+def test_cli_serialize_none(config, expected_none_str):
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(**config)
+        timeout: int | None = 30
+        label: str | None = 'default'
+        positional: CliPositionalArg[int | None]
+        omitted: int | None = None
+
+    cfg = Cfg(timeout=None, label=None, positional=None)
+    serialized_cli_args = CliApp.serialize(cfg)
+
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+    assert serialized_cli_args == ['--timeout', expected_none_str, '--label', expected_none_str, expected_none_str]
+
+
+@pytest.mark.parametrize(
+    'config, expected_none_str',
+    [
+        ({}, 'null'),
+        ({'cli_avoid_json': True}, 'None'),
+        ({'cli_parse_none_str': 'void'}, 'void'),
+        ({'env_parse_none_str': 'unset', 'cli_parse_none_str': 'void'}, 'unset'),
+    ],
+)
+def test_cli_format_help_none_str(config, expected_none_str):
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(**config)
+        timeout: int | None = None
+
+    assert f'(default: {expected_none_str})' in CliApp.format_help(Cfg)
+
+
+def test_cli_serialize_ordering():
+    class NestedCfg(BaseSettings):
+        positional: CliPositionalArg[str]
+        optional: int
+
+    class Cfg(BaseSettings):
+        command: CliSubCommand[NestedCfg]
+        positional: CliPositionalArg[str]
+        optional: int
+
+    cfg = Cfg(optional=0, positional='pos_1', command=NestedCfg(optional=2, positional='pos_3'))
+    assert cfg.model_dump() == {'command': {'optional': 2, 'positional': 'pos_3'}, 'optional': 0, 'positional': 'pos_1'}
+
+    serialized_cli_args = CliApp.serialize(cfg)
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+    assert serialized_cli_args == [
+        '--optional',
+        '0',
+        'pos_1',
+        'command',
+        '--optional',
+        '2',
+        'pos_3',
+    ]
+
+    serialized_cli_args = CliApp.serialize(cfg, positionals_first=True)
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+    assert serialized_cli_args == [
+        'pos_1',
+        '--optional',
+        '0',
+        'command',
+        'pos_3',
+        '--optional',
+        '2',
+    ]
+
+
+def test_cli_serialize_styles():
+    class Cfg(BaseModel):
+        my_list: list[int]
+        my_dict: dict[str, int]
+
+    cfg = Cfg(my_list=[1, 2, 3], my_dict={'a': 1, 'b': 2, 'c': 3})
+
+    serialized_cli_args = CliApp.serialize(cfg, list_style='lazy')
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+    assert serialized_cli_args == ['--my-list', '1,2,3', '--my-dict', '{"a": 1, "b": 2, "c": 3}']
+
+    serialized_cli_args = CliApp.serialize(cfg, list_style='argparse')
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+    assert serialized_cli_args == [
+        '--my-list',
+        '1',
+        '--my-list',
+        '2',
+        '--my-list',
+        '3',
+        '--my-dict',
+        '{"a": 1, "b": 2, "c": 3}',
+    ]
+
+    serialized_cli_args = CliApp.serialize(cfg, dict_style='env')
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+    assert serialized_cli_args == [
+        '--my-list',
+        '[1, 2, 3]',
+        '--my-dict',
+        'a=1',
+        '--my-dict',
+        'b=2',
+        '--my-dict',
+        'c=3',
+    ]
+
+
+@pytest.mark.parametrize('list_style', ['json', 'lazy', 'argparse'])
+@pytest.mark.parametrize('dict_style', ['json', 'env'])
+@pytest.mark.parametrize('variadic', [False, True])
+def test_cli_serialize_empty_containers(list_style, dict_style, variadic):
+    class Cfg(BaseSettings):
+        my_list: CliVariadicArg[list[str]] if variadic else list[str] = ['default']
+        my_dict: CliVariadicArg[dict[str, int]] if variadic else dict[str, int] = {'default': 1}
+
+    cfg = Cfg(my_list=[], my_dict={})
+    serialized_cli_args = CliApp.serialize(cfg, list_style=list_style, dict_style=dict_style)
+
+    assert serialized_cli_args == ['--my_list', '[]', '--my_dict', '{}']
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('list_style', ['json', 'lazy', 'argparse'])
+@pytest.mark.parametrize('dict_style', ['json', 'env'])
+def test_cli_serialize_empty_required_containers(list_style, dict_style):
+    class Cfg(BaseModel):
+        my_list: list[str]
+        my_dict: dict[str, int]
+
+    cfg = Cfg(my_list=[], my_dict={})
+    serialized_cli_args = CliApp.serialize(cfg, list_style=list_style, dict_style=dict_style)
+
+    assert serialized_cli_args == ['--my-list', '[]', '--my-dict', '{}']
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('list_style', ['json', 'lazy', 'argparse'])
+@pytest.mark.parametrize('dict_style', ['json', 'env'])
+def test_cli_serialize_empty_nested_containers(list_style, dict_style):
+    class Child(BaseModel):
+        my_list: list[str] | None = None
+        my_dict: dict[str, int] | None = None
+
+    class Cfg(BaseSettings):
+        child: Child
+
+    cfg = Cfg(child=Child(my_list=[], my_dict={}))
+    serialized_cli_args = CliApp.serialize(cfg, list_style=list_style, dict_style=dict_style)
+
+    assert serialized_cli_args == ['--child.my_list', '[]', '--child.my_dict', '{}']
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('enable_decoding', [False, True])
+def test_cli_serialize_empty_list_no_decode(enable_decoding):
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(enable_decoding=enable_decoding)
+        values: Annotated[list[str], NoDecode] if enable_decoding else list[str] = ['default']
+
+        @field_validator('values', mode='before')
+        @classmethod
+        def parse_values(cls, value):
+            if isinstance(value, str):
+                return value.split(',') if value else []
+            return value
+
+    cfg = Cfg(values=[])
+    serialized_cli_args = CliApp.serialize(cfg, list_style='lazy')
+
+    assert serialized_cli_args == ['--values', '']
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('enable_decoding', [False, True])
+def test_cli_serialize_empty_variadic_containers_no_decode(enable_decoding):
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(enable_decoding=enable_decoding)
+        my_list: Annotated[CliVariadicArg[list[str]], NoDecode] if enable_decoding else CliVariadicArg[list[str]] = (
+            Field(default_factory=list)
+        )
+        my_dict: (
+            Annotated[CliVariadicArg[dict[str, int]], NoDecode] if enable_decoding else CliVariadicArg[dict[str, int]]
+        ) = Field(default_factory=dict)
+
+    cfg = Cfg()
+    serialized_cli_args = CliApp.serialize(cfg, list_style='argparse', dict_style='env')
+
+    assert serialized_cli_args == []
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('list_style', ['json', 'lazy', 'argparse'])
+@pytest.mark.parametrize('dict_style', ['json', 'env'])
+@pytest.mark.parametrize('use_alias', [False, True])
+def test_cli_serialize_empty_containers_force_decode(list_style, dict_style, use_alias):
+    list_type = Annotated[list[str], ForceDecode]
+    dict_type = Annotated[dict[str, int], ForceDecode]
+    if use_alias:
+        list_type = typing_extensions.TypeAliasType('ListAlias', list_type)
+        dict_type = typing_extensions.TypeAliasType('DictAlias', dict_type)
+
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(enable_decoding=False)
+        my_list: list_type = ['default']
+        my_dict: dict_type = {'default': 1}
+
+    cfg = Cfg(my_list=[], my_dict={})
+    serialized_cli_args = CliApp.serialize(cfg, list_style=list_style, dict_style=dict_style)
+
+    assert serialized_cli_args == ['--my_list', '[]', '--my_dict', '{}']
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('enable_decoding', [False, True])
+def test_cli_serialize_empty_aliased_containers_no_decode(enable_decoding):
+    ListAlias = typing_extensions.TypeAliasType('ListAlias', Annotated[list[str], NoDecode])
+    DictAlias = typing_extensions.TypeAliasType('DictAlias', Annotated[dict[str, int], NoDecode])
+
+    class Cfg(BaseSettings):
+        model_config = SettingsConfigDict(enable_decoding=enable_decoding)
+        my_list: ListAlias = Field(default_factory=list)
+        my_dict: DictAlias = Field(default_factory=dict)
+
+    cfg = Cfg()
+    serialized_cli_args = CliApp.serialize(cfg, list_style='argparse', dict_style='env')
+
+    assert serialized_cli_args == []
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('values', [[], ['x', 'y']])
+def test_cli_serialize_aliased_list_no_decode(values):
+    ListAlias = typing_extensions.TypeAliasType('ListAlias', Annotated[list[str], NoDecode])
+
+    class Cfg(BaseSettings):
+        values: ListAlias = ['default']
+
+        @field_validator('values', mode='before')
+        @classmethod
+        def parse_values(cls, value):
+            if isinstance(value, str):
+                return value.split(',') if value else []
+            return value
+
+    cfg = Cfg(values=values)
+    serialized_cli_args = CliApp.serialize(cfg, list_style='lazy')
+
+    assert serialized_cli_args == ['--values', ','.join(values)]
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('required', [False, True])
+def test_cli_serialize_empty_positional_list(required):
+    if required:
+
+        class Cfg(BaseModel):
+            values: CliPositionalArg[list[str]]
+    else:
+
+        class Cfg(BaseSettings):
+            values: CliPositionalArg[list[str]] = ['default']
+
+    cfg = Cfg(values=[])
+    serialized_cli_args = CliApp.serialize(cfg)
+
+    assert serialized_cli_args == ['[]']
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+def test_cli_serialize_empty_positional_list_no_decode():
+    class Cfg(BaseSettings):
+        values: CliPositionalArg[Annotated[list[str], NoDecode]] = Field(default_factory=list)
+
+    cfg = Cfg()
+    serialized_cli_args = CliApp.serialize(cfg)
+
+    assert serialized_cli_args == []
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args) == cfg
+
+
+@pytest.mark.parametrize('list_style', ['json', 'lazy', 'argparse'])
+@pytest.mark.parametrize('dict_style', ['json', 'env'])
+def test_cli_serialize_variadic_styles(list_style, dict_style):
+    class Cfg(BaseModel):
+        my_list: CliVariadicArg[list[str]]
+        my_dict: CliVariadicArg[dict[str, int]]
+
+    cfg = Cfg(my_list=['a', 'b'], my_dict={'a': 1, 'b': 2})
+    serialized_cli_args = CliApp.serialize(cfg, list_style=list_style, dict_style=dict_style)
+
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+
+
+def test_cli_serialize_enum_values():
+    class Color(Enum):
+        RED = 'red'
+        BLUE = 'blue'
+
+    class Cfg(BaseSettings):
+        pos: CliPositionalArg[Color]
+        color: Color = Color.RED
+        colors: list[Color] = []
+        palette: dict[str, Color] = {}
+
+    cfg = Cfg(pos=Color.BLUE, color=Color.BLUE, colors=[Color.RED, Color.BLUE], palette={'bg': Color.RED})
+
+    serialized_cli_args = CliApp.serialize(cfg)
+    assert serialized_cli_args == [
+        '--color',
+        'blue',
+        '--colors',
+        '["red", "blue"]',
+        '--palette',
+        '{"bg": "red"}',
+        'blue',
+    ]
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+
+
+@pytest.mark.parametrize('list_style', ['json', 'lazy', 'argparse'])
+@pytest.mark.parametrize('dict_style', ['json', 'env'])
+def test_cli_serialize_container_values(list_style, dict_style):
+    class Cfg(BaseModel):
+        dates: list[date]
+        amounts: dict[str, Decimal]
+        pair: tuple[int, int]
+
+    cfg = Cfg(dates=[date(2020, 1, 2), date(2021, 3, 4)], amounts={'a': Decimal('1.5')}, pair=(1, 2))
+    serialized_cli_args = CliApp.serialize(cfg, list_style=list_style, dict_style=dict_style)
+
+    assert CliApp.run(Cfg, cli_args=serialized_cli_args).model_dump() == cfg.model_dump()
+
+
+def test_cli_decoding():
+    PATH_A_STR = str(PureWindowsPath(Path.cwd()))
+    PATH_B_STR = str(PureWindowsPath(Path.cwd() / 'subdir'))
+
+    class PathsDecode(BaseSettings):
+        path_a: Path = Field(validation_alias=AliasPath('paths', 0))
+        path_b: Path = Field(validation_alias=AliasPath('paths', 1))
+        num_a: int = Field(validation_alias=AliasPath('nums', 0))
+        num_b: int = Field(validation_alias=AliasPath('nums', 1))
+
+    assert CliApp.run(
+        PathsDecode, cli_args=['--paths', PATH_A_STR, '--paths', PATH_B_STR, '--nums', '1', '--nums', '2']
+    ).model_dump() == {
+        'path_a': Path(PATH_A_STR),
+        'path_b': Path(PATH_B_STR),
+        'num_a': 1,
+        'num_b': 2,
+    }
+
+    class PathsListNoDecode(BaseSettings):
+        paths: Annotated[list[Path], NoDecode]
+        nums: Annotated[list[int], NoDecode]
+
+        @field_validator('paths', mode='before')
+        @classmethod
+        def decode_path_a(cls, paths: str) -> list[Path]:
+            return [Path(p) for p in paths.split(',')]
+
+        @field_validator('nums', mode='before')
+        @classmethod
+        def decode_nums(cls, nums: str) -> list[int]:
+            return [int(n) for n in nums.split(',')]
+
+    assert CliApp.run(
+        PathsListNoDecode, cli_args=['--paths', f'{PATH_A_STR},{PATH_B_STR}', '--nums', '1,2']
+    ).model_dump() == {'paths': [Path(PATH_A_STR), Path(PATH_B_STR)], 'nums': [1, 2]}
+
+    class PathsAliasNoDecode(BaseSettings):
+        path_a: Annotated[Path, NoDecode] = Field(validation_alias=AliasPath('paths', 0))
+        path_b: Annotated[Path, NoDecode] = Field(validation_alias=AliasPath('paths', 1))
+        num_a: Annotated[int, NoDecode] = Field(validation_alias=AliasPath('nums', 0))
+        num_b: Annotated[int, NoDecode] = Field(validation_alias=AliasPath('nums', 1))
+
+        @model_validator(mode='before')
+        @classmethod
+        def intercept_kwargs(cls, data: Any) -> Any:
+            data['paths'] = [Path(p) for p in data['paths'].split(',')]
+            data['nums'] = [int(n) for n in data['nums'].split(',')]
+            return data
+
+    assert CliApp.run(
+        PathsAliasNoDecode, cli_args=['--paths', f'{PATH_A_STR},{PATH_B_STR}', '--nums', '1,2']
+    ).model_dump() == {
+        'path_a': Path(PATH_A_STR),
+        'path_b': Path(PATH_B_STR),
+        'num_a': 1,
+        'num_b': 2,
+    }
+
+    with pytest.raises(
+        SettingsError,
+        match='Parsing error encountered for paths: Mixing Decode and NoDecode across different AliasPath fields is not allowed',
+    ):
+
+        class PathsMixedDecode(BaseSettings):
+            path_a: Annotated[Path, ForceDecode] = Field(validation_alias=AliasPath('paths', 0))
+            path_b: Annotated[Path, NoDecode] = Field(validation_alias=AliasPath('paths', 1))
+
+        CliApp.run(PathsMixedDecode, cli_args=['--paths', PATH_A_STR, '--paths', PATH_B_STR])
+
+
+def test_cli_custom_help(capsys, monkeypatch):
+    class Cfg(BaseSettings):
+        my_help: CliToggleFlag[bool] = Field(False, description='my help string', alias='help')
+
+        def cli_cmd(self) -> None:
+            if self.my_help:
+                print('custom help no exit')
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        CliApp.run(Cfg)
+        assert capsys.readouterr().out == 'custom help no exit\n'
+
+
+def test_cli_format_help():
+    class Init(BaseModel, cli_prog_name='example.py'):
+        repo: Path
+
+        def cli_cmd(self) -> None:
+            print(f'repo: {self.repo}')
+
+    class RootCommand(BaseSettings, cli_prog_name='example.py'):
+        init: CliSubCommand[Init]
+
+        def cli_cmd(self) -> None:
+            CliApp.run_subcommand(self)
+
+    assert (
+        CliApp.format_help(RootCommand, strip_ansi_color=True)
+        == f"""usage: example.py [-h] {{init}} ...
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+
+subcommands:
+  {{init}}
+    init
+"""
+    )
+
+    assert (
+        CliApp.format_help(Init, strip_ansi_color=True)
+        == f"""usage: example.py [-h] --repo Path
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help   show this help message and exit
+  --repo Path  (required)
+"""
+    )
+
+    with pytest.raises(
+        SettingsError,
+        match=re.escape(f'Error: CLI subcommand is required {{init}}\n{CliApp.format_help(RootCommand)}'),
+    ):
+        CliApp.run(RootCommand, cli_args=[], cli_exit_on_error=False)
+
+
+def test_cli_disriminator_choices():
+    class DivModel(BaseModel):
+        el_type: Literal['div'] = 'div'
+        class_name: str | None = None
+        children: list[Any] | None = None
+
+    class SpanModel(BaseModel):
+        el_type: Literal['span'] = 'span'
+        class_name: str | None = None
+        contents: str | None = None
+
+    class ButtonModel(BaseModel):
+        el_type: Literal['button'] = 'button'
+        class_name: str | None = None
+        contents: str | None = None
+
+    class InputModel(BaseModel):
+        el_type: Literal['input'] = 'input'
+        class_name: str | None = None
+        value: str | None = None
+
+    class Html(BaseSettings, cli_prog_name='example.py'):
+        contents: DivModel | SpanModel | ButtonModel | InputModel = Field(discriminator='el_type')
+
+    assert CliApp.format_help(Html, strip_ansi_color=True) == (
+        f"""usage: example.py [-h] [--contents [JSON]] [--contents.class_name {{str,null}}]
+                  [--contents.children {{list[Any],null}}]
+                  [--contents.contents {{str,null}}]
+                  [--contents.el_type {{button,div,input,span}}]
+                  [--contents.value {{str,null}}]
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help            show this help message and exit
+
+contents options:
+  --contents [JSON]     set contents from JSON string (default: {{}})
+  --contents.class_name {{str,null}}
+                        (default: null)
+  --contents.children {{list[Any],null}}
+                        (default: null)
+  --contents.contents {{str,null}}
+                        (default: null)
+  --contents.el_type {{button,div,input,span}}
+                        (default: input)
+  --contents.value {{str,null}}
+                        (default: null)
+"""
+    )
+
+
+def test_cli_app_run_env_file_from_model_config(tmp_path):
+    """Regression test for https://github.com/pydantic/pydantic-settings/issues/795
+
+    CliApp.run() should respect env_file set in model_config even when _env_file
+    is not explicitly passed.
+    """
+    env_file = tmp_path / '.env'
+    env_file.write_text('TEST=from dotenv\n')
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=str(env_file), env_file_encoding='utf-8')
+
+        test: str = 'default'
+
+        def cli_cmd(self) -> None:
+            pass
+
+    result = CliApp.run(Settings, cli_args=[])
+    assert result.test == 'from dotenv'
+
+
+def test_cli_app_run_subcommand_underscore_field_name():
+    class Leaf(BaseModel):
+        name: str
+
+        def cli_cmd(self) -> None:
+            self.name = f'Hello {self.name}'
+
+    class MiddleCommands(BaseModel):
+        baz: CliSubCommand[Leaf]
+
+        def cli_cmd(self) -> None:
+            CliApp.run_subcommand(self)
+
+    class RootApp(BaseModel):
+        # Underscore in the field name triggers the bug
+        foo_bar: CliSubCommand[MiddleCommands]
+
+        def cli_cmd(self) -> None:
+            CliApp.run_subcommand(self)
+
+    result = CliApp.run(RootApp, cli_args=['foo-bar', 'baz', '--name=world'])
+    assert result.model_dump() == {
+        'foo_bar': {
+            'baz': {'name': 'Hello world'},
+        },
+    }
+
+
+def test_cli_app_run_base_model_aliases():
+    class Cmd(BaseModel):
+        plain: str
+        aliased: str = Field(alias='aliasedAlias')
+        validation_aliased: str = Field(validation_alias='validationAlias')
+        non_identifier_alias: str = Field(alias='non-identifier-alias')
+
+    result = CliApp.run(
+        Cmd,
+        cli_args=['--plain=a', '--aliasedAlias=b', '--validationAlias=c', '--non-identifier-alias=d'],
+    )
+    assert result.model_dump() == {
+        'plain': 'a',
+        'aliased': 'b',
+        'validation_aliased': 'c',
+        'non_identifier_alias': 'd',
+    }
+
+
+def test_cli_app_run_base_model_validate_by_name_only():
+    class Cmd(BaseModel):
+        model_config = ConfigDict(validate_by_name=True, validate_by_alias=False)
+
+        plain: str
+
+    assert CliApp.run(Cmd, cli_args=['--plain=a']).model_dump() == {'plain': 'a'}
+
+
+def test_cli_validate_by_alias_false():
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(validate_by_alias=False)
+
+        apple: str = Field('default', alias='pomo')
+
+    assert CliApp.run(Settings, cli_args=['--apple=honeycrisp']).apple == 'honeycrisp'
+    with pytest.raises(SettingsError, match='unrecognized arguments: --pomo'):
+        CliApp.run(Settings, cli_args=['--pomo=honeycrisp'], cli_exit_on_error=False)
+
+
+def test_cli_nested_model_validate_by_alias_false():
+    class Sub(BaseModel):
+        model_config = ConfigDict(validate_by_alias=False)
+
+        apple: str = Field('default', alias='pomo')
+
+    class Settings(BaseSettings):
+        sub: Sub = Sub()
+
+    assert CliApp.run(Settings, cli_args=['--sub.apple=honeycrisp']).sub.apple == 'honeycrisp'
+
+
+def test_cli_app_run_base_model_validate_by_alias_false():
+    class Cmd(BaseModel):
+        model_config = ConfigDict(validate_by_alias=False)
+
+        name: str = Field('default', alias='nameAlias')
+
+    assert CliApp.run(Cmd, cli_args=['--name=a']).name == 'a'
+    # init kwargs were passed back under the alias, which the model ignored, so the default won (#1023)
+    assert CliApp.run(Cmd, cli_args=[], name='b').name == 'b'
+
+
+def test_cli_app_run_dataclass_validate_by_alias_false():
+    @pydantic_dataclasses.dataclass(config=ConfigDict(validate_by_alias=False))
+    class Cmd:
+        name: str = Field(alias='nameAlias')
+
+    assert CliApp.run(Cmd, cli_args=['--name=a']).name == 'a'
+
+
+def test_cli_app_run_base_model_alias_choices():
+    class Cmd(BaseModel):
+        name: str = Field(validation_alias=AliasChoices(AliasPath('names', 0), 'firstAlias', 'secondAlias'))
+
+    assert CliApp.run(Cmd, cli_args=['--firstAlias=a']).name == 'a'
+
+
+def test_get_model_description_returns_docstring():
+    class MyModel(BaseModel):
+        """My docstring."""
+
+    assert _get_model_description(MyModel) == 'My docstring.'
+
+
+def test_get_model_description_returns_none_when_no_doc_and_no_schema_extra():
+    class MyModel(BaseModel):
+        pass
+
+    assert MyModel.__doc__ is None
+    assert _get_model_description(MyModel) is None
+
+
+def test_get_model_description_json_schema_extra_fallback():
+    class MyModel(BaseModel):
+        model_config = ConfigDict(json_schema_extra={'description': 'Schema description.'})
+
+    MyModel.__doc__ = None  # type: ignore
+    assert _get_model_description(MyModel) == 'Schema description.'
+
+
+def test_get_model_description_schema_takes_precedence():
+    class MyModel(BaseModel):
+        """Docstring description."""
+
+        model_config = ConfigDict(json_schema_extra={'description': 'Schema wins.'})
+
+    assert _get_model_description(MyModel) == 'Schema wins.'
+
+
+def test_get_model_description_callable_json_schema_extra():
+    def add_description(schema: dict) -> None:
+        schema['description'] = 'From callable.'
+
+    class MyModel(BaseModel):
+        model_config = ConfigDict(json_schema_extra=add_description)
+
+    MyModel.__doc__ = None  # type: ignore
+    assert _get_model_description(MyModel) == 'From callable.'
+
+
+def test_get_model_description_dict_without_description_falls_back_to_doc():
+    class MyModel(BaseModel):
+        """Docstring fallback."""
+
+        model_config = ConfigDict(json_schema_extra={'title': 'No description key here'})
+
+    assert _get_model_description(MyModel) == 'Docstring fallback.'
+
+
+def test_get_model_description_callable_json_schema_extra_pydantic_dataclass():
+    def add_description(schema: dict) -> None:
+        schema['description'] = 'DC callable.'
+
+    @pydantic_dataclasses.dataclass(config=ConfigDict(json_schema_extra=add_description))
+    class MyDC:
+        x: int = 1
+
+    MyDC.__doc__ = None  # type: ignore
+    assert _get_model_description(MyDC) == 'DC callable.'
+
+
+def test_get_model_description_pydantic_dataclass():
+    @pydantic_dataclasses.dataclass(config=ConfigDict(json_schema_extra={'description': 'DC description.'}))
+    class MyDC:
+        x: int = 1
+
+    MyDC.__doc__ = None  # type: ignore
+    assert _get_model_description(MyDC) == 'DC description.'
+
+
+def test_get_model_description_base_settings():
+    class MySettings(BaseSettings):
+        model_config = SettingsConfigDict(json_schema_extra={'description': 'Settings description.'})
+
+    MySettings.__doc__ = None  # type: ignore
+    assert _get_model_description(MySettings) == 'Settings description.'
+
+
+def test_get_model_description_plain_class():
+    """A class that is neither a model nor a pydantic dataclass falls back to `__doc__`."""
+
+    class Plain:
+        """Plain docstring."""
+
+    assert _get_model_description(Plain) == 'Plain docstring.'
+
+
+def test_get_model_description_plain_class_without_docstring():
+    class Plain:
+        pass
+
+    Plain.__doc__ = None  # type: ignore
+    assert _get_model_description(Plain) is None
+
+
+def test_get_model_description_callable_json_schema_extra_no_description():
+    """A callable `json_schema_extra` that sets no description falls through to `__doc__`."""
+
+    def add_title(schema: dict) -> None:
+        schema['title'] = 'No description set'
+
+    class MyModel(BaseModel):
+        """Docstring fallback."""
+
+        model_config = ConfigDict(json_schema_extra=add_title)
+
+    assert _get_model_description(MyModel) == 'Docstring fallback.'
+
+
+def test_get_model_description_callable_json_schema_extra_no_description_pydantic_dataclass():
+    """Same fall-through as above, via the pydantic dataclass branch."""
+
+    def add_title(schema: dict) -> None:
+        schema['title'] = 'No description set'
+
+    @pydantic_dataclasses.dataclass(config=ConfigDict(json_schema_extra=add_title))
+    class MyDC:
+        x: int = 1
+
+    MyDC.__doc__ = None  # type: ignore
+    assert _get_model_description(MyDC) is None
+
+
+def test_cli_json_schema_extra_description_fallback(capsys, monkeypatch):
+    """Root parser uses json_schema_extra description when __doc__ is None (simulating python -OO)."""
+
+    class Settings(BaseSettings, cli_prog_name='example.py'):
+        """This docstring will be removed."""
+
+        model_config = SettingsConfigDict(
+            cli_parse_args=True,
+            json_schema_extra={'description': 'JSON schema description.'},
+        )
+        my_var: str = 'default'
+
+    Settings.__doc__ = None  # type: ignore
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings()
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--my_var str]
+
+JSON schema description.
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help    show this help message and exit
+  --my_var str  (default: default)
+"""
+        )
+
+
+def test_cli_json_schema_extra_takes_precedence_over_docstring(capsys, monkeypatch):
+    """Even when __doc__ is available, json_schema_extra description should be used, instead."""
+
+    class Settings(BaseSettings, cli_prog_name='example.py'):
+        """Docstring description."""
+
+        model_config = SettingsConfigDict(
+            cli_parse_args=True,
+            json_schema_extra={'description': 'JSON schema description.'},
+        )
+        my_var: str = 'default'
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings()
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--my_var str]
+
+JSON schema description.
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help    show this help message and exit
+  --my_var str  (default: default)
+"""
+        )
+
+
+def test_cli_use_class_docs_for_groups_json_schema_extra_fallback(capsys, monkeypatch):
+    """cli_use_class_docs_for_groups falls back to json_schema_extra when __doc__ is None."""
+
+    class SubModel(BaseModel):
+        """This docstring will be removed."""
+
+        model_config = ConfigDict(json_schema_extra={'description': 'Sub model schema description.'})
+        v1: int
+
+    SubModel.__doc__ = None  # type: ignore
+
+    class Settings(BaseSettings, cli_prog_name='example.py'):
+        """My application help text."""
+
+        sub_model: SubModel = Field(description='The field description')
+        model_config = SettingsConfigDict(cli_parse_args=True)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['example.py', '--help'])
+
+        with pytest.raises(SystemExit):
+            Settings(_cli_use_class_docs_for_groups=True)
+
+        assert (
+            capsys.readouterr().out
+            == f"""usage: example.py [-h] [--sub_model [JSON]] [--sub_model.v1 int]
+
+My application help text.
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help          show this help message and exit
+
+sub_model options:
+  Sub model schema description.
+
+  --sub_model [JSON]  set sub_model from JSON string (default: {{}})
+  --sub_model.v1 int  (required)
+"""
+        )
+
+
+def test_cli_subcommand_json_schema_extra_description_fallback(capsys):
+    """Subcommand parser uses json_schema_extra description when __doc__ is None."""
+
+    class SubCmd(BaseSettings):
+        """This docstring will be removed."""
+
+        model_config = SettingsConfigDict(json_schema_extra={'description': 'Subcommand schema description.'})
+        x: int = 1
+
+    SubCmd.__doc__ = None  # type: ignore
+
+    class Root(BaseSettings, cli_prog_name='example.py'):
+        """Root help."""
+
+        sub: CliSubCommand[SubCmd]
+
+    with pytest.raises(SystemExit):
+        CliApp.run(Root, cli_args=['sub', '--help'])
+
+    assert (
+        capsys.readouterr().out
+        == f"""usage: example.py sub [-h] [-x int]
+
+Subcommand schema description.
+
+{ARGPARSE_OPTIONS_TEXT}:
+  -h, --help  show this help message and exit
+  -x int      (default: 1)
+"""
+    )
+
+
+def test_serialize_cli_unknown_args():
+    class Cfg(BaseSettings, cli_ignore_unknown_args=True):
+        flag: str = 'hello'
+        unknown_args: CliUnknownArgs
+
+    cfg = CliApp.run(Cfg, cli_args=['--flag=world', '--unk-opt=1', 'unk-pos'])
+    serialized = CliApp.serialize(cfg)
+    assert serialized == ['--flag', 'world', '--unk-opt=1', 'unk-pos']
+    assert CliApp.run(Cfg, cli_args=serialized) == cfg
+
+    class SubCmd(BaseSettings, cli_ignore_unknown_args=True):
+        v0: int = 0
+        unknown_args: CliUnknownArgs
+
+    class Root(BaseSettings):
+        flag: str = 'hello'
+        sub_cmd: CliSubCommand[SubCmd]
+
+    root = CliApp.run(Root, cli_args=['--flag=world', 'sub_cmd', '--v0=2', '--unk-sub=3', 'pos-sub'])
+    serialized_root = CliApp.serialize(root)
+    assert serialized_root == ['--flag', 'world', 'sub_cmd', '--v0', '2', '--unk-sub=3', 'pos-sub']
+    assert CliApp.run(Root, cli_args=serialized_root) == root
+
+
+def test_serialize_cli_unknown_args_with_positional():
+    class Cfg(BaseSettings, cli_ignore_unknown_args=True):
+        pos: CliPositionalArg[str]
+        flag: str = 'hello'
+        unknown_args: CliUnknownArgs
+
+    # Unknown args must be serialized after the known positional, otherwise an unknown positional would be
+    # consumed as `pos` when round-tripping.
+    cfg = CliApp.run(Cfg, cli_args=['known-pos', 'unk-pos'])
+    serialized = CliApp.serialize(cfg)
+    assert serialized == ['known-pos', 'unk-pos']
+    assert CliApp.run(Cfg, cli_args=serialized) == cfg
+
+    cfg = CliApp.run(Cfg, cli_args=['known-pos', '--flag=world', '--unk-opt=1', 'unk-pos'])
+    serialized = CliApp.serialize(cfg)
+    assert serialized == ['--flag', 'world', 'known-pos', '--unk-opt=1', 'unk-pos']
+    assert CliApp.run(Cfg, cli_args=serialized) == cfg
+
+    serialized = CliApp.serialize(cfg, positionals_first=True)
+    assert serialized == ['known-pos', '--flag', 'world', '--unk-opt=1', 'unk-pos']
+    assert CliApp.run(Cfg, cli_args=serialized) == cfg
+
+
+def test_serialize_cli_unknown_args_end_of_options():
+    class Cfg(BaseSettings, cli_ignore_unknown_args=True):
+        pos: CliPositionalArg[str]
+        flag: str = 'hello'
+        unknown_args: CliUnknownArgs
+
+    # An end-of-options marker captured in the unknown args would consume any known args emitted after it, so the
+    # unknown args are always serialized last, even when positionals_first is set.
+    cfg = CliApp.run(Cfg, cli_args=['known-pos', '--flag=world', '--', '--unk-opt=1', 'unk-pos'])
+    assert cfg.unknown_args == ['--', '--unk-opt=1', 'unk-pos']
+
+    serialized = CliApp.serialize(cfg, positionals_first=True)
+    assert serialized == ['known-pos', '--flag', 'world', '--', '--unk-opt=1', 'unk-pos']
+    assert CliApp.run(Cfg, cli_args=serialized) == cfg
+
+    serialized = CliApp.serialize(cfg)
+    assert serialized == ['--flag', 'world', 'known-pos', '--', '--unk-opt=1', 'unk-pos']
+
+    # The known positional is emitted before the marker here, so argparse consumes the marker while looking for it.
+    # The known args and the remaining unknown args are preserved, and serialization is stable from here on.
+    reparsed = CliApp.run(Cfg, cli_args=serialized)
+    assert (reparsed.pos, reparsed.flag) == (cfg.pos, cfg.flag)
+    assert reparsed.unknown_args == ['--unk-opt=1', 'unk-pos']
+    assert CliApp.serialize(reparsed) == ['--flag', 'world', 'known-pos', '--unk-opt=1', 'unk-pos']
+
+
+def test_serialize_cli_unknown_args_subcommand_end_of_options():
+    class SubCmd(BaseSettings, cli_ignore_unknown_args=True):
+        v0: int = 0
+        unknown_args: CliUnknownArgs
+
+    class Root(BaseSettings):
+        flag: str = 'hello'
+        sub_cmd: CliSubCommand[SubCmd]
+
+    # A subcommand's unknown args are hoisted into the trailing segment too, since a subcommand name may not follow
+    # an end-of-options marker.
+    root = CliApp.run(Root, cli_args=['--flag=world', 'sub_cmd', '--v0=2', '--', '--unk=3'])
+    assert root.sub_cmd is not None and root.sub_cmd.unknown_args == ['--', '--unk=3']
+
+    for positionals_first in (False, True):
+        serialized = CliApp.serialize(root, positionals_first=positionals_first)
+        assert serialized == ['--flag', 'world', 'sub_cmd', '--v0', '2', '--', '--unk=3']
+        assert CliApp.run(Root, cli_args=serialized) == root

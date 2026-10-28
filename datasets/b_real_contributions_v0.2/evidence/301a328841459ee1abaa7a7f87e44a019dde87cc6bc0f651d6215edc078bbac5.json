@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8c4d0d02324b2e388cbccc9e7a07c77ae96da26c",
+    "size": 17155
+  },
+  "observed_at": "2026-10-26T07:03:48.242046+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "88561ed8a3e90246e80718095466b42ce88a24297ef5ede5ce826f75ced0dee2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "46e3dc14369ed301e41410d4f1dfb6f657b1d3361c56954f3d8b4427880c84f4",
+  "source_url": "https://api.github.com/repos/google/closure-compiler/git/blobs/8c4d0d02324b2e388cbccc9e7a07c77ae96da26c",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 8369962,
+      "login": "cjames23",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-19T04:39:44Z",
+      "committer_at": "2026-09-19T04:39:44Z",
+      "tree_sha": "1a70f8ffaa468b34ae6e6b0c75e8a2b9124e995f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "cd57f6890dd0929165ebbcb2effa171a8d9defdd"
+  },
+  "observed_at": "2026-10-26T13:09:01.578084+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "16b4a67d0e49c080f70b264aff0492006c168972d78c548679822083c15883f4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "14355e07223d99a24ed110b4bef3f1cedc78f1d0c3a7ce367cc50b617780e9a1",
+  "source_url": "https://api.github.com/repos/pypa/hatch/commits/cd57f6890dd0929165ebbcb2effa171a8d9defdd?per_page=100",
+  "status_code": 200
+}

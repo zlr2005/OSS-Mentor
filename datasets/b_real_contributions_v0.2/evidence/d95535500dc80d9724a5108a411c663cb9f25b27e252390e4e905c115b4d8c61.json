@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "langchain-ai/langchainjs",
+    "id": 598342280,
+    "language": "TypeScript",
+    "private": false,
+    "size": 705861
+  },
+  "observed_at": "2026-10-26T07:58:53.681356+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "eb866f2357231c054040d93df9d50345e107388d0404b04dd7b679d21e26ffa2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "56fd2b69d238d0c342c89048c7595804310c7437b8ec7cea334ba28da365e6d2",
+  "source_url": "https://api.github.com/repos/langchain-ai/langchainjs",
+  "status_code": 200
+}

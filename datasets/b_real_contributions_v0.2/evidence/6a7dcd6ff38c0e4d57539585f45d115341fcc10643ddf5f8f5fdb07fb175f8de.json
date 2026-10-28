@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1166785,
+      "login": "wenshao",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T05:55:01Z",
+      "committer_at": "2026-10-19T05:55:01Z",
+      "tree_sha": "a06dcc39968c46ec4290be492ea59ed52c80abbc"
+    },
+    "committer": {
+      "id": 1166785,
+      "login": "wenshao",
+      "type": "User"
+    },
+    "sha": "570a19d8c49c611348080ed1fc7918fe319f30de"
+  },
+  "observed_at": "2026-10-26T05:03:50.542175+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ddbcd2a55e19aa8874d10fbffc2e498268c29523e5cef8a12999340455cb07fd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d2301f0fc376b2c2068ec14a3bf2a70b812fd269b9c21045df45758dcf79b43e",
+  "source_url": "https://api.github.com/repos/alibaba/fastjson2/commits/570a19d8c49c611348080ed1fc7918fe319f30de?per_page=100",
+  "status_code": 200
+}

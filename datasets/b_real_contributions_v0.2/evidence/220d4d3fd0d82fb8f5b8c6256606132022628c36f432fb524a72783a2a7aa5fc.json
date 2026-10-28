@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9e65b3e14bcb4b0dd5d10f6419b52f3b0db45d89",
+    "size": 164855
+  },
+  "observed_at": "2026-10-26T05:48:57.333648+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "526782fa4bdf1913ae3149376a9f515fd9734f563727939cc150d55020bb54a5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "908247f4c14369ec43234b7b8c0d5d426ea4d3f613f54ef6280792f2c7c15019",
+  "source_url": "https://api.github.com/repos/Automattic/mongoose/git/blobs/9e65b3e14bcb4b0dd5d10f6419b52f3b0db45d89",
+  "status_code": 200
+}

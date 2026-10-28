@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "52c9029b4c2ea8f987bcb121cf4193ee82c82c85",
+    "size": 125507
+  },
+  "observed_at": "2026-10-27T14:50:57.099188+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f95ce8ee7de7124d25d6eef3b31676133bfcbfe0931a399a5c0250fc9acf999e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "31bed9e3d0f2a81aadc88ccbdaa784f326bcf29333c249e5012855a5b4110667",
+  "source_url": "https://api.github.com/repos/numba/numba/git/blobs/52c9029b4c2ea8f987bcb121cf4193ee82c82c85",
+  "status_code": 200
+}

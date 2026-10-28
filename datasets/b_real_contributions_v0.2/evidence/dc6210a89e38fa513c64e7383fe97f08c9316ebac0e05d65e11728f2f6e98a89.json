@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 25395,
+      "login": "mourner",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T10:16:58Z",
+      "committer_at": "2026-10-24T10:16:58Z",
+      "tree_sha": "7553aa329f69c040a362d033f173d718e8ccd203"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "baa0e1ac3673f9c3624985d686bb890765e6fae2"
+  },
+  "observed_at": "2026-10-26T08:01:29.714790+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "218e98b246380915f03d3b616da21dfa890e166f56c75c533deca4e234d9d272",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f81e04578a84d66cd6834e4a0548e0eeb414fd7ed8b91c0a2cb36c27706a8275",
+  "source_url": "https://api.github.com/repos/Leaflet/Leaflet/commits/baa0e1ac3673f9c3624985d686bb890765e6fae2?per_page=100",
+  "status_code": 200
+}

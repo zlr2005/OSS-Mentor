@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 17125876,
+      "login": "JoviDeCroock",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T09:37:45Z",
+      "committer_at": "2026-10-25T09:37:45Z",
+      "tree_sha": "648c3cd9e779cb3ccc548b8c102c3d3df4c57364"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1c0f1f82340f096e5850386d617d6a3885693001"
+  },
+  "observed_at": "2026-10-26T08:50:26.055688+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "00017e4c3ced60684ba82f2c5f300ad0714d206a875b31fc665d5ac9ddb182dd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0e63f2bf1a41fc0b983f56293a75872061167ff7f559ec8afc1abd4bdbd1c5f2",
+  "source_url": "https://api.github.com/repos/preactjs/preact/commits/1c0f1f82340f096e5850386d617d6a3885693001?per_page=100",
+  "status_code": 200
+}

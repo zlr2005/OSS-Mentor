@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8912edb08c4bfab8d4ade4ef0569b53f54ea07ef",
+    "size": 21406
+  },
+  "observed_at": "2026-10-26T05:06:00.561087+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "94594f595002de0d87b98e684163f58878334b17a20239794be66c3f18d75bd7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9aa971e093de04482c3339f239e1bca988c2058db02dd2d78ea9ad603bd8f876",
+  "source_url": "https://api.github.com/repos/angular/angular/git/blobs/8912edb08c4bfab8d4ade4ef0569b53f54ea07ef",
+  "status_code": 200
+}

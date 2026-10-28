@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "6ccbecba94edb0355a5c4c02863346edc0f6645d",
+    "size": 39555
+  },
+  "observed_at": "2026-10-26T07:39:36.292407+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e15be90b546c8c80920f1272b46c74baf9fecb35a0595f557634f6668709d6f8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6b1a7b0e9f36d78acd48d144f08b8b2b2998259e315c7dda8515ec2e12b0d844",
+  "source_url": "https://api.github.com/repos/hyperium/hyper/git/blobs/6ccbecba94edb0355a5c4c02863346edc0f6645d",
+  "status_code": 200
+}

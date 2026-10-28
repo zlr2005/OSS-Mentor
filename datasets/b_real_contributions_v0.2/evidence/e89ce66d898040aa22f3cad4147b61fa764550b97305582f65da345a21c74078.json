@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5046555,
+      "login": "vvoland",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T11:53:06Z",
+      "committer_at": "2026-10-21T11:53:06Z",
+      "tree_sha": "8fccb62d3dfbea4da3b2c3c6802713703570d11f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b0e1577f1e3dfadd56a3ff4df8b6875817beb500"
+  },
+  "observed_at": "2026-10-26T08:22:08.619791+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8348dc572d5401425a35a13f574104b9a61a43861464beed48d71a08da4a19af",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6c9cc9b1ecfca96da4523bcaef453554715b77459963a15e9b22dd88cd08ab90",
+  "source_url": "https://api.github.com/repos/moby/moby/commits/b0e1577f1e3dfadd56a3ff4df8b6875817beb500?per_page=100",
+  "status_code": 200
+}

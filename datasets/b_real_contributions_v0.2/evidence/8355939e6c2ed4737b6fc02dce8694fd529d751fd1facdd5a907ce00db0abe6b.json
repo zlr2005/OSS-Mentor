@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "f31575ec773bb199aeb7c0d0f1612cfe1c7038f1",
+    "size": 1106
+  },
+  "observed_at": "2026-10-26T05:50:09.148203+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b6d5bd119835df0b5735af511ae1cf56e8143e034e8baaaf3a70e959350eb2ff",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "138662ca7804854f339cab7e0de47c1f6d7723f1759f6b41239907137e2e884c",
+  "source_url": "https://api.github.com/repos/babel/babel/git/blobs/f31575ec773bb199aeb7c0d0f1612cfe1c7038f1",
+  "status_code": 200
+}

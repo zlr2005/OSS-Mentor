@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-19T15:52:48Z",
+      "committer_at": "2026-10-19T17:12:00Z",
+      "tree_sha": "f33cb82e1c235946d8039c0ec32d6c70ebadc565"
+    },
+    "committer": {
+      "id": 574788,
+      "login": "akurtakov",
+      "type": "User"
+    },
+    "sha": "dcfda792abc0700819bc92e8283c5b79c06a6061"
+  },
+  "observed_at": "2026-10-26T06:28:18.552151+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9b6cf8a8e1407d668aeedcf635827fdae310cfb17530e75762f3bd77e57461ba",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b32524dba1175a745220810630b98651487588cb12763e8ea4151003544f7cbd",
+  "source_url": "https://api.github.com/repos/eclipse-platform/eclipse.platform.ui/commits/dcfda792abc0700819bc92e8283c5b79c06a6061?per_page=100",
+  "status_code": 200
+}

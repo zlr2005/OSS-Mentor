@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 8151217,
+      "login": "nikolauspschuetz",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-13T21:09:00Z",
+      "committer_at": "2026-08-13T21:09:00Z",
+      "tree_sha": "2c067255bc7101d5b9e543c3028934da38e35ab0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "60cfdda0146cf7f5faf54e55e5e6357b80ff2bec"
+  },
+  "observed_at": "2026-10-26T13:12:26.028877+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "536eef87019cc30be5b5700e8cd86e0e40891c3f6dfe103440b688a9e4a65234",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d811c3fcf99d7732a3aec4c1f6c781570ce93a5d944862c846e9498b4fedf34f",
+  "source_url": "https://api.github.com/repos/pypa/wheel/commits/60cfdda0146cf7f5faf54e55e5e6357b80ff2bec?per_page=100",
+  "status_code": 200
+}

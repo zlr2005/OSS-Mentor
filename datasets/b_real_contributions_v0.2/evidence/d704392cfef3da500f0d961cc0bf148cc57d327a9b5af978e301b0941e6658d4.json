@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8331c68fe24a954a75dd63b6fd7475c82735b9d9",
+    "size": 163003
+  },
+  "observed_at": "2026-10-27T12:53:18.688070+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ec21f924b378a79c30777fc11c182c0e5437d4c4d861c659deeadd7db45a446e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0e85cdf93a7b10b16d468601b720a599d34393d870676430a4bf931738a06636",
+  "source_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/8331c68fe24a954a75dd63b6fd7475c82735b9d9",
+  "status_code": 200
+}

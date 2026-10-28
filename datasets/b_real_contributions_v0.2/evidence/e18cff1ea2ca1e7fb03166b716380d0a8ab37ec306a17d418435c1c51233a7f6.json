@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "prestodb/presto",
+    "id": 5349565,
+    "language": "Java",
+    "private": false,
+    "size": 287741
+  },
+  "observed_at": "2026-10-26T08:51:20.814646+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "25709f21e661e31451ea20df1ccacd881e59886231154c180d32a47774ae1112",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c0a2bfde9bebe4a49cce4f12f8e297abb74a7fac26d0b9011d3ad56d0b762c1d",
+  "source_url": "https://api.github.com/repos/prestodb/presto",
+  "status_code": 200
+}

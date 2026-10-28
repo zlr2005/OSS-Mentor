@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/shardingsphere",
+    "id": 49876476,
+    "language": "Java",
+    "private": false,
+    "size": 709580
+  },
+  "observed_at": "2026-10-26T05:35:08.186062+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8100416e3ece01a69152a9dd42df030ce54f3ddec51abd7c072e254ddd6d6cd6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b6ec47d898e8e45ebcf17e10a953fa4e6849a60c2760333a81e20f7a0b17c1fb",
+  "source_url": "https://api.github.com/repos/apache/shardingsphere",
+  "status_code": 200
+}

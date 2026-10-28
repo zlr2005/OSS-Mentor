@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6729302,
+      "login": "cvas22",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T00:06:02Z",
+      "committer_at": "2026-10-24T00:06:02Z",
+      "tree_sha": "53601980768a08d8dc5b0bd0cc1a216ad5aabc58"
+    },
+    "committer": {
+      "id": 6729302,
+      "login": "cvas22",
+      "type": "User"
+    },
+    "sha": "5c479e2f83ce1d3c09dde730ef7ee186b35598dd"
+  },
+  "observed_at": "2026-10-26T06:03:29.896590+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "42b43e6cecb3eb1a1ad88b079673dcb81b22328dd2474ca4c857230a2ec5de13",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "539d3af7bd094cd7f130c59645b86db936d6258f4555547179c0e278ecdcb1e8",
+  "source_url": "https://api.github.com/repos/cert-manager/cert-manager/commits/5c479e2f83ce1d3c09dde730ef7ee186b35598dd?per_page=100",
+  "status_code": 200
+}

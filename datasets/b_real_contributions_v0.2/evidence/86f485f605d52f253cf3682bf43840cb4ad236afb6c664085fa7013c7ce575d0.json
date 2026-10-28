@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {
+      "id": 1703908,
+      "login": "cpovirk",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T20:08:13Z",
+      "committer_at": "2026-10-22T20:10:57Z",
+      "tree_sha": "291cd756da411a4c62f913ca0a98cc976e1cf467"
+    },
+    "committer": {},
+    "sha": "d194bb3b0a0f8ed9208b9688169a769755c65497"
+  },
+  "observed_at": "2026-10-26T07:06:54.831615+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6b4c25c3315036dacfe6736604669a6f84901784914a7e83bae43f03fbf92ea4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "19dcf04d074009c3400bba7a2477c60db05669604d9c00de8084445dae9724ed",
+  "source_url": "https://api.github.com/repos/google/guava/commits/d194bb3b0a0f8ed9208b9688169a769755c65497?per_page=100",
+  "status_code": 200
+}

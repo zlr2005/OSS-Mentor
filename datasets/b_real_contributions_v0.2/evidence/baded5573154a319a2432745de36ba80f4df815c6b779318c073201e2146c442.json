@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "6e9541637c5aa64907be42212bfecb286924b5c3",
+    "size": 16838
+  },
+  "observed_at": "2026-10-27T13:07:18.820550+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0d615994f4a2376dafe7c518727b4481ba19478916967dae4762ab9ecd6cc85e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9d5f764fa91d47f1fa1a6521fb5003ef49d4ebbeda7098565afd3796156500a8",
+  "source_url": "https://api.github.com/repos/eclipse-vertx/vert.x/git/blobs/6e9541637c5aa64907be42212bfecb286924b5c3",
+  "status_code": 200
+}

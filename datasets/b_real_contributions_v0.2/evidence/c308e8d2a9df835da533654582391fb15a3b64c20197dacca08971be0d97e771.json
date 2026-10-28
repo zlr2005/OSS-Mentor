@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "5186e6c8c333c16b493fb5bb1b25a77a66b49052",
+    "size": 8312
+  },
+  "observed_at": "2026-10-26T14:34:31.025076+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d960649814e1986cd0fa4f0598cbf9d29cb7f59b1599197129c217ec6278cf87",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d208b08c3f4c1ed0a1a00ac7a95e2c1765ebd26af5a845857a23f48054961ec8",
+  "source_url": "https://api.github.com/repos/spyder-ide/spyder/git/blobs/5186e6c8c333c16b493fb5bb1b25a77a66b49052",
+  "status_code": 200
+}

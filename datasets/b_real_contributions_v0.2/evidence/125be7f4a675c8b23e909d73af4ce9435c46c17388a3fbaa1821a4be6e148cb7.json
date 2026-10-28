@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/iotdb",
+    "id": 158975124,
+    "language": "Java",
+    "private": false,
+    "size": 404232
+  },
+  "observed_at": "2026-10-26T05:18:46.919298+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b218382ddeb0235768b2ff440671db6f630653e3f3cb50fc3b82c49ff8ab56f5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9b750e6dc31ea27554c6681f8934754fadb2c653e308f0ff0459d601824018aa",
+  "source_url": "https://api.github.com/repos/apache/iotdb",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 48618675,
+      "login": "amrbashir",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T02:53:26Z",
+      "committer_at": "2026-10-22T02:53:26Z",
+      "tree_sha": "bc425aa718d35917a1294aa3f927fdf9059ff5ee"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "90afb99bc7850e1d79f1faca0436f4a320968819"
+  },
+  "observed_at": "2026-10-26T15:07:28.781807+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "eae10ddd07ddecc6205cc27d50681acb91d1d8cbcdf66d0cb5cd3336d77c3113",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b83f9e00daa00fb6b9c11bea415d35eaca3f639285d0ef048ba03341c9df781f",
+  "source_url": "https://api.github.com/repos/tauri-apps/tauri/commits/90afb99bc7850e1d79f1faca0436f4a320968819?per_page=100",
+  "status_code": 200
+}

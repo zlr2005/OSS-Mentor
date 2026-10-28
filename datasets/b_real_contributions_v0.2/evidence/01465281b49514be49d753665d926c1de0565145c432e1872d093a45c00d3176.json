@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "JabRef/jabref",
+    "id": 17634071,
+    "language": "Java",
+    "private": false,
+    "size": 284824
+  },
+  "observed_at": "2026-10-26T07:41:57.690122+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5949c816eef13483d64ec5f269304154ff202961c6f4032f237feb03fbece048",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4c083e1b57b3616a13e3a065f4124ea9bd6208e2b24fa4f4ef054688bbb3ebe2",
+  "source_url": "https://api.github.com/repos/JabRef/jabref",
+  "status_code": 200
+}

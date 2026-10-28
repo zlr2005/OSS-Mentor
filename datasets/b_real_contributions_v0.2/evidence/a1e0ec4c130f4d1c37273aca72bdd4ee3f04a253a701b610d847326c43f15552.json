@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "74c123a87b9aa7fdf2c6f4c9cb19a6550593a715",
+    "size": 79346
+  },
+  "observed_at": "2026-10-27T13:13:13.336305+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "887785da51ee8efe03b4879e8a365312c30742648671571565d260bc22b31691",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "60ef6dee4c11419267e82c3046077586cd6724d99ef6383654b3890b8e0901eb",
+  "source_url": "https://api.github.com/repos/elastic/elasticsearch/git/blobs/74c123a87b9aa7fdf2c6f4c9cb19a6550593a715",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 32898216,
+      "login": "Vamsi-klu",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T00:04:41Z",
+      "committer_at": "2026-10-24T00:04:41Z",
+      "tree_sha": "bf9d7cdb4afa46e0c4d567151affd3c24571914d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ac12baf5be9c7412fccdd8bfc67f4ffcffe10005"
+  },
+  "observed_at": "2026-10-26T05:29:27.740386+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0d255432d1d0f2ceef3190d5f4b3d9fbe1d3a7a14abdeddb3f73d8e63f5a3246",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e89079cb1a790fd5bc1b7b5a3dfa546492e2d371bd84cad0c7e71fb493a4efca",
+  "source_url": "https://api.github.com/repos/apache/pinot/commits/ac12baf5be9c7412fccdd8bfc67f4ffcffe10005?per_page=100",
+  "status_code": 200
+}

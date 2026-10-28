@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 123094948,
+      "login": "A-Vamshi",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-05T15:17:09Z",
+      "committer_at": "2026-10-05T15:17:09Z",
+      "tree_sha": "f604dd35ac496fb47c47815e230d51e3daa3830a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "81f0e06f6e61a5659bd409cac4a199e28c2fd85e"
+  },
+  "observed_at": "2026-10-26T13:48:33.945426+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1e7e450b879a05cde8de451b1845afd3938ba66762f6b131881507700b254f97",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "302f35a84f355649f0402fa61dd0650814b03b58f51ed529e1c61a5a3cb09904",
+  "source_url": "https://api.github.com/repos/run-llama/llama_index/commits/81f0e06f6e61a5659bd409cac4a199e28c2fd85e?per_page=100",
+  "status_code": 200
+}

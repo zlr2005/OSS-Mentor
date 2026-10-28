@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/echarts",
+    "id": 9185792,
+    "language": "TypeScript",
+    "private": false,
+    "size": 271263
+  },
+  "observed_at": "2026-10-26T05:12:20.405103+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c02eb4447c17132141fd0ec22eaba341bd24279c62831e53affd7cbbcae00cd6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2d3540b10d80aade5d1818a09d8f027e1336837fbc2233df24ee6e469b8c3e79",
+  "source_url": "https://api.github.com/repos/apache/echarts",
+  "status_code": 200
+}

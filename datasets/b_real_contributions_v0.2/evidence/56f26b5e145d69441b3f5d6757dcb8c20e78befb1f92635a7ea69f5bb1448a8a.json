@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 305416843,
+      "login": "patrick-immometrica",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T09:02:17Z",
+      "committer_at": "2026-10-25T09:02:17Z",
+      "tree_sha": "52f0870c1bf47070775cafde229c2e4d29864195"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e3cb70f2c5bc464ccbce98926a5df9d5170dc3f5"
+  },
+  "observed_at": "2026-10-26T15:13:35.083830+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dd4bd106436e3887ec1d42cb70b68a79f831f7488e36ada819f16ece17be80f3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "dba9d0c8eef9613c52fd80765424e08046a071e82108fc5f1adad4667d21903d",
+  "source_url": "https://api.github.com/repos/tokio-rs/tokio/commits/e3cb70f2c5bc464ccbce98926a5df9d5170dc3f5?per_page=100",
+  "status_code": 200
+}

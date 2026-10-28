@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5129074,
+      "login": "reinsch82",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T07:58:57Z",
+      "committer_at": "2026-10-23T12:31:18Z",
+      "tree_sha": "bc2cfd90e701d190664b3fbbe29b369aa6ab18d8"
+    },
+    "committer": {
+      "id": 5129074,
+      "login": "reinsch82",
+      "type": "User"
+    },
+    "sha": "1e22fe848b355947c878539ac94c958ed97fe5cc"
+  },
+  "observed_at": "2026-10-27T13:34:48.208736+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7590146b5855cbef7043bc101b71fdec79f10a38d22558de410ce16816646626",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "46c1a4f82ed9b073de1d0e19886ab1426a8af94b7bc142565b96fe635e7649bd",
+  "source_url": "https://api.github.com/repos/gradle/gradle/commits/1e22fe848b355947c878539ac94c958ed97fe5cc?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "bc630a2eaf6b6ce376aa6427bc406f8643eb0f01",
+    "size": 4278
+  },
+  "observed_at": "2026-10-26T06:21:49.587749+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7f44518afeadc23854421bc249e6b0e126dcd708ba55546ef6ec1c52129f4d0b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1ea6fd5cb25b29ef390e2dadbd728659417ab495569d1ab7e136ba6ecde40a18",
+  "source_url": "https://api.github.com/repos/DioxusLabs/dioxus/git/blobs/bc630a2eaf6b6ce376aa6427bc406f8643eb0f01",
+  "status_code": 200
+}

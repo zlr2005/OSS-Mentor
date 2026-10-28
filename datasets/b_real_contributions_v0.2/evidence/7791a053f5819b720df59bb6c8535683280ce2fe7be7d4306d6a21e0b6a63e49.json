@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 22620332,
+      "login": "aiceflower",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-26T08:02:29Z",
+      "committer_at": "2026-06-26T08:02:29Z",
+      "tree_sha": "e36435f2d403a8f7d760dc1f82d893437c32a590"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7c3f36b9d93ec03a04a28271a5a5a4dbb0e51659"
+  },
+  "observed_at": "2026-10-26T05:21:43.734822+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6d76cf90f7bffb2fc297c83617153581ba74d23372a9cc636fad91d9c56e4f5f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8f5082a0567ca77b2b8bd35e52cce2f694e9684f19ea9b54fc24e4c19dc39289",
+  "source_url": "https://api.github.com/repos/apache/linkis/commits/7c3f36b9d93ec03a04a28271a5a5a4dbb0e51659?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 182410443,
+      "login": "waltuov",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-05T15:35:04Z",
+      "committer_at": "2026-10-06T19:11:07Z",
+      "tree_sha": "7b6c61497dd74cfb49dfbaef1fb5e375758328e1"
+    },
+    "committer": {
+      "id": 3159064,
+      "login": "Thomasdezeeuw",
+      "type": "User"
+    },
+    "sha": "175365e441a1198b25dc430b17ef7dd6ae9c7f6d"
+  },
+  "observed_at": "2026-10-26T15:11:55.015274+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cc7154472c3da09a1a3317aa490feb7ce6e7f9e4708d2744c09d5fb4cd65cc98",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "edd18c37efd624790fba88e81753dc5b17c43b4e749c9a78a24cf530080b9d23",
+  "source_url": "https://api.github.com/repos/tokio-rs/mio/commits/175365e441a1198b25dc430b17ef7dd6ae9c7f6d?per_page=100",
+  "status_code": 200
+}

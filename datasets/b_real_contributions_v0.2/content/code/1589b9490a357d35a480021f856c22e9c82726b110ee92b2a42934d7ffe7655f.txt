@@ -1,0 +1,194 @@
+/*
+ * Copyright 2020-present the original author or authors.
+ */
+
+package org.springframework.integration.kafka.channel;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.integration.channel.ExecutorChannelInterceptorAware;
+import org.springframework.integration.kafka.inbound.KafkaMessageSource;
+import org.springframework.integration.support.management.metrics.CounterFacade;
+import org.springframework.integration.support.management.metrics.MetricsCaptor;
+import org.springframework.kafka.core.KafkaOperations;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.PollableChannel;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.ExecutorChannelInterceptor;
+import org.springframework.util.Assert;
+
+/**
+ * Pollable channel backed by an Apache Kafka topic.
+ *
+ * @author Gary Russell
+ * @author Artem Bilan
+ * @author Ngoc Nhan
+ *
+ * @since 5.4
+ *
+ */
+public class PollableKafkaChannel extends AbstractKafkaChannel
+		implements PollableChannel, ExecutorChannelInterceptorAware {
+
+	private final KafkaMessageSource<?, ?> source;
+
+	private @Nullable CounterFacade receiveCounter;
+
+	private volatile int executorInterceptorsSize;
+
+	/**
+	 * Construct an instance with the provided parameters.
+	 * @param template the template for sending.
+	 * @param source the source for receiving.
+	 */
+	public PollableKafkaChannel(KafkaOperations<?, ?> template, KafkaMessageSource<?, ?> source) {
+		super(template, topic(source));
+		this.source = source;
+	}
+
+	@Override
+	protected void onInit() {
+		super.onInit();
+		if (this.source.getConsumerProperties().getGroupId() == null) {
+			String groupId = getGroupId();
+			this.source.getConsumerProperties().setGroupId(groupId != null ? groupId : Objects.requireNonNull(getBeanName()));
+		}
+	}
+
+	@Override
+	@Nullable
+	public Message<?> receive() {
+		return doReceive();
+	}
+
+	@Override
+	@Nullable
+	public Message<?> receive(long timeout) {
+		return doReceive();
+	}
+
+	@Nullable
+	protected Message<?> doReceive() {
+		ChannelInterceptorList interceptorList = getIChannelInterceptorList();
+		Deque<ChannelInterceptor> interceptorStack = null;
+		boolean counted = false;
+		try {
+			if (isLoggingEnabled()) {
+				logger.trace(() -> "preReceive on channel '" + this + "'");
+			}
+			if (!interceptorList.getInterceptors().isEmpty()) {
+				interceptorStack = new ArrayDeque<>();
+				if (!interceptorList.preReceive(this, interceptorStack)) {
+					return null;
+				}
+			}
+			Message<?> message = this.source.receive();
+			if (message != null) {
+				incrementReceiveCounter();
+				counted = true;
+				message = interceptorList.postReceive(message, this);
+			}
+			interceptorList.afterReceiveCompletion(message, this, null, interceptorStack);
+			return message;
+		}
+		catch (RuntimeException ex) {
+			if (!counted) {
+				incrementReceiveErrorCounter(ex);
+			}
+			interceptorList.afterReceiveCompletion(null, this, ex, interceptorStack);
+			throw ex;
+		}
+	}
+
+	private void incrementReceiveCounter() {
+		MetricsCaptor metricsCaptor = getMetricsCaptor();
+		if (metricsCaptor != null) {
+			if (this.receiveCounter == null) {
+				this.receiveCounter = buildReceiveCounter(metricsCaptor, null);
+			}
+			this.receiveCounter.increment();
+		}
+	}
+
+	private void incrementReceiveErrorCounter(Exception ex) {
+		MetricsCaptor metricsCaptor = getMetricsCaptor();
+		if (metricsCaptor != null) {
+			buildReceiveCounter(metricsCaptor, ex).increment();
+		}
+	}
+
+	private CounterFacade buildReceiveCounter(MetricsCaptor metricsCaptor, @Nullable Exception ex) {
+		CounterFacade counterFacade = metricsCaptor
+				.counterBuilder(RECEIVE_COUNTER_NAME)
+				.tag("name", getComponentName() == null ? "unknown" : getComponentName())
+				.tag("type", "channel")
+				.tag("result", ex == null ? "success" : "failure")
+				.tag("exception", ex == null ? "none" : ex.getClass().getSimpleName())
+				.description("Messages received")
+				.build();
+		this.meters.add(counterFacade);
+		return counterFacade;
+	}
+
+	@Override
+	public void setInterceptors(List<ChannelInterceptor> interceptors) {
+		super.setInterceptors(interceptors);
+		for (ChannelInterceptor interceptor : interceptors) {
+			if (interceptor instanceof ExecutorChannelInterceptor) {
+				this.executorInterceptorsSize++;
+			}
+		}
+	}
+
+	@Override
+	public void addInterceptor(ChannelInterceptor interceptor) {
+		super.addInterceptor(interceptor);
+		if (interceptor instanceof ExecutorChannelInterceptor) {
+			this.executorInterceptorsSize++;
+		}
+	}
+
+	@Override
+	public void addInterceptor(int index, ChannelInterceptor interceptor) {
+		super.addInterceptor(index, interceptor);
+		if (interceptor instanceof ExecutorChannelInterceptor) {
+			this.executorInterceptorsSize++;
+		}
+	}
+
+	@Override
+	public boolean removeInterceptor(ChannelInterceptor interceptor) {
+		boolean removed = super.removeInterceptor(interceptor);
+		if (removed && interceptor instanceof ExecutorChannelInterceptor) {
+			this.executorInterceptorsSize--;
+		}
+		return removed;
+	}
+
+	@Override
+	public ChannelInterceptor removeInterceptor(int index) {
+		ChannelInterceptor interceptor = super.removeInterceptor(index);
+		if (interceptor instanceof ExecutorChannelInterceptor) {
+			this.executorInterceptorsSize--;
+		}
+		return interceptor;
+	}
+
+	@Override
+	public boolean hasExecutorInterceptors() {
+		return this.executorInterceptorsSize > 0;
+	}
+
+	private static String topic(KafkaMessageSource<?, ?> source) {
+		Assert.notNull(source, "'source' cannot be null");
+		String[] topics = source.getConsumerProperties().getTopics();
+		Assert.isTrue(topics != null && topics.length == 1 && topics[0] != null, "Only one topic is allowed");
+		return topics[0];
+	}
+
+}

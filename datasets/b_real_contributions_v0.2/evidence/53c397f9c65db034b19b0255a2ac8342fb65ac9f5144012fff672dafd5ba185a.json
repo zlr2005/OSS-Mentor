@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7a2b1c35b225597a3facb6c7fb810d4b23eb8a58",
+    "size": 3102
+  },
+  "observed_at": "2026-10-26T07:49:21.663122+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "adaee9393800860d6c864bb5fbbf205cf049e909a6bf021598b1bf4baee080ee",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0a1272478cf6a463d71365de5c0e094b2d86ae57f4295a9ed047470db919a0aa",
+  "source_url": "https://api.github.com/repos/jupyter/nbconvert/git/blobs/7a2b1c35b225597a3facb6c7fb810d4b23eb8a58",
+  "status_code": 200
+}

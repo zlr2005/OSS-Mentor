@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6208662,
+      "login": "jorenham",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-04T21:43:21Z",
+      "committer_at": "2026-06-04T21:43:21Z",
+      "tree_sha": "035f0ad7df8ceeee902309cd8e1a644943872fd6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1190afd14fca74292946d62c4c8169880a47ff67"
+  },
+  "observed_at": "2026-10-27T15:13:48.551784+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d398b4d2f6c9835bbc94d971d78dfdc6c6dd8bf10c409ac92f62b0758942cacc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "54d5ef255a53ab7a1caf2f34d1c254f6b77de2049cf056a711c966f45bedc3a0",
+  "source_url": "https://api.github.com/repos/psf/requests/commits/1190afd14fca74292946d62c4c8169880a47ff67?per_page=100",
+  "status_code": 200
+}

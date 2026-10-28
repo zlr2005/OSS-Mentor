@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-11T12:05:45Z",
+      "committer_at": "2026-10-11T12:05:45Z",
+      "tree_sha": "82e2b0d0cb5c72aeb008c3ac328d304d1b73f90c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "418bfe050dfba466b49cf6cec97a8ca726d23520"
+  },
+  "observed_at": "2026-10-27T16:18:42.182767+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "18422b4eaa76a8cc40e2e361432b3ecc80e0bbc525181a982b5fba39f72f8ecf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "724268b177fd870af434cdeac883698a637c7137619d92704c410acdcca92037",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-integration/commits/418bfe050dfba466b49cf6cec97a8ca726d23520?per_page=100",
+  "status_code": 200
+}

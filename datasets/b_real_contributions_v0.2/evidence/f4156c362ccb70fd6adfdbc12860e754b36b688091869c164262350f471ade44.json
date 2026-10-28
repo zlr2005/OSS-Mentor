@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "51079e27a77a559d842ee29cb28f2898176dddf8",
+    "size": 27695
+  },
+  "observed_at": "2026-10-27T15:26:41.985561+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "af6382f6a6d0642516540f0612dfb4d9943647ffc8b642a7f06e438b665c2f26",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5ff7b2e9ca71dfee099abd840b038e2f85aba5d66bd6f458cbb8b4cca625fe84",
+  "source_url": "https://api.github.com/repos/python/cpython/git/blobs/51079e27a77a559d842ee29cb28f2898176dddf8",
+  "status_code": 200
+}

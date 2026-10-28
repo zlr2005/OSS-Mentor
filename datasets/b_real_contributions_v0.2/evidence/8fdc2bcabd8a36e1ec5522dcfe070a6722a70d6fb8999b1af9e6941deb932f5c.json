@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pypa/hatch",
+    "id": 92997800,
+    "language": "Python",
+    "private": false,
+    "size": 50323
+  },
+  "observed_at": "2026-10-26T13:07:54.499056+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7283828457b0ff42e2664d7a88b77a6dffd481df3bf6aca201bc62a6666358ee",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3613dce542c7ce2e2d333e63799d711fe59cc4e08f9d89ea460d766f94689af4",
+  "source_url": "https://api.github.com/repos/pypa/hatch",
+  "status_code": 200
+}

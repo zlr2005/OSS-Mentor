@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1006268,
+      "login": "goto-bus-stop",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2024-10-03T19:46:40Z",
+      "committer_at": "2024-10-03T19:46:42Z",
+      "tree_sha": "2c192d3153bc9adfc6140b6d0470530a6efb942c"
+    },
+    "committer": {
+      "id": 1006268,
+      "login": "goto-bus-stop",
+      "type": "User"
+    },
+    "sha": "d5d692ca2d1334b7644beef82e7c94cf471ab344"
+  },
+  "observed_at": "2026-10-26T05:58:36.734253+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c18b3f2288002d8925bd78ce77263f3f5e7bcb0cd861acd52d234d9877dd453e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4a733843676c819b0b259096d90815c96cf7af8d080fc033c46245b1f65b5e81",
+  "source_url": "https://api.github.com/repos/browserify/browserify/commits/d5d692ca2d1334b7644beef82e7c94cf471ab344?per_page=100",
+  "status_code": 200
+}

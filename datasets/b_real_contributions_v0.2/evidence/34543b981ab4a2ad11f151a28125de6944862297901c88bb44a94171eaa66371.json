@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 81847,
+      "login": "claude",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T06:03:48Z",
+      "committer_at": "2026-10-17T06:03:58Z",
+      "tree_sha": "438c693e92b9288333cf320e23c5ea7a933d8be5"
+    },
+    "committer": {
+      "id": 81847,
+      "login": "claude",
+      "type": "User"
+    },
+    "sha": "50585e07949e7d48f89a21e8e200fdcb2cfe8617"
+  },
+  "observed_at": "2026-10-26T13:13:33.638922+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "24597e40f28ce86b3c2232a2b0dbc7652811a88f708ba6f1903fe3a69aac501e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4e5d2c8a42162b2d6ffed842a3451c47d662277692bc67f698e4584187495713",
+  "source_url": "https://api.github.com/repos/pytest-dev/pluggy/commits/50585e07949e7d48f89a21e8e200fdcb2cfe8617?per_page=100",
+  "status_code": 200
+}

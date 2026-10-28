@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1dc59c5652ed69d676eafccc36a679f757b0ae41",
+    "size": 40
+  },
+  "observed_at": "2026-10-26T08:51:11.169107+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "83be97d1816ea1c9b637006adbb152552ae68d6401f4307f583a90595411293e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6281fab33eb96ddddce12fb2e6ff77fa49547570ba07f92145d564e1a7324473",
+  "source_url": "https://api.github.com/repos/preactjs/preact/git/blobs/1dc59c5652ed69d676eafccc36a679f757b0ae41",
+  "status_code": 200
+}

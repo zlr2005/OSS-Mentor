@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3126246,
+      "login": "ngoldbaum",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T22:14:40Z",
+      "committer_at": "2026-10-19T22:14:40Z",
+      "tree_sha": "b284dc05e4f004daacb0ca5993e90eb067f2e33d"
+    },
+    "committer": {
+      "id": 3126246,
+      "login": "ngoldbaum",
+      "type": "User"
+    },
+    "sha": "3301fa6500c3ea286581df83c038d80d8c5f9589"
+  },
+  "observed_at": "2026-10-27T17:08:33.712565+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6873c28706e9aa04fe993da6700dc38b0d4a7bc25461f6288b677ffc25e5dfbe",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "34197e3bf088b3aba8168a817cd1103c8e5f9b60ced284c3a0c2b7541dd7d1be",
+  "source_url": "https://api.github.com/repos/pypa/setuptools/commits/3301fa6500c3ea286581df83c038d80d8c5f9589?per_page=100",
+  "status_code": 200
+}

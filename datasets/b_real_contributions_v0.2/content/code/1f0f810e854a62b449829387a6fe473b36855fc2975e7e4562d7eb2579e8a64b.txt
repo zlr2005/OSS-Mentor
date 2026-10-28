@@ -1,0 +1,60 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.gradle:develocity-gradle-plugin:4.4.1"
+        classpath "com.gradle:common-custom-user-data-gradle-plugin:2.8.0"
+        classpath "org.gradle.toolchains:foojay-resolver:0.8.0"
+    }
+}
+
+apply plugin: 'com.gradle.develocity'
+apply plugin: "com.gradle.common-custom-user-data-gradle-plugin"
+apply plugin: "org.gradle.toolchains.foojay-resolver-convention"
+
+rootProject.name = 'testcontainers-java'
+
+include "bom"
+
+include "testcontainers"
+project(':testcontainers').projectDir = "$rootDir/core" as File
+
+file('modules').eachDir { dir ->
+    include "testcontainers-${dir.name}"
+    project(":testcontainers-${dir.name}").projectDir = dir
+}
+
+include ':docs:examples:junit5:redis'
+include ':docs:examples:spock:redis'
+
+include 'test-support'
+
+ext.isCI = System.getenv("CI") != null
+
+buildCache {
+    local {
+        enabled = !isCI
+    }
+    remote(develocity.buildCache) {
+        enabled = true
+        // Check access key presence to avoid build cache errors on PR builds when access key is not present
+        push = isCI && !System.getenv("READ_ONLY_REMOTE_GRADLE_CACHE") && System.getenv("DEVELOCITY_ACCESS_KEY") != null
+    }
+}
+
+develocity {
+    server = "https://community.develocity.cloud"
+    projectId = "testcontainers"
+    buildScan {
+        publishing.onlyIf {
+            it.authenticated
+        }
+        uploadInBackground = !isCI
+        obfuscation {
+            ipAddresses { it.collect { "0.0.0.0" } }
+        }
+    }
+}

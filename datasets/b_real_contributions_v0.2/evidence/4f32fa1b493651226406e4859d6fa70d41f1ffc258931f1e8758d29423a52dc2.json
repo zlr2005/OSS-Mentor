@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "mui/material-ui",
+    "id": 23083156,
+    "language": "JavaScript",
+    "private": false,
+    "size": 748338
+  },
+  "observed_at": "2026-10-26T08:24:25.006040+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1f5f762b7f9ad5c530f1f81c7cf1a04557c951745cf2f37de8b093e13acfe071",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "01db5b08ee773042c369f146f829fafa4ce76e890f7611bad6944d9239974f41",
+  "source_url": "https://api.github.com/repos/mui/material-ui",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4d0a0863ad6724fd6fdd10407169fe288a3cc95e",
+    "size": 1517
+  },
+  "observed_at": "2026-10-26T14:00:04.616129+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "54b20907c5ad719b4c8a3c145f108a98ad08c6d4db6fa41fdff7506ffaa71a73",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b59f00941638d9a4eda77f0162bd1b4dc2cd50ad3297b67f5f707b6b8060ef86",
+  "source_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/4d0a0863ad6724fd6fdd10407169fe288a3cc95e",
+  "status_code": 200
+}

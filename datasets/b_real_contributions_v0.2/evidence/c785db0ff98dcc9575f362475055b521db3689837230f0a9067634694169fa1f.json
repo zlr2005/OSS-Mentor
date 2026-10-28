@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 188639646,
+      "login": "Dev-next-gen",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T17:33:29Z",
+      "committer_at": "2026-10-20T17:33:29Z",
+      "tree_sha": "ef4a1d03016abe3c7c7b6cd1eeb62b02c83208e5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "05c6ba2881252b99af6959f7ed2845e1f2f0418f"
+  },
+  "observed_at": "2026-10-27T15:55:15.124003+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "32310d07e35f8f4949001eb3b917b85e2f8faa0d37e862292483cc6f623eb7af",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3d6be8ae12b803f3c6f596f24fbac7531642cfda9f23fd495f80ddf341faf363",
+  "source_url": "https://api.github.com/repos/rollup/rollup/commits/05c6ba2881252b99af6959f7ed2845e1f2f0418f?per_page=100",
+  "status_code": 200
+}

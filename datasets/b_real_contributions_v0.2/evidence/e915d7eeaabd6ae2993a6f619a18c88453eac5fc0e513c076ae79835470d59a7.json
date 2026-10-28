@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 24516654,
+      "login": "btea",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T07:03:28Z",
+      "committer_at": "2026-10-23T07:03:28Z",
+      "tree_sha": "471c703bf24c46dc27ba888c907487dab852bc17"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "67c965b1df64249bceb747037e87d22f75b3e471"
+  },
+  "observed_at": "2026-10-26T15:33:14.207033+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a10cc8eae1b0cd34203600f55ba57c24b2dc67eba10278abb7262aa5280cd2b5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3378888c7a6cb61cbb1e92782b0a24aa824936210f8dcddc6b6abaa00941ec72",
+  "source_url": "https://api.github.com/repos/vitejs/vite/commits/67c965b1df64249bceb747037e87d22f75b3e471?per_page=100",
+  "status_code": 200
+}

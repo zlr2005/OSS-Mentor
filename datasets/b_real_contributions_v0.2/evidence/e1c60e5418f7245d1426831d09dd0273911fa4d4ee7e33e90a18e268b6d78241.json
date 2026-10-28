@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 314036,
+      "login": "vishr",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T16:18:36Z",
+      "committer_at": "2026-10-22T16:18:36Z",
+      "tree_sha": "46cc6080dc3f6665c3f6db858fe03e95108bb836"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1855061e572ae9dab727c811d8382f266bfbaaec"
+  },
+  "observed_at": "2026-10-26T07:55:50.384701+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bd807de3b5aa4f82cb0d1e8add180a1dfcd10b15436706a13595a5a25ee869f6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3098a4eb2e0b3476d93826a2ac9bd0322f64da49b5c67fe11f58537abda9def8",
+  "source_url": "https://api.github.com/repos/labstack/echo/commits/1855061e572ae9dab727c811d8382f266bfbaaec?per_page=100",
+  "status_code": 200
+}

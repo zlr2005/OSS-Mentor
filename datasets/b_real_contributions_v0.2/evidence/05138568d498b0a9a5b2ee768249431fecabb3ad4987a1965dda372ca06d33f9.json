@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fbcc029a41ed6a3f8c18e367c61bb8fc730ba84a",
+    "size": 8922
+  },
+  "observed_at": "2026-10-26T08:32:26.260651+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0d8c6adc42c04c4140d1ae4e4beb89e219bdc44833ef043c809b10f3ce3dfb02",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0f2afb23545fdc900ee3469eccdbedb80e97410d35f0fdacd86395199f12623e",
+  "source_url": "https://api.github.com/repos/nushell/nushell/git/blobs/fbcc029a41ed6a3f8c18e367c61bb8fc730ba84a",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 94853470,
+      "login": "eustlb",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T12:42:53Z",
+      "committer_at": "2026-10-23T12:42:53Z",
+      "tree_sha": "33a56bdd81aec2035bc7bd67c053e830aea6be0e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e7b03417bc2bbf1dc2719d343813e229db3180aa"
+  },
+  "observed_at": "2026-10-26T07:28:57.784628+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "814b9fe1fec042eabe0fc7742c8d388b31a98d7250cc831d5acf3ccc02a5534e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "11d8aaa92c455d5898f18895f74f3fdc97c64bc3589cdf721f67a8907525f1a9",
+  "source_url": "https://api.github.com/repos/huggingface/transformers/commits/e7b03417bc2bbf1dc2719d343813e229db3180aa?per_page=100",
+  "status_code": 200
+}

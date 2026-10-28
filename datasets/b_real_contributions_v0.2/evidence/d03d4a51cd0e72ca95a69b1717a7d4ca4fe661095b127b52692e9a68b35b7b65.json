@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 41929,
+      "login": "dennisoelkers",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T14:27:58Z",
+      "committer_at": "2026-10-23T14:27:58Z",
+      "tree_sha": "2cfd35fb04efb47741c6797970cc2f9040747699"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5cfc1b0603ad6b7dd7ceb55eeec26ddb115944b5"
+  },
+  "observed_at": "2026-10-27T13:37:15.838913+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c35104b0d527594e3bdc394016fc91daf60ae2f1789dc3cdeba71dbe9e28003a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4f4fb28c85254442e3c248b0c5ff250e63dbd15bc31574d4f995a39804df25da",
+  "source_url": "https://api.github.com/repos/Graylog2/graylog2-server/commits/5cfc1b0603ad6b7dd7ceb55eeec26ddb115944b5?per_page=100",
+  "status_code": 200
+}

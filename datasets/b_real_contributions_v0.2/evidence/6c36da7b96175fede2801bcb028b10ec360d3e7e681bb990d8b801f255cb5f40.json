@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "59314c434c8f000c4164b221bff16fdd92666c0b",
+    "size": 25572
+  },
+  "observed_at": "2026-10-26T08:36:45.844528+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "912657d76eabab2671675a3d57da44a8f6aea93f50c8ea9772635ddef493aa14",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "51641409182dae03fa5e7e73d8513d753f7cc6e9177a1d26338e7ef784573426",
+  "source_url": "https://api.github.com/repos/openai/openai-python/git/blobs/59314c434c8f000c4164b221bff16fdd92666c0b",
+  "status_code": 200
+}

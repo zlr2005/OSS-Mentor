@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6757853,
+      "login": "etimberg",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T11:47:55Z",
+      "committer_at": "2026-10-23T11:47:55Z",
+      "tree_sha": "38e25252aa371a93e3a71a74e9171c293ac1d4e7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "71d44219e79e3ac41e6f9dc907022eebf574868d"
+  },
+  "observed_at": "2026-10-26T06:04:34.689747+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3e377a333ffbcaeb5b8e5583135577f4fa73a5eea9bd5ff0901fab9a054f2547",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "62830258b0af7e4ff74c8cd7ee8cfd00f3c3a7328b392735140665eac0d7d63d",
+  "source_url": "https://api.github.com/repos/chartjs/Chart.js/commits/71d44219e79e3ac41e6f9dc907022eebf574868d?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2114189,
+      "login": "wxiaoguang",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T08:27:56Z",
+      "committer_at": "2026-10-24T08:27:56Z",
+      "tree_sha": "ceb7775216ff6c555d0893b520d0e48c19811fe3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1d8474ee1feb2ae744beb6d240eb6212469c71ee"
+  },
+  "observed_at": "2026-10-26T06:55:58.925738+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "42d3a2e1257fd5f4d8d3143335a23b3d0ea77f732f538fb0cd1740bc996e59f7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2ffbbbb9dce1c3251298e2376a29a842341a6c8a07dbe9aca9d7d7390c4e960d",
+  "source_url": "https://api.github.com/repos/go-gitea/gitea/commits/1d8474ee1feb2ae744beb6d240eb6212469c71ee?per_page=100",
+  "status_code": 200
+}

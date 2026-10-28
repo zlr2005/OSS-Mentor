@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 26546784,
+      "login": "PicardParis",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T08:40:59Z",
+      "committer_at": "2026-10-22T08:40:59Z",
+      "tree_sha": "99170d819d7b9a0e8137dcd869591e7b8ce53db2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "97f7bd216edf3cd9749f76789dc711cd5a89614e"
+  },
+  "observed_at": "2026-10-26T07:41:23.233755+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "33df5282e9dfddd18b162c428f0cc96cf6f5daeddec3401fb8362945c00fb5d0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cc0e99a71d3e203746d20a6d6914d7e64b9bdcc0ddedb12ce1ef9b294d7c9311",
+  "source_url": "https://api.github.com/repos/ipython/ipython/commits/97f7bd216edf3cd9749f76789dc711cd5a89614e?per_page=100",
+  "status_code": 200
+}

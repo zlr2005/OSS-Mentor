@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "python/cpython",
+    "id": 81598961,
+    "language": "Python",
+    "private": false,
+    "size": 903236
+  },
+  "observed_at": "2026-10-26T13:18:16.011771+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "79545107745fac6c24665da907698d60515d43a809d089573d6bf1a4ac3acd3c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ee7d24b46d1b1f38c8e970801fe404cf8299fc17181d8c107470925215127970",
+  "source_url": "https://api.github.com/repos/python/cpython",
+  "status_code": 200
+}

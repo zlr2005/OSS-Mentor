@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 195475055,
+      "login": "AnkushMittal552",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T20:22:19Z",
+      "committer_at": "2026-10-25T20:22:19Z",
+      "tree_sha": "629904180f050766385da01d271da3d4c0c1d1df"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e447b83ae43cc476c4fa6e74c49613046ddb6f4a"
+  },
+  "observed_at": "2026-10-26T14:07:41.279643+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6fe0bef0c8e1a1267bc012cf8c45f751f4e707daeea9eee5e3c1529e9065b6a1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "951e1c4a3fed64e752e3949ea1951bf14918b00b422659ed55415c98a315dd88",
+  "source_url": "https://api.github.com/repos/spotbugs/spotbugs/commits/e447b83ae43cc476c4fa6e74c49613046ddb6f4a?per_page=100",
+  "status_code": 200
+}

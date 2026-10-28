@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 94912531,
+      "login": "Salominius",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-20T20:51:27Z",
+      "committer_at": "2026-10-19T18:05:11Z",
+      "tree_sha": "3044b58e408e5016db16488b845a86f00f9c7489"
+    },
+    "committer": {
+      "id": 82178,
+      "login": "tfmorris",
+      "type": "User"
+    },
+    "sha": "eede678f5d57c21688de28ff83c50f5065ba87d4"
+  },
+  "observed_at": "2026-10-26T08:37:48.213916+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c74f08605a435f6ecfa685f94edffd4b740bde30bae88748b950b5bac8ca6fab",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "369da22440e62a19d25dde4e8e0681bb9ff06a4d31274a58ac2ad0dd69f2d86a",
+  "source_url": "https://api.github.com/repos/OpenRefine/OpenRefine/commits/eede678f5d57c21688de28ff83c50f5065ba87d4?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 140466644,
+      "login": "lihan3238",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-05-07T14:26:24Z",
+      "committer_at": "2026-05-07T14:26:24Z",
+      "tree_sha": "dfbc0170508fdc9b58fcaf544cc278ea94018c9a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "33229296228898b311e868090f30eed169f1ae7a"
+  },
+  "observed_at": "2026-10-26T06:57:05.569503+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "098f44d4cd62ac91b8f5f63feca9b87016d0ecc6f498f1c4784bbbed5f8a2ddf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a7e935099b12ac75ed08efa794d85b58e3096fd7b6e944e7be8d330b7a3b3738",
+  "source_url": "https://api.github.com/repos/go-gorm/gorm/commits/33229296228898b311e868090f30eed169f1ae7a?per_page=100",
+  "status_code": 200
+}

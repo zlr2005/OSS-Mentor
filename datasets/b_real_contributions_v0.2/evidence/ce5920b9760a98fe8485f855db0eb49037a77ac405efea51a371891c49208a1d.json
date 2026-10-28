@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 8933386,
+      "login": "decepulis",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T21:28:42Z",
+      "committer_at": "2026-10-23T21:28:42Z",
+      "tree_sha": "1ae4fb76dcd72853c433f416f3d249ed3db406a1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2e0db0348c13b42207032b7724046fa97dfc6974"
+  },
+  "observed_at": "2026-10-27T16:28:41.522470+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1f439483d4ca8e640a2b4967b3ef226ab2705e61603060a93514dc0a1e910844",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a32e936b138f16aef6549930053122c56e63ba488e30cb43e2547bf9ca29ce32",
+  "source_url": "https://api.github.com/repos/videojs/video.js/commits/2e0db0348c13b42207032b7724046fa97dfc6974?per_page=100",
+  "status_code": 200
+}

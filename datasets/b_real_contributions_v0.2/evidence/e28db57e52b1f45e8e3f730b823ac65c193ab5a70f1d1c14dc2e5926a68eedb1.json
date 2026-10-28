@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a85de280ac1ff36dd23bba511e6e5a9e7ef9894f",
+    "size": 11189
+  },
+  "observed_at": "2026-10-26T14:42:59.696537+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b5d62415152b92dfac3ae821073b97e3bb8ae5f0a7386fa9fc94928e61116ecb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "532ebad992fbeca04916ac12b38a7eb637703d9d9779f3f6e135a582e85d403d",
+  "source_url": "https://api.github.com/repos/streamlit/streamlit/git/blobs/a85de280ac1ff36dd23bba511e6e5a9e7ef9894f",
+  "status_code": 200
+}

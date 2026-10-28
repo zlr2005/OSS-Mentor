@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "alacritty/alacritty",
+    "id": 51980455,
+    "language": "Rust",
+    "private": false,
+    "size": 14582
+  },
+  "observed_at": "2026-10-26T05:02:52.433156+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "916f3066104cd51f7fa847e7e18afe6a92127295e47e93a5fe50aae7389a9c2e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "858ee5fd8b37939d1eadf5e2d9ba5dd3425e896f6808d739df6028627c7da188",
+  "source_url": "https://api.github.com/repos/alacritty/alacritty",
+  "status_code": 200
+}

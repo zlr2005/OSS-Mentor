@@ -256,8 +256,9 @@ class CandidateRefreshReportTests(unittest.TestCase):
             columns = {
                 row[1] for row in connection.execute("PRAGMA table_info(repository)")
             }
-        sqlite_dir = Path(__file__).resolve().parents[1] / "db" / "sqlite"
-        expected_migrations = {path.name for path in sqlite_dir.glob("*.sql")}
+        migration_directory = Path(__file__).resolve().parents[1] / "db" / "sqlite"
+        expected_migrations = {path.name for path in migration_directory.glob("*.sql")}
+        self.assertTrue(expected_migrations, "The migration directory must not be empty")
         self.assertEqual(expected_migrations, migrations)
         self.assertIn("last_candidate_refresh_at", columns)
         self.assertIn("maintenance_status", columns)

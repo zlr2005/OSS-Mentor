@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 241506,
+      "login": "panva",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-26T12:18:38Z",
+      "committer_at": "2026-10-25T21:36:32Z",
+      "tree_sha": "0c8e2edab19496f2a86741190ada32398f3a5468"
+    },
+    "committer": {
+      "id": 241506,
+      "login": "panva",
+      "type": "User"
+    },
+    "sha": "acbc3ff133318aa2e19a57da6e8a4ae32aeec4e0"
+  },
+  "observed_at": "2026-10-27T14:37:19.385104+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e9ab637ff0c1625477b762f667e330ac8403477f0a6eb753a3cffb9186b7207d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b495c6cfcda01d0847c1c9523b8ecac07341ffbacb4d0a866159d49339a85fc9",
+  "source_url": "https://api.github.com/repos/nodejs/node/commits/acbc3ff133318aa2e19a57da6e8a4ae32aeec4e0?per_page=100",
+  "status_code": 200
+}

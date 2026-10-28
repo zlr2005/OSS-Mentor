@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 59059173,
+      "login": "EurFelux",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T06:37:47Z",
+      "committer_at": "2026-10-25T06:37:47Z",
+      "tree_sha": "07b86fdd9566b242e3b4220583f4caa35451ee2c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9432a4ca350ad528a25225a11fc9975cdba55c5c"
+  },
+  "observed_at": "2026-10-26T06:08:07.487224+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d823db649011a4dde632041c406498687226d34ba8a301a9f1e6e4b409affd4a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ff703591bfb7f65b1b3c31a64950c97ee99062f90f9cf2a0cba361e604dbd2fc",
+  "source_url": "https://api.github.com/repos/CherryHQ/cherry-studio/commits/9432a4ca350ad528a25225a11fc9975cdba55c5c?per_page=100",
+  "status_code": 200
+}

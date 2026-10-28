@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "Automattic/mongoose",
+    "id": 597879,
+    "language": "JavaScript",
+    "private": false,
+    "size": 164127
+  },
+  "observed_at": "2026-10-26T05:47:56.873360+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "21d4ac5c09304262ff4af69a02952fdc912761cfcadf4c5f5a3711ff53ef3702",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "41580b4baee470160dbeb873488ec02c85022f38c0d25a3953fde74ff24c83de",
+  "source_url": "https://api.github.com/repos/Automattic/mongoose",
+  "status_code": 200
+}

@@ -1,0 +1,387 @@
+/**
+ * Copyright (c) Microsoft Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { test, expect, parseResponse } from './fixtures';
+
+test.use({
+  mcpCaps: ['network'],
+});
+
+test('browser_route mocks response with JSON body', async ({ client, server }) => {
+  server.setContent('/', `
+    <button onclick="fetch('/api/users').then(r => r.json()).then(d => document.body.textContent = JSON.stringify(d))">Fetch</button>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  // Set up a route to mock the API response
+  const routeResponse = parseResponse(await client.callTool({
+    name: 'browser_route',
+    arguments: {
+      pattern: '**/api/users',
+      status: 200,
+      body: JSON.stringify([{ id: 1, name: 'Alice' }]),
+      contentType: 'application/json',
+    },
+  }));
+  expect(routeResponse.result).toContain('Route added');
+
+  // Click the button to trigger the fetch
+  await client.callTool({
+    name: 'browser_click',
+    arguments: { element: 'Fetch button', target: 'e2' },
+  });
+
+  // Wait for the mocked response to be rendered
+  await client.callTool({
+    name: 'browser_wait_for',
+    arguments: { text: 'Alice' },
+  });
+
+  // Verify the mocked response was used
+  expect(await client.callTool({
+    name: 'browser_snapshot',
+  })).toHaveResponse({
+    inlineSnapshot: expect.stringContaining('Alice'),
+  });
+});
+
+test('browser_route mocks response with custom status', async ({ client, server }) => {
+  server.setContent('/', `
+    <button onclick="fetch('/api/error').then(r => document.body.textContent = 'Status: ' + r.status)">Fetch</button>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  // Set up a route to return 404
+  await client.callTool({
+    name: 'browser_route',
+    arguments: {
+      pattern: '**/api/error',
+      status: 404,
+      body: 'Not Found',
+    },
+  });
+
+  await client.callTool({
+    name: 'browser_click',
+    arguments: { element: 'Fetch button', target: 'e2' },
+  });
+
+  // Wait for the status to be rendered
+  await client.callTool({
+    name: 'browser_wait_for',
+    arguments: { text: 'Status: 404' },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_snapshot',
+  })).toHaveResponse({
+    inlineSnapshot: expect.stringContaining('Status: 404'),
+  });
+});
+
+test('browser_route mocks response with custom headers', async ({ client, server }) => {
+  server.setContent('/', `
+    <button onclick="fetch('/api/custom').then(r => {
+      document.body.textContent = 'Header: ' + r.headers.get('x-custom-res') + ', CORS: ' + r.headers.get('access-control-allow-origin');
+    })">Fetch</button>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  await client.callTool({
+    name: 'browser_route',
+    arguments: {
+      pattern: '**/api/custom',
+      status: 200,
+      body: 'OK',
+      headers: [
+        'X-Custom-Res: test-response-header',
+        'Access-Control-Allow-Origin: *',
+      ],
+    },
+  });
+
+  await client.callTool({
+    name: 'browser_click',
+    arguments: { element: 'Fetch button', target: 'e2' },
+  });
+
+  await client.callTool({
+    name: 'browser_wait_for',
+    arguments: { text: 'Header: test-response-header, CORS: *' },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_snapshot',
+    arguments: {},
+  })).toHaveResponse({
+    inlineSnapshot: expect.stringContaining('Header: test-response-header, CORS: *'),
+  });
+});
+
+test('browser_route modifies request headers', {
+  annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright/issues/43630' },
+}, async ({ startClient, server, httpsServer }) => {
+  const { client } = await startClient({
+    args: [
+      '--ignore-https-errors',
+      '--allowed-origins', `${server.PREFIX};${httpsServer.PREFIX}`,
+      '--blocked-origins', httpsServer.PREFIX,
+    ],
+  });
+  let receivedHeaders: Record<string, string> = {};
+  server.setRoute('/api/check', (req, res) => {
+    receivedHeaders = req.headers as Record<string, string>;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ received: true }));
+  });
+
+  server.setContent('/', `
+    <button onclick="fetch('/api/check').then(() => document.body.textContent = 'Done')">Fetch</button>
+  `, 'text/html');
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  // Set up a route to add headers
+  await client.callTool({
+    name: 'browser_route',
+    arguments: {
+      pattern: '**',
+      headers: ['X-Custom-Header: test-value'],
+    },
+  });
+
+  const requestPromise = server.waitForRequest('/api/check');
+  await client.callTool({
+    name: 'browser_click',
+    arguments: { element: 'Fetch button', target: 'e2' },
+  });
+
+  await requestPromise;
+  expect(receivedHeaders['x-custom-header']).toBe('test-value');
+
+  for (const url of [httpsServer.EMPTY_PAGE, server.CROSS_PROCESS_PREFIX + '/empty.html']) {
+    expect.soft(await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url },
+    })).toHaveResponse({
+      isError: true,
+      error: expect.stringMatching(/Blocked by Web Inspector|NS_ERROR_FAILURE|net::ERR_BLOCKED_BY_CLIENT/),
+    });
+  }
+});
+
+for (const { title, headers, removeHeaders, expected } of [
+  { title: 'removes added header regardless of case', headers: ['X-Custom-Header: replacement'], removeHeaders: 'x-custom-header', expected: undefined },
+  { title: 'lets the last of duplicate header names win', headers: ['X-Custom-Header: first', 'x-custom-header: last'], removeHeaders: undefined, expected: 'last' },
+]) {
+  test(`browser_route ${title}`, {
+    annotation: { type: 'issue', description: 'https://github.com/microsoft/playwright/issues/43215' },
+  }, async ({ client, server }) => {
+    let receivedHeaders: Record<string, string> = {};
+    server.setRoute('/api/check', (req, res) => {
+      receivedHeaders = req.headers as Record<string, string>;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ received: true }));
+    });
+
+    server.setContent('/', `
+      <button onclick="fetch('/api/check', { headers: { 'X-Custom-Header': 'original' } }).then(() => document.body.textContent = 'Done')">Fetch</button>
+    `, 'text/html');
+
+    await client.callTool({
+      name: 'browser_navigate',
+      arguments: { url: server.PREFIX },
+    });
+
+    await client.callTool({
+      name: 'browser_route',
+      arguments: { pattern: '**/api/check', headers, removeHeaders },
+    });
+
+    const requestPromise = server.waitForRequest('/api/check');
+    await client.callTool({
+      name: 'browser_click',
+      arguments: { element: 'Fetch button', target: 'e2' },
+    });
+
+    await requestPromise;
+    expect(receivedHeaders['x-custom-header']).toBe(expected);
+  });
+}
+
+test('browser_route errors on header lines without a colon', async ({ client, server }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.EMPTY_PAGE },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_route',
+    arguments: {
+      pattern: '**/api/check',
+      headers: ['NotAHeader', 'X-Custom-Header: test-value'],
+    },
+  })).toHaveResponse({
+    isError: true,
+    error: expect.stringContaining('Invalid header "NotAHeader"'),
+  });
+});
+
+test('browser_route_list shows active routes', async ({ client, server }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.EMPTY_PAGE },
+  });
+
+  // Initially no routes
+  const emptyList = parseResponse(await client.callTool({
+    name: 'browser_route_list',
+  }));
+  expect(emptyList.result).toContain('No active routes');
+
+  // Add some routes
+  await client.callTool({
+    name: 'browser_route',
+    arguments: {
+      pattern: '**/api/users',
+      status: 200,
+      body: '[]',
+    },
+  });
+
+  await client.callTool({
+    name: 'browser_route',
+    arguments: {
+      pattern: '**/api/posts',
+      status: 201,
+      contentType: 'application/json',
+    },
+  });
+
+  // List routes
+  const list = parseResponse(await client.callTool({
+    name: 'browser_route_list',
+  }));
+  expect(list.result).toContain('**/api/users');
+  expect(list.result).toContain('**/api/posts');
+  expect(list.result).toContain('status=200');
+  expect(list.result).toContain('status=201');
+});
+
+test('browser_unroute removes specific route', async ({ client, server }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.EMPTY_PAGE },
+  });
+
+  // Add routes
+  await client.callTool({
+    name: 'browser_route',
+    arguments: { pattern: '**/api/users', status: 200 },
+  });
+
+  await client.callTool({
+    name: 'browser_route',
+    arguments: { pattern: '**/api/posts', status: 200 },
+  });
+
+  // Remove specific route
+  const removeResponse = parseResponse(await client.callTool({
+    name: 'browser_unroute',
+    arguments: { pattern: '**/api/users' },
+  }));
+  expect(removeResponse.result).toContain('Removed 1 route');
+
+  // Verify only one route remains
+  const list = parseResponse(await client.callTool({
+    name: 'browser_route_list',
+  }));
+  expect(list.result).not.toContain('**/api/users');
+  expect(list.result).toContain('**/api/posts');
+});
+
+test('browser_unroute removes all routes', async ({ client, server }) => {
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.EMPTY_PAGE },
+  });
+
+  // Add routes
+  await client.callTool({
+    name: 'browser_route',
+    arguments: { pattern: '**/api/users', status: 200 },
+  });
+
+  await client.callTool({
+    name: 'browser_route',
+    arguments: { pattern: '**/api/posts', status: 200 },
+  });
+
+  // Remove all routes
+  const removeResponse = parseResponse(await client.callTool({
+    name: 'browser_unroute',
+    arguments: {},
+  }));
+  expect(removeResponse.result).toContain('Removed all 2 route');
+
+  // Verify no routes remain
+  const list = parseResponse(await client.callTool({
+    name: 'browser_route_list',
+  }));
+  expect(list.result).toContain('No active routes');
+});
+
+test('browser_route applies to isolated contexts', async ({ client, server }) => {
+  server.setContent('/', `<body>Original</body>`, 'text/html');
+
+  await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'new', isolatedContext: 'alice' },
+  });
+  await client.callTool({
+    name: 'browser_route',
+    arguments: { pattern: '**/', body: '<body>Mocked</body>', contentType: 'text/html' },
+  });
+
+  expect(await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  })).toHaveResponse({
+    snapshot: expect.stringContaining('Mocked'),
+  });
+
+  expect(await client.callTool({
+    name: 'browser_tabs',
+    arguments: { action: 'new', url: server.PREFIX, isolatedContext: 'bob' },
+  })).toHaveResponse({
+    snapshot: expect.stringContaining('Mocked'),
+  });
+});

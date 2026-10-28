@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 72727299,
+      "login": "tszulist-hbn",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T20:43:48Z",
+      "committer_at": "2026-10-25T20:43:48Z",
+      "tree_sha": "23b26f5fb875f25ccc927f65211fbba2315ecfb2"
+    },
+    "committer": {
+      "id": 97764156,
+      "login": "pytorchmergebot",
+      "type": "User"
+    },
+    "sha": "357e6ad635fbea9a029d47c4145ed080da13b7c8"
+  },
+  "observed_at": "2026-10-27T15:38:26.099046+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9cb51534194fab78868ac2a48640805d55aca1a3df24ee3f470c24052740e810",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b121c8e147b9f9ec7f516484763140c500759d5b32cc3bba404bc62bec418848",
+  "source_url": "https://api.github.com/repos/pytorch/pytorch/commits/357e6ad635fbea9a029d47c4145ed080da13b7c8?per_page=100",
+  "status_code": 200
+}

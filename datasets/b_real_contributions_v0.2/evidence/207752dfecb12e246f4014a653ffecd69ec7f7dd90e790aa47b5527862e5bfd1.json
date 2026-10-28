@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a279873b8703b87ac62a05c0fea2cd24a6d3519a",
+    "size": 21736
+  },
+  "observed_at": "2026-10-26T08:17:31.303572+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e46549b803725f7fa57be663599e5e334fdc185843119910560816f663c234c1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "944f47364dc43fc7ba19ee5a5d53e45769e9e97949b3217e7855744d3812a713",
+  "source_url": "https://api.github.com/repos/microsoft/terminal/git/blobs/a279873b8703b87ac62a05c0fea2cd24a6d3519a",
+  "status_code": 200
+}

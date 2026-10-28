@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "cli/cli",
+    "id": 212613049,
+    "language": "Go",
+    "private": false,
+    "size": 82561
+  },
+  "observed_at": "2026-10-26T06:09:50.464051+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7ee43f8f1aab9add74004709b9e45ade763e20925f33ad2fe1a4f8c349e359b6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c0c60199b32c80dacf6893850bfb6810a5b8fb142cee5b6c21509dc777e466bf",
+  "source_url": "https://api.github.com/repos/cli/cli",
+  "status_code": 200
+}

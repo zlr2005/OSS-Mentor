@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 87087741,
+      "login": "Sai-Suraj-27",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T07:53:04Z",
+      "committer_at": "2026-10-23T07:53:04Z",
+      "tree_sha": "bcd91f3ce3cbf212f06f96faf6efd08eaa750a50"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d6150eefffa19ad6b5020a7df5d8c0d4ee27a738"
+  },
+  "observed_at": "2026-10-26T07:38:07.145351+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4a86153b0c99f9bf17d8e1351579b2f66741958ea7d71130cb8e2a666b354756",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "73f0f0a1f3c73b2dd6ae5ef3c4c6ee8d76579d26a67c9d0a1ce98b7f1aa4a49a",
+  "source_url": "https://api.github.com/repos/huggingface/transformers/commits/d6150eefffa19ad6b5020a7df5d8c0d4ee27a738?per_page=100",
+  "status_code": 200
+}

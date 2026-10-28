@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 11685886,
+      "login": "Marcono1234",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T19:36:42Z",
+      "committer_at": "2026-10-23T19:36:42Z",
+      "tree_sha": "2362417064fc9d6c877c09f8c2c754b1435af3cf"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "094f5003ce5f6d2fb65457bee9c78b9d53d25308"
+  },
+  "observed_at": "2026-10-26T07:06:06.605682+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "587c563e06cc037b402e95922ee5df887b82f2a727f61d66e8f97b7c53ca73cd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "13b2dc2c586853c86b2151b9919ee2043d544cbe79d17a0b82f24b38e4ebcbc0",
+  "source_url": "https://api.github.com/repos/google/gson/commits/094f5003ce5f6d2fb65457bee9c78b9d53d25308?per_page=100",
+  "status_code": 200
+}

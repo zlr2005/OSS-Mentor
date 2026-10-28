@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "560e1638c1fefe6f51366ab540086b694ecb43be",
+    "size": 23511
+  },
+  "observed_at": "2026-10-26T05:44:33.513548+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2cd75bae033e925dd11b1b2ab34c16870e5ea194af8ab07b4ff39220d81af6b4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8cd5a2aad483caabf06c3334cc9efcbdf1f11645ea2d39b0610eca2d8e750c4f",
+  "source_url": "https://api.github.com/repos/assertj/assertj/git/blobs/560e1638c1fefe6f51366ab540086b694ecb43be",
+  "status_code": 200
+}

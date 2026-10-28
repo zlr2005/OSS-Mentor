@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 25919180,
+      "login": "AuroraTwinkle",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T15:45:24Z",
+      "committer_at": "2026-10-25T15:45:24Z",
+      "tree_sha": "6e648154e192e9b6244286241ef555416a492c60"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3df91ba1e5f1f724133d8d84aabe6934c64a3280"
+  },
+  "observed_at": "2026-10-26T05:30:40.912007+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a8cc8cf5d166380a1481ea5b9ede57c0f19c738d5a2d682c4b6c3f093b7df44c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d1fd58ff555363eaf1b5748d25ca2db89c2803fa9ba89c5c75c8487a2fd774d2",
+  "source_url": "https://api.github.com/repos/apache/pulsar/commits/3df91ba1e5f1f724133d8d84aabe6934c64a3280?per_page=100",
+  "status_code": 200
+}

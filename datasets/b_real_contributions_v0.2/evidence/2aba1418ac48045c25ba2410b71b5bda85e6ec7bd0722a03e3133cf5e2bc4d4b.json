@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "microsoft/vscode-mssql",
+    "id": 61973853,
+    "language": "TypeScript",
+    "private": false,
+    "size": 237070
+  },
+  "observed_at": "2026-10-26T08:20:22.318329+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7de0b9f62693c00d7a146e9fb6b39901de052a68e3e49a735cec22d76d0898e3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a10d9489be0835264908857661c1b6b943adeb5633d5346d22ce0e80551c04ff",
+  "source_url": "https://api.github.com/repos/microsoft/vscode-mssql",
+  "status_code": 200
+}

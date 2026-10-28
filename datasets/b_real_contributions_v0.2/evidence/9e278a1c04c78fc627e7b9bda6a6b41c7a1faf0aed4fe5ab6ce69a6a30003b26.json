@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 66740,
+      "login": "zsol",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-04T20:29:51Z",
+      "committer_at": "2026-09-04T20:29:51Z",
+      "tree_sha": "4b6f48324986fc040363e519c29304a4d9c2b5e6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3c907bc81cd4bfd40058648bf196b7626a61f0b8"
+  },
+  "observed_at": "2026-10-26T16:56:37.272826+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7f32b7d33d20d3a42e6fe701dafb192624fbb120aba66eb587b241572a591371",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e4a7facefdb829c0d806a5d393eb8313097e19b5ccc12658b15f5349225ec045",
+  "source_url": "https://api.github.com/repos/astral-sh/ty/commits/3c907bc81cd4bfd40058648bf196b7626a61f0b8?per_page=100",
+  "status_code": 200
+}

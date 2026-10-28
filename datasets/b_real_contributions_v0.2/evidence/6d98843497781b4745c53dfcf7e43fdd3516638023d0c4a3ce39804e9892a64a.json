@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 172102948,
+      "login": "dhruv-techdev",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T18:34:16Z",
+      "committer_at": "2026-10-25T18:34:16Z",
+      "tree_sha": "e06606bdc1cd929a0cb897093444b39c96132da3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b8c924b0bad993a87be545cc03e2ba1a3d2636c7"
+  },
+  "observed_at": "2026-10-26T05:41:59.515456+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1b8d2f57289c18fb00f6e8e204f36f2857890c36050c66995947eaa52c162b2b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "15f870a9959c68f01f410247c1d7ccf62a4f1a3bb7df06cbc60c36b999805b01",
+  "source_url": "https://api.github.com/repos/argoproj/argo-cd/commits/b8c924b0bad993a87be545cc03e2ba1a3d2636c7?per_page=100",
+  "status_code": 200
+}

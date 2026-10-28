@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "41611194986d90f90ab8aa3d9ca031b9c8dcfdee",
+    "size": 35660
+  },
+  "observed_at": "2026-10-26T07:19:47.276246+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "159a94d2ab44bd5cc226051f585869709cf39f8b4f7a31e6bcaae8f81cff5ef3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "eed521317591b54416a840a0cf2ad82967c5c1659f1047634a00ef8f81bf0a90",
+  "source_url": "https://api.github.com/repos/grafana/grafana/git/blobs/41611194986d90f90ab8aa3d9ca031b9c8dcfdee",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 12021443,
+      "login": "splincode",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T09:52:04Z",
+      "committer_at": "2026-10-24T20:54:13Z",
+      "tree_sha": "a9a79db0e58cb3ed367b07b4f10d7e5387cf7ee0"
+    },
+    "committer": {
+      "id": 22065329,
+      "login": "mattrbeck",
+      "type": "User"
+    },
+    "sha": "0a61a687c4344300a3304c80381b82bcf5716c4c"
+  },
+  "observed_at": "2026-10-26T05:05:03.283589+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6ea3659d0e20fd7225fb8db4b609a72504da63b9f4721ae4e69b243a30eddfbc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f0aa6727baca584981dc248493dcfda26c5aad0641bb997d802d6dcdf6f31809",
+  "source_url": "https://api.github.com/repos/angular/angular/commits/0a61a687c4344300a3304c80381b82bcf5716c4c?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c749c001aca0e78d49e2a3d73f69f8e562333ba0",
+    "size": 11417
+  },
+  "observed_at": "2026-10-26T14:04:14.201463+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "02adebebb7b81552bfdba950849b4933159f004d3eabb5eb6e0b2795a51d5bb8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d405de12c58673d3967d526ab843f2a4bf7c0a2f359b735961745c0658d17143",
+  "source_url": "https://api.github.com/repos/serde-rs/serde/git/blobs/c749c001aca0e78d49e2a3d73f69f8e562333ba0",
+  "status_code": 200
+}

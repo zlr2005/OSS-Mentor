@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {
+      "id": 129605617,
+      "login": "LubabaKhalid",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T22:21:24Z",
+      "committer_at": "2026-10-21T22:22:57Z",
+      "tree_sha": "4266c63578a5569bd38ef982f2569710047d1371"
+    },
+    "committer": {},
+    "sha": "7b64964048948de3b5633a75d6e64f98cf8fcece"
+  },
+  "observed_at": "2026-10-26T07:07:12.297221+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c10bf690d2d2f4a045ee2f3033239639a5965492008fe08aa271b687e4ce8495",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "16b3a1f87f278272dc55529c81c48a9d12f9da2082beca4799e43100aa83abe6",
+  "source_url": "https://api.github.com/repos/google/guava/commits/7b64964048948de3b5633a75d6e64f98cf8fcece?per_page=100",
+  "status_code": 200
+}

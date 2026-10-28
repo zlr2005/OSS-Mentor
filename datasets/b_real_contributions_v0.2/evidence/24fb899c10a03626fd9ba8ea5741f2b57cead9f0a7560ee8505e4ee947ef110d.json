@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 302469,
+      "login": "QuLogic",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T11:09:38Z",
+      "committer_at": "2026-10-22T11:09:38Z",
+      "tree_sha": "b56c438a600752b057dd34eb45bf1f69c1cea2be"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f53bde8826338f28fd83f947052daeebebd9b127"
+  },
+  "observed_at": "2026-10-27T13:56:12.447560+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7add158bfd84fca1c87259a41aa6b7df86dd1ec70876859491d6b68d75dfe2de",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b485b7a999ac911577145bed964d99840f172b2687ea229373f0d61c7c26eee4",
+  "source_url": "https://api.github.com/repos/matplotlib/matplotlib/commits/f53bde8826338f28fd83f947052daeebebd9b127?per_page=100",
+  "status_code": 200
+}

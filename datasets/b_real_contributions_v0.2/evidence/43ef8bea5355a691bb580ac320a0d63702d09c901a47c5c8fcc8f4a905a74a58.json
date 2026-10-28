@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 43905414,
+      "login": "ChihweiLHBird",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T05:26:23Z",
+      "committer_at": "2026-10-24T05:26:23Z",
+      "tree_sha": "0a676bdaa33c6739fca90f2142c5ce2e695d83da"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ff264bf074817ea3c6d59a50de58099ba532f6a5"
+  },
+  "observed_at": "2026-10-27T15:00:23.026301+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "291551626ecbc950c449a650d7cbee5b3415d8db151b17d127cec64f805826ae",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "88c6742fd979269bd39d7a633f9a49d9491b25174fe94725213c4f0735db98d4",
+  "source_url": "https://api.github.com/repos/OpenAPITools/openapi-generator/commits/ff264bf074817ea3c6d59a50de58099ba532f6a5?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 31095601,
+      "login": "blair49",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T14:45:15Z",
+      "committer_at": "2026-10-24T14:45:15Z",
+      "tree_sha": "d9d4a254f059919aef25377a11028949d37925ad"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "08f747303bbb5504ed57dd22f4cebd91f2498f20"
+  },
+  "observed_at": "2026-10-26T14:33:45.861016+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "151c235a98542e8677bf2987d64f6b5f2b6e805bd2453906e6829589d56763b9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "73ebf46d38a956a9ab54148f3904101500610be5648af982b2995a5e9c660d0b",
+  "source_url": "https://api.github.com/repos/spyder-ide/spyder/commits/08f747303bbb5504ed57dd22f4cebd91f2498f20?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b58d2f59b2c2dd807b2f7ef5817a7874c1f56b9b",
+    "size": 52245
+  },
+  "observed_at": "2026-10-26T05:04:15.297267+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7716c5a15219ed88a79fe737f7511dc9d4af67cd7e3a0b90925bbe3dedb84196",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d75a346236fab540133cf2e284a69c7d6f1ae011b3799816ffdb57f711527d1a",
+  "source_url": "https://api.github.com/repos/alibaba/fastjson2/git/blobs/b58d2f59b2c2dd807b2f7ef5817a7874c1f56b9b",
+  "status_code": 200
+}

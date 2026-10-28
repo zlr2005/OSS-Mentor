@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 865334,
+      "login": "mxpv",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T17:59:01Z",
+      "committer_at": "2026-10-19T17:59:01Z",
+      "tree_sha": "30e64ea81fa8fda608f1e653e64820bda3806d65"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9585566e9ea38417cc003590938f74cbeb01a8b0"
+  },
+  "observed_at": "2026-10-26T06:13:00.684030+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0a58df51d3e2ab62675806d69e215a19460f8b0e19b2e491736a9fb39e052501",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "556082ae40efd7bcc62b9e458efbefaa053636b65b222412b25d197ec875c636",
+  "source_url": "https://api.github.com/repos/containerd/containerd/commits/9585566e9ea38417cc003590938f74cbeb01a8b0?per_page=100",
+  "status_code": 200
+}

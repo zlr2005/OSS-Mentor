@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 315810,
+      "login": "mwaskom",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-05T22:14:31Z",
+      "committer_at": "2026-07-05T22:14:31Z",
+      "tree_sha": "1c525b9748d1c3f524b116ab5fef299b76473cd8"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "886c4a2c34e354ceb51b83e07eb4b9b854fd5386"
+  },
+  "observed_at": "2026-10-26T08:26:31.706948+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ace592dc66009a0a3ceaea904039c98f9c196bc1d6e8aefad1396b6c764a91f6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bee2d50610cb4251b3188869fa8700481323026ee2066f4cf592a5d74ed3a99d",
+  "source_url": "https://api.github.com/repos/mwaskom/seaborn/commits/886c4a2c34e354ceb51b83e07eb4b9b854fd5386?per_page=100",
+  "status_code": 200
+}

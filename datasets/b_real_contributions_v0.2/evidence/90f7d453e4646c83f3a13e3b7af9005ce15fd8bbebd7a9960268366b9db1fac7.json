@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 33538,
+      "login": "novemberborn",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-05-16T19:13:35Z",
+      "committer_at": "2026-05-16T19:13:35Z",
+      "tree_sha": "4ae0cdb748e184cc6128fdf8c72110bbd9efe07d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "fcaaf432e3c11f5406124c19f079e084a4ca9cf5"
+  },
+  "observed_at": "2026-10-26T16:57:44.139553+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7a0f0e702c855fdb28611abf03ca7414e07b56e825c9a904a53e55707b77537e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a7869fbcf7b5193651ea019ba5afa83f0f464172eb2e2a46df02bc339f969ccf",
+  "source_url": "https://api.github.com/repos/avajs/ava/commits/fcaaf432e3c11f5406124c19f079e084a4ca9cf5?per_page=100",
+  "status_code": 200
+}

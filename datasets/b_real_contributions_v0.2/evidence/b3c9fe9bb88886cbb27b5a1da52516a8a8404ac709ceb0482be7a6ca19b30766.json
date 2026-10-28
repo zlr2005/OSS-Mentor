@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3705199,
+      "login": "edison1105",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-13T07:35:44Z",
+      "committer_at": "2026-10-13T07:35:44Z",
+      "tree_sha": "a8332532bbebd478ec57dc62ef8f8d1eb3582cfc"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "693037486f38b3d3acf4cdf7b9850917c44cf9cb"
+  },
+  "observed_at": "2026-10-26T15:37:21.901764+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0fd710af2922717d3766e3619893b277e628d28b85cf980eccc48b2bc58dd8ca",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "073a906e515f809a4e63e53a1994877a8727248e56067a9dce3933fee072b23f",
+  "source_url": "https://api.github.com/repos/vuejs/core/commits/693037486f38b3d3acf4cdf7b9850917c44cf9cb?per_page=100",
+  "status_code": 200
+}

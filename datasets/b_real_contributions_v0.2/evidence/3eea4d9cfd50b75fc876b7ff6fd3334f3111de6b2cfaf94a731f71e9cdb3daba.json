@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "Textualize/textual",
+    "id": 355959597,
+    "language": "Python",
+    "private": false,
+    "size": 496634
+  },
+  "observed_at": "2026-10-26T04:50:33.043692+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3ba9bdc95db9896b38e255af7512242cbe3f65b134e47b3c5ee9a4d4bfe95622",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "42d98ee437f72f80afd5631d756ef63be6d019d6e4739db78a26b12e775d9437",
+  "source_url": "https://api.github.com/repos/Textualize/textual",
+  "status_code": 200
+}

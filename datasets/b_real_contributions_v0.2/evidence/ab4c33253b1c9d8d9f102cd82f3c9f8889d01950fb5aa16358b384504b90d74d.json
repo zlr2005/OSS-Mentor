@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "tailwindlabs/tailwindcss",
+    "id": 106017343,
+    "language": "TypeScript",
+    "private": false,
+    "size": 114512
+  },
+  "observed_at": "2026-10-26T14:54:35.298490+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aa210f8748a530bceff058841f6491b02b4f0ae621fb0dd68c4477aba38d1a94",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f1897cc37991c5149d4d7ca80d09009d86774bd5531323276be8fed34ac31044",
+  "source_url": "https://api.github.com/repos/tailwindlabs/tailwindcss",
+  "status_code": 200
+}

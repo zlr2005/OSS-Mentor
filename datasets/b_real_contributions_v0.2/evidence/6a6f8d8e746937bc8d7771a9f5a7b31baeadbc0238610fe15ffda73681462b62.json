@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 57410473,
+      "login": "Sekator778",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T18:13:20Z",
+      "committer_at": "2026-10-23T18:13:20Z",
+      "tree_sha": "89f26bd50c9e0e87cc4e6b7f7f8a599d9dda3827"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "959fbe61df472c4a1bbee4265caed854a19b2f78"
+  },
+  "observed_at": "2026-10-27T15:01:36.609386+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "786d643fea21ea7518c1fe80606c19ce899d97f419defdda81dc6e6ec6b8390e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "edafd6f225e4ef8f0e74e6f63a91656ab24d5a1764e87ed952e16710f782b9cf",
+  "source_url": "https://api.github.com/repos/OpenAPITools/openapi-generator/commits/959fbe61df472c4a1bbee4265caed854a19b2f78?per_page=100",
+  "status_code": 200
+}

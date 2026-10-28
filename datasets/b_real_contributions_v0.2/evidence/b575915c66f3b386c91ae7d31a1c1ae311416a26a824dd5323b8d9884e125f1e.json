@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c721695db6b013e3179669c83a6f58740a87adae",
+    "size": 2320
+  },
+  "observed_at": "2026-10-26T07:38:28.294056+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1f13e6576175f858cd17b16a0dbf57e3fa449bb19362f109bc05487d6ce28c7e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "48eade3453382667c448578880a3a46d6df3a492b728bcaaae67af41ed1a2c87",
+  "source_url": "https://api.github.com/repos/huggingface/transformers/git/blobs/c721695db6b013e3179669c83a6f58740a87adae",
+  "status_code": 200
+}

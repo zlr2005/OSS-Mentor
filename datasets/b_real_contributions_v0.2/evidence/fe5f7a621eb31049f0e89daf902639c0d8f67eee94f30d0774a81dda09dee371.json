@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-21T16:44:43Z",
+      "committer_at": "2026-10-21T16:44:43Z",
+      "tree_sha": "14c949ed3c3b890b68379af3d81c268af1d010bb"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ca5f3c1acf430429563485997e207661d24b11da"
+  },
+  "observed_at": "2026-10-26T14:00:42.728304+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dfea6a9904d399ec07adf19c1abf90da6bf32ab3be7aa6726654fdb21331a39b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ac1c8605d1d32d078625a51af59dc551e7a0a11ecacce2e27fe1f69d09d966b4",
+  "source_url": "https://api.github.com/repos/scrapy/scrapy/commits/ca5f3c1acf430429563485997e207661d24b11da?per_page=100",
+  "status_code": 200
+}

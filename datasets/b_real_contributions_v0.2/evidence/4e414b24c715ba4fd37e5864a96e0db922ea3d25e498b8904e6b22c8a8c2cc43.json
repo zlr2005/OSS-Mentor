@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 34928439,
+      "login": "jrmccluskey",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T17:54:20Z",
+      "committer_at": "2026-10-23T17:54:20Z",
+      "tree_sha": "e601050841d32659e75813833c98bfae44b959dd"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5d0fdfb636b9ff2436ffe9997eaa8a51b9418b5e"
+  },
+  "observed_at": "2026-10-26T05:08:24.405722+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1b33027082df32db0bd318188eed6e67cd883a33af0c4ae2ef78efccf6f5da8f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a711e7413c2aefbe588f7fcbc0c460a2b4c5b709581e613602ff956104b2f795",
+  "source_url": "https://api.github.com/repos/apache/beam/commits/5d0fdfb636b9ff2436ffe9997eaa8a51b9418b5e?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2365790,
+      "login": "larsoner",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-15T20:52:21Z",
+      "committer_at": "2026-09-15T20:52:21Z",
+      "tree_sha": "4aa3ecc150d889cc32779653d5ea4bc5ffddddc2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ca74aae4420026e513154cf1886e7a290456b2c7"
+  },
+  "observed_at": "2026-10-27T14:56:47.648336+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "72a7b879ba50aaaa7fa6d5df95d0fc69df2784975ab2a3d9ccbbed5e329e24de",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "644ed6549ba5afceb5dd557d5a10d1ef263b7693065d22d3fad3579da5f2bb1e",
+  "source_url": "https://api.github.com/repos/numpy/numpydoc/commits/ca74aae4420026e513154cf1886e7a290456b2c7?per_page=100",
+  "status_code": 200
+}

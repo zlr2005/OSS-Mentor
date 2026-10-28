@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 4773077,
+      "login": "jiripolasek",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T10:59:14Z",
+      "committer_at": "2026-10-23T10:59:14Z",
+      "tree_sha": "c77cb26d91604974e6875a0286aec5ad53dffc41"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "115665ec3240a0c94dea3f0bfaaa6c52dcf4d019"
+  },
+  "observed_at": "2026-10-26T08:13:20.332604+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "04f8777baba1264e1877e8d32961ca5656364a32edad8d712b4d9d73886637c1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "08b5e2cb5dfb863a5e7b56fbb201d8a6abcce8cc342dd60ffb10ff27f13d3ef9",
+  "source_url": "https://api.github.com/repos/microsoft/PowerToys/commits/115665ec3240a0c94dea3f0bfaaa6c52dcf4d019?per_page=100",
+  "status_code": 200
+}

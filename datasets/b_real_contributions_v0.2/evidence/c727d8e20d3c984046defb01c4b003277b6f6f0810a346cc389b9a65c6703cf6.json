@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-09-17T04:13:48Z",
+      "committer_at": "2026-09-17T04:13:48Z",
+      "tree_sha": "d2f036c8e2eff0f68a6ca19439a8db40f6f83680"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "25b2b6fe0b79d66125723f64e52753c20f984f59"
+  },
+  "observed_at": "2026-10-26T08:15:52.245095+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "06b45ef52110bf11f5101b668b713a5d70853fc456e7b9a1a3d69894661b5534",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "dfb93b0312c3ad095d0108ee0dec3f43ecc17da902a7986872042e8a053c47b5",
+  "source_url": "https://api.github.com/repos/microsoft/SandDance/commits/25b2b6fe0b79d66125723f64e52753c20f984f59?per_page=100",
+  "status_code": 200
+}

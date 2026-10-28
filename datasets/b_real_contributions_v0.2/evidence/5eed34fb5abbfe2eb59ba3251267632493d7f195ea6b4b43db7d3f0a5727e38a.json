@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "2d8527344ff0490cb520223112d157f1632ad290",
+    "size": 11934
+  },
+  "observed_at": "2026-10-26T07:28:12.974095+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "84cdbe04d42b4f080e80c347f717eac3ef40e73b8ffa9e0698b210bbe7073c19",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f56c1d2b5c9e09594be1536fde6229faa038fffc74f19ff2280fcada3a61c7b",
+  "source_url": "https://api.github.com/repos/huggingface/datasets/git/blobs/2d8527344ff0490cb520223112d157f1632ad290",
+  "status_code": 200
+}

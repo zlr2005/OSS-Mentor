@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1007307,
+      "login": "nicoburns",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-16T18:16:30Z",
+      "committer_at": "2026-10-16T18:16:30Z",
+      "tree_sha": "f67e72f772af944b8e9075f0b74dcdfb7d8788a6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "da90d0a7ea0d73b5f1cd3ce54941dcd49a3749ec"
+  },
+  "observed_at": "2026-10-26T06:21:40.670745+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ba29bff842f3579e63fdfcc196ed5510f8786f2f3b13771f53774e1c289cf05b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e3f92e0caf65d70c5990d990dd49135b70634854985c79a1f6980916b56b9bad",
+  "source_url": "https://api.github.com/repos/DioxusLabs/dioxus/commits/da90d0a7ea0d73b5f1cd3ce54941dcd49a3749ec?per_page=100",
+  "status_code": 200
+}

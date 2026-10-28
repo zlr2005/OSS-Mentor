@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29139614,
+      "login": "renovate[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-13T07:12:04Z",
+      "committer_at": "2026-10-13T07:12:04Z",
+      "tree_sha": "11f11a2f3d0ec50fc6206fa11d74b8a49eaf3399"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1caed5ab1b8e9821926402621f7364205b44e559"
+  },
+  "observed_at": "2026-10-26T15:37:40.840545+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e98499fbdcae9aac998ea5cddca1b3cb2777086be622945fc6558e0689dfbc33",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7c98937177dff716d00772e9f9a1932bdb7f585632d6f900c0ca2e8838895e72",
+  "source_url": "https://api.github.com/repos/vuejs/core/commits/1caed5ab1b8e9821926402621f7364205b44e559?per_page=100",
+  "status_code": 200
+}

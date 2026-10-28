@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7011819,
+      "login": "andreynering",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-06T13:43:07Z",
+      "committer_at": "2026-10-06T13:43:07Z",
+      "tree_sha": "85bae98e15902a6a595dd2182796ded94f1c4cab"
+    },
+    "committer": {
+      "id": 7011819,
+      "login": "andreynering",
+      "type": "User"
+    },
+    "sha": "871da1618956bcd45bd1156294df2dcae2bd075b"
+  },
+  "observed_at": "2026-10-26T06:57:50.259745+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1b3df14f9cee93edd948c396929485575861b5b97c5c977dbf9ce3db655dfa8f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "32e4af0b59954b456093f47b79c645dab07ae248037c672253959d5f1b647f84",
+  "source_url": "https://api.github.com/repos/go-task/task/commits/871da1618956bcd45bd1156294df2dcae2bd075b?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 9919,
+      "login": "github",
+      "type": "Organization"
+    },
+    "commit": {
+      "author_at": "2026-10-24T01:58:23Z",
+      "committer_at": "2026-10-24T01:58:23Z",
+      "tree_sha": "df85d7ba0d27c65b6012c7943e1b694666af383d"
+    },
+    "committer": {
+      "id": 9919,
+      "login": "github",
+      "type": "Organization"
+    },
+    "sha": "2c1fcd12ce5c8eb9e56d0c840ac974180ef9b9a1"
+  },
+  "observed_at": "2026-10-26T13:34:05.236672+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d4b42a73123ed5167855a90844532d020ea33320cfa7411478b6cae4285320a6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d055231551f1b723da3843e38a8f2351ef3c34fee4ed195e65e323eb43d42e72",
+  "source_url": "https://api.github.com/repos/redis/lettuce/commits/2c1fcd12ce5c8eb9e56d0c840ac974180ef9b9a1?per_page=100",
+  "status_code": 200
+}

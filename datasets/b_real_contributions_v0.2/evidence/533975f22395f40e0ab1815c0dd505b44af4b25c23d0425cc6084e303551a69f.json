@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1c3752c215d70034ef5107b3807a94eee4f10987",
+    "size": 7975
+  },
+  "observed_at": "2026-10-26T06:56:24.318955+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "51b5b0f33b63fa8f5c95ee72f1708b390b7e4b3d46cadc5e2dc8dde39365e7b5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cdb989e5322356438636e98ce8603b44f251a0054184025716eb889afa03578e",
+  "source_url": "https://api.github.com/repos/go-gitea/gitea/git/blobs/1c3752c215d70034ef5107b3807a94eee4f10987",
+  "status_code": 200
+}

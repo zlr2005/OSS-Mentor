@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 11725034,
+      "login": "Chocorean",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T15:32:02Z",
+      "committer_at": "2026-10-20T15:32:02Z",
+      "tree_sha": "9d455921859a7d7308fcdf0bf0ea9a0da28bbe37"
+    },
+    "committer": {
+      "id": 11725034,
+      "login": "Chocorean",
+      "type": "User"
+    },
+    "sha": "9431c82d541eaa7325124afe32c1bcdd00e65040"
+  },
+  "observed_at": "2026-10-26T13:51:51.726069+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6a1aa592feadef92fefa2a42174faba388a83508434e988fbb926cef1e714233",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a1a056efe3af284ced5e5b122b353517836da1e1bf81feefa3b1f082b91c0122",
+  "source_url": "https://api.github.com/repos/rust-lang/mdBook/commits/9431c82d541eaa7325124afe32c1bcdd00e65040?per_page=100",
+  "status_code": 200
+}

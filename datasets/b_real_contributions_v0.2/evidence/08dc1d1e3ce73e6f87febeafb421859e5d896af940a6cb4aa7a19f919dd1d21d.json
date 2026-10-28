@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e8817a9fb71a06824084e50c9f399be0da2c0760",
+    "size": 9846
+  },
+  "observed_at": "2026-10-26T12:58:20.477719+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dfd0501265421e6382767353ecb9b22a4798daadf7f5efd94f87216da3ac491e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f7ccb63a7438f2c86dfe9cfc5a5106968e86c7a9a3fe3ef2211203ce94b98e4",
+  "source_url": "https://api.github.com/repos/prettier/prettier/git/blobs/e8817a9fb71a06824084e50c9f399be0da2c0760",
+  "status_code": 200
+}

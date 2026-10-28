@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "tokio-rs/tokio",
+    "id": 67836789,
+    "language": "Rust",
+    "private": false,
+    "size": 18097
+  },
+  "observed_at": "2026-10-26T15:12:38.797687+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0a01c944b31cf005f1ec381d4c1665244aff499ec8ff2d7352d37db271db9d72",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0dc233f6204c0f1642220bc0573cd8062ea7be2f2069f9a4296e117d1c8c0c26",
+  "source_url": "https://api.github.com/repos/tokio-rs/tokio",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "1ae0f9602cb2ed33c6163437021b5e21934644a3",
+    "size": 79247
+  },
+  "observed_at": "2026-10-26T13:41:48.550867+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "53c2e48c0f397edee5ee32bd2149ce5a6df28ed7ec4766a70488da9d0a0e5b76",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e0575c1a9245b40d0609967eb6a40f8c6980cf82eabe53787fd59537147715be",
+  "source_url": "https://api.github.com/repos/remix-run/react-router/git/blobs/1ae0f9602cb2ed33c6163437021b5e21934644a3",
+  "status_code": 200
+}

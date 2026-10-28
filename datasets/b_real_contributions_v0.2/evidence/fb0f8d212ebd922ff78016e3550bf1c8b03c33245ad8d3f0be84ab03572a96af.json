@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 115476,
+      "login": "ceki",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-22T13:40:46Z",
+      "committer_at": "2026-09-22T13:41:39Z",
+      "tree_sha": "d2e2583e7ffbfadf169c0d9b87fb5eea6f1bcfba"
+    },
+    "committer": {
+      "id": 115476,
+      "login": "ceki",
+      "type": "User"
+    },
+    "sha": "9b5ebf1d79e5a4f30d34f62d8fd39d9b3d7ecb9c"
+  },
+  "observed_at": "2026-10-26T13:19:53.371738+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "96880d8c5febac3c9769749ecb65dbec70b1e098912e94ed92735266b06a3578",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5d764713e7b0f46da09f56fdc4e6e9de7741439f409645cde00a29fb105654b0",
+  "source_url": "https://api.github.com/repos/qos-ch/slf4j/commits/9b5ebf1d79e5a4f30d34f62d8fd39d9b3d7ecb9c?per_page=100",
+  "status_code": 200
+}

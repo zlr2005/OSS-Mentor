@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1242887,
+      "login": "davidism",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-07T13:56:05Z",
+      "committer_at": "2026-10-07T13:56:05Z",
+      "tree_sha": "d54d39de327bbde0d33f58d0cc9ca52233cba288"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "728c5e440af704a786384159184f695cf04ecbe7"
+  },
+  "observed_at": "2026-10-26T08:41:05.490670+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "14c9bfe1efc33d526ffce2284de9da4733866133201f1661796f182e393d31c9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7e9a152a4cfca0fb92d5358b1c46683a22ac8acd7249eb898b37749bb46a14bd",
+  "source_url": "https://api.github.com/repos/pallets/flask/commits/728c5e440af704a786384159184f695cf04ecbe7?per_page=100",
+  "status_code": 200
+}

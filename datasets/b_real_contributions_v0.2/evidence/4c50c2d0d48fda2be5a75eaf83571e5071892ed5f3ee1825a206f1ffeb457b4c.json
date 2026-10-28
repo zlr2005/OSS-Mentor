@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e87a115e462e1f5fee7905ea914c72e24d2eee42",
+    "size": 15922
+  },
+  "observed_at": "2026-10-26T15:30:26.405371+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "acdeaaaf6e8b888e2b551b59ba66aab00f390688252bc14c4e757203dc271f2d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "db2bcb2b456b25103c1c04cbf2dcf7b9412a640eb2900cf869e27b9263482261",
+  "source_url": "https://api.github.com/repos/vectordotdev/vector/git/blobs/e87a115e462e1f5fee7905ea914c72e24d2eee42",
+  "status_code": 200
+}

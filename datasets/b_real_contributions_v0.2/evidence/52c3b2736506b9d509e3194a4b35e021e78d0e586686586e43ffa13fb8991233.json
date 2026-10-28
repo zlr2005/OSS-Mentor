@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "typescript-eslint/typescript-eslint",
+    "id": 165536154,
+    "language": "TypeScript",
+    "private": false,
+    "size": 85353
+  },
+  "observed_at": "2026-10-26T15:25:59.752345+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7c6f5dba4527d2da5d87e8a33225f86d1701f2f6be798fff0a18688bbf1035ff",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bc9adca820c82d078bdf89cbd83e4e098a9f29550b1af3b67be4b61632684341",
+  "source_url": "https://api.github.com/repos/typescript-eslint/typescript-eslint",
+  "status_code": 200
+}

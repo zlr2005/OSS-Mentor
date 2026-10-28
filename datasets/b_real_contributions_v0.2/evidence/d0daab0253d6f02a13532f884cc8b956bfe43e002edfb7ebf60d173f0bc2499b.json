@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2096628,
+      "login": "blink1073",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-19T23:24:01Z",
+      "committer_at": "2026-09-19T23:24:01Z",
+      "tree_sha": "3efe4b62f035a9c77d3f49b478d53d66304dd470"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "cc0a4b16ebf655873cd6f770e897460abdade288"
+  },
+  "observed_at": "2026-10-27T16:08:46.060977+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0a5975d4dbfe4351e05207987721a40416b25953c007bdfd427c27268313737b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "36fa5858749bddf5c8be086304f7999730b3f636c676572c376773014fba1be5",
+  "source_url": "https://api.github.com/repos/scikit-image/scikit-image/commits/cc0a4b16ebf655873cd6f770e897460abdade288?per_page=100",
+  "status_code": 200
+}

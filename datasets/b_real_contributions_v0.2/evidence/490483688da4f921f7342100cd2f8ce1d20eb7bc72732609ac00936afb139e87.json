@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "keycloak/keycloak",
+    "id": 11125589,
+    "language": "Java",
+    "private": false,
+    "size": 624865
+  },
+  "observed_at": "2026-10-26T07:51:58.918850+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "25440f29e5e633367bad01dd1ee3b9eb853609db8de5125b6b309a3c404f323f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "95e42edde104f1d65bfdb95a7be57b3c7487cc9924f21ab0db537233e6a6766b",
+  "source_url": "https://api.github.com/repos/keycloak/keycloak",
+  "status_code": 200
+}

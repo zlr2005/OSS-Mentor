@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 219086731,
+      "login": "vidigoat",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T02:01:02Z",
+      "committer_at": "2026-10-24T02:01:02Z",
+      "tree_sha": "034e4929e45d65ee17197a4e70140de0162ed1ec"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "55996d1fb8342725c8a19b6023cd9439c3c1d6f7"
+  },
+  "observed_at": "2026-10-26T13:02:32.764632+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8e74735fd65c52a46995dc413277c3dbdb89d4daa6f184d0a861bf49af9016fa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "18de5d846c6cb2bc1a08c571261a0b674b45f183e72889df65b6f7759adbb371",
+  "source_url": "https://api.github.com/repos/psf/black/commits/55996d1fb8342725c8a19b6023cd9439c3c1d6f7?per_page=100",
+  "status_code": 200
+}

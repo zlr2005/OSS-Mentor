@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "supercog-ai/agentic",
+    "id": 926248435,
+    "language": "Python",
+    "private": false,
+    "size": 17442
+  },
+  "observed_at": "2026-10-26T14:44:03.629078+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6c46b0c981e3bab73a47ceed1cfdadfd8046dc83ffd31bbf286104931ee4ef2c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6123f8c6fd973ede6930379ad3f0be3552cd1720cb2a8ed0130972d2bca36be6",
+  "source_url": "https://api.github.com/repos/supercog-ai/agentic",
+  "status_code": 200
+}

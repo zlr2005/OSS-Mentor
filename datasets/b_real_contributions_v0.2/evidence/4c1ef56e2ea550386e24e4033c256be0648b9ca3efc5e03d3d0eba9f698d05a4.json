@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/uniffle",
+    "id": 504360264,
+    "language": "Java",
+    "private": false,
+    "size": 14396
+  },
+  "observed_at": "2026-10-26T05:40:41.544213+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8aae385af1df4a188331bb5d9bde841782a8d5bba411660d8058aad01062e0cd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "57053207483cfef2e742e81a623501745ffed9ed6d67d1e74c21d607e9d66c30",
+  "source_url": "https://api.github.com/repos/apache/uniffle",
+  "status_code": 200
+}

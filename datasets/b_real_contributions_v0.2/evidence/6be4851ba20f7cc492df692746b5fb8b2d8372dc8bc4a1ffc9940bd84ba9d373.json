@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Unlicense",
+    "full_name": "BurntSushi/ripgrep",
+    "id": 53631945,
+    "language": "Rust",
+    "private": false,
+    "size": 5730
+  },
+  "observed_at": "2026-10-26T05:58:43.983193+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "326502d109d9ad73177e25b6baa295e2dc1a3a7bb7b4509c7b91146cff081c5c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "35d8f13b7159f947658eded5bf75c93dbab8913c1e657e64ec086dbd2f1034fc",
+  "source_url": "https://api.github.com/repos/BurntSushi/ripgrep",
+  "status_code": 200
+}

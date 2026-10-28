@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ba682d4db2b9e4b91c14434cad6c6a2db0f37ddd",
+    "size": 9507
+  },
+  "observed_at": "2026-10-26T15:20:15.878141+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "35d7b96bd55ab3fbb0e823c97345819062951726aa08d37519124cfeb7ef106f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "74581557de21e600b0b7a3fcfef9f9491feae83597e6f70ded6517237ecd4a6d",
+  "source_url": "https://api.github.com/repos/traefik/traefik/git/blobs/ba682d4db2b9e4b91c14434cad6c6a2db0f37ddd",
+  "status_code": 200
+}

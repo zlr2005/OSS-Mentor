@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 17510957,
+      "login": "fuweid",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T23:33:03Z",
+      "committer_at": "2026-10-20T23:33:03Z",
+      "tree_sha": "d26f828659be504c997fbba6171c3cefcffd6f37"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7ff040cb84c9944d0c38a9f0dc9f12ed9c58223b"
+  },
+  "observed_at": "2026-10-27T13:14:05.713008+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "11ea3ed8c06be2af8c24f1b76b871ccae5328f304c2e5b47399ce24bc2ba521d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "94a7e77d2e91540f5a065045370fc031fa175ec9a6a196072ea1765f33278fde",
+  "source_url": "https://api.github.com/repos/etcd-io/etcd/commits/7ff040cb84c9944d0c38a9f0dc9f12ed9c58223b?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "bbbc364fc564e73585846269e3ca7f0ee54128d6",
+    "size": 9827
+  },
+  "observed_at": "2026-10-27T14:32:25.614568+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "47e077a46cb16d286bfebdc94fa7a3fa0b4b4b2a94212dfb25ac059e745114d4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ccf4912d669bb20a5a93ece3d2d569db97381da4c7eef50eec51e828e8bb04fe",
+  "source_url": "https://api.github.com/repos/networkx/networkx/git/blobs/bbbc364fc564e73585846269e3ca7f0ee54128d6",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "54bcb3af5659777747d12708d41e4ebc8abccc8a",
+    "size": 103785
+  },
+  "observed_at": "2026-10-26T15:39:48.586343+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "72858b5aa0a02f920f0f48293214c4318fd0dff335005a08ed0b4fc5f308eb89",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a84b1210676e0d8e2e74fed5d8f04fe3ba2c604d1ac5e83708f8ca85ad5a896a",
+  "source_url": "https://api.github.com/repos/vueuse/vueuse/git/blobs/54bcb3af5659777747d12708d41e4ebc8abccc8a",
+  "status_code": 200
+}

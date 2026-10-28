@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "cf209f91e6cccfb279dc47ba84bd03f60505b50b",
+    "size": 50455
+  },
+  "observed_at": "2026-10-26T05:59:16.691325+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c1c68ad7fcc2059c25048dcfa909ef264cc31d7a079618df77072b70c0f6a428",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3a55a55734011102b6ab126f478b7a46648cd2f3647cfe9b7618cfed1551b4c2",
+  "source_url": "https://api.github.com/repos/BurntSushi/ripgrep/git/blobs/cf209f91e6cccfb279dc47ba84bd03f60505b50b",
+  "status_code": 200
+}

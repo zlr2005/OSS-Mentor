@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 44533763,
+      "login": "Pistonight",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-12T20:13:13Z",
+      "committer_at": "2026-10-12T20:13:13Z",
+      "tree_sha": "dbdae071e74da8bbd537b26ef8ec6a4683bf7343"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "fb932e90aaf9f0cdfea35b8e067609a4c18e31d2"
+  },
+  "observed_at": "2026-10-26T06:57:36.209329+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "995d8a6a4a1bdfc91f45f06ade8d42c5a39e2ff06096224134286fdf88a83c76",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e5b68b620907528c8a801731daa41e05071bfd8568f94efaa6eed17f639d1590",
+  "source_url": "https://api.github.com/repos/go-task/task/commits/fb932e90aaf9f0cdfea35b8e067609a4c18e31d2?per_page=100",
+  "status_code": 200
+}

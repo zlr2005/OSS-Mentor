@@ -1,0 +1,472 @@
+{
+  "created_at": "2026-10-28T02:56:45.115250+00:00",
+  "dataset_version": "c-issue-candidates-v1-20261028",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "sha256": "48747480eddba024928d03be9bf83dc579e5515768647507a767e8187a85c9ab",
+      "size_bytes": 9
+    },
+    {
+      "path": "dataset.py",
+      "sha256": "4036616ad873a2460c0919ab60a32ca018e4b8a3be4917968c78eff11d5ee5e8",
+      "size_bytes": 3359
+    },
+    {
+      "path": "README.md",
+      "sha256": "09b8a1a1a3f587f7c8eeb60f33a655d4d9432788b4925c4e0913cda2395debda",
+      "size_bytes": 1401
+    },
+    {
+      "path": "schema.sql",
+      "sha256": "4a0acaea87521df6bad26d0ee499240a17f55577a04f88d73a65a7bb269c1a5a",
+      "size_bytes": 5175
+    },
+    {
+      "path": "tables/repository.0001.jsonl",
+      "sha256": "97dd2b122af5b9ffa1c5ff9dc2b22b9026f0c1e7486582ce00b26e9785d77796",
+      "size_bytes": 251249
+    },
+    {
+      "path": "tables/task_candidate.0001.jsonl",
+      "sha256": "7f472608a11d6aa76076da2d1b48270201dbcda4b659b456b03536aee263e6b8",
+      "size_bytes": 2204142
+    },
+    {
+      "path": "tables/task_candidate.0002.jsonl",
+      "sha256": "77fca83dd61eda382039ce8015ca4aea704df4c9b06ea6c364550c4bfe56aa01",
+      "size_bytes": 2406737
+    },
+    {
+      "path": "tables/task_candidate.0003.jsonl",
+      "sha256": "2206efa3ede17ce6cf799f5205ed24f3fcc98883e29ecd60762d48b0522e818c",
+      "size_bytes": 2731991
+    },
+    {
+      "path": "tables/task_candidate.0004.jsonl",
+      "sha256": "164533a3a870623a316a90046778a1b03be7a7dfdec53e7fe8436b840835eea7",
+      "size_bytes": 8004773
+    },
+    {
+      "path": "tables/task_candidate.0005.jsonl",
+      "sha256": "82c0522ccd3b68f031b8c8088f2732f6a7e212a2090e48e92a3232df84e23c9e",
+      "size_bytes": 9058645
+    },
+    {
+      "path": "tables/task_candidate.0006.jsonl",
+      "sha256": "0443d08bb30e922d9e79d8e90ad934336f62a1cf26248acc58c3ea2cfcc8b9f6",
+      "size_bytes": 8025397
+    },
+    {
+      "path": "tables/task_candidate.0007.jsonl",
+      "sha256": "8aba153ae49b8810b4331664d47effbcce03539e05d043fcd291af0790c3cf24",
+      "size_bytes": 7177608
+    },
+    {
+      "path": "tables/task_candidate.0008.jsonl",
+      "sha256": "8ad85141166a62624b7539418e589060959a383ab4a8fe5b0c85f5d33ba6d2e6",
+      "size_bytes": 8667585
+    },
+    {
+      "path": "tables/task_candidate.0009.jsonl",
+      "sha256": "71bf2df1991327b5b0f21aa362533fdefb33817ef7820f17dcac5a895041a0e2",
+      "size_bytes": 7659627
+    },
+    {
+      "path": "tables/task_candidate.0010.jsonl",
+      "sha256": "7512ef90b2e4017156bc20b47d432fa5cd947aa97082813d2acd7fd4ae9ecd9d",
+      "size_bytes": 8218995
+    },
+    {
+      "path": "tables/task_candidate.0011.jsonl",
+      "sha256": "06692c492b5c88b10252ed2275c40ebbfb142e833ce2243c7467cf9a09caf9a4",
+      "size_bytes": 7843872
+    },
+    {
+      "path": "tables/task_candidate.0012.jsonl",
+      "sha256": "fe165a0a8a7d57d47079edc1b7c87aea5c4bcfeffa40f7fb10a5b430e49376eb",
+      "size_bytes": 8392609
+    },
+    {
+      "path": "tables/task_candidate.0013.jsonl",
+      "sha256": "c3a6a19e5260ef63c8a425a4eb6af23d73ab3ccbbfd6337fa136bcf8d4bd0632",
+      "size_bytes": 8188283
+    },
+    {
+      "path": "tables/task_candidate.0014.jsonl",
+      "sha256": "390abf5c17cb915ff772311858dd5d1742aedd4419e120c6334a3ca7ab872f5f",
+      "size_bytes": 7227365
+    },
+    {
+      "path": "tables/task_candidate.0015.jsonl",
+      "sha256": "051c1cc726ac2ab2d209e35a0d5ff4975679f4f1f0ce4017e53587c2fe1b9b30",
+      "size_bytes": 7590046
+    },
+    {
+      "path": "tables/task_candidate.0016.jsonl",
+      "sha256": "0af69d44effe153b934f7bec0d1dcccb15fcd2f775a9b027cb3561986de38185",
+      "size_bytes": 8739613
+    },
+    {
+      "path": "tables/task_candidate.0017.jsonl",
+      "sha256": "2ab48d8c608c6a039a8b248babd9ba99471e20ff79dbe89db9ea444697dadbd7",
+      "size_bytes": 8854329
+    },
+    {
+      "path": "tables/task_candidate.0018.jsonl",
+      "sha256": "7626904828b224891a5dab2a25fc6d6c2d36ba6adc38c782b2d6b1356dea46a1",
+      "size_bytes": 8915181
+    },
+    {
+      "path": "tables/task_candidate.0019.jsonl",
+      "sha256": "8b35085c71ae45b9708bc1f9ac4314ea1566cb4d57f4f670da8d880f4d131293",
+      "size_bytes": 10034208
+    },
+    {
+      "path": "tables/task_candidate.0020.jsonl",
+      "sha256": "bd57bde4afcb79e0a785ddaaead5cdb6ca4a16435344a4d71f22bf01257621be",
+      "size_bytes": 10476532
+    },
+    {
+      "path": "tables/task_candidate.0021.jsonl",
+      "sha256": "46cc5a7ff7254396129a080808228073dbb404833488d25aea193ac86a0c93a9",
+      "size_bytes": 8307786
+    },
+    {
+      "path": "tables/task_candidate.0022.jsonl",
+      "sha256": "29fbb4a91107746ff470a748772ccb7d17eb2f5eade7a72c07fff79c6aa4b167",
+      "size_bytes": 8653452
+    },
+    {
+      "path": "tables/task_candidate.0023.jsonl",
+      "sha256": "6e518993bf8c5464a67ed7933ec16bbc532bc31f093ae4700e81fb90984d378b",
+      "size_bytes": 9436152
+    },
+    {
+      "path": "tables/task_candidate.0024.jsonl",
+      "sha256": "81715b867e7ab4e34ca891148eec6182d2fb56e191e05ee6a0bf96e53332b8f1",
+      "size_bytes": 4974000
+    },
+    {
+      "path": "tables/task_skill_requirement.0001.jsonl",
+      "sha256": "60c866e153f3f8039a940e464757ad6b2c334038137d0e10e26967d884136b95",
+      "size_bytes": 90839
+    },
+    {
+      "path": "tables/task_skill_requirement.0002.jsonl",
+      "sha256": "2b0d564593e0c777444bb9106db3a99c938434ea3bcdbbb78a1d5b29348ee418",
+      "size_bytes": 91338
+    },
+    {
+      "path": "tables/task_skill_requirement.0003.jsonl",
+      "sha256": "49ef70d19fd91322b5211ccf49da76761d15a6dff7b64dcbac5b1768307f5a37",
+      "size_bytes": 91985
+    },
+    {
+      "path": "tables/task_skill_requirement.0004.jsonl",
+      "sha256": "0541cbaea1a489ab8df47b2948ff3da3fca888c32f06cb7f88fe2112adf83b77",
+      "size_bytes": 90419
+    },
+    {
+      "path": "tables/task_skill_requirement.0005.jsonl",
+      "sha256": "2d4d65d501cdb3bfa01f7e68ce191325d45b07e8e86f342e20a9a4008f974919",
+      "size_bytes": 90532
+    },
+    {
+      "path": "tables/task_skill_requirement.0006.jsonl",
+      "sha256": "25602edb658f97918d2f2c21af0e20f8e8f274cda6534f5dc4182f7eb6a9813d",
+      "size_bytes": 91483
+    },
+    {
+      "path": "tables/task_skill_requirement.0007.jsonl",
+      "sha256": "c2a48523f68a36799b894028c58f24430ca0466ad5cd5cd3acd66e8666d8a3af",
+      "size_bytes": 91018
+    },
+    {
+      "path": "tables/task_skill_requirement.0008.jsonl",
+      "sha256": "7cf2873e9e1523ca255a66b804aa10a2468119f72cde96eec7fe3c5c4845e12f",
+      "size_bytes": 90318
+    },
+    {
+      "path": "tables/task_skill_requirement.0009.jsonl",
+      "sha256": "4dbc33df1e5331ea51a6f99b3d6130d7e5e62dbbf69c2b3b596a2148c103f716",
+      "size_bytes": 90418
+    },
+    {
+      "path": "tables/task_skill_requirement.0010.jsonl",
+      "sha256": "83e444db6974926fb61a9d66f7537f48a1d50635074661865328d81c4e422a1f",
+      "size_bytes": 90042
+    },
+    {
+      "path": "tables/task_skill_requirement.0011.jsonl",
+      "sha256": "cc00d94e74988bedd01c961c2e5a674debc6367d39cb6aa688f9d4ca96bf3da9",
+      "size_bytes": 90824
+    },
+    {
+      "path": "tables/task_skill_requirement.0012.jsonl",
+      "sha256": "f61485606fadb90e76e5835700363cf949ac16ea89553a4e386a75174e87a20c",
+      "size_bytes": 90434
+    },
+    {
+      "path": "tables/task_skill_requirement.0013.jsonl",
+      "sha256": "f61ceac37e7c543c61b2e7ee3463b29a1b080ded5245308e40a645171002dd49",
+      "size_bytes": 90041
+    },
+    {
+      "path": "tables/task_skill_requirement.0014.jsonl",
+      "sha256": "54382a450c48d11eebffb580d9742a14c4088895971af8eb89af0c3a8fcb1a49",
+      "size_bytes": 90126
+    },
+    {
+      "path": "tables/task_skill_requirement.0015.jsonl",
+      "sha256": "abb5709c8c30fc1f5bbcc775c7a9e81f25dbed231b63012cc7d3a50f03f4d5c5",
+      "size_bytes": 90180
+    },
+    {
+      "path": "tables/task_skill_requirement.0016.jsonl",
+      "sha256": "4f60d4fbbe38944edf56672fc662b0d9912851eb2528c421c71925a378acf2ed",
+      "size_bytes": 90436
+    },
+    {
+      "path": "tables/task_skill_requirement.0017.jsonl",
+      "sha256": "b55f6dbe2cfc191afa01224b63c7d2497e6592f201c8a425822eff250f77a4c3",
+      "size_bytes": 90614
+    },
+    {
+      "path": "tables/task_skill_requirement.0018.jsonl",
+      "sha256": "934bb95289d880b670203c18188c6feb6b889aa1fb02f153ebce71b53aecb97c",
+      "size_bytes": 90466
+    },
+    {
+      "path": "tables/task_skill_requirement.0019.jsonl",
+      "sha256": "3db4a1efd4e72cb3f458973c35088b71cb923d7ac0dce82b7d86dde034b56e47",
+      "size_bytes": 90318
+    },
+    {
+      "path": "tables/task_skill_requirement.0020.jsonl",
+      "sha256": "88eb6bc22c4fe87873dfea3caea3e9dfc3b22691ccb0e4a9b255ba88436553c7",
+      "size_bytes": 90025
+    },
+    {
+      "path": "tables/task_skill_requirement.0021.jsonl",
+      "sha256": "ca857dfa4615e93f4258a7767c493fdfea75f827d8e121993fd1da0c84e1f614",
+      "size_bytes": 91053
+    },
+    {
+      "path": "tables/task_skill_requirement.0022.jsonl",
+      "sha256": "8b5c85ec29abcf2bf7d9ce72335d1adcae63543615df19f74d65c30c6871cd7d",
+      "size_bytes": 90823
+    },
+    {
+      "path": "tables/task_skill_requirement.0023.jsonl",
+      "sha256": "9a88efa6be5d48e16140fc59516b934c837ce206b34a655f3718a05e91be0c4c",
+      "size_bytes": 90319
+    },
+    {
+      "path": "tables/task_skill_requirement.0024.jsonl",
+      "sha256": "7cbf5ffff0bee6991affa54496ad0160b12dfad8ffc99d52f4de5c0986f337cd",
+      "size_bytes": 90638
+    },
+    {
+      "path": "tables/task_skill_requirement.0025.jsonl",
+      "sha256": "b80ec879bb73ca3962a4d852fd5d87b0677861b9c9a961fd36a0f2ef0792acd4",
+      "size_bytes": 90125
+    },
+    {
+      "path": "tables/task_skill_requirement.0026.jsonl",
+      "sha256": "5486ddb843c349c36ab339038cecdc914d9174928a99c6dad2aab344c1fb2a75",
+      "size_bytes": 90892
+    },
+    {
+      "path": "tables/task_skill_requirement.0027.jsonl",
+      "sha256": "01b84d95efa5f852e2149f498bc53c5c0eb74bdac80e4f17c22333f1e7e6603f",
+      "size_bytes": 90947
+    },
+    {
+      "path": "tables/task_skill_requirement.0028.jsonl",
+      "sha256": "7bcb4cf4ef2c60ec4c45724b3e0d9c5812fd3ec52ae38014710bad937e61760d",
+      "size_bytes": 91454
+    },
+    {
+      "path": "tables/task_skill_requirement.0029.jsonl",
+      "sha256": "760e839c1a282e199a65c6ad7e28f389210ed89405dc7f26b5fefac71125d8f6",
+      "size_bytes": 90058
+    },
+    {
+      "path": "tables/task_skill_requirement.0030.jsonl",
+      "sha256": "4d09843efad87c625fb6d05143a63629ee04112ab83f0e3def54ca08801d9d5f",
+      "size_bytes": 90706
+    },
+    {
+      "path": "tables/task_skill_requirement.0031.jsonl",
+      "sha256": "07d78b837c610e30b75366086224c9af8125dc41ae0a2530e51c7805d1d02f13",
+      "size_bytes": 90884
+    },
+    {
+      "path": "tables/task_skill_requirement.0032.jsonl",
+      "sha256": "c342eec0db8725d5862451b36d823d9a174892442341750b371fc2562da60356",
+      "size_bytes": 90652
+    },
+    {
+      "path": "tables/task_skill_requirement.0033.jsonl",
+      "sha256": "cb7dc0f78c94dceffe0376e8eafe5d90275d8e52af5f23c2b06bcac22c1d35dd",
+      "size_bytes": 91015
+    },
+    {
+      "path": "tables/task_skill_requirement.0034.jsonl",
+      "sha256": "c4b1bf8fb3a72d2190edea5aea4237e415d983265783d0fa6339ce5a6bc20056",
+      "size_bytes": 91242
+    },
+    {
+      "path": "tables/task_skill_requirement.0035.jsonl",
+      "sha256": "91ab9bb00573dbedd5ed1d6e23952499bac320119e1def334972adb6c7ca7566",
+      "size_bytes": 90244
+    },
+    {
+      "path": "tables/task_skill_requirement.0036.jsonl",
+      "sha256": "facfc9075b0a912a0df0416736469363224327aa96bf363cfbcfca858c33fa72",
+      "size_bytes": 91597
+    },
+    {
+      "path": "tables/task_skill_requirement.0037.jsonl",
+      "sha256": "92d6d566916043d0292ef7dae3c1aa998185e5b9d64ac40b912dd4ebcccf4fbf",
+      "size_bytes": 91151
+    },
+    {
+      "path": "tables/task_skill_requirement.0038.jsonl",
+      "sha256": "1104b1443431eeed2660b69755fe25de90ba0b4d3dafd12954f7daee4ee6a9ce",
+      "size_bytes": 90599
+    },
+    {
+      "path": "tables/task_skill_requirement.0039.jsonl",
+      "sha256": "9221ba6f4a5fef4713d3c30e06fbe72f46887efc50c4bbcf5bbf535612e5e72c",
+      "size_bytes": 91094
+    },
+    {
+      "path": "tables/task_skill_requirement.0040.jsonl",
+      "sha256": "1f7c251f440e8c2bda2ab72648fa3c18560cf233bb2f1eca894597b2d5909ac8",
+      "size_bytes": 91428
+    },
+    {
+      "path": "tables/task_skill_requirement.0041.jsonl",
+      "sha256": "f4d05b5f714d8b709ca9b8a03e598c257c8b82e5f0dc22c2a666b19c556e5b37",
+      "size_bytes": 90985
+    },
+    {
+      "path": "tables/task_skill_requirement.0042.jsonl",
+      "sha256": "c4fb372da559bc166548b835fab6db7a8e662499b88b155e2bfde8e5fc8275c8",
+      "size_bytes": 90819
+    },
+    {
+      "path": "tables/task_skill_requirement.0043.jsonl",
+      "sha256": "66e8f8913c92e4805a7b211cd622379e3cc2948d1d3bd4db885785a4dbeeace0",
+      "size_bytes": 90564
+    },
+    {
+      "path": "tables/task_skill_requirement.0044.jsonl",
+      "sha256": "2822ac54d192d1f86edd6c6b677c56a1ca3881ba932a79a4c4feafe144ca2132",
+      "size_bytes": 91395
+    },
+    {
+      "path": "tables/task_skill_requirement.0045.jsonl",
+      "sha256": "967a7262dc1b182babeeacd868978b179b566be8c8509a2e0324a7e29f261cc4",
+      "size_bytes": 73156
+    }
+  ],
+  "freshness": {
+    "as_of": "2026-10-28T02:56:45.115250+00:00",
+    "note": "Stored eligibility is historical; expiry is preserved. No collection time is renewed by export.",
+    "stored_eligibility_counts": {
+      "eligible": 6922,
+      "excluded": 1372,
+      "temporarily_ineligible": 3466,
+      "unknown": 6
+    },
+    "verification_current_by_timestamp": 0
+  },
+  "schema_version": "c-candidate-tables-v1",
+  "source": "Canonical local oss_mentor.sqlite3 candidate tables; no personal tables exported",
+  "table_counts": {
+    "repository": 309,
+    "task_candidate": 11766,
+    "task_skill_requirement": 22398
+  },
+  "table_files": {
+    "repository": [
+      "tables/repository.0001.jsonl"
+    ],
+    "task_candidate": [
+      "tables/task_candidate.0001.jsonl",
+      "tables/task_candidate.0002.jsonl",
+      "tables/task_candidate.0003.jsonl",
+      "tables/task_candidate.0004.jsonl",
+      "tables/task_candidate.0005.jsonl",
+      "tables/task_candidate.0006.jsonl",
+      "tables/task_candidate.0007.jsonl",
+      "tables/task_candidate.0008.jsonl",
+      "tables/task_candidate.0009.jsonl",
+      "tables/task_candidate.0010.jsonl",
+      "tables/task_candidate.0011.jsonl",
+      "tables/task_candidate.0012.jsonl",
+      "tables/task_candidate.0013.jsonl",
+      "tables/task_candidate.0014.jsonl",
+      "tables/task_candidate.0015.jsonl",
+      "tables/task_candidate.0016.jsonl",
+      "tables/task_candidate.0017.jsonl",
+      "tables/task_candidate.0018.jsonl",
+      "tables/task_candidate.0019.jsonl",
+      "tables/task_candidate.0020.jsonl",
+      "tables/task_candidate.0021.jsonl",
+      "tables/task_candidate.0022.jsonl",
+      "tables/task_candidate.0023.jsonl",
+      "tables/task_candidate.0024.jsonl"
+    ],
+    "task_skill_requirement": [
+      "tables/task_skill_requirement.0001.jsonl",
+      "tables/task_skill_requirement.0002.jsonl",
+      "tables/task_skill_requirement.0003.jsonl",
+      "tables/task_skill_requirement.0004.jsonl",
+      "tables/task_skill_requirement.0005.jsonl",
+      "tables/task_skill_requirement.0006.jsonl",
+      "tables/task_skill_requirement.0007.jsonl",
+      "tables/task_skill_requirement.0008.jsonl",
+      "tables/task_skill_requirement.0009.jsonl",
+      "tables/task_skill_requirement.0010.jsonl",
+      "tables/task_skill_requirement.0011.jsonl",
+      "tables/task_skill_requirement.0012.jsonl",
+      "tables/task_skill_requirement.0013.jsonl",
+      "tables/task_skill_requirement.0014.jsonl",
+      "tables/task_skill_requirement.0015.jsonl",
+      "tables/task_skill_requirement.0016.jsonl",
+      "tables/task_skill_requirement.0017.jsonl",
+      "tables/task_skill_requirement.0018.jsonl",
+      "tables/task_skill_requirement.0019.jsonl",
+      "tables/task_skill_requirement.0020.jsonl",
+      "tables/task_skill_requirement.0021.jsonl",
+      "tables/task_skill_requirement.0022.jsonl",
+      "tables/task_skill_requirement.0023.jsonl",
+      "tables/task_skill_requirement.0024.jsonl",
+      "tables/task_skill_requirement.0025.jsonl",
+      "tables/task_skill_requirement.0026.jsonl",
+      "tables/task_skill_requirement.0027.jsonl",
+      "tables/task_skill_requirement.0028.jsonl",
+      "tables/task_skill_requirement.0029.jsonl",
+      "tables/task_skill_requirement.0030.jsonl",
+      "tables/task_skill_requirement.0031.jsonl",
+      "tables/task_skill_requirement.0032.jsonl",
+      "tables/task_skill_requirement.0033.jsonl",
+      "tables/task_skill_requirement.0034.jsonl",
+      "tables/task_skill_requirement.0035.jsonl",
+      "tables/task_skill_requirement.0036.jsonl",
+      "tables/task_skill_requirement.0037.jsonl",
+      "tables/task_skill_requirement.0038.jsonl",
+      "tables/task_skill_requirement.0039.jsonl",
+      "tables/task_skill_requirement.0040.jsonl",
+      "tables/task_skill_requirement.0041.jsonl",
+      "tables/task_skill_requirement.0042.jsonl",
+      "tables/task_skill_requirement.0043.jsonl",
+      "tables/task_skill_requirement.0044.jsonl",
+      "tables/task_skill_requirement.0045.jsonl"
+    ]
+  }
+}

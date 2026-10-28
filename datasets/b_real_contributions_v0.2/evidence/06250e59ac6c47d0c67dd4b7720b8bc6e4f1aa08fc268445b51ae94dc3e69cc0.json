@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1138161,
+      "login": "pront",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T18:18:40Z",
+      "committer_at": "2026-10-23T18:18:40Z",
+      "tree_sha": "1e9e71f3f9fac5e0aae6e0896c60eaacebf04c8e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "96ff6e6e3ae3452fa445db07116c3e3928a2b077"
+  },
+  "observed_at": "2026-10-26T15:31:42.816599+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f6809ca782b8adf3c1bf3916201bea433020ff6ca0890ba73d7869c1acbde348",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "df3b9a76e9b2f86e699db4e06540b1013b4ee607c95ea7875fc43ca4c9004dd6",
+  "source_url": "https://api.github.com/repos/vectordotdev/vector/commits/96ff6e6e3ae3452fa445db07116c3e3928a2b077?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 203992400,
+      "login": "microsoft-playwright-automation[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-25T21:18:11Z",
+      "committer_at": "2026-10-25T21:18:11Z",
+      "tree_sha": "8b1273bdfd2401d9ab3024e1c25a64e8370c995a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1a5b60a8305a3f762645328168300132823e58b4"
+  },
+  "observed_at": "2026-10-26T08:11:39.568149+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8c80ec301b0bbb3b06909c807bc3e76219187050dba3b45d08b3b6ed7e78c81b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "46668c3b40646a9a5ec3aa065baa95de9ffa7b31ba72a0cbe80b8ee3ebd5ef11",
+  "source_url": "https://api.github.com/repos/microsoft/playwright/commits/1a5b60a8305a3f762645328168300132823e58b4?per_page=100",
+  "status_code": 200
+}

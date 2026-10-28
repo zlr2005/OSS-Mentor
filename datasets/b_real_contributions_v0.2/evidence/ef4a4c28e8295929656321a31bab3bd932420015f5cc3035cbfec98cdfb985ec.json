@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "aa6ae933b75a3c5cbbe3fa9252ba20d43e81a231",
+    "size": 811
+  },
+  "observed_at": "2026-10-26T13:09:35.246013+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fe090c71b9524ae745faf6d1c716271f1cf7b31fda35318352dc3765616ccbf0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "86bf10109a7c78dd4025e868a55a06f56d26c1257f3995d83e1997bff32a5013",
+  "source_url": "https://api.github.com/repos/pypa/hatch/git/blobs/aa6ae933b75a3c5cbbe3fa9252ba20d43e81a231",
+  "status_code": 200
+}

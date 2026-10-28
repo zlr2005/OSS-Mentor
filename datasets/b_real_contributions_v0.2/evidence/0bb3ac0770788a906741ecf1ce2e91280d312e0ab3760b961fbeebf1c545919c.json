@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1927579,
+      "login": "zkochan",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T16:38:04Z",
+      "committer_at": "2026-10-25T16:38:04Z",
+      "tree_sha": "4d506a85800061ceff5afc9c13bb70bdafa96e82"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1860c1c75ea4ac8995f68d88fd0f7863f8c05e80"
+  },
+  "observed_at": "2026-10-26T08:48:06.356880+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "613d129694519a3f1e3c8a4e8a480741aadd23ff80146ff6d17071c74ab74354",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6a3001564c7a08eaa8271573415a304caa4444d03fcdb3286217c5076adf1d0c",
+  "source_url": "https://api.github.com/repos/pnpm/pnpm/commits/1860c1c75ea4ac8995f68d88fd0f7863f8c05e80?per_page=100",
+  "status_code": 200
+}

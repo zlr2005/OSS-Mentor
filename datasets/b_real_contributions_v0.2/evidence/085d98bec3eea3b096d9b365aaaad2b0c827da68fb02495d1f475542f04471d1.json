@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "moby/moby",
+    "id": 7691631,
+    "language": "Go",
+    "private": false,
+    "size": 276465
+  },
+  "observed_at": "2026-10-26T08:21:34.222951+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fc12e2b4d5816c8b0d280f151d24eb8acc4c870f875da20c2814096827ffe1f2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "abfdaaf40876c26e06ad59133c2635a34217f1cfb4ed0e04b0cb285245aee4cc",
+  "source_url": "https://api.github.com/repos/moby/moby",
+  "status_code": 200
+}

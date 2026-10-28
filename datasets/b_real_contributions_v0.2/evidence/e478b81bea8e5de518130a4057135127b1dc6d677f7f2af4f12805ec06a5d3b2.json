@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/rocketmq",
+    "id": 75164823,
+    "language": "Java",
+    "private": false,
+    "size": 47283
+  },
+  "observed_at": "2026-10-26T05:32:06.260369+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2ce3623aee187bfb374e1d7c48e92feed50cea6460ffee81e4cae4d54d88f0e7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4c6fc170f8aab96dfc1944b60a48ba34def9bfb8022780aeffe850fc4afd41a2",
+  "source_url": "https://api.github.com/repos/apache/rocketmq",
+  "status_code": 200
+}

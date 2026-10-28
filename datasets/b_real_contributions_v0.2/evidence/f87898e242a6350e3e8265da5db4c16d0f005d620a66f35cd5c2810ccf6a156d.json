@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2647329,
+      "login": "mvanslobbe",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-12T04:40:40Z",
+      "committer_at": "2026-10-12T04:40:40Z",
+      "tree_sha": "cc11e77b51937bd198cfb11a139240a8e9488b93"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "80fc7a169d3a3942a07f587abc4346d119fc525d"
+  },
+  "observed_at": "2026-10-27T13:45:12.568850+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2a63dd013a7a53429d84f82c30271e9263534d055759b4bd72b30fb1ed97316c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3bc3566fbd6c44246bd81d1ad15134a4a67c731095981d2368f3c1d33a929265",
+  "source_url": "https://api.github.com/repos/jqlang/jq/commits/80fc7a169d3a3942a07f587abc4346d119fc525d?per_page=100",
+  "status_code": 200
+}

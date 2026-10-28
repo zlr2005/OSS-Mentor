@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 8078968,
+      "login": "jbrockmendel",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T00:04:46Z",
+      "committer_at": "2026-10-25T00:04:46Z",
+      "tree_sha": "01a254e4285fdbdaf9fb0aedae397b3446b21570"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "199f52b12cbb470118bbafe3f4b95f750a78c24e"
+  },
+  "observed_at": "2026-10-26T08:43:04.949922+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7ae2955e03115e76689c67eb93890551de2f75132556cb08032f4c6f98d5d874",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0afc7d506b2a531e4fae07b9934e02612c4797ceee394fda0828bb60ac69c332",
+  "source_url": "https://api.github.com/repos/pandas-dev/pandas/commits/199f52b12cbb470118bbafe3f4b95f750a78c24e?per_page=100",
+  "status_code": 200
+}

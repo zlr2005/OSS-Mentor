@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29139614,
+      "login": "renovate[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-25T11:37:05Z",
+      "committer_at": "2026-10-25T11:37:05Z",
+      "tree_sha": "8e4784322881f958fca858bcd71f77e274a560d3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2616d6fd4d09eda174e45f5637108eea4d47d35b"
+  },
+  "observed_at": "2026-10-26T08:06:16.187641+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "439ac1494ac206db59fe3aaab1c5532ac83b9f1c7f4d059356209fa2790dc434",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6c3f7a0ecbbdffa6b973cca3c64a67edeb4afdbddba993f89d33b85fb88d8c12",
+  "source_url": "https://api.github.com/repos/micronaut-projects/micronaut-core/commits/2616d6fd4d09eda174e45f5637108eea4d47d35b?per_page=100",
+  "status_code": 200
+}

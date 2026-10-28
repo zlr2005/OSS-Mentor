@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 8764713,
+      "login": "pavan77",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:26:38Z",
+      "committer_at": "2026-10-23T20:26:38Z",
+      "tree_sha": "83b3097273d86bbb73724b31282a8fc2db31229f"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1e19422dfa2a39ab19aca5d8146092ec4be4f51f"
+  },
+  "observed_at": "2026-10-27T13:11:09.057534+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b10de24487c318fdd9ba4190f68e9d20405089d0b03495835956bb09fa8f5059",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2cc9d83fe30223d7d95e12b79c124b650f230d2077cfd25fa556bad88f24a95d",
+  "source_url": "https://api.github.com/repos/elastic/elasticsearch/commits/1e19422dfa2a39ab19aca5d8146092ec4be4f51f?per_page=100",
+  "status_code": 200
+}

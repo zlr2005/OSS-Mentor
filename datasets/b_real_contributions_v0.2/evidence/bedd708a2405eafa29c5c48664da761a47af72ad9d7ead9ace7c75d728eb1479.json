@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "microsoft/PowerToys",
+    "id": 184456251,
+    "language": "C",
+    "private": false,
+    "size": 591896
+  },
+  "observed_at": "2026-10-26T08:12:57.169994+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6551ca14195d6d238c0cf31a89701d416edfb70c76d574fb793c74dfcf1b6033",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f7a391df18575af0bed1f00f7246ccf928648c8cbb0edf9c2f96ee88e88ec628",
+  "source_url": "https://api.github.com/repos/microsoft/PowerToys",
+  "status_code": 200
+}

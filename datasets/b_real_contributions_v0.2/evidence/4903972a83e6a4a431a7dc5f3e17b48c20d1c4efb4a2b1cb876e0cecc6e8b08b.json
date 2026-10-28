@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 26999792,
+      "login": "plainheart",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-04T02:55:01Z",
+      "committer_at": "2026-09-04T02:55:01Z",
+      "tree_sha": "eb8ffd0f09bc79b6f2ab5017873885e8f1fb8415"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "018ed3998984243b2fe2d072c17cfaa3fba41145"
+  },
+  "observed_at": "2026-10-26T05:12:54.497837+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ffde96d11e8956fbad56b489ea800f4f380993be7428019d7afd7cf63530f5c8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1264f4743dbe4e70ed00cc7ef20b319d4e0763e160a693a9ae04a4c1a90718a1",
+  "source_url": "https://api.github.com/repos/apache/echarts/commits/018ed3998984243b2fe2d072c17cfaa3fba41145?per_page=100",
+  "status_code": 200
+}

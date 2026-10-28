@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "run-llama/llama_index",
+    "id": 560704231,
+    "language": "Python",
+    "private": false,
+    "size": 500794
+  },
+  "observed_at": "2026-10-26T13:45:38.098472+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7baf5ff5c55bfd4bcaf413bbadfbdf9f19c2f2baea195c726dda8ed48cb723d7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0a67ed61bd61f700bbe41e8e8b40503e05913db14b89faad5390a4e16d47b188",
+  "source_url": "https://api.github.com/repos/run-llama/llama_index",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "markdown-it/markdown-it",
+    "id": 28249537,
+    "language": "TypeScript",
+    "private": false,
+    "size": 4426
+  },
+  "observed_at": "2026-10-26T08:04:12.342130+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a56a7987791dc7b9f1dc3a5ae02dda851564e6159131e27a442f67af42160ed3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "31a1607d769d420828b9da498c93c96d71056ba892cf437d459f1b58d3b91499",
+  "source_url": "https://api.github.com/repos/markdown-it/markdown-it",
+  "status_code": 200
+}

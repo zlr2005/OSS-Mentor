@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "nodejs/node",
+    "id": 27193779,
+    "language": "JavaScript",
+    "private": false,
+    "size": 1671631
+  },
+  "observed_at": "2026-10-26T08:28:05.512877+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cd3803c4deebb46c8a4a7a3ad630f308965a6320aa2d66ac10a299feba0fa0a1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "527acbcb118c30d80c2fac46cd23872b87092d9671633e96b52a3ab613c5c517",
+  "source_url": "https://api.github.com/repos/nodejs/node",
+  "status_code": 200
+}

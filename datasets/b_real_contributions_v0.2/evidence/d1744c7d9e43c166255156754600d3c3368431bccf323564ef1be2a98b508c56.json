@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pytest-dev/pluggy",
+    "id": 34739117,
+    "language": "Python",
+    "private": false,
+    "size": 1376
+  },
+  "observed_at": "2026-10-26T13:13:06.043605+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b1623633f584a50eb5410544f49905da9c3b4c42514e205c70e8cd89058dc81a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "59bb2fd4b4491f3658dc2fa742a6ced5cfdad276e52169f9f2395faad8a257ab",
+  "source_url": "https://api.github.com/repos/pytest-dev/pluggy",
+  "status_code": 200
+}

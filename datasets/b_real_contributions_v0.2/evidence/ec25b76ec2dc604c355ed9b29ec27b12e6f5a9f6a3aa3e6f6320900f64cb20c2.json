@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "263d8dab9987a59cbe51de90f6a90b59d01a7171",
+    "size": 3037
+  },
+  "observed_at": "2026-10-26T06:55:00.176626+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a4e3cf7dcbc63d06fef307fbe35184bb83fc70560670d09aa66bf2c06f4335b2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1a13b57b476ed9ae670c38620afc1022daf9109d010b11667a78a328d3394ec7",
+  "source_url": "https://api.github.com/repos/go-chi/chi/git/blobs/263d8dab9987a59cbe51de90f6a90b59d01a7171",
+  "status_code": 200
+}

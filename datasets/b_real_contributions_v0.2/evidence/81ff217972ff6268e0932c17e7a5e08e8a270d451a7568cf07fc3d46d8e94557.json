@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 48655492,
+      "login": "hazyhaar",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-10T04:18:54Z",
+      "committer_at": "2026-10-10T04:18:54Z",
+      "tree_sha": "2bc67140e33a52f1e73fef683b2323005755b448"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ea9fab99e01d55a5e4f8daacc0d11ccffaee0a15"
+  },
+  "observed_at": "2026-10-26T06:52:24.197373+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fe4ab4cd1258e6fdd5456bc85dc958eb82890e7ba9ea42abb6b260c30e5f091e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "94ea5bea701e62690f3fc243d477eff4e122f38f42a31bd00d1e29960424b342",
+  "source_url": "https://api.github.com/repos/gin-gonic/gin/commits/ea9fab99e01d55a5e4f8daacc0d11ccffaee0a15?per_page=100",
+  "status_code": 200
+}

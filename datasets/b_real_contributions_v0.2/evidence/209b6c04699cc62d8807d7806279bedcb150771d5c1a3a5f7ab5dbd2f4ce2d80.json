@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 75291587,
+      "login": "Truongquangkhang",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-05-11T09:44:42Z",
+      "committer_at": "2026-05-11T09:44:42Z",
+      "tree_sha": "ee4de996a9e6a4ea819d05397cbbe2c0635b1a7d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2a22022d4147f01763bd4804fdfe322b43ca3b55"
+  },
+  "observed_at": "2026-10-26T06:57:02.846697+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4b89e0e09dbdd3c2fe88e2b6148c656f3a0507d4d1ff4d3aa6d3a9f24a466144",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "280ebb9e9fd4b60a16e41e1639d0083b4b2f359ea86bdb53978d60bcd50ad355",
+  "source_url": "https://api.github.com/repos/go-gorm/gorm/commits/2a22022d4147f01763bd4804fdfe322b43ca3b55?per_page=100",
+  "status_code": 200
+}

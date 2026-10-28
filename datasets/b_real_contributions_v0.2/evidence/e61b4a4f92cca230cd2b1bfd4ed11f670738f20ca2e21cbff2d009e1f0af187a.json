@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5889929,
+      "login": "valentinpalkovic",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T13:32:10Z",
+      "committer_at": "2026-10-23T13:32:10Z",
+      "tree_sha": "2efcecc5d63ac69ccd38565dc217a0a69a36ea7f"
+    },
+    "committer": {
+      "id": 5889929,
+      "login": "valentinpalkovic",
+      "type": "User"
+    },
+    "sha": "ffaa68ac58bb5020c5c197541231ed5e201fc632"
+  },
+  "observed_at": "2026-10-26T14:38:10.080492+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "08b850a254a36e817eee0992faae7aab8b007f09c061c7a1bda2048dcf684563",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "13d1a1a6416958a08c8ea5686e978e4d1b53bcab28e8827141ce351ddbe9a408",
+  "source_url": "https://api.github.com/repos/storybookjs/storybook/commits/ffaa68ac58bb5020c5c197541231ed5e201fc632?per_page=100",
+  "status_code": 200
+}

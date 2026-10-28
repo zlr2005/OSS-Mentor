@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "BerriAI/litellm",
+    "id": 671269505,
+    "language": "Python",
+    "private": false,
+    "size": 2653154
+  },
+  "observed_at": "2026-10-26T05:53:34.165929+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "25e2deb545e4c645c0b5cccff9b07fb12b78b0fc8fc01196e76e7cbbf189ccba",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bb8040c209ecad9373f4d12bbcf77af7926f8aba4125a81b537c981464a48fe1",
+  "source_url": "https://api.github.com/repos/BerriAI/litellm",
+  "status_code": 200
+}

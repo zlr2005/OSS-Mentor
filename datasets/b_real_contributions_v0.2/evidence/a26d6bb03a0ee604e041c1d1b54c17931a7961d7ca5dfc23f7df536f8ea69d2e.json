@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 22798219,
+      "login": "juan-fernandez",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T02:12:42Z",
+      "committer_at": "2026-10-24T02:12:42Z",
+      "tree_sha": "1064473548bfa1c38fd8d5d7b9da3751156decb0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "867a5e41c30167a936a7ba27ad95b47529952c88"
+  },
+  "observed_at": "2026-10-26T15:34:55.358092+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5401702c14032515811cdf789939cef2a8b1dd75a70e06b49f2ab4505420d4f5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "52355032cbf0bbd51e2c0378fffb98d72e8fd0d5ee6820620fe0b17c1fd2abc8",
+  "source_url": "https://api.github.com/repos/vitest-dev/vitest/commits/867a5e41c30167a936a7ba27ad95b47529952c88?per_page=100",
+  "status_code": 200
+}

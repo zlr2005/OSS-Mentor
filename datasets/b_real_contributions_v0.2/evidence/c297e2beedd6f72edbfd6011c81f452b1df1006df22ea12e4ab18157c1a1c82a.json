@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 144898355,
+      "login": "aroh3006",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-03T13:09:19Z",
+      "committer_at": "2026-09-03T13:09:19Z",
+      "tree_sha": "8d13fd817515acae465a480e91fcd0407eb5d75a"
+    },
+    "committer": {
+      "id": 144898355,
+      "login": "aroh3006",
+      "type": "User"
+    },
+    "sha": "a05bf276f3cb96c1f712b2f9cff02d2551a2168d"
+  },
+  "observed_at": "2026-10-26T06:05:45.025693+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8640e6cd779d7c8dc4d40582a18ba6d47f50717e181f4c1f1d33e3e72add99d0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7b198ee0d933f547ba07cb08913ce9ab05a337439cd0d1abe72f8070484daec3",
+  "source_url": "https://api.github.com/repos/ChatGPTNextWeb/NextChat/commits/a05bf276f3cb96c1f712b2f9cff02d2551a2168d?per_page=100",
+  "status_code": 200
+}

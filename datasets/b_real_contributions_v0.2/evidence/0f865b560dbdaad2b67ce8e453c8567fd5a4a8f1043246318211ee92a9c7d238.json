@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c3b400382cb5e0355082abe3884f573bda8a7735",
+    "size": 43071
+  },
+  "observed_at": "2026-10-26T05:41:42.890399+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f74fcfd83235bd3d6599b6fd59d98361f9fb9d2863aac59774ec2bf1f926cde7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "64d8ade7ea7ff58a974dde7edb68b1239c35fe910213696b1d93e51bad5043b3",
+  "source_url": "https://api.github.com/repos/apache/uniffle/git/blobs/c3b400382cb5e0355082abe3884f573bda8a7735",
+  "status_code": 200
+}

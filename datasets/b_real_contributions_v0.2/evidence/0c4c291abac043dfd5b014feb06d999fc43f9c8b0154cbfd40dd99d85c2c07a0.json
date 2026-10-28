@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4a749252a178fcf2630c7a162b22640d9ff36ca1",
+    "size": 38990
+  },
+  "observed_at": "2026-10-26T08:19:59.966241+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e0025127ffdbba7ae3cbd35724d992b32d02ba139a31f025c35cabec4f1d090b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7a798c804a4f08c81d88e3a32c23bc6ab02b615afd28e4c88eed63b289ee3617",
+  "source_url": "https://api.github.com/repos/microsoft/vscode/git/blobs/4a749252a178fcf2630c7a162b22640d9ff36ca1",
+  "status_code": 200
+}

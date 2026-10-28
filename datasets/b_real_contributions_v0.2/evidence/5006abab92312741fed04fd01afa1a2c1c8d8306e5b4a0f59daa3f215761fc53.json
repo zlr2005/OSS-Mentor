@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 114684273,
+      "login": "pbrolin47",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-14T08:44:56Z",
+      "committer_at": "2026-10-14T08:44:56Z",
+      "tree_sha": "a85052d3823ec8ab9bb58c8b9b180b544111b256"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e28fbd9ded0a07ba9569e51be4764c1ad4daa8f6"
+  },
+  "observed_at": "2026-10-26T08:05:47.583534+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "95fcf7e4034d4877372c98b13de8dc43ff53f4e78a6cc832029a67c37191738f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4a10a96a14b560ac159f3e1304abda7039909ba382223527c52a3aa35e1ed359",
+  "source_url": "https://api.github.com/repos/mermaid-js/mermaid/commits/e28fbd9ded0a07ba9569e51be4764c1ad4daa8f6?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 131236832,
+      "login": "Yun-seoung",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T12:37:35Z",
+      "committer_at": "2026-10-19T12:37:35Z",
+      "tree_sha": "6405a408933e1b8df66e3211ab47549e5af37db7"
+    },
+    "committer": {
+      "id": 131236832,
+      "login": "Yun-seoung",
+      "type": "User"
+    },
+    "sha": "72f07324433c37624da5812f778aaa0fc884f3b5"
+  },
+  "observed_at": "2026-10-26T08:05:24.984765+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "74cee536fcd8394b5d351d2f6b2ef4835b248d7d84a5a6ba1a1f750ede8f0de3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d5f3b0449ce7e50667d55fc42b15151f55cd590871af8c1ced481ca547b40af1",
+  "source_url": "https://api.github.com/repos/mermaid-js/mermaid/commits/72f07324433c37624da5812f778aaa0fc884f3b5?per_page=100",
+  "status_code": 200
+}

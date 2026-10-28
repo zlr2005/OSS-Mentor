@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7480158,
+      "login": "juliusmh",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T08:09:33Z",
+      "committer_at": "2026-10-23T08:09:33Z",
+      "tree_sha": "6a16b3358d0521c6a98a8a252270c8db3f8242dc"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1766a31ff987a1f8a74e1a27f87e3f0d03323b70"
+  },
+  "observed_at": "2026-10-26T13:00:54.634871+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a097bfc6c4e7780c29919d846f5d32212494bf7864d55a49ddb7dedb57f174f4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e27b3a8aa77aa2e6c318de74160ac763240d6736a2deeb0e235c762d086ee4e0",
+  "source_url": "https://api.github.com/repos/prometheus/prometheus/commits/1766a31ff987a1f8a74e1a27f87e3f0d03323b70?per_page=100",
+  "status_code": 200
+}

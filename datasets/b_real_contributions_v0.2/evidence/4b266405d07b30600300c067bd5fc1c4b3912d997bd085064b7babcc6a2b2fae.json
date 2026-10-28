@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1620265,
+      "login": "vkarpov15",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T14:23:51Z",
+      "committer_at": "2026-10-23T14:23:51Z",
+      "tree_sha": "974bf31dd95124ed752e6df1e0aea117fd0cb9e7"
+    },
+    "committer": {
+      "id": 1620265,
+      "login": "vkarpov15",
+      "type": "User"
+    },
+    "sha": "e681842baab0b4b11f559b451525e5566f67fed9"
+  },
+  "observed_at": "2026-10-26T05:48:22.592231+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fc7f87170f8a76d2a8a6a878ac4210bdf8ee7e7915025d1dd8aa067322442347",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9a4b51796a413226ae048d45f9716f205764914507f8da9e3198f09f16a67029",
+  "source_url": "https://api.github.com/repos/Automattic/mongoose/commits/e681842baab0b4b11f559b451525e5566f67fed9?per_page=100",
+  "status_code": 200
+}

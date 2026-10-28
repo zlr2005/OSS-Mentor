@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 200716675,
+      "login": "Akhil-1527",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T14:17:27Z",
+      "committer_at": "2026-10-23T14:17:27Z",
+      "tree_sha": "800900ace48dfe26be459938bb5c6f2807b622bb"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8d4b7b94f559a024e6a370ca0b59c60cfce5716c"
+  },
+  "observed_at": "2026-10-27T15:07:35.837710+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9d2451cd802d875803fa552d61a19b7717e2c1fa6e1565ba88542d54c05160af",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ba2a47f2e8e911b4e303bba0ea7544083c181a5fc7eef73c6858000a1f008cc3",
+  "source_url": "https://api.github.com/repos/pmd/pmd/commits/8d4b7b94f559a024e6a370ca0b59c60cfce5716c?per_page=100",
+  "status_code": 200
+}

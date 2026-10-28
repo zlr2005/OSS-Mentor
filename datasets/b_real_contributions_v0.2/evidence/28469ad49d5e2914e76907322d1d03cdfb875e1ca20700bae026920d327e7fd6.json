@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "ant-design/ant-design",
+    "id": 34526884,
+    "language": "TypeScript",
+    "private": false,
+    "size": 281601
+  },
+  "observed_at": "2026-10-26T05:06:07.689862+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "79c28f63fa8b9a8b1ff5012d7b719492dcc34d0f4b6c40d03f03dda0d334b5b5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fbdd552b80b3bc0b36c522cc0d0452e16bf83cc64716a949dd7815729630636c",
+  "source_url": "https://api.github.com/repos/ant-design/ant-design",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "react/react",
+    "id": 10270250,
+    "language": "JavaScript",
+    "private": false,
+    "size": 1129739
+  },
+  "observed_at": "2026-10-26T13:25:36.588183+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "71aa04bb83a959e0fd4d9e9db86ae9cc9d08636ead1def60a839a831bf200e63",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ede8597ebd2f0854131715852d6e964c1874db653555603c39b37edf7f27633c",
+  "source_url": "https://api.github.com/repos/react/react",
+  "status_code": 200
+}

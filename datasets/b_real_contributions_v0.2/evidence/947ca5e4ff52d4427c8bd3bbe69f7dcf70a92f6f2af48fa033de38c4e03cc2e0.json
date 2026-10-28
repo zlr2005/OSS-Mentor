@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7040122,
+      "login": "erictraut",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-19T09:09:40Z",
+      "committer_at": "2026-08-19T09:09:40Z",
+      "tree_sha": "8d31506da6098b8dccbdf2cf92e96ea7442191f0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b41e5096bc9b1333355911614648616f7cfbf943"
+  },
+  "observed_at": "2026-10-27T15:33:07.750734+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2fcbea3a8eb7c96e31eff6aaf5a6a88c308473addeeb5ae47e1265bc443c7138",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "90fe9e1024bd222ab750d55ee43ccb2fa239b7f62bb1b3b61c3229dd72f437dc",
+  "source_url": "https://api.github.com/repos/python/typing/commits/b41e5096bc9b1333355911614648616f7cfbf943?per_page=100",
+  "status_code": 200
+}

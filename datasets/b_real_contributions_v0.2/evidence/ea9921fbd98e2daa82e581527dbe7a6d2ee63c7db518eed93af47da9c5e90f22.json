@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 61586,
+      "login": "carljm",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T23:48:31Z",
+      "committer_at": "2026-10-24T23:48:31Z",
+      "tree_sha": "da578cf8f5612d5d7b057c43663cc68e50fc3a42"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "047476ab16be5ad1ec327cc09c03c2e9bc6fbb0d"
+  },
+  "observed_at": "2026-10-26T05:45:32.252098+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aa2bdf2d82b543ba93c932da8bf5be8be58ae81664b3183df06a6baaa9f62917",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5d93d0e38125cbcb1cd24d0c509550b3207527d8b08823271cd29f9b8685ae84",
+  "source_url": "https://api.github.com/repos/astral-sh/ruff/commits/047476ab16be5ad1ec327cc09c03c2e9bc6fbb0d?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fa732a9b3af454bfc8bdfc780a2e5f9ab4c49da2",
+    "size": 10267
+  },
+  "observed_at": "2026-10-26T13:51:19.801379+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6f9247fa508b6a1fe126c5c70ad39588b02e7363e2eef4fe7b296408d85a2aee",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "78afbb5c83d07f197538be7c5bd4a26125554fc3794e8c95472e81e6c5653328",
+  "source_url": "https://api.github.com/repos/rust-lang/cargo/git/blobs/fa732a9b3af454bfc8bdfc780a2e5f9ab4c49da2",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "huggingface/transformers",
+    "id": 155220641,
+    "language": "Python",
+    "private": false,
+    "size": 540297
+  },
+  "observed_at": "2026-10-26T07:28:34.592492+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f401bcbf76a6af92284a06c0da08915d302d991b4f3261c938dc376e26cd6968",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "25b0b238f83a560582dc283bf3af53b8bc2db2b3fed6ee651e08448e3fcc0b07",
+  "source_url": "https://api.github.com/repos/huggingface/transformers",
+  "status_code": 200
+}

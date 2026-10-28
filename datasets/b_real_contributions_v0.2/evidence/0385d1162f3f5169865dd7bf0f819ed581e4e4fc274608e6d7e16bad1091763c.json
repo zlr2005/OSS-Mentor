@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a0e50eda4c8a22d35c48172e6401a5af1da36193",
+    "size": 2039
+  },
+  "observed_at": "2026-10-26T07:09:07.697403+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3699748b34cd65e8e2f1696326c9c0d1236bdc19f79f39852c63cde623400d8a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0ea454517b89c52e9952466b2f22c6ec3decc450b0e3f13023a2e34fc9e1e4d5",
+  "source_url": "https://api.github.com/repos/google/guice/git/blobs/a0e50eda4c8a22d35c48172e6401a5af1da36193",
+  "status_code": 200
+}

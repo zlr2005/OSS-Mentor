@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e0840a446caf5f719786acde1f0cb531e75a9d6b",
+    "size": 1080
+  },
+  "observed_at": "2026-10-26T08:23:46.644524+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3d0af4d61e29b7513e105dcd5ee4e4a75c736e6c88aee80d2bb2719110ae4e3f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b9487bf5ccd99402d8258a63f4f936c9377f11503c3d52cce4947ce4e137cb38",
+  "source_url": "https://api.github.com/repos/mockito/mockito/git/blobs/e0840a446caf5f719786acde1f0cb531e75a9d6b",
+  "status_code": 200
+}

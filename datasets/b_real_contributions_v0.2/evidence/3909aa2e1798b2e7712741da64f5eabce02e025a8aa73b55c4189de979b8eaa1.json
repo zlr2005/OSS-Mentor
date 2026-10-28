@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 19386515,
+      "login": "Johnny-Kao",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-13T13:53:24Z",
+      "committer_at": "2026-10-13T13:53:24Z",
+      "tree_sha": "ac9e0e4c72688b26f5e8c6ea52da558dadf59330"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8f76a5262b3b426bfb6a1127f12d49430d168c8b"
+  },
+  "observed_at": "2026-10-26T13:15:06.684232+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8919e4586237ef86c6b353414de1cb3b3b004b61bab4151e457f20033629ae52",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d4a5d18b10c3a1344b44cc4310ec895f94641e6963ddf40d1f9a32bfc65a795d",
+  "source_url": "https://api.github.com/repos/python-attrs/attrs/commits/8f76a5262b3b426bfb6a1127f12d49430d168c8b?per_page=100",
+  "status_code": 200
+}

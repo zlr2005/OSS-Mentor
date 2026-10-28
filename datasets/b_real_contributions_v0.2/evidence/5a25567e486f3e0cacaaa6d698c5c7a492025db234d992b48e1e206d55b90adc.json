@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "microsoft/terminal",
+    "id": 100060912,
+    "language": "C++",
+    "private": false,
+    "size": 181207
+  },
+  "observed_at": "2026-10-26T08:15:59.903190+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e82630d3adf15e63f68faec5cf766c0c0f72679cc5cffceb9f899dd603d2dbbf",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4a1b0642866e5b690630f8d353f027d94d658775f824bb738df1911b2164c5c6",
+  "source_url": "https://api.github.com/repos/microsoft/terminal",
+  "status_code": 200
+}

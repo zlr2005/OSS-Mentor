@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/paimon",
+    "id": 447060287,
+    "language": "Java",
+    "private": false,
+    "size": 106813
+  },
+  "observed_at": "2026-10-26T05:27:05.532007+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "642b650d6c1de56ce1f890270e4a5194e548077a06829d367d1e200484df1adb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "887dc853485e49be639349db5474d455dfc8be0397c8121c3c3f0049129c59a9",
+  "source_url": "https://api.github.com/repos/apache/paimon",
+  "status_code": 200
+}

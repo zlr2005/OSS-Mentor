@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 199813,
+      "login": "tacaswell",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T18:59:49Z",
+      "committer_at": "2026-10-23T18:59:49Z",
+      "tree_sha": "9d549af125e3865814f9b6b90cc936b8a822c7ea"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "39b27ddaafe636f06776a2044b5df05d07648dc4"
+  },
+  "observed_at": "2026-10-27T13:53:42.651515+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "98d5ec0fdfe9a4cda4d7a6c41aeb513057da8ca9ff17d285a46b6195302fc2a4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ba2ba6b0a775ad812ed032a9b7cd82325ebd75a999a66e7de2412f8a47b1ccfd",
+  "source_url": "https://api.github.com/repos/matplotlib/matplotlib/commits/39b27ddaafe636f06776a2044b5df05d07648dc4?per_page=100",
+  "status_code": 200
+}

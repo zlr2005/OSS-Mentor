@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "343844e450d2dbbf7d9ade09b25507e1fee5626b",
+    "size": 23432
+  },
+  "observed_at": "2026-10-26T12:59:35.499305+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "baa2d85b5a957ec96aacd30cbaf08a67266e3c21a181212cdb455d290c779ffb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c22ef3a349a997b7496fbaad28a4392e745595f79308294ba361960376b8d70c",
+  "source_url": "https://api.github.com/repos/prometheus/client_golang/git/blobs/343844e450d2dbbf7d9ade09b25507e1fee5626b",
+  "status_code": 200
+}

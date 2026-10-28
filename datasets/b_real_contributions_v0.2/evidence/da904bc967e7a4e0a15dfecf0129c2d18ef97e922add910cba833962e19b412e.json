@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 9417722,
+      "login": "T4rk1n",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T14:08:00Z",
+      "committer_at": "2026-10-22T14:08:00Z",
+      "tree_sha": "631cad42512fdacca52b932a1171b9873d836237"
+    },
+    "committer": {
+      "id": 9417722,
+      "login": "T4rk1n",
+      "type": "User"
+    },
+    "sha": "9e32b58391ff7620cdb9c32d130f70826b94a1ef"
+  },
+  "observed_at": "2026-10-26T08:45:51.447706+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6b62e65f7a1f0530007abbf20e0fbea5a19fc479a04bdf615643aa9f3968fce7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c6d0ef34f2fa90eea4b1404c9129d43cd0c5a3cd5fc16225d71018d7665f5fd0",
+  "source_url": "https://api.github.com/repos/plotly/dash/commits/9e32b58391ff7620cdb9c32d130f70826b94a1ef?per_page=100",
+  "status_code": 200
+}

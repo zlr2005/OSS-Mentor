@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 32484879,
+      "login": "martinajir",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T18:13:52Z",
+      "committer_at": "2026-10-23T18:13:52Z",
+      "tree_sha": "ccddd6380ebdf4e47b39bfa1a370b3b10363d530"
+    },
+    "committer": {
+      "id": 32484879,
+      "login": "martinajir",
+      "type": "User"
+    },
+    "sha": "fa812ef2b1ab1240ca023b7a4b720cbeef7fbdcd"
+  },
+  "observed_at": "2026-10-26T06:10:05.045239+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "82d796392fc654aaaddf30455dffa0941043b2968fb1842aeb779f3f6a71825e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8e4f93a3e5500831589657db596f131b130dec65f19aaa36c4bdbff6f08c5332",
+  "source_url": "https://api.github.com/repos/cli/cli/commits/fa812ef2b1ab1240ca023b7a4b720cbeef7fbdcd?per_page=100",
+  "status_code": 200
+}

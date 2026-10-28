@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3487677,
+      "login": "lbesecker195",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-17T13:22:33Z",
+      "committer_at": "2026-09-17T13:22:33Z",
+      "tree_sha": "249bcaa91ad6c8126c76b35c3d45678c1255ca50"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "80fe26ae91206ffc7993263053451dbbe9590f06"
+  },
+  "observed_at": "2026-10-26T16:50:27.428870+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a294e5d60c4d8936edfe0a74561052222164b1550e5407feb4af4b06865d986b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "915771b8da67e4681db9f41d3381589c66600a221404c6525196e1de60e03353",
+  "source_url": "https://api.github.com/repos/ajaxorg/ace/commits/80fe26ae91206ffc7993263053451dbbe9590f06?per_page=100",
+  "status_code": 200
+}

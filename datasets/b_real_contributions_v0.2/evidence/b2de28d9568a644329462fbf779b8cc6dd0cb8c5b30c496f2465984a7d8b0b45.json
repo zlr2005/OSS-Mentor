@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "ipython/ipython",
+    "id": 658518,
+    "language": "Python",
+    "private": false,
+    "size": 82315
+  },
+  "observed_at": "2026-10-26T07:40:50.807030+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2e87a1be720b0c4a824f4fb9b4939bf9b6c08989d1937ddc850ece5ffa20ddda",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2adb9e6be6cdf4b92661763eff4f85eacc17c519c79b281d72cb881db4b29244",
+  "source_url": "https://api.github.com/repos/ipython/ipython",
+  "status_code": 200
+}

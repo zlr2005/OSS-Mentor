@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 36186,
+      "login": "cuviper",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-28T22:43:52Z",
+      "committer_at": "2026-08-28T22:43:52Z",
+      "tree_sha": "60c33cd75606c5e2daa9446df1e139e5b24b89e3"
+    },
+    "committer": {
+      "id": 36186,
+      "login": "cuviper",
+      "type": "User"
+    },
+    "sha": "9dd8d0ec35542640b44077991a6a4d4e622a29dc"
+  },
+  "observed_at": "2026-10-26T13:24:53.153246+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f9efe98777d4da016743963b3b6639cf8ddaca7867098d04314aed6c76a7a88e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d069ed66ee369773c5dcc5dd9d3c8a26a5696b852354c1825dba8b7fe41a71ed",
+  "source_url": "https://api.github.com/repos/rayon-rs/rayon/commits/9dd8d0ec35542640b44077991a6a4d4e622a29dc?per_page=100",
+  "status_code": 200
+}

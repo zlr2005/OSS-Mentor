@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 175428122,
+      "login": "ggivo",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T10:30:20Z",
+      "committer_at": "2026-10-23T10:30:20Z",
+      "tree_sha": "b8b1e0169c50b2ffe25a18d00b3413c18f746137"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e7ce8b13277c6667a1b52e5088cd5bb7eb287488"
+  },
+  "observed_at": "2026-10-26T13:32:04.594809+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "16193d836640cda49929694289231a005ba99127f9bc8e84f8a47d68fc5b413f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "29a46a4fe447948b1cf93d9dca3ebf2229cb3d4f356c47d7c2e77ea3aa83fe5e",
+  "source_url": "https://api.github.com/repos/redis/jedis/commits/e7ce8b13277c6667a1b52e5088cd5bb7eb287488?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MPL-2.0",
+    "full_name": "helix-editor/helix",
+    "id": 268424739,
+    "language": "Rust",
+    "private": false,
+    "size": 90187
+  },
+  "observed_at": "2026-10-26T07:20:40.491048+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f5adc1cdeb93baf93e9d82811ce56ead1bc8e2837eefd78504b77e295857d69f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e572063d11b05a926a2b3345b4a448da0e4165db02864228fa4435f92c9c3582",
+  "source_url": "https://api.github.com/repos/helix-editor/helix",
+  "status_code": 200
+}

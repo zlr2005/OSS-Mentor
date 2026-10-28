@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 93581129,
+      "login": "salvatore-campagna",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T19:28:27Z",
+      "committer_at": "2026-10-23T19:28:27Z",
+      "tree_sha": "9db4ea562e3a22a633075424fddd1c6ebf6a3e0b"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "377c033a8aa5fcf064edf55dc6dc5a6c16f8f951"
+  },
+  "observed_at": "2026-10-27T13:11:29.147870+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "895a5644a9b75e47d0854f38ecac8b1d085644b8a231d64cad5a3e128f9e4133",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "848a0e4007171855f281ce10a816f53cb6db26d4e99742ee5663018cbd14893a",
+  "source_url": "https://api.github.com/repos/elastic/elasticsearch/commits/377c033a8aa5fcf064edf55dc6dc5a6c16f8f951?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "jqlang/jq",
+    "id": 5101141,
+    "language": "C",
+    "private": false,
+    "size": 8337
+  },
+  "observed_at": "2026-10-26T07:46:33.780765+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "df00555b2bb6d58b50102c673c49805e0f266ea46dbae88dfb95ce09390c1ad6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ef1da532b746c84a8b11856ece422455a0072dd3d3fe34fef20338c1e26f35f1",
+  "source_url": "https://api.github.com/repos/jqlang/jq",
+  "status_code": 200
+}

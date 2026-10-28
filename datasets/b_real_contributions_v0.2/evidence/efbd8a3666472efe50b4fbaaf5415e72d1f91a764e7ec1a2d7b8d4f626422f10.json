@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 83507,
+      "login": "valery1707",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-31T06:01:40Z",
+      "committer_at": "2026-08-31T06:01:40Z",
+      "tree_sha": "c71b210f2f40b978a0913b58a10caf02b928787e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a8a33164256ddb6e4bbc168f5c47ac34a348ee7f"
+  },
+  "observed_at": "2026-10-26T13:43:02.674927+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "96c105e7bf93970fa3b95caeea5851ce33345bf6c564d61a6ace93284b758932",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6b60e9e46b06d4f1e661c082de3414f4b8cba3eb083905838de96d791d36216d",
+  "source_url": "https://api.github.com/repos/resilience4j/resilience4j/commits/a8a33164256ddb6e4bbc168f5c47ac34a348ee7f?per_page=100",
+  "status_code": 200
+}

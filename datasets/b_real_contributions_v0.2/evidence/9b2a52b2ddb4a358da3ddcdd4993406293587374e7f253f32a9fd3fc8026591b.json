@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "spring-projects/spring-integration",
+    "id": 2090979,
+    "language": "Java",
+    "private": false,
+    "size": 87640
+  },
+  "observed_at": "2026-10-26T14:26:26.104189+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "36d8f1c147e0b10edfb137186366a6c59bdc1f5b6cb1b59e524c5b0c20979356",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "710d0015a1d1e4587ea62493e747855e093874b810c787896b968804f9457ddc",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-integration",
+  "status_code": 200
+}

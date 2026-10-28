@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 8609142,
+      "login": "zuston",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-12T07:58:33Z",
+      "committer_at": "2026-10-12T07:58:33Z",
+      "tree_sha": "f60048c3102f27ef05897981771bef62b26a71be"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e78d6466c7b7ff70bf60f6c0133aad7150e598c6"
+  },
+  "observed_at": "2026-10-26T05:40:59.572870+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "68a567d5e79fa7b6986814b662fc0d38c4a71fe4064ac6c2b0c7c48790cccbbd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7a480f68750b387290e999f2a94ef496e19e358d69710cee009858664979bcdd",
+  "source_url": "https://api.github.com/repos/apache/uniffle/commits/e78d6466c7b7ff70bf60f6c0133aad7150e598c6?per_page=100",
+  "status_code": 200
+}

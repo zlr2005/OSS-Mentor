@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1940490,
+      "login": "dtolnay",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-25T20:42:49Z",
+      "committer_at": "2026-06-25T20:42:49Z",
+      "tree_sha": "7e4a98f93d3d68aa41a10c22ee88ec90317e28dc"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e621bd35ddddcd8b2f39d80b9f5938583571a87d"
+  },
+  "observed_at": "2026-10-26T06:22:21.201577+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8284361156acc57ef89f5646cd23c3823212b52e598dd677ee6cad8e8adeb7d7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "37d60cb96ad04141be90f5d3ebf08515c998b2e12ce4a40c157e7fd56d14bae4",
+  "source_url": "https://api.github.com/repos/dtolnay/anyhow/commits/e621bd35ddddcd8b2f39d80b9f5938583571a87d?per_page=100",
+  "status_code": 200
+}

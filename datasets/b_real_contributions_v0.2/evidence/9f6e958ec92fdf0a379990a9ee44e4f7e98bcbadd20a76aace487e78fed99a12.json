@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 89321978,
+      "login": "cafkafk",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-09T08:16:49Z",
+      "committer_at": "2026-07-09T08:36:34Z",
+      "tree_sha": "0a938be8fbf73f28505f3384087943f8a24e4370"
+    },
+    "committer": {
+      "id": 89321978,
+      "login": "cafkafk",
+      "type": "User"
+    },
+    "sha": "0864331165064e7d11e2c0bde7143978d0f2310b"
+  },
+  "observed_at": "2026-10-26T06:39:38.821446+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2e8323e51c59559c166b715d1a3b67e2ce32bf2829be7f19e7ef55def8439e36",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "17bcbcb48a8513e54fcb51f0e6700cda18f91d733d34bcfb1a02029577e8bd14",
+  "source_url": "https://api.github.com/repos/eza-community/eza/commits/0864331165064e7d11e2c0bde7143978d0f2310b?per_page=100",
+  "status_code": 200
+}

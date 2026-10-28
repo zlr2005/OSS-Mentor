@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 182436165,
+      "login": "YuvrajChirag",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T14:38:19Z",
+      "committer_at": "2026-10-25T14:38:19Z",
+      "tree_sha": "d1df4ebd778a162293f1a1de30e68100e40c53f2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "bb9cefde592afccd276c5b2d75957dfde91d5b3e"
+  },
+  "observed_at": "2026-10-26T13:55:40.764820+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d08eb292382f5e418e66639df1054806cda626b60ee0a2f2dfa6307bbf923344",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6a14b884e96af384e554d004596ec435aaa8f2e46b44c11932e7d5a4c3c4a027",
+  "source_url": "https://api.github.com/repos/scikit-learn/scikit-learn/commits/bb9cefde592afccd276c5b2d75957dfde91d5b3e?per_page=100",
+  "status_code": 200
+}

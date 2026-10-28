@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "python-poetry/poetry",
+    "id": 123303402,
+    "language": "Python",
+    "private": false,
+    "size": 25352
+  },
+  "observed_at": "2026-10-26T13:16:45.802566+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "36feae1f49ba5aecf460be8553e9920ed8567617b0e96bedd2bd9f477ec1d952",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d8a9e835678ebdb303c618f64dbcf91df16ecfbcdeb14fcfb06f4a87b6c2d99d",
+  "source_url": "https://api.github.com/repos/python-poetry/poetry",
+  "status_code": 200
+}

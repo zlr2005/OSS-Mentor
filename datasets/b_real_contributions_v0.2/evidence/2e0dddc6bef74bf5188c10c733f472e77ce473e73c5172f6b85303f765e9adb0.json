@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 350466,
+      "login": "crenshaw-dev",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T19:21:50Z",
+      "committer_at": "2026-10-24T19:21:50Z",
+      "tree_sha": "4a0dc5582ee8b54170729ad89c723a1feaf1eedd"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b6b256371b4f42265c39fd8370b98eab621771a2"
+  },
+  "observed_at": "2026-10-26T05:42:15.068885+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2276d8c4288442147f74f52b8ee88244ecb1494372a6352ac567e03c6bafe825",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3de6dfcc78991b142a4da8d7aab4a733b9f7ac199a9e616215e83f99e706fc5b",
+  "source_url": "https://api.github.com/repos/argoproj/argo-cd/commits/b6b256371b4f42265c39fd8370b98eab621771a2?per_page=100",
+  "status_code": 200
+}

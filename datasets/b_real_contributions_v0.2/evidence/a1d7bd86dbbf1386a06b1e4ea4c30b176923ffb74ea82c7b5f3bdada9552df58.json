@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 915037,
+      "login": "dschult",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-29T01:43:28Z",
+      "committer_at": "2026-09-29T01:43:28Z",
+      "tree_sha": "7ede22cbcad2ccd43340643cb197a06176e1f9e3"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "92f497e2eb8192d1ce9205595f512294e4a9b696"
+  },
+  "observed_at": "2026-10-27T14:30:37.964363+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d197487f559422801c3b4ce287f3e5813b76a0cde6ace90e56bc402cfa481f9a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "65bbf71cd1c4993f40f88075b60184f4fb5007e503584a8654ba82d2233264dc",
+  "source_url": "https://api.github.com/repos/networkx/networkx/commits/92f497e2eb8192d1ce9205595f512294e4a9b696?per_page=100",
+  "status_code": 200
+}

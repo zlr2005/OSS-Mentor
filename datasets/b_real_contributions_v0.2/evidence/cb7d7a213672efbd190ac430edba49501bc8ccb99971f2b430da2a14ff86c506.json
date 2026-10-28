@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1204910,
+      "login": "renanmpimentel",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-13T21:37:10Z",
+      "committer_at": "2026-10-13T21:37:10Z",
+      "tree_sha": "c19c0a1cd63c0cf71fa709b797325224d5e8826e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "c9744a3641452cfe4fbb9929ceb554659d6bd950"
+  },
+  "observed_at": "2026-10-26T06:54:35.324628+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3c75679cdc8d15aabeb6e8894c0c16622eb915056868fafe69a847d14068d132",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "01def9d7a97d85aab57559cd915496fb24e149909ec2847a93e3d92567c7027b",
+  "source_url": "https://api.github.com/repos/go-chi/chi/commits/c9744a3641452cfe4fbb9929ceb554659d6bd950?per_page=100",
+  "status_code": 200
+}

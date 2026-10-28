@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 4567934,
+      "login": "alexander-akait",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T19:24:18Z",
+      "committer_at": "2026-10-25T19:24:18Z",
+      "tree_sha": "732ea03c8ca3a44ab8a1fc128da0e00c9f41fae1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0f3637b062d22255feef305ebd018d0a28ab2d9e"
+  },
+  "observed_at": "2026-10-26T15:43:46.154044+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b25692a56662ef203ea27904344b2ac2fd33ed833b3a1779c23523c57648408e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e44385f81432f52ff19a197870eaa955830a4bcd51ac342109ad51d85a0b765f",
+  "source_url": "https://api.github.com/repos/webpack/webpack/commits/0f3637b062d22255feef305ebd018d0a28ab2d9e?per_page=100",
+  "status_code": 200
+}

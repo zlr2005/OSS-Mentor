@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 231763,
+      "login": "isamu",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-18T05:59:02Z",
+      "committer_at": "2026-09-18T05:59:02Z",
+      "tree_sha": "d05bb72ff93656321ab85d8b7c49bbddf575b4d4"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "824b37cdbf6f262e09a39a2d6734f472cd983904"
+  },
+  "observed_at": "2026-10-26T05:56:09.433259+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6c040823b81846776aed056ea390fd08f5eb74acd8ae0cfa31bb3c61caa1e8b9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c66c7ad5217088bbfa1cd2f9f72c09f650f39a55d2f7d025e47898794ed59c71",
+  "source_url": "https://api.github.com/repos/BloopAI/vibe-kanban/commits/824b37cdbf6f262e09a39a2d6734f472cd983904?per_page=100",
+  "status_code": 200
+}

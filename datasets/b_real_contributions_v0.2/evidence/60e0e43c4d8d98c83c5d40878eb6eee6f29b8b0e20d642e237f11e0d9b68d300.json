@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "LGPL-2.1",
+    "full_name": "spotbugs/spotbugs",
+    "id": 72889410,
+    "language": "Java",
+    "private": false,
+    "size": 149230
+  },
+  "observed_at": "2026-10-26T14:07:12.472872+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "df87de63e76a18445a7ccbdab5efda1e78eeddd3345cec9e2b30c770086e59a1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e7b7b342b5608e713a80201fbb9800c1cfece6329201bcb7e83bf14c8d8deae2",
+  "source_url": "https://api.github.com/repos/spotbugs/spotbugs",
+  "status_code": 200
+}

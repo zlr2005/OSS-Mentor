@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c3f1657fce94589bd1ec7cead810639047f3d359",
+    "size": 1091
+  },
+  "observed_at": "2026-10-26T04:47:50.082912+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c2edb79b110eba29f2d27d7d03e4c938dcf33803786f65d44601a9c62cf44b8f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7118157e42584bd595774586e784583df52d08934960998e875a679ae33e7f88",
+  "source_url": "https://api.github.com/repos/pytest-dev/pytest/git/blobs/c3f1657fce94589bd1ec7cead810639047f3d359",
+  "status_code": 200
+}

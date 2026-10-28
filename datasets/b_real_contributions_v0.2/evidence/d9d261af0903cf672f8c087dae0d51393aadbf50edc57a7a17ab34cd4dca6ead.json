@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "element-plus/element-plus",
+    "id": 281319253,
+    "language": "TypeScript",
+    "private": false,
+    "size": 990013
+  },
+  "observed_at": "2026-10-26T06:30:17.822402+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2f979259b090a56ffb59631a67bf467b9e0e8b469914aa3fa9baa94f12c4222b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "39d4e536220525af8c9b2921875049e13a4b3365f794070ae0d777c05c6e3c61",
+  "source_url": "https://api.github.com/repos/element-plus/element-plus",
+  "status_code": 200
+}

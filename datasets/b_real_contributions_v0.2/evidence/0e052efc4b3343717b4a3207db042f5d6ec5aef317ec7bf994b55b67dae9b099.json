@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "455acd437937b724ceee4e41c382b06019c6f044",
+    "size": 27628
+  },
+  "observed_at": "2026-10-26T05:28:34.487587+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cabd9c50739d4965f62a6b8d13f179d8cc5ea69dfe588ff4dbc5fea8da100f9d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ee238609cf4efecdf2fa698bb18e720c2ca589d1213f856a34d2fd53bcda3ab0",
+  "source_url": "https://api.github.com/repos/apache/paimon/git/blobs/455acd437937b724ceee4e41c382b06019c6f044",
+  "status_code": 200
+}

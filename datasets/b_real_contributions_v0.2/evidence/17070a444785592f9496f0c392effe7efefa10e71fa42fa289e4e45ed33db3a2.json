@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "864ef82f97a64819b09b6ba3678a5baf2ace9d6b",
+    "size": 25272
+  },
+  "observed_at": "2026-10-26T06:08:49.390127+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ebc4881207be1bc5485d7eb0147a49c1cc0f2dd76f69ddb9ad0e1e5184b4a7b8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9e43f27e2112fce58fa84beb6d154b9ea7b6cc37023a30b7822151e97200854b",
+  "source_url": "https://api.github.com/repos/CherryHQ/cherry-studio/git/blobs/864ef82f97a64819b09b6ba3678a5baf2ace9d6b",
+  "status_code": 200
+}

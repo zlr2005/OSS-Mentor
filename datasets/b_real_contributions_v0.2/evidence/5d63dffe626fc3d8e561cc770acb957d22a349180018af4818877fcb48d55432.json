@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "068d491fd551ae2531f4d28583245719a2e19e2d",
+    "size": 1099
+  },
+  "observed_at": "2026-10-26T06:13:32.796067+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8369a7208526c187ddcb8f536adbf67546986b5446adeea2c6214d422e8d7710",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1ef2f44d9a19b43cf3c5c7f797d02d553fb7e5baed60a388f8c6ccbd7e0f00e8",
+  "source_url": "https://api.github.com/repos/crossbeam-rs/crossbeam/git/blobs/068d491fd551ae2531f4d28583245719a2e19e2d",
+  "status_code": 200
+}

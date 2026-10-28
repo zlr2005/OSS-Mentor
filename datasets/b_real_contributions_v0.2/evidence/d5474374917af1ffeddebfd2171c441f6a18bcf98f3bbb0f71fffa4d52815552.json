@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2111074,
+      "login": "benbrandt",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T08:55:28Z",
+      "committer_at": "2026-10-25T08:55:28Z",
+      "tree_sha": "4df85ee620de11624fe2ffc8174729e61f793965"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "c8995a085a99979172a9613c7f02489cdfbde19f"
+  },
+  "observed_at": "2026-10-27T16:35:34.905274+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d613809ecd09bd913e43203846ee5eb1e5144f158a5ec3f0228702cf063208fa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9e4539e1830d15e8bb75efc36145ce6f813781506fde393e2412611f17d830eb",
+  "source_url": "https://api.github.com/repos/zed-industries/zed/commits/c8995a085a99979172a9613c7f02489cdfbde19f?per_page=100",
+  "status_code": 200
+}

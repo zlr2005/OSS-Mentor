@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "scrapy/scrapy",
+    "id": 529502,
+    "language": "Python",
+    "private": false,
+    "size": 33580
+  },
+  "observed_at": "2026-10-26T13:59:56.928307+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "040002be61ba3ec8a6e88d4b5dd7993640f4abbadab8c5d54c21ba7dee3c67a4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "52badfca5a31792ece7172a5f8ad7455c7f3f156eff5c1f67b30c438ac113777",
+  "source_url": "https://api.github.com/repos/scrapy/scrapy",
+  "status_code": 200
+}

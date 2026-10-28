@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "84164c6fde6ece45def699e2d60d5369b18e0a51",
+    "size": 40086
+  },
+  "observed_at": "2026-10-27T16:09:55.155807+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "72ffa564cf5eada200af18a259afdd26530d51a3c2f5a14a5b99fc31dfedf01f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d0d84211dfea3618f5fc35aa1b8ed0f0ec3426301ddbfbed6706136a981c2bcb",
+  "source_url": "https://api.github.com/repos/scikit-image/scikit-image/git/blobs/84164c6fde6ece45def699e2d60d5369b18e0a51",
+  "status_code": 200
+}

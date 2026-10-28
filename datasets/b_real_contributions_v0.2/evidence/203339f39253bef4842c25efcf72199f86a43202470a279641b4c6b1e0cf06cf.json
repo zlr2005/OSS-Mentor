@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {
+      "id": 67022294,
+      "login": "java-team-github-bot",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T20:21:47Z",
+      "committer_at": "2026-10-20T20:23:45Z",
+      "tree_sha": "7f439b082683079d70039771515bcbf3afb40252"
+    },
+    "committer": {},
+    "sha": "47eb5be1fe42c30d73b62cf0af272488ffbdebe1"
+  },
+  "observed_at": "2026-10-26T07:05:04.683795+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7e99d832d035e95363502c51474995aff5faf9f3527486be101412afd4431454",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "841264aa762dc439605d01714f503edb57d6350d14a3443e9a1a980da84bb8ff",
+  "source_url": "https://api.github.com/repos/google/error-prone/commits/47eb5be1fe42c30d73b62cf0af272488ffbdebe1?per_page=100",
+  "status_code": 200
+}

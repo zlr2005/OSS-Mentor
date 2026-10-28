@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 20180,
+      "login": "apparentlymart",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-16T19:24:44Z",
+      "committer_at": "2026-10-20T20:55:48Z",
+      "tree_sha": "19d9f5e4b3c18d8f82cfa9f260672e1d9d4b0ce2"
+    },
+    "committer": {
+      "id": 20180,
+      "login": "apparentlymart",
+      "type": "User"
+    },
+    "sha": "545c995b982d4a790ff1b62153356550fc8f0e88"
+  },
+  "observed_at": "2026-10-26T08:39:19.750188+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ed432d0444195309eede1bb8c50b233d0f6d974f26f145395a055cc4ac196bfb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "74c6b64bedf0f5501fec210906a7d0457bed6268629f6b66ce14dd2c83284841",
+  "source_url": "https://api.github.com/repos/opentofu/opentofu/commits/545c995b982d4a790ff1b62153356550fc8f0e88?per_page=100",
+  "status_code": 200
+}

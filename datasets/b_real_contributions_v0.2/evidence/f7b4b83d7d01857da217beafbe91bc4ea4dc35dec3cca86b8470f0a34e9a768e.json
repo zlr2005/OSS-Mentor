@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "96246f5f631a7860b3f5af08e60dd2c5bc8ab6fa",
+    "size": 14392
+  },
+  "observed_at": "2026-10-26T08:52:39.838233+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ed8bbebdb98f56359f62995665274c07166a624fa0c47e74f402fd80f1a10fdd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "516c61bb7b31aa277fff4f60d20692e2dd2557988641547b32f529c5ef63342a",
+  "source_url": "https://api.github.com/repos/prestodb/presto/git/blobs/96246f5f631a7860b3f5af08e60dd2c5bc8ab6fa",
+  "status_code": 200
+}

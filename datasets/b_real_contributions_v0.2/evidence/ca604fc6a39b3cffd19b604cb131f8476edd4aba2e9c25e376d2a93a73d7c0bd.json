@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-09-14T14:52:00Z",
+      "committer_at": "2026-09-14T14:52:00Z",
+      "tree_sha": "ceb2f80b80ba63ff40b68c1ff671944c944eb1e7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0db976cad6f3bdce824e22ec036bc57658ce4971"
+  },
+  "observed_at": "2026-10-26T06:04:59.805395+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6a51ddfbb7efce24e3e2aa430b5dad9fb7b43ece896cb3d46de85b264405ad8d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d2d9b2c9340d6cf22107f32e69d4f917d8986e755ff952b05cc2dc23264c0f44",
+  "source_url": "https://api.github.com/repos/chartjs/Chart.js/commits/0db976cad6f3bdce824e22ec036bc57658ce4971?per_page=100",
+  "status_code": 200
+}

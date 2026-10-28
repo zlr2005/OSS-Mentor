@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "tokio-rs/tracing",
+    "id": 165289175,
+    "language": "Rust",
+    "private": false,
+    "size": 9276
+  },
+  "observed_at": "2026-10-26T15:13:56.730874+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1fc4a846a011d342a53f30baf7365861e92d1df59cd83a30b5622cf38c8e71e4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9e6a8d6a2662ce0d5e44363177fd2d8d33c0517269a8c2cae1692f866cf4b0d1",
+  "source_url": "https://api.github.com/repos/tokio-rs/tracing",
+  "status_code": 200
+}

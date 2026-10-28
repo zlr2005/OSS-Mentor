@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "elastic/elasticsearch",
+    "id": 507775,
+    "language": "Java",
+    "private": false,
+    "size": 1826116
+  },
+  "observed_at": "2026-10-26T06:30:16.625049+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aba34d29f87e5fa76582b44e1c1cec2e40231c579ff1e5f77fd0557b8a84d41f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "03584abbc599fd2ab74f094d9428a3ebb34c68124d37e18930d1dcdedfb899d4",
+  "source_url": "https://api.github.com/repos/elastic/elasticsearch",
+  "status_code": 200
+}

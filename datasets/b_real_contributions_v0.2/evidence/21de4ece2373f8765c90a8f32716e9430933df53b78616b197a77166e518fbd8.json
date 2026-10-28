@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "sympy/sympy",
+    "id": 640534,
+    "language": "Python",
+    "private": false,
+    "size": 196654
+  },
+  "observed_at": "2026-10-26T14:52:23.070446+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "df5b730e263bdf9a297a5e1e0fcaa3608c3e4bfa9b21f55f6a6b4842ee4648db",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "235ac18056574eb74c612cc070c177f1350950e1777db45de5b07d2c5dbf1f5b",
+  "source_url": "https://api.github.com/repos/sympy/sympy",
+  "status_code": 200
+}

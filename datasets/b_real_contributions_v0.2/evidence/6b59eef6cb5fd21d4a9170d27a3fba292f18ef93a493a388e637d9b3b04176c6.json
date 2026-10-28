@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "db9ed3cd6ce10fbe0629b4899066e56d25298c12",
+    "size": 4752
+  },
+  "observed_at": "2026-10-27T13:35:02.210883+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b8f52d6763d1d184950bae705905282dd4fbc67dcbae2f6e2060bb279a3f3e35",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6dd89b128c7516dd6803925d7492427d82cd4d8145554282cc5236178b4fa9cf",
+  "source_url": "https://api.github.com/repos/gradle/gradle/git/blobs/db9ed3cd6ce10fbe0629b4899066e56d25298c12",
+  "status_code": 200
+}

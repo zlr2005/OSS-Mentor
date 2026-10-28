@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-10-15T20:15:23Z",
+      "committer_at": "2026-10-20T19:13:11Z",
+      "tree_sha": "79f9927ec67c93aaf385b25fabf4a56634a52e2d"
+    },
+    "committer": {},
+    "sha": "25768a459571dfeaf526afc43aee554593cfa8c6"
+  },
+  "observed_at": "2026-10-26T06:12:46.592085+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ba9948dc8296ad0736578512689434954d9814cae70c9c1cba3d5b7e97ebd4e4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a0f6d8eeccba9a845d83b0e7201e39352329a95d19657c13a3f9f6e28a350a60",
+  "source_url": "https://api.github.com/repos/containerd/containerd/commits/25768a459571dfeaf526afc43aee554593cfa8c6?per_page=100",
+  "status_code": 200
+}

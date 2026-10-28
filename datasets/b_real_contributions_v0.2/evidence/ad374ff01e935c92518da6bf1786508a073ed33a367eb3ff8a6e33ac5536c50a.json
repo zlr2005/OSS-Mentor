@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 17555551,
+      "login": "Jackie-Jiang",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T23:44:43Z",
+      "committer_at": "2026-10-23T23:44:43Z",
+      "tree_sha": "6065ad9fef6ed2320df1d662ef5529dc43de1b46"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d3893e278740913c7733dd67d65db4e0d5c2e46c"
+  },
+  "observed_at": "2026-10-26T05:29:37.042563+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e2e22d567a197fdaed147a075c46a7166ba85d22a2a067eaa880167a3b115f80",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5764e7c67174616b6283775a0e158cc2f322e8e00c2b9d66224eb83016c77e8c",
+  "source_url": "https://api.github.com/repos/apache/pinot/commits/d3893e278740913c7733dd67d65db4e0d5c2e46c?per_page=100",
+  "status_code": 200
+}

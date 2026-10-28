@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 44656,
+      "login": "samueltardieu",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T17:01:45Z",
+      "committer_at": "2026-10-23T17:01:45Z",
+      "tree_sha": "909ba8852fb0e9ef2a7613c85d09be7074e00c37"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d817e71b60dd83f2ff83d234f31953558a5a20f8"
+  },
+  "observed_at": "2026-10-26T13:53:44.067194+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "68075f8270d4602e0158a9fc50d3efafd526f5e9750f31704f270500ab10bb48",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f484bdc7f05a65c4a2137367dacb29487d3913ac86932b14ad418fad981112cc",
+  "source_url": "https://api.github.com/repos/rust-lang/rust-clippy/commits/d817e71b60dd83f2ff83d234f31953558a5a20f8?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 199421981,
+      "login": "kokotatan",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-03T17:22:22Z",
+      "committer_at": "2026-10-03T17:22:22Z",
+      "tree_sha": "a083070769f52d72def211443aafc8a7f3db714b"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "6c89a9e3c99ca6d7683362be03cf71d57d06c11a"
+  },
+  "observed_at": "2026-10-27T15:18:00.757514+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1a3c73990e71874fdd71fdb40cccd8323fc3f0b54570ff9c3c7ccd7aa31dec96",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fac3f963188bb2f072d3efa0da965b0d81fb2a5c8c6d2000e68f592cef5e4c6c",
+  "source_url": "https://api.github.com/repos/pypa/build/commits/6c89a9e3c99ca6d7683362be03cf71d57d06c11a?per_page=100",
+  "status_code": 200
+}

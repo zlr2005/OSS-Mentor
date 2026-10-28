@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 13694669,
+      "login": "liotur",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T09:44:13Z",
+      "committer_at": "2026-10-19T09:44:13Z",
+      "tree_sha": "c3eb0bdbcba1b98e69c8c4ff4d12bf9befcfd171"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b0101dffe0e33d0d718b0935c2ddd15c8d2f6c10"
+  },
+  "observed_at": "2026-10-26T13:35:21.463768+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e3e97745bf11969fd13effd568c4aae0977a68ddc844e436081853de8c8ffdcc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bfb796f551d876ef2df042d919d0866789246cb437774f419496a35f2167163d",
+  "source_url": "https://api.github.com/repos/redis/lettuce/commits/b0101dffe0e33d0d718b0935c2ddd15c8d2f6c10?per_page=100",
+  "status_code": 200
+}

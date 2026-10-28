@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "eslint-community/eslint-plugin-n",
+    "id": 93131028,
+    "language": "JavaScript",
+    "private": false,
+    "size": 2497
+  },
+  "observed_at": "2026-10-26T06:32:27.733708+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3b08828631be16086c464fb432503649d5202b7aeffe63afdc78cef354fb9e57",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4f1203972c76afc972210c9135d83ab3e0a4bfcd775dfbf1e19d6b3764e24b0e",
+  "source_url": "https://api.github.com/repos/eslint-community/eslint-plugin-n",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "75899fc33579685590bade9cef50d8b9030214df",
+    "size": 18566
+  },
+  "observed_at": "2026-10-26T06:24:29.190913+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b3347e7bee1b3cd2bea69e148236b82bfee6e471dac6bd1f3492d3bf613e5f18",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2bf7cee2bfb46b3c434d3361891e8628a61d0f11b84502cb45ac9d485adc39b3",
+  "source_url": "https://api.github.com/repos/eclipse-jdt/eclipse.jdt.core/git/blobs/75899fc33579685590bade9cef50d8b9030214df",
+  "status_code": 200
+}

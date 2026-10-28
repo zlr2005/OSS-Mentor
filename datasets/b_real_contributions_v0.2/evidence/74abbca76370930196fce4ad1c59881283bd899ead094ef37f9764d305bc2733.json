@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "vitest-dev/vitest",
+    "id": 434708679,
+    "language": "TypeScript",
+    "private": false,
+    "size": 73582
+  },
+  "observed_at": "2026-10-26T15:34:33.369338+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e56d416481f7e7939d30c4d4af2776ee81a58ee2e6ace15c566c989d5cf93ee6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b7eb93b026ec5cbc9c631ccdae150167c3f2d06f996cbf04ee0ee6a7c08af2ef",
+  "source_url": "https://api.github.com/repos/vitest-dev/vitest",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5088104,
+      "login": "kiview",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T18:56:54Z",
+      "committer_at": "2026-10-17T18:56:54Z",
+      "tree_sha": "9a3b12fe47520dcc6dd808976fb9a96c842412e5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1848434a8264fbdcb586d9d78f43a776eca36ec8"
+  },
+  "observed_at": "2026-10-26T15:08:42.699552+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fb7d3a810e98cbf8fd891c1e5ee2817ae93a5f0b117fe9ba52fcec8325388f0f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b6dfa80df23170e9ac39ee6f7aef7c9c69fb99f143519e94072da2410968f8e4",
+  "source_url": "https://api.github.com/repos/testcontainers/testcontainers-java/commits/1848434a8264fbdcb586d9d78f43a776eca36ec8?per_page=100",
+  "status_code": 200
+}

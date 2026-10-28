@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 554369,
+      "login": "willmcgugan",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-06-25T04:26:09Z",
+      "committer_at": "2026-06-25T04:26:09Z",
+      "tree_sha": "18977102c66c24f8221501f48eb3642404b82d63"
+    },
+    "committer": {
+      "id": 554369,
+      "login": "willmcgugan",
+      "type": "User"
+    },
+    "sha": "4e592bfc7bf1d0412d0df6dabee40347b523e1b8"
+  },
+  "observed_at": "2026-10-26T04:50:54.348436+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "46a74fbbad47598464646c410b0ba27a49d6947e6f9a1f1db98669a0c27c8e72",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f83cc42c284ca3cf35193c841da48880e801ec584d95d07ee9be9e107eed2a9",
+  "source_url": "https://api.github.com/repos/Textualize/textual/commits/4e592bfc7bf1d0412d0df6dabee40347b523e1b8?per_page=100",
+  "status_code": 200
+}

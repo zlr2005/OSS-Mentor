@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e84cbd00842382ecfd0f9fc8ccf4d529f5543f8d",
+    "size": 18296
+  },
+  "observed_at": "2026-10-26T06:48:53.224672+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "82543e106a7aedb783af5b358a79361f12f1e22d945babb595bc655ac2795d98",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "813f6ff303de891d7eca18b9fa8c5c1393a59d84fbc5e3657ae937092afdce68",
+  "source_url": "https://api.github.com/repos/firebase/firebase-admin-java/git/blobs/e84cbd00842382ecfd0f9fc8ccf4d529f5543f8d",
+  "status_code": 200
+}

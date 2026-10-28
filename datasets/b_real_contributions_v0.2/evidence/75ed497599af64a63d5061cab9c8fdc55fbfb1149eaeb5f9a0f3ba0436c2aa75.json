@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "langchain-ai/langchain",
+    "id": 552661142,
+    "language": "Python",
+    "private": false,
+    "size": 618215
+  },
+  "observed_at": "2026-10-26T07:57:57.886216+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "abcb662fb2763bc8cc992e9f7b97450e4f2db0ea2fb70eff32ed1c9777f85803",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "61d305a663b0f9b153b1cebafbac7dcfd39a3fe695b11cc710ab6f693881d18d",
+  "source_url": "https://api.github.com/repos/langchain-ai/langchain",
+  "status_code": 200
+}

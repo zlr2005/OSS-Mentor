@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "df17550e6ef01003943fc358114a0da712a2de6e",
+    "size": 6757
+  },
+  "observed_at": "2026-10-26T05:14:27.485197+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "352f4d85376015085fbf0af171f5581f57bf3a0624d11317bae940623affebdc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "937c577193603cbd66378fa38ecfacaa8f17fa9c8ff83a6c5356c0a9bb1f57f4",
+  "source_url": "https://api.github.com/repos/apache/gravitino/git/blobs/df17550e6ef01003943fc358114a0da712a2de6e",
+  "status_code": 200
+}

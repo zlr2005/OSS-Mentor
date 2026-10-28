@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-13T17:05:44Z",
+      "committer_at": "2026-10-13T17:05:44Z",
+      "tree_sha": "7a0f79faa29405c4c600d62cacb31608ea3a9d43"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f54d769519ccf7d00e534346b47d01502afcf257"
+  },
+  "observed_at": "2026-10-26T08:11:25.535024+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d64869bb34b09beb1733b51049b0a088dcaaf08e60062bb7f11c36e89a00f511",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "dc97534a7211e6d6cb444eef8ac8ac7cf816753e251d054e15c20cdcea0729ab",
+  "source_url": "https://api.github.com/repos/microsoft/monaco-editor/commits/f54d769519ccf7d00e534346b47d01502afcf257?per_page=100",
+  "status_code": 200
+}

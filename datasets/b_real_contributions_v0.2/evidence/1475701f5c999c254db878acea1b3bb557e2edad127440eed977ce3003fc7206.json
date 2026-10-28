@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8d7383f3b94240dd4fb85897ed08d9c3286d82b5",
+    "size": 6362
+  },
+  "observed_at": "2026-10-26T07:53:08.047174+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ce2a38a0ce503d63e79048e8facd7c77b3843d5e8529dfcfa781bc55e833e20e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "647ed4e4a6f3ef5299429ffb9046d549583922e6e11c454f7b18e18e7f83a227",
+  "source_url": "https://api.github.com/repos/keycloak/keycloak/git/blobs/8d7383f3b94240dd4fb85897ed08d9c3286d82b5",
+  "status_code": 200
+}

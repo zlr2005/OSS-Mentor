@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 323319819,
+      "login": "marcuswood-oai",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T20:58:38Z",
+      "committer_at": "2026-10-22T20:58:38Z",
+      "tree_sha": "22e30d0b03d0cf88b5abcc6e84ddeb22fece0ee9"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "05dfea0a1cb41a3e6ae1cc3bd13145b57cf3ffb8"
+  },
+  "observed_at": "2026-10-26T08:36:36.704164+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7d3e2859603c701bef6f19bd97477ec54a8fa5e0122164d2b5e6d25a0272c02a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b1b744b97a869016743443ffb66285c8938fca74b9745ed43047f92cf6fc8d1f",
+  "source_url": "https://api.github.com/repos/openai/openai-python/commits/05dfea0a1cb41a3e6ae1cc3bd13145b57cf3ffb8?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "vavr-io/vavr",
+    "id": 16378879,
+    "language": "Java",
+    "private": false,
+    "size": 25791
+  },
+  "observed_at": "2026-10-26T15:29:11.690707+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "28e3f8c5c3c7d827c8d2cb3b46677e3686146af50870eddcae56ccacae507f06",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "58455c034d72c8c41aa3fd77df057531a881fd8adfe4b2d7a72c0c1fe7b38ecc",
+  "source_url": "https://api.github.com/repos/vavr-io/vavr",
+  "status_code": 200
+}

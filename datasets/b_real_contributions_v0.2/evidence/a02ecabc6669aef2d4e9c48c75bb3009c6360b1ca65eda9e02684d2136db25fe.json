@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "8c7a99324cd7e9e41bc9a70b4945e2e69fd50e15",
+    "size": 24243
+  },
+  "observed_at": "2026-10-26T13:45:32.185150+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0d4eb2e29a08f720e692a8da56b3725c8db31f8fde68f518feb71df027c1bf4e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "114971ba29712fa9c1896ba1bb238e8ce0762ba48da2efb2b121a3653d4453c7",
+  "source_url": "https://api.github.com/repos/restic/restic/git/blobs/8c7a99324cd7e9e41bc9a70b4945e2e69fd50e15",
+  "status_code": 200
+}

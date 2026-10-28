@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e5379337404966659adf3acc2f5c4956cb94ce74",
+    "size": 7785
+  },
+  "observed_at": "2026-10-27T14:25:14.125021+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5f58d9f1674e039bf4f64dd93f484b56ba61d3febcc5c2fcf5458017a065fdb0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "feff0d684eee346e5cd36831151a8dda4b3709c6aa26f9665ee1c1fa7f35dcec",
+  "source_url": "https://api.github.com/repos/n8n-io/n8n/git/blobs/e5379337404966659adf3acc2f5c4956cb94ce74",
+  "status_code": 200
+}

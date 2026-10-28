@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pytest-dev/pytest",
+    "id": 37489525,
+    "language": "Python",
+    "private": false,
+    "size": 42016
+  },
+  "observed_at": "2026-10-26T04:47:35.187610+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3b42a46d1402456adf27f43cb1973bf07ffe38f92a265dc9ef7fcf4f86dd3472",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "62f2538bba1520d75c869915f32b86c1254854939925406cd2f9fd33fd179fb1",
+  "source_url": "https://api.github.com/repos/pytest-dev/pytest",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a50cb6015fd4d30614c2d969dbe846f99c7df8af",
+    "size": 25134
+  },
+  "observed_at": "2026-10-26T13:28:29.550604+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "844e4394afac27ec90c2e30a2a4b801fca91fbc4b1ef1f8e19aaef1e8a2ec782",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f2efcc6a3ef71a9a52339a7c9a59999704cecf01e94d6fdf8d322f565fbd76ac",
+  "source_url": "https://api.github.com/repos/react/react/git/blobs/a50cb6015fd4d30614c2d969dbe846f99c7df8af",
+  "status_code": 200
+}

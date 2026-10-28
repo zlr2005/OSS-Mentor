@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 62262441,
+      "login": "GreedyC",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-02T09:30:47Z",
+      "committer_at": "2026-10-02T09:30:47Z",
+      "tree_sha": "024e9c6a85c031e3d1244ff564f237846cb77413"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "33f6a40ec035111bc11d5fd5304cac1359af44e0"
+  },
+  "observed_at": "2026-10-26T06:03:59.712623+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "298d926321e5d843359f9b7c8466fc4d225f986638c241ec361fa8a327bf56a3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "aa62946fa34655806f5d9942cf2b89e653e017d4d12ac1adf14ab7306a476010",
+  "source_url": "https://api.github.com/repos/charmbracelet/bubbletea/commits/33f6a40ec035111bc11d5fd5304cac1359af44e0?per_page=100",
+  "status_code": 200
+}

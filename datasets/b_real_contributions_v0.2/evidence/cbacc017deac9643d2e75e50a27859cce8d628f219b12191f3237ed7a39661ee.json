@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "BloopAI/vibe-kanban",
+    "id": 1002125012,
+    "language": "Rust",
+    "private": false,
+    "size": 104015
+  },
+  "observed_at": "2026-10-26T05:55:54.464149+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aea7f7d18f68559b13fa9f156d248b974dcdf5d16367a3c77a29d7efef1d5a4b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d281d5a2cf54840472bc44f76a63771f6d013980912d6ddce44ab35c0568772e",
+  "source_url": "https://api.github.com/repos/BloopAI/vibe-kanban",
+  "status_code": 200
+}

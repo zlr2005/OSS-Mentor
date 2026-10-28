@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pnpm/pnpm",
+    "id": 50565430,
+    "language": "Rust",
+    "private": false,
+    "size": 294759
+  },
+  "observed_at": "2026-10-26T08:47:08.965823+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6021d88505a79a4540f062f9226c5696f18f27d4feeaf211055d54dd4220d64c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2453be8d3f04435673042c0674ce3ad0a5cf8615c37d3e75af69f3bdc91a27a3",
+  "source_url": "https://api.github.com/repos/pnpm/pnpm",
+  "status_code": 200
+}

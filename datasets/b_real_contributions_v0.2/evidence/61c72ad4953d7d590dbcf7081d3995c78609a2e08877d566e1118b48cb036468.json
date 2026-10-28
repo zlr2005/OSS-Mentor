@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "rustls/rustls",
+    "id": 57920736,
+    "language": "Rust",
+    "private": false,
+    "size": 20991
+  },
+  "observed_at": "2026-10-26T13:55:34.388891+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "51bbf90b03d4c37bdecf9809e933801f6490e1464a7a4d64dda7379f3779c32d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a6fa6710e6900db8208b41ee19ac615ce10bb43e6050b7d46fa3daa032124a0d",
+  "source_url": "https://api.github.com/repos/rustls/rustls",
+  "status_code": 200
+}

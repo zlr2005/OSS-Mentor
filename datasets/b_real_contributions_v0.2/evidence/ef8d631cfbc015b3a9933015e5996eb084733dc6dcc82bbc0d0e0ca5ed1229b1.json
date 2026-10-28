@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "PyCQA/isort",
+    "id": 12550138,
+    "language": "Python",
+    "private": false,
+    "size": 26528
+  },
+  "observed_at": "2026-10-26T13:04:13.969464+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4a00b156432498cc59d03fec4c639e6f49564525db60bb501b28167f21b49016",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "af095ef1e938808bf466454d4e22802c3d09145fe8021135a94470c6dacf4863",
+  "source_url": "https://api.github.com/repos/PyCQA/isort",
+  "status_code": 200
+}

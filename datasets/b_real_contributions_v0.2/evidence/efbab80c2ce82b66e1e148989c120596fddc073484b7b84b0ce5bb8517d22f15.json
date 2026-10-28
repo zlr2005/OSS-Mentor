@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "TanStack/router",
+    "id": 165670309,
+    "language": "TypeScript",
+    "private": false,
+    "size": 129646
+  },
+  "observed_at": "2026-10-26T14:59:18.393769+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "be576e1b3a126a990db4d5dcc58912295dbf225603a9cb73e21a034a6658754d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5b20bfd2f2e77dbabb4172756bd703aca2efa1d7fb59e4ffe76b75f00fccd165",
+  "source_url": "https://api.github.com/repos/TanStack/router",
+  "status_code": 200
+}

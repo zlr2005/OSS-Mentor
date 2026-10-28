@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "tracel-ai/burn",
+    "id": 515368123,
+    "language": "Rust",
+    "private": false,
+    "size": 85940
+  },
+  "observed_at": "2026-10-26T15:15:56.962926+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ab6384171369089eaf1881bdce66cf961affcc08676accb6072e1e4744949e42",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "829c666addca7070a63fdaf1ec4ecea1ea10d31cc2886ad488bd50c38d157f2f",
+  "source_url": "https://api.github.com/repos/tracel-ai/burn",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2069772,
+      "login": "songzhendong",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T14:07:56Z",
+      "committer_at": "2026-10-23T14:07:56Z",
+      "tree_sha": "446b9fa1b806beafca7930b3351ca72ae501419d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1527483d9603eebd9f0e166053f2a824541b5b5a"
+  },
+  "observed_at": "2026-10-26T05:39:13.696508+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "feeeee11d7e1db240942d6c8de0858d93d5b98051001450019c3a410b924c4fd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "332a966081da2a1fe82637780c80d08048f04350ca28e04d7c5915d7d8efe322",
+  "source_url": "https://api.github.com/repos/apache/skywalking/commits/1527483d9603eebd9f0e166053f2a824541b5b5a?per_page=100",
+  "status_code": 200
+}

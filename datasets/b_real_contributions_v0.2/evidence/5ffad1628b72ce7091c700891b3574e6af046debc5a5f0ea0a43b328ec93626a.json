@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1946977,
+      "login": "bschnurr",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T17:30:37Z",
+      "committer_at": "2026-10-21T17:30:37Z",
+      "tree_sha": "bf2cc5217e8c3513a826d45c8b96e001dffc47d6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d69be86c24af67bcd031b91df5b8f30fc55c98ce"
+  },
+  "observed_at": "2026-10-27T14:05:10.432059+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b7feb6541e45891fb360299c27f0d906946e584a974439456a0abe96b5a5ad82",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e6055553850d1c46e9fc30430a98692e31e697f0294d72535931c2efc1244bd6",
+  "source_url": "https://api.github.com/repos/microsoft/pyright/commits/d69be86c24af67bcd031b91df5b8f30fc55c98ce?per_page=100",
+  "status_code": 200
+}

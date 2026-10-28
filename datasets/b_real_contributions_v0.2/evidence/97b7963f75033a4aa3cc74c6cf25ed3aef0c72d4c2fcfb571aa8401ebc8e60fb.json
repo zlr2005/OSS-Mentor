@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "83c9842a61db48dd980052bc839f5726f573973e",
+    "size": 2693
+  },
+  "observed_at": "2026-10-26T06:59:09.283852+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "66b80a5bb0900f91aed8496f83a769422bc2c19b2c5f28767c270e8e0f9ab0f6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b6b51194704d2c169fb28463680aad2156c70eee33373883ec0281de1a1fe27a",
+  "source_url": "https://api.github.com/repos/go-task/task/git/blobs/83c9842a61db48dd980052bc839f5726f573973e",
+  "status_code": 200
+}

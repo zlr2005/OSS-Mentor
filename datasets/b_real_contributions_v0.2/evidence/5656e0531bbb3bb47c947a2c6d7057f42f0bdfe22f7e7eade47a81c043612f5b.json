@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 44588767,
+      "login": "ivov",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T15:26:47Z",
+      "committer_at": "2026-10-23T15:26:47Z",
+      "tree_sha": "0e8c7d6ec134ac45fbff80513052ea0223e7a450"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "79098d2585e8aec24a28b9cc0084e755d985c8a0"
+  },
+  "observed_at": "2026-10-27T14:22:39.614083+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4ff648670d479a64ed883e894f31794461e2f45dac4eaabeb6ffc4edd399725a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "81403f3c383ff3ec420a9c5d9eab3accb9c410a299305bb51870f6dc3bfc83f8",
+  "source_url": "https://api.github.com/repos/n8n-io/n8n/commits/79098d2585e8aec24a28b9cc0084e755d985c8a0?per_page=100",
+  "status_code": 200
+}

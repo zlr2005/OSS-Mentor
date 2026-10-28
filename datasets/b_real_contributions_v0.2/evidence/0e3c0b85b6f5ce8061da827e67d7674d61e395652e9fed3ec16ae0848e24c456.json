@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 237402563,
+      "login": "BigPizzaV3",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T18:28:08Z",
+      "committer_at": "2026-10-25T18:28:08Z",
+      "tree_sha": "24998e4b41f580ac50c2fe5e071329c326784481"
+    },
+    "committer": {
+      "id": 237402563,
+      "login": "BigPizzaV3",
+      "type": "User"
+    },
+    "sha": "03dbd099f3526498f5a5d43aca1839032ab5850d"
+  },
+  "observed_at": "2026-10-26T05:55:09.720027+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2c2fd2dbf66eba25a268eb9aeacdba2ccda59d91a0913a848c200f9b981aa852",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f9e557a0ea5e539dfdbcb43512ade2fc106f0646acdd0b8744ea8c3e7730098f",
+  "source_url": "https://api.github.com/repos/BigPizzaV3/CodexPlusPlus/commits/03dbd099f3526498f5a5d43aca1839032ab5850d?per_page=100",
+  "status_code": 200
+}

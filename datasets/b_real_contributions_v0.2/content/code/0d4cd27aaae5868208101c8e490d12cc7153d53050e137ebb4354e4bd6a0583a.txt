@@ -1,0 +1,360 @@
+/*
+ * Copyright 2015-2026 the original author or authors.
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v2.0 which
+ * accompanies this distribution and is available at
+ *
+ * https://www.eclipse.org/legal/epl-v20.html
+ */
+
+package org.junit.platform.reporting.open.xml;
+
+import static java.util.Objects.requireNonNull;
+import static org.apiguardian.api.API.Status.MAINTAINED;
+import static org.junit.platform.commons.util.StringUtils.isNotBlank;
+import static org.junit.platform.launcher.LauncherConstants.STDERR_REPORT_ENTRY_KEY;
+import static org.junit.platform.launcher.LauncherConstants.STDOUT_REPORT_ENTRY_KEY;
+import static org.junit.platform.reporting.open.xml.JUnitFactory.legacyReportingName;
+import static org.junit.platform.reporting.open.xml.JUnitFactory.type;
+import static org.junit.platform.reporting.open.xml.JUnitFactory.uniqueId;
+import static org.opentest4j.reporting.events.core.CoreFactory.attachments;
+import static org.opentest4j.reporting.events.core.CoreFactory.cpuCores;
+import static org.opentest4j.reporting.events.core.CoreFactory.data;
+import static org.opentest4j.reporting.events.core.CoreFactory.directorySource;
+import static org.opentest4j.reporting.events.core.CoreFactory.file;
+import static org.opentest4j.reporting.events.core.CoreFactory.fileSource;
+import static org.opentest4j.reporting.events.core.CoreFactory.hostName;
+import static org.opentest4j.reporting.events.core.CoreFactory.infrastructure;
+import static org.opentest4j.reporting.events.core.CoreFactory.metadata;
+import static org.opentest4j.reporting.events.core.CoreFactory.operatingSystem;
+import static org.opentest4j.reporting.events.core.CoreFactory.output;
+import static org.opentest4j.reporting.events.core.CoreFactory.reason;
+import static org.opentest4j.reporting.events.core.CoreFactory.result;
+import static org.opentest4j.reporting.events.core.CoreFactory.sources;
+import static org.opentest4j.reporting.events.core.CoreFactory.tag;
+import static org.opentest4j.reporting.events.core.CoreFactory.tags;
+import static org.opentest4j.reporting.events.core.CoreFactory.uriSource;
+import static org.opentest4j.reporting.events.core.CoreFactory.userName;
+import static org.opentest4j.reporting.events.git.GitFactory.branch;
+import static org.opentest4j.reporting.events.git.GitFactory.commit;
+import static org.opentest4j.reporting.events.git.GitFactory.repository;
+import static org.opentest4j.reporting.events.git.GitFactory.status;
+import static org.opentest4j.reporting.events.java.JavaFactory.classSource;
+import static org.opentest4j.reporting.events.java.JavaFactory.classpathResourceSource;
+import static org.opentest4j.reporting.events.java.JavaFactory.fileEncoding;
+import static org.opentest4j.reporting.events.java.JavaFactory.heapSize;
+import static org.opentest4j.reporting.events.java.JavaFactory.javaVersion;
+import static org.opentest4j.reporting.events.java.JavaFactory.methodSource;
+import static org.opentest4j.reporting.events.java.JavaFactory.packageSource;
+import static org.opentest4j.reporting.events.java.JavaFactory.throwable;
+import static org.opentest4j.reporting.events.root.RootFactory.finished;
+import static org.opentest4j.reporting.events.root.RootFactory.reported;
+import static org.opentest4j.reporting.events.root.RootFactory.started;
+
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
+import java.io.Writer;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apiguardian.api.API;
+import org.jspecify.annotations.Nullable;
+import org.junit.platform.commons.JUnitException;
+import org.junit.platform.engine.ConfigurationParameters;
+import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.engine.TestSource;
+import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.reporting.FileEntry;
+import org.junit.platform.engine.reporting.ReportEntry;
+import org.junit.platform.engine.support.descriptor.ClassSource;
+import org.junit.platform.engine.support.descriptor.ClasspathResourceSource;
+import org.junit.platform.engine.support.descriptor.CompositeTestSource;
+import org.junit.platform.engine.support.descriptor.DirectorySource;
+import org.junit.platform.engine.support.descriptor.FileSource;
+import org.junit.platform.engine.support.descriptor.MethodSource;
+import org.junit.platform.engine.support.descriptor.PackageSource;
+import org.junit.platform.engine.support.descriptor.UriSource;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
+import org.opentest4j.reporting.events.api.DocumentWriter;
+import org.opentest4j.reporting.events.api.NamespaceRegistry;
+import org.opentest4j.reporting.events.core.Attachments;
+import org.opentest4j.reporting.events.core.Infrastructure;
+import org.opentest4j.reporting.events.core.Result;
+import org.opentest4j.reporting.events.core.Sources;
+import org.opentest4j.reporting.events.root.Events;
+import org.opentest4j.reporting.schema.Namespace;
+
+/**
+ * Open Test Reporting events XML generating test execution listener.
+ *
+ * @since 1.9
+ */
+@API(status = MAINTAINED, since = "1.13.3")
+public class OpenTestReportGeneratingListener implements TestExecutionListener {
+
+	static final String ENABLED_PROPERTY_NAME = "junit.platform.reporting.open.xml.enabled";
+	static final String GIT_ENABLED_PROPERTY_NAME = "junit.platform.reporting.open.xml.git.enabled";
+	static final String SOCKET_PROPERTY_NAME = "junit.platform.reporting.open.xml.socket";
+
+	private final AtomicInteger idCounter = new AtomicInteger();
+	private final Map<UniqueId, String> inProgressIds = new ConcurrentHashMap<>();
+	private DocumentWriter<Events> eventsFileWriter = DocumentWriter.noop();
+	private final Path workingDir;
+
+	private @Nullable Path outputDir;
+
+	@SuppressWarnings("unused") // Used via ServiceLoader
+	public OpenTestReportGeneratingListener() {
+		this(Path.of(".").toAbsolutePath());
+	}
+
+	OpenTestReportGeneratingListener(Path workingDir) {
+		this.workingDir = workingDir;
+	}
+
+	@Override
+	public void testPlanExecutionStarted(TestPlan testPlan) {
+		ConfigurationParameters config = testPlan.getConfigurationParameters();
+		if (isEnabled(config)) {
+			NamespaceRegistry namespaceRegistry = NamespaceRegistry.builder(Namespace.REPORTING_CORE) //
+					.add("e", Namespace.REPORTING_EVENTS) //
+					.add("git", Namespace.REPORTING_GIT) //
+					.add("java", Namespace.REPORTING_JAVA) //
+					.add("junit", JUnitFactory.NAMESPACE, "https://schemas.junit.org/open-test-reporting/junit-1.9.xsd") //
+					.build();
+			outputDir = testPlan.getOutputDirectoryCreator().getRootDirectory();
+			try {
+				eventsFileWriter = createDocumentWriter(config, namespaceRegistry);
+				reportInfrastructure(config);
+			}
+			catch (Exception e) {
+				throw new JUnitException("Failed to initialize XML events writer", e);
+			}
+		}
+	}
+
+	private DocumentWriter<Events> createDocumentWriter(ConfigurationParameters config,
+			NamespaceRegistry namespaceRegistry) throws Exception {
+		return config.get(SOCKET_PROPERTY_NAME, Integer::valueOf) //
+				.map(port -> {
+					try {
+						Socket socket = new Socket(InetAddress.getLoopbackAddress(), port);
+						Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
+						return Events.createDocumentWriter(namespaceRegistry, writer);
+					}
+					catch (Exception e) {
+						throw new JUnitException("Failed to connect to socket on port " + port, e);
+					}
+				}) //
+				.orElseGet(() -> {
+					try {
+						Path eventsXml = requireNonNull(outputDir).resolve("open-test-report.xml");
+						return Events.createDocumentWriter(namespaceRegistry, eventsXml);
+					}
+					catch (Exception e) {
+						throw new JUnitException("Failed to create XML events file", e);
+					}
+				});
+	}
+
+	private boolean isEnabled(ConfigurationParameters config) {
+		return config.getBoolean(ENABLED_PROPERTY_NAME).orElse(false);
+	}
+
+	private boolean isGitEnabled(ConfigurationParameters config) {
+		return config.getBoolean(GIT_ENABLED_PROPERTY_NAME).orElse(false);
+	}
+
+	@SuppressWarnings("EmptyCatch")
+	private void reportInfrastructure(ConfigurationParameters config) {
+		eventsFileWriter.append(infrastructure(), infrastructure -> {
+			try {
+				String hostName = InetAddress.getLocalHost().getHostName();
+				infrastructure.append(hostName(hostName));
+			}
+			catch (UnknownHostException ignored) {
+			}
+			infrastructure //
+					.append(userName(System.getProperty("user.name"))) //
+					.append(operatingSystem(System.getProperty("os.name"))) //
+					.append(cpuCores(Runtime.getRuntime().availableProcessors())) //
+					.append(javaVersion(System.getProperty("java.version"))) //
+					.append(fileEncoding(System.getProperty("file.encoding"))) //
+					.append(heapSize(), heapSize -> heapSize.withMax(Runtime.getRuntime().maxMemory()));
+
+			if (isGitEnabled(config)) {
+				GitInfoCollector.get(workingDir).ifPresent(git -> addGitInfo(infrastructure, git));
+			}
+		});
+	}
+
+	private void addGitInfo(Infrastructure infrastructure, GitInfoCollector git) {
+		git.getOriginUrl() //
+				.ifPresent(
+					gitUrl -> infrastructure.append(repository(), repository -> repository.withOriginUrl(gitUrl)));
+		git.getBranch() //
+				.ifPresent(branch -> infrastructure.append(branch(branch)));
+		git.getCommitHash() //
+				.ifPresent(gitCommitHash -> infrastructure.append(commit(gitCommitHash)));
+		git.getStatus() //
+				.ifPresent(statusOutput -> infrastructure.append(status(statusOutput),
+					status -> status.withClean(statusOutput.isEmpty())));
+	}
+
+	@Override
+	public void testPlanExecutionFinished(TestPlan testPlan) {
+		try {
+			eventsFileWriter.close();
+		}
+		catch (IOException e) {
+			throw new UncheckedIOException("Failed to close XML events file", e);
+		}
+		finally {
+			eventsFileWriter = DocumentWriter.noop();
+		}
+	}
+
+	@Override
+	public void executionSkipped(TestIdentifier testIdentifier, String reason) {
+		String id = String.valueOf(idCounter.incrementAndGet());
+		reportStarted(testIdentifier, id);
+		eventsFileWriter.append(finished(id, Instant.now()), //
+			finished -> finished.append(result(Result.Status.SKIPPED), result -> {
+				if (isNotBlank(reason)) {
+					result.append(reason(reason));
+				}
+			}));
+	}
+
+	@Override
+	public void executionStarted(TestIdentifier testIdentifier) {
+		String id = String.valueOf(idCounter.incrementAndGet());
+		inProgressIds.put(testIdentifier.getUniqueIdObject(), id);
+		reportStarted(testIdentifier, id);
+	}
+
+	private void reportStarted(TestIdentifier testIdentifier, String id) {
+		eventsFileWriter.append(started(id, Instant.now(), testIdentifier.getDisplayName()), started -> {
+			testIdentifier.getParentIdObject().ifPresent(
+				parentId -> started.withParentId(requireNonNull(inProgressIds.get(parentId))));
+			started.append(metadata(), metadata -> {
+				if (!testIdentifier.getTags().isEmpty()) {
+					metadata.append(tags(), tags -> //
+					testIdentifier.getTags().forEach(tag -> tags.append(tag(tag.getName()))));
+				}
+				metadata.append(uniqueId(testIdentifier.getUniqueId())) //
+						.append(legacyReportingName(testIdentifier.getLegacyReportingName())) //
+						.append(type(testIdentifier.getType()));
+			});
+			testIdentifier.getSource().ifPresent(
+				source -> started.append(sources(), sources -> addTestSource(source, sources)));
+		});
+	}
+
+	private void addTestSource(TestSource source, Sources sources) {
+		if (source instanceof CompositeTestSource compositeSource) {
+			compositeSource.getSources().forEach(it -> addTestSource(it, sources));
+		}
+		else if (source instanceof ClassSource classSource) {
+			sources.append(classSource(classSource.getClassName()), //
+				element -> classSource.getPosition().ifPresent(
+					filePosition -> element.addFilePosition(filePosition.getLine(), filePosition.getColumn())));
+		}
+		else if (source instanceof MethodSource methodSource) {
+			sources.append(methodSource(methodSource.getClassName(), methodSource.getMethodName()), element -> {
+				String methodParameterTypes = methodSource.getMethodParameterTypes();
+				if (methodParameterTypes != null) {
+					element.withMethodParameterTypes(methodParameterTypes);
+				}
+			});
+		}
+		else if (source instanceof ClasspathResourceSource classpathResourceSource) {
+			sources.append(classpathResourceSource(classpathResourceSource.getClasspathResourceName()), //
+				element -> classpathResourceSource.getPosition().ifPresent(
+					filePosition -> element.addFilePosition(filePosition.getLine(), filePosition.getColumn())));
+		}
+		else if (source instanceof PackageSource packageSource) {
+			sources.append(packageSource(packageSource.getPackageName()));
+		}
+		else if (source instanceof FileSource fileSource) {
+			sources.append(fileSource(fileSource.getFile()), //
+				element -> fileSource.getPosition().ifPresent(
+					filePosition -> element.addFilePosition(filePosition.getLine(), filePosition.getColumn())));
+		}
+		else if (source instanceof DirectorySource directorySource) {
+			sources.append(directorySource(directorySource.getFile()));
+		}
+		else if (source instanceof UriSource uriSource) {
+			sources.append(uriSource(uriSource.getUri()));
+		}
+	}
+
+	@Override
+	public void reportingEntryPublished(TestIdentifier testIdentifier, ReportEntry entry) {
+		String id = requireNonNull(inProgressIds.get(testIdentifier.getUniqueIdObject()));
+		eventsFileWriter.append(reported(id, Instant.now()), //
+			reported -> reported.append(attachments(), //
+				attachments -> {
+					Map<String, String> keyValuePairs = entry.getKeyValuePairs();
+					if (keyValuePairs.containsKey(STDOUT_REPORT_ENTRY_KEY)
+							|| keyValuePairs.containsKey(STDERR_REPORT_ENTRY_KEY)) {
+						attachOutput(attachments, entry.getTimestamp(), keyValuePairs.get(STDOUT_REPORT_ENTRY_KEY),
+							"stdout");
+						attachOutput(attachments, entry.getTimestamp(), keyValuePairs.get(STDERR_REPORT_ENTRY_KEY),
+							"stderr");
+					}
+					else {
+						attachments.append(data(entry.getTimestamp()), //
+							data -> keyValuePairs.forEach(data::addEntry));
+					}
+				}));
+	}
+
+	private static void attachOutput(Attachments attachments, LocalDateTime timestamp, @Nullable String content,
+			String source) {
+		if (content != null) {
+			attachments.append(output(timestamp), output -> output.withSource(source).withContent(content));
+		}
+	}
+
+	@Override
+	public void fileEntryPublished(TestIdentifier testIdentifier, FileEntry entry) {
+		String id = requireNonNull(inProgressIds.get(testIdentifier.getUniqueIdObject()));
+		eventsFileWriter.append(reported(id, Instant.now()), //
+			reported -> reported.append(attachments(), attachments -> attachments.append(file(entry.getTimestamp()), //
+				file -> {
+					file.withPath(requireNonNull(outputDir).relativize(entry.getPath()).toString());
+					entry.getMediaType().ifPresent(file::withMediaType);
+				})));
+	}
+
+	@Override
+	public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
+		String id = requireNonNull(inProgressIds.remove(testIdentifier.getUniqueIdObject()));
+		eventsFileWriter.append(finished(id, Instant.now()), //
+			finished -> finished.append(result(convertStatus(testExecutionResult.getStatus())), //
+				result -> testExecutionResult.getThrowable() //
+						.ifPresent(throwable -> result.append(throwable(throwable)))));
+	}
+
+	private Result.Status convertStatus(TestExecutionResult.Status status) {
+		return switch (status) {
+			case FAILED -> Result.Status.FAILED;
+			case SUCCESSFUL -> Result.Status.SUCCESSFUL;
+			case ABORTED -> Result.Status.ABORTED;
+		};
+	}
+
+}

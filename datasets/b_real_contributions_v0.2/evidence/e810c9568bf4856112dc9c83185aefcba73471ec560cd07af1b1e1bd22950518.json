@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "mwaskom/seaborn",
+    "id": 4704710,
+    "language": "Python",
+    "private": false,
+    "size": 54627
+  },
+  "observed_at": "2026-10-26T08:26:17.680037+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d247fdc1353557d757415821cecd215d9986ccb766c5941b5b25b6c24348649c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c550fff85ff43fe180c2d2f12c4bf4e7569eee2d75eb40e426ba202fd6bec21a",
+  "source_url": "https://api.github.com/repos/mwaskom/seaborn",
+  "status_code": 200
+}

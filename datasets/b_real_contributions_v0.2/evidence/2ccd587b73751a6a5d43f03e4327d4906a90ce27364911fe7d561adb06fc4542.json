@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-09-07T19:24:20Z",
+      "committer_at": "2026-09-14T13:50:11Z",
+      "tree_sha": "997276b96ee7d18c2c3111019b9fe0fa34f81540"
+    },
+    "committer": {},
+    "sha": "cc101959870fc5a37e82099611c193486845d1dc"
+  },
+  "observed_at": "2026-10-27T13:19:54.939166+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e55a83751a7e58665f68fb2c1400825ddea9302e8d65478fe1dbf6fc94732667",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a681c789e38727d12c4753cbe08798432678e4cd6f54de72562d618d90d90fd6",
+  "source_url": "https://api.github.com/repos/facebook/zstd/commits/cc101959870fc5a37e82099611c193486845d1dc?per_page=100",
+  "status_code": 200
+}

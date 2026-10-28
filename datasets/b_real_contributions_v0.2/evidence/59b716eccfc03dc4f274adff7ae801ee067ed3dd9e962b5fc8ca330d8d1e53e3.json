@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-22T11:12:59Z",
+      "committer_at": "2026-10-22T11:12:59Z",
+      "tree_sha": "36fb48122b975d1ac4d453ae8b01f53c000e3a59"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "aaad2b15a427345937195011de527c814c8f6401"
+  },
+  "observed_at": "2026-10-26T05:23:54.550845+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aac98a9a48eb76e0ac6e1867505d7a9464ce651a1dac815c1d692861e4a7cb15",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9e1991491db19849caa1bcb410ab256e6b9987c86ebf8a28bf04f6f6fa9372af",
+  "source_url": "https://api.github.com/repos/apache/lucene/commits/aaad2b15a427345937195011de527c814c8f6401?per_page=100",
+  "status_code": 200
+}

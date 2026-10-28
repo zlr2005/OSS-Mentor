@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "preactjs/preact",
+    "id": 42283287,
+    "language": "JavaScript",
+    "private": false,
+    "size": 20172
+  },
+  "observed_at": "2026-10-26T08:50:22.694401+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aca1fca500fab1b4701dc27925f933b6111f365f7e5df14512519b34a874030f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2ead2f8b54ab29277ca1f9632a230bfaf67552795bdc1f2081cc19ce992d21b4",
+  "source_url": "https://api.github.com/repos/preactjs/preact",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 181459360,
+      "login": "DyutiSaini",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T13:30:39Z",
+      "committer_at": "2026-10-23T13:30:39Z",
+      "tree_sha": "9b2d97e2f1ed342b8d75c1e13ac89d60631b1ca0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "e1430d0dc5bf5d59f701395a7bed6beb3163a689"
+  },
+  "observed_at": "2026-10-26T07:50:47.619297+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "99fe02997fca6a0f9a22c911eb3ba5641d0cd24bc70a20f74813cc2d75e829dc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e12194e811038f24be29ada08064cd580f093121dcd20cff04c143d981ec01e8",
+  "source_url": "https://api.github.com/repos/kestra-io/kestra/commits/e1430d0dc5bf5d59f701395a7bed6beb3163a689?per_page=100",
+  "status_code": 200
+}

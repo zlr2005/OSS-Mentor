@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "483fa08534113d09a1e325b82c6834c2de6d416e",
+    "size": 24496
+  },
+  "observed_at": "2026-10-27T14:58:56.411873+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ad9647bc5770d513a5771d9be3393af836183d62090ee844cc373ad5a0c8dee0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "19f5e6b0e9810f40a08d46b528df345fcea2b7402578bf25c8a0acfea2b0b613",
+  "source_url": "https://api.github.com/repos/numpy/numpydoc/git/blobs/483fa08534113d09a1e325b82c6834c2de6d416e",
+  "status_code": 200
+}

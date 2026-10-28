@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "38944d559f0c0eb4f7c8b387b1590ca9393733cf",
+    "size": 17149
+  },
+  "observed_at": "2026-10-26T07:47:28.372074+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c512961667a2339d23004d97435f9768c857af14290a30c51f8d676f05130614",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b62e11071f3fdf9e51f7dd81aebe3c3c99fa0e6a615ac163867d20b9d31d46d3",
+  "source_url": "https://api.github.com/repos/junegunn/fzf/git/blobs/38944d559f0c0eb4f7c8b387b1590ca9393733cf",
+  "status_code": 200
+}

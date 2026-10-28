@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "264f22d6f773c2cc457bf4d49071c641396c890e",
+    "size": 179688
+  },
+  "observed_at": "2026-10-26T13:30:37.642876+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5d42f47071b9bc80e23bffbc15c83dc2b03fb53f9ed71853865ba0a94d5ec94c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7fab0c535fe80b36a13d10b5a9e09b014aac1af3a8c7a2a3cba23ce3b8b0f49d",
+  "source_url": "https://api.github.com/repos/redis/go-redis/git/blobs/264f22d6f773c2cc457bf4d49071c641396c890e",
+  "status_code": 200
+}

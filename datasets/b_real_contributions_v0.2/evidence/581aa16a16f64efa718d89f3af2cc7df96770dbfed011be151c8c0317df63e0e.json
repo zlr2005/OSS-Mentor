@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "wiremock/wiremock",
+    "id": 2544305,
+    "language": "Java",
+    "private": false,
+    "size": 53488
+  },
+  "observed_at": "2026-10-26T15:49:19.202887+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c1046054ad5f7bdbcd6e7273b028a8fb8c9cce58c29b194678f799ec6a0990e4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "29916eef16e52b4fa73981c15555bfe82282f0c3c04a64a13e56f45c53dc9712",
+  "source_url": "https://api.github.com/repos/wiremock/wiremock",
+  "status_code": 200
+}

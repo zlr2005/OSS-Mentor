@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 18226415,
+      "login": "manzoorwanijk",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T17:27:22Z",
+      "committer_at": "2026-10-23T17:27:22Z",
+      "tree_sha": "b543da20c3ffb869c4bb76303af96d0fbf6b69fe"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "085f9f61ba041b9bc3e4d91a574321bfdb6e074f"
+  },
+  "observed_at": "2026-10-27T14:38:35.945955+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3c71850c1551a1c42a90664c53880140b4c51f2d67e4e7a088d20b56ba3cbef5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cdd20d23aaec7d45162c77445dd8a0570e847d0a4a9c9310f70ad637437939be",
+  "source_url": "https://api.github.com/repos/npm/cli/commits/085f9f61ba041b9bc3e4d91a574321bfdb6e074f?per_page=100",
+  "status_code": 200
+}

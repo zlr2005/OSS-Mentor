@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 57354320,
+      "login": "chemelli74",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T22:31:38Z",
+      "committer_at": "2026-10-25T22:31:38Z",
+      "tree_sha": "16246de22e8d8b2be1f2374a5406b55f6d40b9e1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5864c1ab0ba9ce13bc12e00db71b6da15c1eab39"
+  },
+  "observed_at": "2026-10-26T07:24:34.248034+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "06aa85a6e00a3ecee2ee3642a2e42f08db0959b5c1cfd67e65abb0776e47a582",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "dbe310a0b2fac533c69eb3f3a5e5b929daaf5eb0aa369bb4352d08ed4c39c947",
+  "source_url": "https://api.github.com/repos/home-assistant/core/commits/5864c1ab0ba9ce13bc12e00db71b6da15c1eab39?per_page=100",
+  "status_code": 200
+}

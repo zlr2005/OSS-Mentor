@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 23011166,
+      "login": "tonghuaroot",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T18:06:47Z",
+      "committer_at": "2026-10-25T18:06:47Z",
+      "tree_sha": "7d0a28bdc5fda3c9845aeb55a66416f2b9172984"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "bb7e16ace95c8998e23f2d643f9b7968c9c120cd"
+  },
+  "observed_at": "2026-10-27T15:24:55.726646+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e37953031535155c24d8825da4227d7b7e0876a1a5e8827f3ed64a98329d3c50",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c8cf8b1e27d62055f6b61b1a0344be8be0dc2f0e4e8684ef3b66cd36d02cdb3c",
+  "source_url": "https://api.github.com/repos/python/cpython/commits/bb7e16ace95c8998e23f2d643f9b7968c9c120cd?per_page=100",
+  "status_code": 200
+}

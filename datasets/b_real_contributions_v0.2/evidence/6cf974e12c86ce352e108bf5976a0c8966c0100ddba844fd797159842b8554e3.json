@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+    "size": 1141
+  },
+  "observed_at": "2026-10-26T08:09:05.840973+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e1dd99c71435d347992feff5b7522b11ed34d5773b04a1c0a66efdc043f74f47",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3869404ab297754ba57f49cf2700eee7d94226a550d502403aa45edc944885b0",
+  "source_url": "https://api.github.com/repos/microsoft/Agents-for-net/git/blobs/9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+  "status_code": 200
+}

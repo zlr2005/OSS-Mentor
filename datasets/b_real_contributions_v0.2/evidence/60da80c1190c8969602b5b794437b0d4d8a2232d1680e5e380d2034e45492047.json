@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "af9ce81ce65f79c10dd2e41086825579c64aeffa",
+    "size": 18780
+  },
+  "observed_at": "2026-10-27T17:08:55.208592+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "347eafc5bfc1826407f404d038deb91dd22693ad8d7eda413b6d17b48ce39fe2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2f06a94f224c9f5824e7b92b2b114be131160076634e80fbac27f714e7cc2fc5",
+  "source_url": "https://api.github.com/repos/pypa/setuptools/git/blobs/af9ce81ce65f79c10dd2e41086825579c64aeffa",
+  "status_code": 200
+}

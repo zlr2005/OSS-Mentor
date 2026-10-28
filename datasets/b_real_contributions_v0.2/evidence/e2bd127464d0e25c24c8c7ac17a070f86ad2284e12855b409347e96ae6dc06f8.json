@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "highlightjs/highlight.js",
+    "id": 1213225,
+    "language": "JavaScript",
+    "private": false,
+    "size": 16702
+  },
+  "observed_at": "2026-10-26T07:22:59.779991+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "21012e29707dfca735a4342262353112bb36626280cf8f58359fd53e5f983373",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a535316ae15ca9ed9055ac51f9856b4dd0ba3b3b48629b6fc0d55ba5c5af2db8",
+  "source_url": "https://api.github.com/repos/highlightjs/highlight.js",
+  "status_code": 200
+}

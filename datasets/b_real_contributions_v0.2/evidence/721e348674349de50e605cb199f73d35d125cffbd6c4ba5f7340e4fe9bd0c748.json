@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ab6b2ce9bceb42f685dfb5580d6c4d23919b71ac",
+    "size": 4737
+  },
+  "observed_at": "2026-10-26T15:53:19.571750+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7674529ff7a4385664c32c20bf2aeecb28a5392213efd444ab33f8c4bee00a47",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0a9a701a4d716b0908718f3f393d4970edf4fb72c8c911da309714acf27c1e05",
+  "source_url": "https://api.github.com/repos/yarnpkg/berry/git/blobs/ab6b2ce9bceb42f685dfb5580d6c4d23919b71ac",
+  "status_code": 200
+}

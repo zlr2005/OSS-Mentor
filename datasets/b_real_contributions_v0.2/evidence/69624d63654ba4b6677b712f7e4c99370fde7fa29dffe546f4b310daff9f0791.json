@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7617fc25b7d25e5af7547e66762709dd095a59ed",
+    "size": 54806
+  },
+  "observed_at": "2026-10-27T14:19:59.277994+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f6bf4f1d260592c03ad8f58f5578cbcd484039bab5482495dedd2dd8fedbcc89",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "eecb127d5940bc967fe0d6f077232cbaab6991f0bda461779e7ce8b5491561f5",
+  "source_url": "https://api.github.com/repos/microsoft/vscode-mssql/git/blobs/7617fc25b7d25e5af7547e66762709dd095a59ed",
+  "status_code": 200
+}

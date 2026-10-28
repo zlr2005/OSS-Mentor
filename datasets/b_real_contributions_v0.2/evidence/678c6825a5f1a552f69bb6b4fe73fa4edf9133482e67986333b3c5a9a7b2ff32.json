@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 116211004,
+      "login": "NavpreetSSidhu",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:30:49Z",
+      "committer_at": "2026-10-23T20:30:49Z",
+      "tree_sha": "a6f48861d457fd9a064806edaac2aa9b3ac4938d"
+    },
+    "committer": {
+      "id": 116211004,
+      "login": "NavpreetSSidhu",
+      "type": "User"
+    },
+    "sha": "dd7fa4dfe1588e6f10c71df983d98164a500c64b"
+  },
+  "observed_at": "2026-10-26T14:06:04.893073+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cac797136aff3035bdd105468c3c66ba61e291f2e72c6d0505424732afb15fe8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fd86f5911cae509909a5f36d50ba86c2f8a1301467ecac38ecc39391d432f178",
+  "source_url": "https://api.github.com/repos/sharkdp/fd/commits/dd7fa4dfe1588e6f10c71df983d98164a500c64b?per_page=100",
+  "status_code": 200
+}

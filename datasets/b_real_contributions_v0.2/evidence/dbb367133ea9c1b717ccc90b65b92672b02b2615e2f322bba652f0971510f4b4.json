@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4259bd3873bef934ab315eb837cadf9014dd3df3",
+    "size": 77281
+  },
+  "observed_at": "2026-10-26T05:30:22.420542+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ee26760954f08795cdb187f82a8bbd2368412bbdd4860f5a19c6da459a22cdbd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fa8293f4501b910d90f6443f9ed65d245060bc8fbbc9a5405cd01b5b72163f88",
+  "source_url": "https://api.github.com/repos/apache/pinot/git/blobs/4259bd3873bef934ab315eb837cadf9014dd3df3",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "43e35beaca77168472140037a7fd140e5aea405d",
+    "size": 2460
+  },
+  "observed_at": "2026-10-26T13:33:05.059138+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5b3519ad64adcb96ab34f82ad814f817fabd9fe75aa4a1c26d953973fc6f023b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "10ed17101831df5c22a21d7f8d3de3e28089678ce29318e6db7a634c1a2425bc",
+  "source_url": "https://api.github.com/repos/redis/jedis/git/blobs/43e35beaca77168472140037a7fd140e5aea405d",
+  "status_code": 200
+}

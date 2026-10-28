@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c13d229e0523623a23f979771ccf99ac149c8bfb",
+    "size": 1517
+  },
+  "observed_at": "2026-10-27T13:01:43.752323+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d571cb3eee7e8ecc3c926c2f9af3657a231d193d4285dd24d16a6232e2132ec2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ae506d1c45fb9855f80252b18d7a43a25b2a56d68902c726f3dbeaee02f6ad57",
+  "source_url": "https://api.github.com/repos/ComposioHQ/awesome-claude-skills/git/blobs/c13d229e0523623a23f979771ccf99ac149c8bfb",
+  "status_code": 200
+}

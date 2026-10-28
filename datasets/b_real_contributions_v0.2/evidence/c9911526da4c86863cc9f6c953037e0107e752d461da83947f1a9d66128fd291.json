@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 129689245,
+      "login": "kkatalz",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T10:13:58Z",
+      "committer_at": "2026-10-22T10:13:58Z",
+      "tree_sha": "7e92d89ac7e9566800b2d91978b43454b71e9658"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "91aa22da284421cac6553e28dc8b693ce67b3907"
+  },
+  "observed_at": "2026-10-26T08:25:19.980407+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c91ba53d4e1b4bfb6847f69df425f5dfce8c06f537e3c426ae5effc9e2fbb557",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9bf20c9dd1b8caa023733630518d49f3e9808817f8dc2a6019aacc02df5e77e0",
+  "source_url": "https://api.github.com/repos/mui/material-ui/commits/91aa22da284421cac6553e28dc8b693ce67b3907?per_page=100",
+  "status_code": 200
+}

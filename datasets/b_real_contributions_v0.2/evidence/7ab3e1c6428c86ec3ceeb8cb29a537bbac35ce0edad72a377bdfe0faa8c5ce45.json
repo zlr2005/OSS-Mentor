@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 42851186,
+      "login": "lhoestq",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T17:33:21Z",
+      "committer_at": "2026-10-19T17:33:21Z",
+      "tree_sha": "705aa13b4efd8a639d1843ea8674e4f2e24064b6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8334aad6c0fe1cd35d714795d3e0728456cc1a38"
+  },
+  "observed_at": "2026-10-26T07:28:00.820270+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "98f86b7a0d172ca985a3b7d66f1f0c505263f657e93566ee0f5fddb97ef3ad16",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7712ea3405453af060c9655f483c36ba14722ed80315708862d08946de62bc7d",
+  "source_url": "https://api.github.com/repos/huggingface/datasets/commits/8334aad6c0fe1cd35d714795d3e0728456cc1a38?per_page=100",
+  "status_code": 200
+}

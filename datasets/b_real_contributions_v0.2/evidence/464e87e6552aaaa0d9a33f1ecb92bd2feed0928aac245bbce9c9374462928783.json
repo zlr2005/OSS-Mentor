@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-2-Clause",
+    "full_name": "redis/go-redis",
+    "id": 5179099,
+    "language": "Go",
+    "private": false,
+    "size": 23262
+  },
+  "observed_at": "2026-10-26T13:29:07.198812+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "61be72e67b665245ab7527237a235b274d240c6eecdeeb595f3313665ff7ce61",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "171040ccf9cca970369c5ea9ef9f844d0123c932629c292eb0725e6da9b3da89",
+  "source_url": "https://api.github.com/repos/redis/go-redis",
+  "status_code": 200
+}

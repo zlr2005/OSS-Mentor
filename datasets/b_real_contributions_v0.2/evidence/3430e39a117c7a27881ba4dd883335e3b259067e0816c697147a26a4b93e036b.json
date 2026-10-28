@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 24752155,
+      "login": "trancexpress",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T07:34:59Z",
+      "committer_at": "2026-10-25T15:36:16Z",
+      "tree_sha": "220f0d66c826aa4a8b457f1cf8a24cb8ba7614d5"
+    },
+    "committer": {
+      "id": 24752155,
+      "login": "trancexpress",
+      "type": "User"
+    },
+    "sha": "f22f356df4baccd9edb1299a76ccf12ce1e58beb"
+  },
+  "observed_at": "2026-10-26T06:23:26.075554+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6c25f27bd4199f4ba90a5ccb2ccdd73c5a35be86e05c7b6306658100915a4bca",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "515d2e372408dd5cdf6d585012866cc24c69069021257b11b22b619f71de5ad3",
+  "source_url": "https://api.github.com/repos/eclipse-jdt/eclipse.jdt.core/commits/f22f356df4baccd9edb1299a76ccf12ce1e58beb?per_page=100",
+  "status_code": 200
+}

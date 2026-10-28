@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 38295417,
+      "login": "thomasqueirozb",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T18:14:44Z",
+      "committer_at": "2026-10-23T18:14:44Z",
+      "tree_sha": "c3370916a25c29059f60a494b82e6c1391a176a7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "4375c55717ae9232b965de7317677d7c39612d5d"
+  },
+  "observed_at": "2026-10-26T15:31:59.233212+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a26b2cd9ed5f38cc3ff8da6896f9d51a60769d7f509551d25e96f8ef05339fef",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c0a9f440b3be09e96bf3917c7708561984d6a4c76c54ff9697d857aea75aedb1",
+  "source_url": "https://api.github.com/repos/vectordotdev/vector/commits/4375c55717ae9232b965de7317677d7c39612d5d?per_page=100",
+  "status_code": 200
+}

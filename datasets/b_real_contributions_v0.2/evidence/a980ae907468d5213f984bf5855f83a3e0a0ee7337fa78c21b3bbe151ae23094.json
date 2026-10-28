@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 4344846,
+      "login": "raunaqmorarka",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T15:41:52Z",
+      "committer_at": "2026-10-25T17:43:14Z",
+      "tree_sha": "e2e839abe4cd635e08a674514df24a5f6a28fc57"
+    },
+    "committer": {
+      "id": 4344846,
+      "login": "raunaqmorarka",
+      "type": "User"
+    },
+    "sha": "5d51219a2c6f5b1a0ba0d7f6e3619adeda567985"
+  },
+  "observed_at": "2026-10-26T15:21:29.241603+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2a2d480c857c0a446a36421e139b9ecb25b606734b47f1390b307908fe202d05",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "34d07b59f9a1ff70f174c4549c43657b5c2167ffb421b7511c21a3955af33c46",
+  "source_url": "https://api.github.com/repos/trinodb/trino/commits/5d51219a2c6f5b1a0ba0d7f6e3619adeda567985?per_page=100",
+  "status_code": 200
+}

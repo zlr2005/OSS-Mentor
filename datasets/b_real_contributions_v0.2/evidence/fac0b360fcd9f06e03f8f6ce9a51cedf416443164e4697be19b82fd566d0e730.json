@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e847fe8d5c33e709b9f70fd1a952fa1f55be82dc",
+    "size": 9844
+  },
+  "observed_at": "2026-10-26T05:10:51.642400+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e0a864f62bf8b20b05df0f0f97694df65225dd1a4cc14fa4fcc84f4b3178ccc3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "780e0e6a6499c26959e68d735d8b3f547c0ed2317068d8c47e233e62815fafa3",
+  "source_url": "https://api.github.com/repos/apache/druid/git/blobs/e847fe8d5c33e709b9f70fd1a952fa1f55be82dc",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-25T06:40:22Z",
+      "committer_at": "2026-10-25T06:40:22Z",
+      "tree_sha": "82afa66ba42da2133261a84a7b8d3914df75438d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f686b5f811a744ee7cca60955608981a41221b6b"
+  },
+  "observed_at": "2026-10-26T05:16:36.385369+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "22f671ed4d98d5e4bedee6797d367e528764566830149b2d2a30fbb168433605",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1bcef4d0bd2a8356567535e9b73190f3e85020c2bdbf7f5cb67e38213aeeb275",
+  "source_url": "https://api.github.com/repos/apache/iceberg/commits/f686b5f811a744ee7cca60955608981a41221b6b?per_page=100",
+  "status_code": 200
+}

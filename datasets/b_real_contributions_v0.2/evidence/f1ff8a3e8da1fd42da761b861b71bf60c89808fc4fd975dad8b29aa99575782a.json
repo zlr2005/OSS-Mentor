@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e6ecb6b2eae57fb52d07637580d37f0ab5d060e2",
+    "size": 46809
+  },
+  "observed_at": "2026-10-26T05:24:42.367828+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c7baa998a47fdbecf3e78b4546e769207f465f9c1d7f0192aef6fbe91d4b29e3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "661b325a32324f01ed70c7a5f086f4c38a7a2a200ae4ab37e8dacdf98eda894b",
+  "source_url": "https://api.github.com/repos/apache/lucene/git/blobs/e6ecb6b2eae57fb52d07637580d37f0ab5d060e2",
+  "status_code": 200
+}

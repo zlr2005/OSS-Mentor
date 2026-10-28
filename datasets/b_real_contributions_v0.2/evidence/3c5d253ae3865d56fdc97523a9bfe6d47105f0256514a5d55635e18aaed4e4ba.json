@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 108675775,
+      "login": "HyperionBurn",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T08:57:37Z",
+      "committer_at": "2026-10-21T08:57:37Z",
+      "tree_sha": "ae2b08150ddc4c24b40c95081ab3499f5ea7270e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "aa601cd4f0ca7e1d1b1fb2cc7118174efc22f6c4"
+  },
+  "observed_at": "2026-10-26T13:17:15.532428+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bcf991835bab0a10dd5ea258bb27476c256a555d73993a885caa0df5ae8761d0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b0bc91f38997d2260fbbe0c8b0f62287bdeaf6a58f2f35a1945882dcad985d3c",
+  "source_url": "https://api.github.com/repos/python-poetry/poetry/commits/aa601cd4f0ca7e1d1b1fb2cc7118174efc22f6c4?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1309177,
+      "login": "charliermarsh",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T20:00:21Z",
+      "committer_at": "2026-10-23T20:00:21Z",
+      "tree_sha": "001188142aafc099433e73b882b37437b7fbfadf"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "6892bc2b7efe5909cbbeec8f757ed2c4c76b1d30"
+  },
+  "observed_at": "2026-10-26T05:58:46.875235+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1f257e64285e2402310f032054cf717ac40154adb9c8ec97c0c46acef565c37e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ea30a599a474c36a1fe8912a5be0261e3ae1cf4090515460df8656bdc34d0063",
+  "source_url": "https://api.github.com/repos/BurntSushi/ripgrep/commits/6892bc2b7efe5909cbbeec8f757ed2c4c76b1d30?per_page=100",
+  "status_code": 200
+}

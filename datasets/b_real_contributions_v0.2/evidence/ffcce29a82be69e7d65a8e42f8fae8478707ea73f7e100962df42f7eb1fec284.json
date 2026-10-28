@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1162160,
+      "login": "Rich-Harris",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T18:40:00Z",
+      "committer_at": "2026-10-21T18:40:00Z",
+      "tree_sha": "893c80f099da8c1bbddde2ca51b687678c81e969"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "5bd3e3cd346e5f6584e5ad98ffc7e65eb7f73764"
+  },
+  "observed_at": "2026-10-26T14:46:47.521676+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "14ac1597cbf22daf1eba51e41ec62eeab1e92a46edcbc4ef205fd852e9dc0768",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e6932796aaad5e5a06cdf625d959b84efd19c11ad8d3e3f2a1e577ae7adae437",
+  "source_url": "https://api.github.com/repos/sveltejs/svelte/commits/5bd3e3cd346e5f6584e5ad98ffc7e65eb7f73764?per_page=100",
+  "status_code": 200
+}

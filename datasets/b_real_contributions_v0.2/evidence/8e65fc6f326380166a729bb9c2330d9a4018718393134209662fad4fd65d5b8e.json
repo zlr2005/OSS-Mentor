@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 53977252,
+      "login": "Joe-Abraham",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T02:16:19Z",
+      "committer_at": "2026-10-23T02:16:19Z",
+      "tree_sha": "29baa7fb3acd11c78115dcf522a8053f9ff1cf29"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "91479c26597232456b006c2934cb8567fb4a8912"
+  },
+  "observed_at": "2026-10-26T08:51:48.132080+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "41b33ae51d48c246012cbcce38629c70ce8c99531a3fccfab0f56123479a09df",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9899cc9eb179048f32758830e8372a83902ea43205884eb6aa67b28f59d4e024",
+  "source_url": "https://api.github.com/repos/prestodb/presto/commits/91479c26597232456b006c2934cb8567fb4a8912?per_page=100",
+  "status_code": 200
+}

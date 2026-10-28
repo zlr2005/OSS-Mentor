@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e96f9a3a333bb39ad7accbc9d24d8d4cd7b70c7a",
+    "size": 2424
+  },
+  "observed_at": "2026-10-26T06:12:02.775946+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "413e0e76227e8e59c2ef5145cc2efe3deb14fd737fe8be46b31e2208af1232b0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "19661c001eba1a8a253bcd9bea5f4fbbd560737dc3836d5145bf24e66653890e",
+  "source_url": "https://api.github.com/repos/Comfy-Org/ComfyUI/git/blobs/e96f9a3a333bb39ad7accbc9d24d8d4cd7b70c7a",
+  "status_code": 200
+}

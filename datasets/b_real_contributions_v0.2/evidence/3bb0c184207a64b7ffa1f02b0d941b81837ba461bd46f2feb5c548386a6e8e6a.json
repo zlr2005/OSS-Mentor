@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "15478b3fa72b1a1e809b615102c205e83a8b1327",
+    "size": 10787
+  },
+  "observed_at": "2026-10-26T14:44:46.065602+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7b61fb0e2bbc75f2e1790c2a87ef4acbcd265dfe883650cbf8bf4df8db7b3b55",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0cfeb086d7959934dd795c6190e7656f4c54b168d4da4fd902f0ac08dae990cf",
+  "source_url": "https://api.github.com/repos/supercog-ai/agentic/git/blobs/15478b3fa72b1a1e809b615102c205e83a8b1327",
+  "status_code": 200
+}

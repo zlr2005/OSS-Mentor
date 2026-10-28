@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "caddyserver/caddy",
+    "id": 29207621,
+    "language": "Go",
+    "private": false,
+    "size": 21180
+  },
+  "observed_at": "2026-10-26T06:01:08.106413+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3b96e1588eb143c3c4e822421fc909eba112331dbb19e9146008d60697506410",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7dab73d0d0d020224fc86d515aa053a37f59d8086fb6cf348e039219fee46a1e",
+  "source_url": "https://api.github.com/repos/caddyserver/caddy",
+  "status_code": 200
+}

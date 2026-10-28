@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 97001446,
+      "login": "DawnofGenX",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T16:31:29Z",
+      "committer_at": "2026-10-23T16:31:29Z",
+      "tree_sha": "3a3dce27507973cf9b07ba1cae7714a2864442b6"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "137efc06a129468f4305ab8584a6c4510f0d9319"
+  },
+  "observed_at": "2026-10-26T05:57:37.812363+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "24819a86dbf52965eece311e81dc82285e2d83d7e3fc530664c6959caa3d113c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "44f414a64d4f23f0bc08e5b98e1618fd265333e9f678b6f21ed685937309a927",
+  "source_url": "https://api.github.com/repos/bokeh/bokeh/commits/137efc06a129468f4305ab8584a6c4510f0d9319?per_page=100",
+  "status_code": 200
+}

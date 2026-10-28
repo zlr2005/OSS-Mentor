@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "expressjs/body-parser",
+    "id": 15669006,
+    "language": "JavaScript",
+    "private": false,
+    "size": 813
+  },
+  "observed_at": "2026-10-26T06:37:22.146504+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3be7c53d9466a65187f0a54422f49ddef933c8c04b04cd26d52c3cf96a18e16f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fd073b5f1630cda1c4b86666a98e04892cc2f03a9a4c83135651c6e9d3e408f8",
+  "source_url": "https://api.github.com/repos/expressjs/body-parser",
+  "status_code": 200
+}

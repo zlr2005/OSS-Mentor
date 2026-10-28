@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 223565,
+      "login": "codeboten",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T13:31:05Z",
+      "committer_at": "2026-10-22T13:31:05Z",
+      "tree_sha": "a9e2ce7536360cb1187422c46a7f8d3dd3c2509e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d26e61a9215626927391a513fad1253a4a0266b9"
+  },
+  "observed_at": "2026-10-26T08:33:01.585389+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3886d0c2c40d9ab86f6a6f533b5cd03a8629499c836f6b90c7d5337f78f24796",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6e6914b7862d2626f06399255556717bf96fa52071bc95948a9bb016c9aeb674",
+  "source_url": "https://api.github.com/repos/open-telemetry/opentelemetry-go/commits/d26e61a9215626927391a513fad1253a4a0266b9?per_page=100",
+  "status_code": 200
+}

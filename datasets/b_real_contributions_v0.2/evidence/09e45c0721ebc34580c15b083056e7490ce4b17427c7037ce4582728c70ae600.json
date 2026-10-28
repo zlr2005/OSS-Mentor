@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fd9d338b4520ab12cc01666e4d83f8b0a1ecd8c7",
+    "size": 41375
+  },
+  "observed_at": "2026-10-26T15:12:28.563323+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c0031359dd57a12134909e20fc3d7dcd32a831ffc8eeca9af76ff9e40dc304d0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7784a786ad956a467abb54f430a7db0ca0ff5e1b99406fdbd2b8e44146ba00d1",
+  "source_url": "https://api.github.com/repos/tokio-rs/mio/git/blobs/fd9d338b4520ab12cc01666e4d83f8b0a1ecd8c7",
+  "status_code": 200
+}

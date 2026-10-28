@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "61bae30f841a1a5880e5b6ef7836e018e002dfc1",
+    "size": 79865
+  },
+  "observed_at": "2026-10-26T08:26:53.967083+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dd63a77d1f9a94d9a796eefd154c3022062ca1554416ceba8740233bbb918f88",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "94888801821f513f528a0b0aa737f4e47ad9b3a4fbb21a239f7ed89ef165241a",
+  "source_url": "https://api.github.com/repos/mwaskom/seaborn/git/blobs/61bae30f841a1a5880e5b6ef7836e018e002dfc1",
+  "status_code": 200
+}

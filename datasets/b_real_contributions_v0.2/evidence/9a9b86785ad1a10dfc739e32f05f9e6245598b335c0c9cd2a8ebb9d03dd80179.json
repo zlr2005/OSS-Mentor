@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 144031720,
+      "login": "OmBhandwaldar",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T19:51:57Z",
+      "committer_at": "2026-10-25T19:51:57Z",
+      "tree_sha": "f1491f0f4063d85bf6a14d79d1cb3367a85763be"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "11e1466b96a7bc7656e8251d391445e0744b567f"
+  },
+  "observed_at": "2026-10-26T08:27:54.254790+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ad633d22ca0dad33b60529bdf8025832c3bd86f7f9b43d00843b13ebf1621a28",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ece42052aa427e2481ffacaead981399f4108a0cd3721849689bf40a31f46b71",
+  "source_url": "https://api.github.com/repos/nestjs/nest/commits/11e1466b96a7bc7656e8251d391445e0744b567f?per_page=100",
+  "status_code": 200
+}

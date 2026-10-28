@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6541306,
+      "login": "zalbiraw",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T14:08:08Z",
+      "committer_at": "2026-10-22T14:08:08Z",
+      "tree_sha": "d055ebc4f70f6d842add596d07404fac6dff6a84"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9f1c3614d9f7c99c8a78a09ead666d7868ba3491"
+  },
+  "observed_at": "2026-10-26T15:19:29.090454+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "7485e3d4ae1f172d40c3930739cab4535b49d70465baad83eeb637a763b983a0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8a9e5cd2d81b0f5231070d086dc40f278d6dc8336453a3a91b77d8b8134c1bdb",
+  "source_url": "https://api.github.com/repos/traefik/traefik/commits/9f1c3614d9f7c99c8a78a09ead666d7868ba3491?per_page=100",
+  "status_code": 200
+}

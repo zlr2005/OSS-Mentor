@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "3bfc6d7e71ca11bea9cb4c1239d1d54537e0848a",
+    "size": 15440
+  },
+  "observed_at": "2026-10-26T08:48:29.428541+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d6ed5562fd964ccacc44ddd4a736a94cb55f7f1667317c5546853ae0b92b5f1b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a95a1dfe97a7b0fdada72392a49171dcb7429992269b971282a3c402707e6357",
+  "source_url": "https://api.github.com/repos/pnpm/pnpm/git/blobs/3bfc6d7e71ca11bea9cb4c1239d1d54537e0848a",
+  "status_code": 200
+}

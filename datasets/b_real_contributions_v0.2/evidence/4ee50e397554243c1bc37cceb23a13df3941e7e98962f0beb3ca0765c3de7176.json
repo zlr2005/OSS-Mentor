@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "59f71e2a19289c1dc0aef25c06a90784e0e86e14",
+    "size": 1071
+  },
+  "observed_at": "2026-10-26T05:58:14.615828+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "65f61e0d1eec0cc29b5e0d6511a7076775bec3b7eb234d02317f0eb114d04877",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "76caf4da98f976c7932a443a76fc70f58e438493672c1089f8e145f1f773e6c5",
+  "source_url": "https://api.github.com/repos/browserify/browserify/git/blobs/59f71e2a19289c1dc0aef25c06a90784e0e86e14",
+  "status_code": 200
+}

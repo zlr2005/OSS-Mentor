@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "fastify/fastify",
+    "id": 69495170,
+    "language": "JavaScript",
+    "private": false,
+    "size": 10861
+  },
+  "observed_at": "2026-10-26T06:45:52.401666+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "631d8a343e480f14aa5e45ca1109d0116daab3f34e891b25806b8700fb42d89a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2060181919899e6715f8462b9df4ad476772f0b7795aeef4d107486da91669c1",
+  "source_url": "https://api.github.com/repos/fastify/fastify",
+  "status_code": 200
+}

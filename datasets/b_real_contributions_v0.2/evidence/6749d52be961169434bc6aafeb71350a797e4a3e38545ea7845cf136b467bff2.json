@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 61371264,
+      "login": "mdrxy",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T21:59:51Z",
+      "committer_at": "2026-10-24T21:59:51Z",
+      "tree_sha": "3a87e9b8c5e979e1f6b4cc121c0a3d8cb114abe2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ec9847732f947d9809c41e92f0d78c9131caeb2a"
+  },
+  "observed_at": "2026-10-26T07:57:33.097220+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "28f7fbab4d33ae66ea92015fe43fe71f176a5ea592cdab57d58f48c24ecc59a6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f0784212a672c7625a0c1f9fc61a2ccdbafde1d527e1d2f97dc94b39ea363d8f",
+  "source_url": "https://api.github.com/repos/langchain-ai/deepagents/commits/ec9847732f947d9809c41e92f0d78c9131caeb2a?per_page=100",
+  "status_code": 200
+}

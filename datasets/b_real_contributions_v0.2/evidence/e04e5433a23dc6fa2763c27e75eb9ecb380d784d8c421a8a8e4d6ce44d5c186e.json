@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ad7fd729039b9e8f4a2eb33f0ea83f8ca88b5e59",
+    "size": 12118
+  },
+  "observed_at": "2026-10-27T13:16:37.036815+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "74adb80b1544fc14f92b1434a17d30c0764cf5623a2c2c5faf3ebc6d9eb08b22",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b0265078bfbfeebc5bcca889472a8015a9a800af78a14d75c2241ed4b66fb3df",
+  "source_url": "https://api.github.com/repos/etcd-io/etcd/git/blobs/ad7fd729039b9e8f4a2eb33f0ea83f8ca88b5e59",
+  "status_code": 200
+}

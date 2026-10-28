@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 25986961,
+      "login": "cakedev0",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T12:00:21Z",
+      "committer_at": "2026-10-23T12:00:21Z",
+      "tree_sha": "73cff25ee917728bd4c5db5b3f0fa5be487413ff"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9abf44fd282014bab46e9fcfdd18264df3e52f29"
+  },
+  "observed_at": "2026-10-26T13:55:55.330904+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f0b73a6851a65f880101885fc3f04154c612a80336428e207759155cdd2d384b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "56deb10304c269de00d5ac8b0366d5302e20a6b34b85fb8c3ed4127c2a292483",
+  "source_url": "https://api.github.com/repos/scikit-learn/scikit-learn/commits/9abf44fd282014bab46e9fcfdd18264df3e52f29?per_page=100",
+  "status_code": 200
+}

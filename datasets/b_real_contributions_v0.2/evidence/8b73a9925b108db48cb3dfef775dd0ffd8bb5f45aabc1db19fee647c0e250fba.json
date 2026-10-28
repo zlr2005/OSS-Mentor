@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3627351,
+      "login": "jzheaux",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T18:26:23Z",
+      "committer_at": "2026-10-23T19:34:06Z",
+      "tree_sha": "4c88c236e4070eaf7bbc1ee9c1f81ff68be71740"
+    },
+    "committer": {
+      "id": 3627351,
+      "login": "jzheaux",
+      "type": "User"
+    },
+    "sha": "6a1bd94ace60dabed882a96f62d0fad46bdec51b"
+  },
+  "observed_at": "2026-10-26T14:32:22.758888+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "af21949fed7e1c13242268d9714b79a7e3933fb5a0aef0997b4a652e00bde366",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5d8e9780db9cdfab780ece7119d2973767a1c93ead23f0f2a9a4f7aadf34171b",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-security/commits/6a1bd94ace60dabed882a96f62d0fad46bdec51b?per_page=100",
+  "status_code": 200
+}

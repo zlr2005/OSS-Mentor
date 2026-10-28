@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-25T22:45:07Z",
+      "committer_at": "2026-10-25T22:45:07Z",
+      "tree_sha": "d397041893a3ac72ca5af0b4e0048181d8c92fb8"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "4cc4eb516e0f39c291886c4ae6d36f67eab9fb71"
+  },
+  "observed_at": "2026-10-26T05:53:44.521197+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "36889971ebe084f71aa7e19ea91d0b96846cb27af57836a10acb5f31b497ff42",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a8718c05876d371a80b9b29d6cc0c0f977479e372f98239fe00846f21ef6e616",
+  "source_url": "https://api.github.com/repos/bevyengine/bevy/commits/4cc4eb516e0f39c291886c4ae6d36f67eab9fb71?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "pandas-dev/pandas",
+    "id": 858127,
+    "language": "Python",
+    "private": false,
+    "size": 420840
+  },
+  "observed_at": "2026-10-26T08:42:27.165784+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d8f7ae1f58017458126c9311a8197a0c57d7698c70cce93378eb71398047f737",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "45ccf4e02a1a393aadc37cc33be2a04c98051066d70cdf5a0d48cc7ad065995c",
+  "source_url": "https://api.github.com/repos/pandas-dev/pandas",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "91fefc49365b50407ea650cd6e8ab3f8bf55d228",
+    "size": 196999
+  },
+  "observed_at": "2026-10-27T14:17:00.391239+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fb41be403888ca2e4291f325924b77d3a92e51249ef704ad707a672173af29fa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "403b0193a9d5e11a7c72a8afd53a529acb4286ed2cc2c159a986b42cf26cc8d2",
+  "source_url": "https://api.github.com/repos/microsoft/TypeScript/git/blobs/91fefc49365b50407ea650cd6e8ab3f8bf55d228",
+  "status_code": 200
+}

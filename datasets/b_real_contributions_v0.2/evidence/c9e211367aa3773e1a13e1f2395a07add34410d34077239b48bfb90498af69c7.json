@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 169052547,
+      "login": "jraffeiner",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T08:38:34Z",
+      "committer_at": "2026-10-21T12:13:51Z",
+      "tree_sha": "d1706877e3cab9aa83877f6d38cc01a40fb70016"
+    },
+    "committer": {
+      "id": 169052547,
+      "login": "jraffeiner",
+      "type": "User"
+    },
+    "sha": "5f2b5e0b08f6a5e3d376458feb24054af9cd77bc"
+  },
+  "observed_at": "2026-10-26T06:20:26.614660+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "952e634d1025ce8d27568557a12954506935b2f2e1c3b68e536f823fca811b46",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b85183f2236fbb561c15b6bf747dd996cf0b8084c6b3aeb459d801609645e404",
+  "source_url": "https://api.github.com/repos/diesel-rs/diesel/commits/5f2b5e0b08f6a5e3d376458feb24054af9cd77bc?per_page=100",
+  "status_code": 200
+}

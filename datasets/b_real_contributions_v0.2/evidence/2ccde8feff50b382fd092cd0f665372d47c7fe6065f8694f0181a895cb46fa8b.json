@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "colinhacks/zod",
+    "id": 245704608,
+    "language": "TypeScript",
+    "private": false,
+    "size": 26988
+  },
+  "observed_at": "2026-10-26T06:10:36.992852+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "066b911e42bdac3a4556ccfd770729b9f1ae619481040394e1dc62bb745144c0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "00b9decd04333ae3de1a70fdd9d939702cec1257e47e20d05c20ab6af5c397d4",
+  "source_url": "https://api.github.com/repos/colinhacks/zod",
+  "status_code": 200
+}

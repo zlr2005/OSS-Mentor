@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 2577714,
+      "login": "suvodeep-pyne",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T20:59:19Z",
+      "committer_at": "2026-10-24T20:59:19Z",
+      "tree_sha": "5e6dfea6cb78cf5829341c173a74e85d04688347"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "62958d8ff1bb90a84b6324466a4cbcab943191c2"
+  },
+  "observed_at": "2026-10-26T05:29:12.082939+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e85cee42228c79c0bd605e2158da1947838f00573f8d5edd7bd76d908cf2230c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f6c35c3f432906dd53496ca6114f51c4b03bf647cd0ec3957e84d62dde62c958",
+  "source_url": "https://api.github.com/repos/apache/pinot/commits/62958d8ff1bb90a84b6324466a4cbcab943191c2?per_page=100",
+  "status_code": 200
+}

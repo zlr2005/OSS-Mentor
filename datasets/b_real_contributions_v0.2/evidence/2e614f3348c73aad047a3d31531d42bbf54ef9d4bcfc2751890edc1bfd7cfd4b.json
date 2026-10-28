@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "71d6b6ba13fb467912a573fa3163de5ba4338960",
+    "size": 31086
+  },
+  "observed_at": "2026-10-26T14:21:12.659311+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "888c2dca1851a08888316d677796e1908657523a4a079b224c526076b1a7bea2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a4971796c3c49bfefe24782ba9b5bad5fc8dee3c63146024ca6103fa68696a5d",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-data-jpa/git/blobs/71d6b6ba13fb467912a573fa3163de5ba4338960",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "2f244ac814036ecd9ba9f69782e89ce6b1dca9eb",
+    "size": 18650
+  },
+  "observed_at": "2026-10-26T08:09:53.680239+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "abb9292de75e2693b6f9226ddf338997e496d460b5ab167e80505d70ea5d6458",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ddfaeb7584256fc4f4d25f0e41967ddd8334f832356c172f7ee9b0a5dbd285b5",
+  "source_url": "https://api.github.com/repos/microsoft/autogen/git/blobs/2f244ac814036ecd9ba9f69782e89ce6b1dca9eb",
+  "status_code": 200
+}

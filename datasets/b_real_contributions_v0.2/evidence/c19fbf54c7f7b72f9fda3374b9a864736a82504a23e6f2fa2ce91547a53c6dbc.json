@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 156598682,
+      "login": "sakshichitnis27",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-18T19:31:07Z",
+      "committer_at": "2026-07-18T19:31:07Z",
+      "tree_sha": "d8b6335132d863e176f936e3aead4616fb58a130"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7ad5f9e56e9896c8f165d509b0cff8916061e85e"
+  },
+  "observed_at": "2026-10-27T13:49:04.035364+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "67dba8f8f2cd32e870cb62901d4fe7ea343ba2db03d457f52026f2c398759391",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1adee8bd4b25ecf81e631d3bee938622f1c89992b72db485f493e864034cec3c",
+  "source_url": "https://api.github.com/repos/mapstruct/mapstruct/commits/7ad5f9e56e9896c8f165d509b0cff8916061e85e?per_page=100",
+  "status_code": 200
+}

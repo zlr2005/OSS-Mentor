@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 36728931,
+      "login": "babakks",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T15:06:04Z",
+      "committer_at": "2026-10-23T15:06:04Z",
+      "tree_sha": "a1a99429d40606134582f9e12c5d863801965fda"
+    },
+    "committer": {
+      "id": 36728931,
+      "login": "babakks",
+      "type": "User"
+    },
+    "sha": "da42d395407da8d2f93beb15e1fb973cd6477626"
+  },
+  "observed_at": "2026-10-26T06:10:10.241307+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9cfec6932846b1ee0a275eb7966b2a83ba6490c85603d0c295ef5e08ab10866a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "32b18619ab6608c76d8d42b3e6cf8d572f76d6c1fdcac2263323026c689e6cff",
+  "source_url": "https://api.github.com/repos/cli/cli/commits/da42d395407da8d2f93beb15e1fb973cd6477626?per_page=100",
+  "status_code": 200
+}

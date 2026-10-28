@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "0ed184b4ce00a975a0cf06db333a329eb26d2313",
+    "size": 17955
+  },
+  "observed_at": "2026-10-26T07:27:32.859440+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c7ddfe04345bf95bef641e81b658c408feef573ab2001beeb42ad4f6e63642d6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "95a8f21fad41edb7f5b064e0ee0ec84655f720aebefd7b645c8c8c5183426fa3",
+  "source_url": "https://api.github.com/repos/huggingface/accelerate/git/blobs/0ed184b4ce00a975a0cf06db333a329eb26d2313",
+  "status_code": 200
+}

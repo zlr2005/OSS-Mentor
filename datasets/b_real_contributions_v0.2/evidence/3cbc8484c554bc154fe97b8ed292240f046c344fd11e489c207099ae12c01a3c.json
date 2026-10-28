@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 268635800,
+      "login": "rrbharath",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-29T05:12:36Z",
+      "committer_at": "2026-07-29T05:12:36Z",
+      "tree_sha": "8aa5ed82d2d775536236f2e7e50d246525cfb2a5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0b9654ac9f377170716f1179d9234eca262882bb"
+  },
+  "observed_at": "2026-10-26T15:28:43.474732+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "37937af74d43b347681562b34f4f75d928104587d00fe9a5b1febaa8195cec66",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2e9e4880134c47c75df8c0c37bfbbb352eca27304934ba73ab0aff8a2f679eb5",
+  "source_url": "https://api.github.com/repos/validatorjs/validator.js/commits/0b9654ac9f377170716f1179d9234eca262882bb?per_page=100",
+  "status_code": 200
+}

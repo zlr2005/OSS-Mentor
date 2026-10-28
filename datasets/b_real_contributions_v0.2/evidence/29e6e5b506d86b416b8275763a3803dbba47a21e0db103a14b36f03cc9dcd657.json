@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "expressjs/express",
+    "id": 237159,
+    "language": "JavaScript",
+    "private": false,
+    "size": 10065
+  },
+  "observed_at": "2026-10-26T06:37:59.168166+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2954837d981cc0685c13805eaf3ab066152b5db70a37a6598b077993b6f2037d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d24481c7d36115beb1ca87dce657f1ba8b84cb09dcbc18d9782ee86aeaadd6dd",
+  "source_url": "https://api.github.com/repos/expressjs/express",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "jenkinsci/jenkins",
+    "id": 1103607,
+    "language": "Java",
+    "private": false,
+    "size": 174280
+  },
+  "observed_at": "2026-10-26T07:44:30.202920+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "665ea371d3980fd284ae9d052bfbdc24efe99009a191db66d77d028a8c7c1ef6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "68e9ffeee6abad6b1d591d2907f4cccaffaf8a80f5227655e05aa1090acbe081",
+  "source_url": "https://api.github.com/repos/jenkinsci/jenkins",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b0108083d43e6345048df04ce3172db26bd64fff",
+    "size": 14921
+  },
+  "observed_at": "2026-10-26T06:11:10.421499+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d7bb37eef204e540540d8d2d3ee36c6f7413585ad5d9e3abc600595c09ce1474",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4358cc81e1f0e802c0e6b96c220e60c9d6eb2a3ea5a41cbe9217ffd104653009",
+  "source_url": "https://api.github.com/repos/colinhacks/zod/git/blobs/b0108083d43e6345048df04ce3172db26bd64fff",
+  "status_code": 200
+}

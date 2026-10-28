@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 287584,
+      "login": "radeksimko",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-19T09:27:02Z",
+      "committer_at": "2026-10-19T09:27:02Z",
+      "tree_sha": "3f18602580a7baac134295941bea61923030e325"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "8328a71886792d19871fd0c3f3bf37c7d87b53b4"
+  },
+  "observed_at": "2026-10-27T13:43:32.784522+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3046b26a49f4dbecf4621fcb5f7f9cf72a703f27bece27f835d3e03e9f9e919b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7b1cb8a2e2de144fd1814763ac0bd95655906fc321f882a6503d1f222eb85a21",
+  "source_url": "https://api.github.com/repos/hashicorp/terraform/commits/8328a71886792d19871fd0c3f3bf37c7d87b53b4?per_page=100",
+  "status_code": 200
+}

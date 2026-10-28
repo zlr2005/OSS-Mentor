@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "rust-lang/rust-clippy",
+    "id": 26850443,
+    "language": "Rust",
+    "private": false,
+    "size": 98680
+  },
+  "observed_at": "2026-10-26T13:52:56.816128+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "01eb512276f42d7a21afb99bbbbf84b806fc0c18aa29e8b7ad9266506a0019e3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e880dcbe1abd8fea1712968f0ace032b307942f15566651ff40698861490df2a",
+  "source_url": "https://api.github.com/repos/rust-lang/rust-clippy",
+  "status_code": 200
+}

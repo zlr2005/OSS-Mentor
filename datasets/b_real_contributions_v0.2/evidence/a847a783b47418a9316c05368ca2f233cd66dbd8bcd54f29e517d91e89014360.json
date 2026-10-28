@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 267938209,
+      "login": "qwist1233-cpu",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-23T08:49:38Z",
+      "committer_at": "2026-09-23T08:49:38Z",
+      "tree_sha": "d9ad8205b75b842de1d95fc16d490e3e0c0cfdf1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "096e24563d5f8778bf70bb5e0a8709b02a77944e"
+  },
+  "observed_at": "2026-10-26T07:25:59.952211+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "45f1895f245dbc8eeb3abe07e4ae354de488b55b5381615d05cbc2e3d69259de",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6f624da75d442653d966e1b31d6b518cce2b977acb6341ae6ebe975ea201d871",
+  "source_url": "https://api.github.com/repos/hoppscotch/hoppscotch/commits/096e24563d5f8778bf70bb5e0a8709b02a77944e?per_page=100",
+  "status_code": 200
+}

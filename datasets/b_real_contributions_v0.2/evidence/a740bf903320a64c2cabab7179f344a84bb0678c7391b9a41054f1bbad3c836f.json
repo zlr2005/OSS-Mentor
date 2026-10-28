@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "helm/helm",
+    "id": 43723161,
+    "language": "Go",
+    "private": false,
+    "size": 30075
+  },
+  "observed_at": "2026-10-26T07:22:05.782526+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3ee2769eb17ed3405cd6b3ab26c79d4e815e466e35db1ea3b3339719801c6b94",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b10f762fb5f852de62f0b1036740eba27d11d406d0b60ca424a6b28647ba9158",
+  "source_url": "https://api.github.com/repos/helm/helm",
+  "status_code": 200
+}

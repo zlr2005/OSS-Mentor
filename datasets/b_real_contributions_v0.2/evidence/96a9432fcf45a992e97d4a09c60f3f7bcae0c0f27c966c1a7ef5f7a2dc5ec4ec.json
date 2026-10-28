@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ebeaaf7c1004d720b71ac6ae1064430c97060351",
+    "size": 91584
+  },
+  "observed_at": "2026-10-26T13:01:38.263876+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "13bf89eb77777761bf416c9c68de7820cfe528db3b5e95ec674b1eb8482ccae1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "90a9b3a27ff2b53427d29a8975b7921de247b32f3429277c2ebd9923c5270f96",
+  "source_url": "https://api.github.com/repos/prometheus/prometheus/git/blobs/ebeaaf7c1004d720b71ac6ae1064430c97060351",
+  "status_code": 200
+}

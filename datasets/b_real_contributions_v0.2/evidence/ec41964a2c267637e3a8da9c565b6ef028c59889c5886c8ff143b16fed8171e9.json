@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "fluxcd/flux2",
+    "id": 258469100,
+    "language": "Go",
+    "private": false,
+    "size": 12450
+  },
+  "observed_at": "2026-10-26T06:49:29.005310+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d7931c0aee2034eb1248986831a85e13ad33bd1b4182ac22172138b87731cc9b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "33d48571f61692c8a7e75ecb0996c8a9c4038b16f7b6057d29094da3d226f33f",
+  "source_url": "https://api.github.com/repos/fluxcd/flux2",
+  "status_code": 200
+}

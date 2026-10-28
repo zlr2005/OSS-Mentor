@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "spyder-ide/spyder",
+    "id": 30892477,
+    "language": "Python",
+    "private": false,
+    "size": 161907
+  },
+  "observed_at": "2026-10-26T14:32:46.245687+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "badb53e57a023c0130f6b62efc7d9b2d0a6b8daf329c48827d7e7739677a1dde",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5f97b22047567572a0fcd69ca4771ed812862da66133378f214baac5df5f5ae7",
+  "source_url": "https://api.github.com/repos/spyder-ide/spyder",
+  "status_code": 200
+}

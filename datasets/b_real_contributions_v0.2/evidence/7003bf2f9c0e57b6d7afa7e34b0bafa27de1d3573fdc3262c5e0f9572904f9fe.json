@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "61598233c188674babefc063169118cb1aa01b0e",
+    "size": 27503
+  },
+  "observed_at": "2026-10-26T05:40:28.488282+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ac1d7cc5f3bd69cf20ef3efec6f0f40bd284d76e8fb1bbaf117e2ed9cb7571ce",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8618d2591fda67c272374223c27cdb86d02c1ca305bd8525afc3ca356ed7ca93",
+  "source_url": "https://api.github.com/repos/apache/skywalking/git/blobs/61598233c188674babefc063169118cb1aa01b0e",
+  "status_code": 200
+}

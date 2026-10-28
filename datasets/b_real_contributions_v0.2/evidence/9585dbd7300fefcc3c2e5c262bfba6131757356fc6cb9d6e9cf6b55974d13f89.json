@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "scikit-learn/scikit-learn",
+    "id": 843222,
+    "language": "Python",
+    "private": false,
+    "size": 188178
+  },
+  "observed_at": "2026-10-26T13:55:37.264652+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "714c9c8bac71187ccc6068ef1ac467b9a32d0f3b0f9ad1bce9664598128d5e19",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3c00b6feeb825bfcfd2c2821b067c4d5dfd27c8605ee7c9c1be88725187d8ad9",
+  "source_url": "https://api.github.com/repos/scikit-learn/scikit-learn",
+  "status_code": 200
+}

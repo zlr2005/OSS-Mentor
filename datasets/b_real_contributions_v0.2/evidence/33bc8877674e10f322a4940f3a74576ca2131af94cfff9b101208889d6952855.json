@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "341eb5458d2e2225a971290f0154d2573b8877df",
+    "size": 5817
+  },
+  "observed_at": "2026-10-26T13:40:01.041109+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0f5df860114dc0a1aa172040780ebad49144b947ccdacce7bd5cc6d31081920b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6e1b5bc97c0e33f007ab50623eca6123adbcf5036628f83dceb81674fe6fd313",
+  "source_url": "https://api.github.com/repos/reduxjs/redux-toolkit/git/blobs/341eb5458d2e2225a971290f0154d2573b8877df",
+  "status_code": 200
+}

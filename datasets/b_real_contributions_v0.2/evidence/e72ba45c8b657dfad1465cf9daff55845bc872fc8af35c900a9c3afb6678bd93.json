@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "cert-manager/cert-manager",
+    "id": 92313258,
+    "language": "Go",
+    "private": false,
+    "size": 103947
+  },
+  "observed_at": "2026-10-26T06:02:33.560407+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "374f6b90af6ae7b96e5cf442fd8d18c79fbc2aa13896bf32d908871b9e7cf993",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "afb25971196a17e773198f250d4be065449f40b3dd2fd63677c6930fc81c7918",
+  "source_url": "https://api.github.com/repos/cert-manager/cert-manager",
+  "status_code": 200
+}

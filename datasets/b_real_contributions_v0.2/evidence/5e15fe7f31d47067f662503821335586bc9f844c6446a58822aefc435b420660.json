@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 184849070,
+      "login": "kdn36",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T07:07:49Z",
+      "committer_at": "2026-10-25T07:07:49Z",
+      "tree_sha": "b0f7ea01b253d09de103993fcd964c176566034c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "28cfd43573759a60bbe39ec4456c0145421ed339"
+  },
+  "observed_at": "2026-10-26T08:49:22.520361+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d80ff5debc49d29d05f84e2ad919845559c989b578b860dcbec84d3afd18d388",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "da3c0f961becdaf9f8aad880288bf11c4c5bb5c19564894e10a70cc60e4f24d1",
+  "source_url": "https://api.github.com/repos/pola-rs/polars/commits/28cfd43573759a60bbe39ec4456c0145421ed339?per_page=100",
+  "status_code": 200
+}

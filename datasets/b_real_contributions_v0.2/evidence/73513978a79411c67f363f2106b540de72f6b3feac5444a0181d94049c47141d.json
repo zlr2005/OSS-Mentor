@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-3-Clause",
+    "full_name": "lit/lit",
+    "id": 95797174,
+    "language": "TypeScript",
+    "private": false,
+    "size": 62923
+  },
+  "observed_at": "2026-10-26T08:02:02.459343+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "da87833576420574891c085710c9aeb1828716cbe52c9bb9f8c45c3eae1fdd6a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "94973816e7405ca59e4a4e558fb5d8adf9930b7fd7225d0d62e75a224520f85c",
+  "source_url": "https://api.github.com/repos/lit/lit",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e858d3fc6c8bbc41c0128f72d41c2cc3460ee739",
+    "size": 3228
+  },
+  "observed_at": "2026-10-26T05:06:57.312334+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1039fce26b7fca31860a425fe8d26646b9f9b08b422a2ded559676f641aef7de",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8a77d7b510157c153d30bb84e3e060f9725be59148b34b9255714ae2c46bcac1",
+  "source_url": "https://api.github.com/repos/ant-design/ant-design/git/blobs/e858d3fc6c8bbc41c0128f72d41c2cc3460ee739",
+  "status_code": 200
+}

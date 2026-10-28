@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "19c4490549dae339425b06c3ea013e2b34b96aee",
+    "size": 17137
+  },
+  "observed_at": "2026-10-26T06:36:52.611828+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3c05e13684265c8906e086a32c48b0dafdb8581eabd768ddc1a7465a322c5d63",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9847d0c6e1cdc88e373deb3a94c1dc8d06cfdd68e9f7af1a7517a11ff8fe1bf2",
+  "source_url": "https://api.github.com/repos/excalidraw/excalidraw/git/blobs/19c4490549dae339425b06c3ea013e2b34b96aee",
+  "status_code": 200
+}

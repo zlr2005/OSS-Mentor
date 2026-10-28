@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "05cb592b41a885869c21fb2ce08dc636409d1c89",
+    "size": 39519
+  },
+  "observed_at": "2026-10-27T16:31:19.552640+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5843dc6ed849644c12dcc3096f716e013148b5cf0a36f21fb5a50b6271b95fa5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f53ccd3179b4b27b6bd78da36d8c21b3f0c6044ad984118ad358dca13222a576",
+  "source_url": "https://api.github.com/repos/videojs/video.js/git/blobs/05cb592b41a885869c21fb2ce08dc636409d1c89",
+  "status_code": 200
+}

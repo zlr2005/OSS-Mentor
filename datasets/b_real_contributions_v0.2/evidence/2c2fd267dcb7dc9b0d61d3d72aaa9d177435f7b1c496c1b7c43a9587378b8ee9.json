@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c499341d4fb60e76948294021621982ddf7ff766",
+    "size": 61949
+  },
+  "observed_at": "2026-10-27T16:06:36.396011+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "36cd64d44d94dca66948884d9fe30adcee4a2aa7ae8163572684a5fd715c8b93",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "90d956e706bdf2d59babf74d5f6c9226b9ecdc045e89bb2e7aacecf108867c05",
+  "source_url": "https://api.github.com/repos/rustls/rustls/git/blobs/c499341d4fb60e76948294021621982ddf7ff766",
+  "status_code": 200
+}

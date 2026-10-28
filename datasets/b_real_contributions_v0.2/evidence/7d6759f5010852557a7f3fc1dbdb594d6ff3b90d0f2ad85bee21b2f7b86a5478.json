@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1159732,
+      "login": "oscarbenjamin",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T10:43:38Z",
+      "committer_at": "2026-10-24T10:43:38Z",
+      "tree_sha": "343547fe1e5603c2c37857b5a83530e0386ad1ab"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "fbf557ab210f4f0dd1a5c05129b9905073d24150"
+  },
+  "observed_at": "2026-10-27T16:21:48.628213+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c0128cc796bd899c862c7bae0ada8867f317f276db1de48b9b10263fa8c8e134",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8243af5c3af17ae7bc7c8d87ba7a8a2b95f7f745f25fbcaa4b4ea5453e5bab04",
+  "source_url": "https://api.github.com/repos/sympy/sympy/commits/fbf557ab210f4f0dd1a5c05129b9905073d24150?per_page=100",
+  "status_code": 200
+}

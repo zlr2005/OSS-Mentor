@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 271969568,
+      "login": "ybai08",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T16:16:34Z",
+      "committer_at": "2026-10-21T21:37:35Z",
+      "tree_sha": "d24b308ca95ae4b8d9637a821e04036d7eaa75d4"
+    },
+    "committer": {
+      "id": 13665637,
+      "login": "DanielNoord",
+      "type": "User"
+    },
+    "sha": "00febaee2687d592ec80a3b1b6576b0795bef105"
+  },
+  "observed_at": "2026-10-26T13:04:42.138288+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c62ecef2488341897f0ab10f6180193de9a5f7db63ddbe588914944638dca34b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "011a38d6ae4fb021fb4e03ad2526a69ca79df80951be9532d6db54df1ad17bce",
+  "source_url": "https://api.github.com/repos/PyCQA/isort/commits/00febaee2687d592ec80a3b1b6576b0795bef105?per_page=100",
+  "status_code": 200
+}

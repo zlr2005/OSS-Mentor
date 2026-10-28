@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "2938e665a7396a99403e42672a9c98e0edf355ec",
+    "size": 4243
+  },
+  "observed_at": "2026-10-26T13:25:23.134059+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6e8b20e2ff73699247d2f536fa87b51c40e77490ca304b641444c37b3a3517d8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cde112de6b753e6997caba6ae67c3f26bf2f36e1405eb7f272c10bfd1d2bd7fc",
+  "source_url": "https://api.github.com/repos/rayon-rs/rayon/git/blobs/2938e665a7396a99403e42672a9c98e0edf355ec",
+  "status_code": 200
+}

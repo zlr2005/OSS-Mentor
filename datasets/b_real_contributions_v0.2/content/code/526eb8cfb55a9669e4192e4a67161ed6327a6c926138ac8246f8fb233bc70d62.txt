@@ -1,0 +1,329 @@
+/*
+ * Logback: the reliable, generic, fast and flexible logging framework.
+ * Copyright (C) 1999-2026, QOS.ch. All rights reserved.
+ *
+ * This program and the accompanying materials are dual-licensed under
+ * either the terms of the Eclipse Public License v2.0 as published by
+ * the Eclipse Foundation
+ *
+ *   or (per the licensee's choosing)
+ *
+ * under the terms of the GNU Lesser General Public License version 2.1
+ * as published by the Free Software Foundation.
+ */
+package ch.qos.logback.classic.spi;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.net.LoggingEventPreSerializationTransformer;
+import ch.qos.logback.classic.net.server.HardenedLoggingEventInputStream;
+import ch.qos.logback.classic.util.LogbackMDCAdapter;
+import ch.qos.logback.core.spi.PreSerializationTransformer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class LoggingEventSerializationTest {
+
+    LoggerContext loggerContext;
+    LogbackMDCAdapter logbackMDCAdapter = new LogbackMDCAdapter();
+    Logger logger;
+
+    ByteArrayOutputStream bos;
+    ObjectOutputStream oos;
+    ObjectInputStream inputStream;
+    PreSerializationTransformer<ILoggingEvent> pst = new LoggingEventPreSerializationTransformer();
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        loggerContext = new LoggerContext();
+        loggerContext.setName("testContext");
+        loggerContext.setMDCAdapter(logbackMDCAdapter);
+        logger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+        // create the byte output stream
+        bos = new ByteArrayOutputStream();
+        oos = new ObjectOutputStream(bos);
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        loggerContext = null;
+        logger = null;
+        oos.close();
+    }
+
+    @Test
+    public void smoke() throws Exception {
+        ILoggingEvent event = createLoggingEvent();
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+    }
+
+    @Test
+    public void context() throws Exception {
+        loggerContext.putProperty("testKey", "testValue");
+        ILoggingEvent event = createLoggingEvent();
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+
+        assertNotNull(remoteEvent.getLoggerName());
+        assertEquals(Logger.ROOT_LOGGER_NAME, remoteEvent.getLoggerName());
+
+        LoggerContextVO loggerContextRemoteView = remoteEvent.getLoggerContextVO();
+        assertNotNull(loggerContextRemoteView);
+        assertEquals("testContext", loggerContextRemoteView.getName());
+        Map<String, String> props = loggerContextRemoteView.getPropertyMap();
+        assertNotNull(props);
+        assertEquals("testValue", props.get("testKey"));
+    }
+
+    @Test
+    public void MDC() throws Exception {
+        logbackMDCAdapter.put("key", "testValue");
+        ILoggingEvent event = createLoggingEvent();
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+        Map<String, String> MDCPropertyMap = remoteEvent.getMDCPropertyMap();
+        assertEquals("testValue", MDCPropertyMap.get("key"));
+    }
+
+    @Test
+    public void updatedMDC() throws Exception {
+        logbackMDCAdapter.put("key", "testValue");
+        ILoggingEvent event1 = createLoggingEvent();
+        Serializable s1 = pst.transform(event1);
+        oos.writeObject(s1);
+
+        logbackMDCAdapter.put("key", "updatedTestValue");
+        ILoggingEvent event2 = createLoggingEvent();
+        Serializable s2 = pst.transform(event2);
+        oos.writeObject(s2);
+
+        // create the input stream based on the output stream
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        inputStream = new ObjectInputStream(bis);
+
+        // skip over one object
+        inputStream.readObject();
+        ILoggingEvent remoteEvent2 = (ILoggingEvent) inputStream.readObject();
+
+        // We observe the second logging event. It should provide us with
+        // the updated MDC property.
+        Map<String, String> MDCPropertyMap = remoteEvent2.getMDCPropertyMap();
+        assertEquals("updatedTestValue", MDCPropertyMap.get("key"));
+    }
+
+    @Test
+    public void nonSerializableParameters() throws Exception {
+        LoggingEvent event = createLoggingEvent();
+        LuckyCharms lucky0 = new LuckyCharms(0);
+        event.setArgumentArray(new Object[] { lucky0, null });
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+
+        Object[] aa = remoteEvent.getArgumentArray();
+        assertNotNull(aa);
+        assertEquals(2, aa.length);
+        assertEquals("LC(0)", aa[0]);
+        assertNull(aa[1]);
+    }
+
+    @Test
+    public void testWithThrowable() throws Exception {
+        Throwable throwable = new Throwable("just testing");
+        LoggingEvent event = createLoggingEventWithThrowable(throwable);
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+    }
+
+    @Test
+    public void testWithMarker() throws Exception {
+        Marker marker = MarkerFactory.getMarker("A_MARKER");
+        LoggingEvent event = createLoggingEvent();
+
+        event.addMarker(marker);
+        assertNotNull(event.getMarkerList());
+
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+
+        assertNotNull(remoteEvent.getMarkerList());
+        assertEquals(Arrays.asList(marker), remoteEvent.getMarkerList());
+    }
+
+    @Test
+    public void testWithTwoMarkers() throws Exception {
+        Marker marker = MarkerFactory.getMarker("A_MARKER");
+        Marker marker2 = MarkerFactory.getMarker("B_MARKER");
+        marker.add(marker2);
+        LoggingEvent event = createLoggingEvent();
+
+        event.addMarker(marker);
+        assertNotNull(event.getMarkerList());
+
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+
+        assertNotNull(remoteEvent.getMarkerList());
+        assertEquals(Arrays.asList(marker), remoteEvent.getMarkerList());
+    }
+
+    @Test
+    public void testWithCallerData() throws Exception {
+        LoggingEvent event = createLoggingEvent();
+        event.getCallerData();
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+    }
+
+    @Test
+    public void extendendeThrowable() throws Exception {
+        LoggingEvent event = createLoggingEvent();
+        Throwable throwable = new Throwable("just testing");
+        ThrowableProxy tp = new ThrowableProxy(throwable);
+        event.setThrowableProxy(tp);
+        tp.calculatePackagingData();
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+    }
+
+    @Test
+    public void serializeLargeArgs() throws Exception {
+
+        StringBuilder buffer = new StringBuilder();
+        for (int i = 0; i < 100000; i++) {
+            buffer.append("X");
+        }
+        String largeString = buffer.toString();
+        Object[] argArray = new Object[] { new LuckyCharms(2), largeString };
+
+        LoggingEvent event = createLoggingEvent();
+        event.setArgumentArray(argArray);
+
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+        Object[] aa = remoteEvent.getArgumentArray();
+        assertNotNull(aa);
+        assertEquals(2, aa.length);
+        String stringBack = (String) aa[1];
+        assertEquals(largeString, stringBack);
+    }
+
+    @Test
+    public void cyclicThrowableProxyIsRejected() throws Exception {
+        ThrowableProxyVO tp = new ThrowableProxyVO();
+        tp.setClassName("java.lang.Exception");
+        tp.setStackTraceElementProxyArray(new StackTraceElementProxy[0]);
+        tp.setCause(tp);
+        assertThrows(InvalidObjectException.class, () -> writeAndReadWithThrowableProxy(tp));
+    }
+
+    @Test
+    public void sharedSuppressedThrowableProxyIsRejected() throws Exception {
+        ThrowableProxyVO shared = new ThrowableProxyVO();
+        shared.setClassName("java.lang.Exception");
+        shared.setStackTraceElementProxyArray(new StackTraceElementProxy[0]);
+        ThrowableProxyVO tp = new ThrowableProxyVO();
+        tp.setClassName("java.lang.Exception");
+        tp.setStackTraceElementProxyArray(new StackTraceElementProxy[0]);
+        tp.setCause(shared);
+        tp.setSuppressed(new IThrowableProxy[] { shared });
+        assertThrows(InvalidObjectException.class, () -> writeAndReadWithThrowableProxy(tp));
+    }
+
+    // ThrowableProxy replaces the repeated occurrence of a throwable by a distinct proxy
+    // marked as cyclic, so genuinely circular exceptions must survive the round trip
+    @Test
+    public void circularExceptionRoundTrip() throws Exception {
+        Exception root = new Exception("root");
+        Exception cause = new Exception("cause");
+        root.initCause(cause);
+        // root -> cause -> suppressed root
+        cause.addSuppressed(root);
+
+        LoggingEvent event = createLoggingEventWithThrowable(root);
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+
+        IThrowableProxy remoteCause = remoteEvent.getThrowableProxy().getCause();
+        assertTrue(remoteCause.getSuppressed()[0].isCyclic());
+        String rendered = ThrowableProxyUtil.asString(remoteEvent.getThrowableProxy());
+        assertTrue(rendered.contains("[CIRCULAR REFERENCE: java.lang.Exception: root]"), rendered);
+    }
+
+    // the same throwable reachable twice without forming a cycle
+    @Test
+    public void exceptionWithSameCauseAndSuppressedRoundTrip() throws Exception {
+        Exception root = new Exception("root");
+        Exception other = new Exception("other");
+        root.initCause(other);
+        root.addSuppressed(other);
+
+        LoggingEvent event = createLoggingEventWithThrowable(root);
+        ILoggingEvent remoteEvent = writeAndRead(event);
+        checkForEquality(event, remoteEvent);
+
+        IThrowableProxy remoteProxy = remoteEvent.getThrowableProxy();
+        assertTrue(remoteProxy.getSuppressed()[0].isCyclic());
+        String rendered = ThrowableProxyUtil.asString(remoteProxy);
+        assertTrue(rendered.contains("[CIRCULAR REFERENCE: java.lang.Exception: other]"), rendered);
+    }
+
+    private void writeAndReadWithThrowableProxy(ThrowableProxyVO tp) throws Exception {
+        LoggingEventVO vo = LoggingEventVO.build(createLoggingEvent());
+        vo.setThrowableProxyVO(tp);
+        oos.writeObject(vo);
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        inputStream = new HardenedLoggingEventInputStream(loggerContext, bis);
+        inputStream.readObject();
+    }
+
+    private LoggingEvent createLoggingEvent() {
+        return new LoggingEvent(this.getClass().getName(), logger, Level.DEBUG, "test message", null, null);
+    }
+
+    private LoggingEvent createLoggingEventWithThrowable(Throwable t) {
+        return new LoggingEvent(this.getClass().getName(), logger, Level.DEBUG, "test message", t, null);
+    }
+
+    private void checkForEquality(ILoggingEvent original, ILoggingEvent afterSerialization) {
+        assertEquals(original.getLevel(), afterSerialization.getLevel());
+        assertEquals(original.getFormattedMessage(), afterSerialization.getFormattedMessage());
+        assertEquals(original.getMessage(), afterSerialization.getMessage());
+
+        System.out.println();
+
+        ThrowableProxyVO witness = ThrowableProxyVO.build(original.getThrowableProxy());
+        assertEquals(witness, afterSerialization.getThrowableProxy());
+
+    }
+
+    private ILoggingEvent writeAndRead(ILoggingEvent event) throws IOException, ClassNotFoundException {
+        Serializable ser = pst.transform(event);
+        oos.writeObject(ser);
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        inputStream = new HardenedLoggingEventInputStream(loggerContext, bis);
+
+        return (ILoggingEvent) inputStream.readObject();
+    }
+
+}

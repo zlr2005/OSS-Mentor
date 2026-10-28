@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-21T14:06:26Z",
+      "committer_at": "2026-10-21T14:06:26Z",
+      "tree_sha": "fc2d35f2f314b1cfc39414ea9ea2f6a537d61b9c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a42c121e5ee740aec9b4f128e93858dacbe3847e"
+  },
+  "observed_at": "2026-10-26T07:40:09.841191+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "594c2450d7ad0a5a015f8c8f76210df6617fa9d23e6c852719791354863f5ba0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "750ad242c9e2e1206c6bd9aee2c220a2cd96efd8439048e882bcbe2586871fbc",
+  "source_url": "https://api.github.com/repos/immerjs/immer/commits/a42c121e5ee740aec9b4f128e93858dacbe3847e?per_page=100",
+  "status_code": 200
+}

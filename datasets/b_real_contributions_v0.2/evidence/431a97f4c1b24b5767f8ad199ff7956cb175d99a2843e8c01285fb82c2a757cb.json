@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 8594075,
+      "login": "CollinFingar",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T18:18:52Z",
+      "committer_at": "2026-10-23T18:18:52Z",
+      "tree_sha": "47a111ba51ab1473ef950274417c6537c3576ceb"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f0574bcc3e42fa8d5bb8a3d399d775b19c5da587"
+  },
+  "observed_at": "2026-10-26T07:18:31.619999+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "af5dacac444d19a3783fe3e6c5bed52836470aeb423517388a9af48dfca985cd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1b9dff8893b2a3e8d3b0152ae7037d10457b4d7a5ece97e8691c0c56c0ade7e7",
+  "source_url": "https://api.github.com/repos/grafana/grafana/commits/f0574bcc3e42fa8d5bb8a3d399d775b19c5da587?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 139342,
+      "login": "VojtechVitek",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-29T23:38:27Z",
+      "committer_at": "2026-09-29T23:38:27Z",
+      "tree_sha": "78ea402444f50acbf2de96c413503d75ef8b6e54"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "167e1e3bd039d060696b99c8da4e876ae04f42c1"
+  },
+  "observed_at": "2026-10-26T06:54:43.776101+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1fda3250eb9fec454c0a6f7665a20956ddddb02cfe27b085f805676bbaef6af5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e5f58f66eafed42f5ab80ae5441845360860191512e227ed9d218e89bda3702a",
+  "source_url": "https://api.github.com/repos/go-chi/chi/commits/167e1e3bd039d060696b99c8da4e876ae04f42c1?per_page=100",
+  "status_code": 200
+}

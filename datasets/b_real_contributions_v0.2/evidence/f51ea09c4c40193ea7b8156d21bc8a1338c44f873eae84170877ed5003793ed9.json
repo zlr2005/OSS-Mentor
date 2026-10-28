@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 3957921,
+      "login": "ahus1",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T16:21:58Z",
+      "committer_at": "2026-10-23T16:21:58Z",
+      "tree_sha": "987e593c8e80d5ed7a617cb7be16128848929056"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "2f186dc5721baa8f3924220807dcf8062d3e5ff8"
+  },
+  "observed_at": "2026-10-26T07:52:36.622690+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "cde881bdd1601952aed5084cc3effd1dd02206f55cf17b5db6c678d75b9ab62d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "24ec55358ee178e7f2e59a374acf493cadd7825ab332711b4a588716314118f1",
+  "source_url": "https://api.github.com/repos/keycloak/keycloak/commits/2f186dc5721baa8f3924220807dcf8062d3e5ff8?per_page=100",
+  "status_code": 200
+}

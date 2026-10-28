@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 59531286,
+      "login": "yagudin10",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T15:06:52Z",
+      "committer_at": "2026-10-23T15:06:52Z",
+      "tree_sha": "f54a30a492f895adccc66ab89ddab14f7b5dbba7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "18cca408a37ff30bf6a3a97e7b70b68e35a8da9f"
+  },
+  "observed_at": "2026-10-26T06:16:15.224490+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "05d54d0331ec6f3cf70c5b5cab0957705c8f0f3d01c571cff2716a73efafdd83",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6938b9eb2d0d92c4ac08d9c5114781471ebe072c5008a10381f9526100943c51",
+  "source_url": "https://api.github.com/repos/dbeaver/dbeaver/commits/18cca408a37ff30bf6a3a97e7b70b68e35a8da9f?per_page=100",
+  "status_code": 200
+}

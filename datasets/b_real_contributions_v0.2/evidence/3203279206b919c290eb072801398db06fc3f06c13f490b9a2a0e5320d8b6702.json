@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "31ea69749c539e8d76687a96ec1837f703a6f6a5",
+    "size": 7956
+  },
+  "observed_at": "2026-10-26T08:30:45.255960+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c197d09e9dc3e9ae1a899ce5e62910357661c82edb517dca38fbf465b2af0a24",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fc9c9e717969970ca2852eff85a2cbcf59ef874a91bc9ddcc604523a4fc2e443",
+  "source_url": "https://api.github.com/repos/npm/node-semver/git/blobs/31ea69749c539e8d76687a96ec1837f703a6f6a5",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "80c70400015eb54b7c16e8c7a8f1c52d0559a46f",
+    "size": 3267
+  },
+  "observed_at": "2026-10-27T16:27:23.426057+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "09c88d7fc5ade557350cd4c2cc128d0c06d8eba5982ce803656b43f474972a88",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "10fd318ffadbc3c7580b1b2f87d8a751018920a793c1a441e842a8777c8218e7",
+  "source_url": "https://api.github.com/repos/vercel/next.js/git/blobs/80c70400015eb54b7c16e8c7a8f1c52d0559a46f",
+  "status_code": 200
+}

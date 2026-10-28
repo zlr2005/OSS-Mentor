@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "rust-lang/cargo",
+    "id": 17420913,
+    "language": "Rust",
+    "private": false,
+    "size": 75572
+  },
+  "observed_at": "2026-10-26T13:49:47.440367+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9f6ea391fa903b2d8526f50ac5d087e800827f16fe6566f404ca165f071c7eb0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b1f980f7d3bc29bbb584ff8fb9b5b5dbea5e2075fcf79e98ce605555bbddd8c3",
+  "source_url": "https://api.github.com/repos/rust-lang/cargo",
+  "status_code": 200
+}

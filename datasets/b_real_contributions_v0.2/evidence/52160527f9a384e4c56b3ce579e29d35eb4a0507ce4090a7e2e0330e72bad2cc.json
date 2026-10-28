@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7188918,
+      "login": "jbouwh",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T22:33:01Z",
+      "committer_at": "2026-10-25T22:33:01Z",
+      "tree_sha": "8fe0a85830ad86a2ca6f23d0e21df8f1b4ffb9e2"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7e3d520c1a7f8afcd799345072a98f1682ab642d"
+  },
+  "observed_at": "2026-10-26T07:24:27.269434+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8400bacdf66a5fd63e2e95a112f741dda85131b8628c4a53e13ed6555485cca3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e8b65b4ef555ebff1cf0b5225bbf075e5a0bce4f09253191cd88386dbc7eeb34",
+  "source_url": "https://api.github.com/repos/home-assistant/core/commits/7e3d520c1a7f8afcd799345072a98f1682ab642d?per_page=100",
+  "status_code": 200
+}

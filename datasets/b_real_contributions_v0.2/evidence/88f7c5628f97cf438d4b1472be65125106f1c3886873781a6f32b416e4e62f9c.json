@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "plotly/dash",
+    "id": 33702544,
+    "language": "Python",
+    "private": false,
+    "size": 229083
+  },
+  "observed_at": "2026-10-26T08:45:20.084093+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d0acfa2e1d462f0186c946fbf1a55356253b3e84e7a3b6120b0916f90708b3f7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fe5cad066f6a1cdd20d12d348a6e54ee95aa45d347f227f8dd0a40951f05464b",
+  "source_url": "https://api.github.com/repos/plotly/dash",
+  "status_code": 200
+}

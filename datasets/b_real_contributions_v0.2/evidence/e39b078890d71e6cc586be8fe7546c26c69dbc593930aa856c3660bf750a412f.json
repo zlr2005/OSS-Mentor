@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 73421813,
+      "login": "RubenPari",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-19T06:41:53Z",
+      "committer_at": "2026-09-19T06:41:53Z",
+      "tree_sha": "c42793c944ab6a0e38c1ef368387c4dad5e0420a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "d8f2d588d7573b3438cfc95b7a47f9ec8966273c"
+  },
+  "observed_at": "2026-10-26T06:52:40.855138+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "76ce9f9d149590f281a318ebeaa302bc02d1c3a69b54e964b422c67990995261",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8477fd58001e18c9ad3783a679bf1630ef78c5f25f0eb39101f8ba7c8b069b8d",
+  "source_url": "https://api.github.com/repos/gin-gonic/gin/commits/d8f2d588d7573b3438cfc95b7a47f9ec8966273c?per_page=100",
+  "status_code": 200
+}

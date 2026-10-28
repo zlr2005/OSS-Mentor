@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 189112959,
+      "login": "wwwmake-ui",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-12T00:19:56Z",
+      "committer_at": "2026-09-12T00:19:56Z",
+      "tree_sha": "babd0cc0d78d17ec91d065dea47f2d2cce0b39fa"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "984bf46b2f905dd0ad909a2d5e6e9d66a1b6568c"
+  },
+  "observed_at": "2026-10-26T05:12:46.086903+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ad0dab7b0cceb1222df62a6754b1ad119c02e349aa5d3d9d931ad0fdbd3bca79",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0e93a0301d4365b1800d6cb6f9698e93c3d80625b06a99deb499229014591dd2",
+  "source_url": "https://api.github.com/repos/apache/echarts/commits/984bf46b2f905dd0ad909a2d5e6e9d66a1b6568c?per_page=100",
+  "status_code": 200
+}

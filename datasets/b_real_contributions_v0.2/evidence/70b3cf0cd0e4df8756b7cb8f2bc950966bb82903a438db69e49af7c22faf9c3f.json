@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 65306057,
+      "login": "Viicos",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T09:37:03Z",
+      "committer_at": "2026-10-22T09:37:03Z",
+      "tree_sha": "78c78cab0b3f1f6150997e7598be48d606f95321"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "03c7e0fb6a3dda7b21da188d0eb65fc8930b415b"
+  },
+  "observed_at": "2026-10-26T04:49:37.988495+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a846f34961a83d03ae310bf157e863c6e56522ccf61dcaea9f1acec0280b190f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "585022c3914bd80f8366de95626c3669b7a014cd7d2ee9acb3cb02834dc2164d",
+  "source_url": "https://api.github.com/repos/pydantic/pydantic/commits/03c7e0fb6a3dda7b21da188d0eb65fc8930b415b?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "50992ea3c4d9dba8709d8357d9946f8070678e51",
+    "size": 7266
+  },
+  "observed_at": "2026-10-26T06:00:52.790295+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1ce52a273ecc9b6d3aad8c77bdc034b5b3322306bdbc5d8e4409891dab4bb759",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ba8b43405e5b1ea1222e9c094022ad24aa735b908cf40e92de23acbc161d7eeb",
+  "source_url": "https://api.github.com/repos/bytecodealliance/wasmtime/git/blobs/50992ea3c4d9dba8709d8357d9946f8070678e51",
+  "status_code": 200
+}

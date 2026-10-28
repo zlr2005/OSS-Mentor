@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 124166010,
+      "login": "ollehaakansson",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T07:02:39Z",
+      "committer_at": "2026-10-25T07:02:39Z",
+      "tree_sha": "fb3a0b9764c003e738d04af62012edfa33da08f5"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "9833b4a2e222902c6dc24ae9bc7c0c7166c4a697"
+  },
+  "observed_at": "2026-10-26T07:42:37.247680+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "f353b3ec83537569dc3c16c9bc05ec340c5fac5cc936d2ad59da5b9f15febf65",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2a6d375b00a89aabe56ae3d4be20dd2abd1949c58d1a010ae3f5eb019a93ccc5",
+  "source_url": "https://api.github.com/repos/JabRef/jabref/commits/9833b4a2e222902c6dc24ae9bc7c0c7166c4a697?per_page=100",
+  "status_code": 200
+}

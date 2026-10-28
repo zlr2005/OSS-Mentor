@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "astral-sh/ruff",
+    "id": 523043277,
+    "language": "Rust",
+    "private": false,
+    "size": 223288
+  },
+  "observed_at": "2026-10-26T05:44:38.559026+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8a12227d56535b4e95603ff2da29506c28e11d77873ed3db7cffef2d1d43492b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ce60f1c5828a089daa20d4e22a19c1a6adc366ecd1f790aafe3b8e9f2abfd8f9",
+  "source_url": "https://api.github.com/repos/astral-sh/ruff",
+  "status_code": 200
+}

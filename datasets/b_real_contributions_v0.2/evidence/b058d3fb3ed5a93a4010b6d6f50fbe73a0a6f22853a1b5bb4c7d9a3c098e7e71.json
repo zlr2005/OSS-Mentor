@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "78c5fdad0083a4595930cb217f8659e9417a8941",
+    "size": 183823
+  },
+  "observed_at": "2026-10-27T13:44:04.332880+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4668cba24f02be9486ce21414167253d89142d6d6eff020554ae2f5c1a4294a6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "05216193ebec426dd8f15dace141482abbb8b2de0d7fa290ddc8112fde45e855",
+  "source_url": "https://api.github.com/repos/hashicorp/terraform/git/blobs/78c5fdad0083a4595930cb217f8659e9417a8941",
+  "status_code": 200
+}

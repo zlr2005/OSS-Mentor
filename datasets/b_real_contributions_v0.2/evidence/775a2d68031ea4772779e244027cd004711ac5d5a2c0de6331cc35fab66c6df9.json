@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "273a4c6306307ef9c93a6b8201f64e98fee0eed5",
+    "size": 28076
+  },
+  "observed_at": "2026-10-26T06:31:46.679722+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "abb680c3abc41023351cb2905b7e52b88de901b5bd8505abe59b47cc1907adb3",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "628b9bf5e40ec7d7fad685b66f912f2e21ed2c4af6c7c2ad99124f7bcb9f0bbc",
+  "source_url": "https://api.github.com/repos/element-plus/element-plus/git/blobs/273a4c6306307ef9c93a6b8201f64e98fee0eed5",
+  "status_code": 200
+}

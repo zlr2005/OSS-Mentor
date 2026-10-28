@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 121283862,
+      "login": "comfyanonymous",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T02:22:35Z",
+      "committer_at": "2026-10-24T02:22:35Z",
+      "tree_sha": "81c9f4253f041bceadaf6c2bd313af170744ac31"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7cebca52227c63b4180ceed448cbd7ad22903b6d"
+  },
+  "observed_at": "2026-10-26T06:11:39.326970+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "733d5ade1ceda5ba61b8584d56f28bfe0f0a68ea8bbefc8359917277bef30120",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d7c214cac49e8c745a3e3250deea4c90bd03e7a8abf3099b69e4d26c056adcd5",
+  "source_url": "https://api.github.com/repos/Comfy-Org/ComfyUI/commits/7cebca52227c63b4180ceed448cbd7ad22903b6d?per_page=100",
+  "status_code": 200
+}

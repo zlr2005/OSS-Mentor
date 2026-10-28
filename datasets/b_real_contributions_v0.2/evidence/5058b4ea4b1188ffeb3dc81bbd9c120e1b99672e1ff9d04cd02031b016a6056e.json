@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "6cd9aa397a00fe507ce7a56f6d89368b739617e8",
+    "size": 2613
+  },
+  "observed_at": "2026-10-26T14:32:37.150161+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "56e812d96eda6792910a3e22afa9a71b8d2827daa6abea8dacc044580a67f784",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "916dae4332448a577ff7c78d05fed3597b291b496afdafedf823336a2d39005d",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-security/git/blobs/6cd9aa397a00fe507ce7a56f6d89368b739617e8",
+  "status_code": 200
+}

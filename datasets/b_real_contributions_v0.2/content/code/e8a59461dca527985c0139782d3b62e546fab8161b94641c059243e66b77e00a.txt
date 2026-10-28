@@ -1,0 +1,304 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import { ApiStatus } from "./webview";
+import { FormContextProps, FormItemSpec, FormReducers, FormState } from "./form";
+import { IDialogProps } from "./connectionDialog";
+import { FirewallRuleSpec } from "./firewallRule";
+import { KnownFreeLimitExhaustionBehavior, KnownSampleName, Server } from "@azure/arm-sql";
+import { AzureSubscription, AzureTenant } from "@microsoft/vscode-azext-azureauth";
+import { RequestType } from "vscode-jsonrpc";
+
+/**
+ * Ordered list of Azure component names used for cascading load/reset.
+ * Components are loaded in this order; changing a parent resets all downstream components.
+ */
+export const AZURE_SQL_DB_COMPONENT_ORDER = [
+    "accountId",
+    "tenantId",
+    "subscriptionId",
+    "resourceGroup",
+    "serverName",
+] as const;
+
+/** Centralized Azure SQL documentation URLs used across wizard pages. */
+export const AzureSqlDatabaseLinks = {
+    freeTier: "https://learn.microsoft.com/azure/azure-sql/database/free-offer",
+    serviceTiers:
+        "https://learn.microsoft.com/azure/azure-sql/database/service-tiers-sql-database-vcore",
+    createQuickstart:
+        "https://learn.microsoft.com/azure/azure-sql/database/single-database-create-quickstart",
+    developerContainerOverview:
+        "https://microsoft.github.io/azure-sql-database-container/what-is-the-container.html",
+    developerContainerDevContainers:
+        "https://learn.microsoft.com/azure/azure-sql/database/local-dev-experience-dev-containers?view=azuresql",
+    developerContainerConfiguration:
+        "https://microsoft.github.io/azure-sql-database-container/getting-started.html",
+    dockerDesktop: "https://www.docker.com/products/docker-desktop/",
+    podmanDesktop: "https://podman-desktop.io/downloads",
+    rancherDesktop: "https://rancherdesktop.io/",
+    appleContainer: "https://github.com/apple/container/releases",
+    wslContainers: "https://learn.microsoft.com/windows/wsl/tutorials/wsl-containers",
+    connectQuerySsms: "https://learn.microsoft.com/azure/azure-sql/database/connect-query-ssms",
+    azureSqlDocs: "https://learn.microsoft.com/azure/azure-sql/database/",
+} as const;
+
+export enum ContainerEngine {
+    Docker = "docker",
+    Podman = "podman",
+    Containerd = "containerd",
+    AppleContainer = "appleContainer",
+    WslContainer = "wslContainer",
+}
+
+export enum ContainerEnginePrerequisite {
+    Installation = "installation",
+    Running = "running",
+    Configuration = "configuration",
+}
+
+export function getContainerEnginePrerequisites(
+    engine: ContainerEngine,
+): ContainerEnginePrerequisite[] {
+    const prerequisites = [
+        ContainerEnginePrerequisite.Installation,
+        ContainerEnginePrerequisite.Running,
+    ];
+
+    return engine === ContainerEngine.Docker
+        ? [...prerequisites, ContainerEnginePrerequisite.Configuration]
+        : prerequisites;
+}
+
+export interface ContainerEnginePrerequisiteResult {
+    success: boolean;
+    error?: string;
+}
+
+export interface AzureSqlContainerForm {
+    password: string;
+    savePassword: boolean;
+    profileName: string;
+    groupId: string;
+    containerName: string;
+    port: string;
+    hostname: string;
+    acceptEula: boolean;
+}
+
+export type AzureSqlContainerFormErrors = Partial<Record<keyof AzureSqlContainerForm, string>>;
+
+export enum AzureSqlContainerProvisioningStep {
+    PullImage = "pullImage",
+    CreateContainer = "createContainer",
+    WaitForReady = "waitForReady",
+    Connect = "connect",
+}
+
+export interface AzureSqlContainerProvisioningResult {
+    success: boolean;
+    error?: string;
+    fullErrorText?: string;
+    connectionString?: string;
+}
+
+export namespace AzureSqlDatabaseRequests {
+    export const PrepareContainerForm = new RequestType<
+        AzureSqlContainerForm,
+        { form: AzureSqlContainerForm; errors: AzureSqlContainerFormErrors },
+        void
+    >("deployment/prepareAzureSqlContainerForm");
+
+    export const ValidateContainerForm = new RequestType<
+        AzureSqlContainerForm,
+        AzureSqlContainerFormErrors,
+        void
+    >("deployment/validateAzureSqlContainerForm");
+
+    export const ValidateContainerPort = new RequestType<
+        { engine: ContainerEngine; port: string },
+        string | undefined,
+        void
+    >("deployment/validateAzureSqlContainerPort");
+
+    export const GenerateContainerName = new RequestType<void, string, void>(
+        "deployment/generateAzureSqlContainerName",
+    );
+
+    export const GenerateContainerPort = new RequestType<
+        { engine: ContainerEngine; startPort: number },
+        number,
+        void
+    >("deployment/generateAzureSqlContainerPort");
+
+    export const DetectContainerEngines = new RequestType<
+        void,
+        Record<ContainerEngine, ContainerEnginePrerequisiteResult>,
+        void
+    >("deployment/detectContainerEngines");
+
+    export const CheckContainerEnginePrerequisite = new RequestType<
+        {
+            engine: ContainerEngine;
+            prerequisite: ContainerEnginePrerequisite;
+        },
+        ContainerEnginePrerequisiteResult,
+        void
+    >("deployment/checkContainerEnginePrerequisite");
+
+    export const RunContainerProvisioningStep = new RequestType<
+        {
+            engine: ContainerEngine;
+            step: AzureSqlContainerProvisioningStep;
+            form: AzureSqlContainerForm;
+            retry?: boolean;
+        },
+        AzureSqlContainerProvisioningResult,
+        void
+    >("deployment/runAzureSqlContainerProvisioningStep");
+
+    export const CancelContainerProvisioning = new RequestType<void, void, void>(
+        "deployment/cancelAzureSqlContainerProvisioning",
+    );
+}
+
+export class AzureSqlDatabaseState
+    implements
+        FormState<AzureSqlDatabaseFormState, AzureSqlDatabaseState, AzureSqlDatabaseFormItemSpec>
+{
+    loadState: ApiStatus = ApiStatus.Loading;
+    errorMessage?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- formState is initialized in initializeAzureSqlDatabaseState before use
+    formState: AzureSqlDatabaseFormState = undefined as any;
+    formComponents: Partial<Record<keyof AzureSqlDatabaseFormState, AzureSqlDatabaseFormItemSpec>> =
+        {};
+    formErrors: string[] = [];
+    dialog: IDialogProps | undefined;
+    createResourceGroupDrawerState: CreateResourceGroupDrawerState | undefined = undefined;
+    createServerDrawerState: CreateServerDrawerState | undefined = undefined;
+    formValidationLoadState: ApiStatus = ApiStatus.NotStarted;
+    provisionLoadState: ApiStatus = ApiStatus.NotStarted;
+    deploymentStartTime: string = "";
+    connectionLoadState: ApiStatus = ApiStatus.NotStarted;
+    canAddFirewallRule: boolean = false;
+    firewallErrorMessage: string = "";
+    /** True when the server was just created via the drawer with SQL auth credentials already provided */
+    serverCreatedWithAuth: boolean = false;
+    azureComponentStatuses: Record<string, ApiStatus> = {
+        accountId: ApiStatus.NotStarted,
+        tenantId: ApiStatus.NotStarted,
+        subscriptionId: ApiStatus.NotStarted,
+        resourceGroup: ApiStatus.NotStarted,
+        serverName: ApiStatus.NotStarted,
+        maintenanceConfig: ApiStatus.NotStarted,
+    };
+    accounts: { id: string; label: string }[] = [];
+    tenants: AzureTenant[] = [];
+    subscriptions: AzureSubscription[] = [];
+    resourceGroups: string[] = [];
+    servers: Server[] = [];
+    locations: { name: string; displayName: string }[] = [];
+    maintenanceConfigs: { name: string; id: string }[] = [];
+    publicIp: string = "";
+    subscriptionName: string = "";
+    serverRegion: string = "";
+    /** Connection string to the provisioned database (password excluded), populated once the connection succeeds. */
+    connectionString: string = "";
+    constructor(params?: Partial<AzureSqlDatabaseState>) {
+        for (const key in params) {
+            if (key in this) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- safe due to key in this check being a Partial of the class
+                (this as any)[key as keyof AzureSqlDatabaseState] =
+                    params[key as keyof AzureSqlDatabaseState]!;
+            }
+        }
+    }
+}
+
+export interface AzureSqlDatabaseFormState {
+    accountId: string;
+    tenantId: string;
+    subscriptionId: string;
+    resourceGroup: string;
+    serverName: string;
+    databaseName: string;
+    authenticationType: string;
+    userName: string;
+    password: string;
+    savePassword: boolean;
+    freeLimitBehavior: KnownFreeLimitExhaustionBehavior;
+    profileName: string;
+    groupId: string;
+    dataSource: KnownSampleName | "";
+    collation: string;
+    maintenanceConfig: string;
+    enableAlwaysEncrypted: boolean;
+    maxVcores: string;
+}
+
+export interface AzureSqlDatabaseFormItemSpec
+    extends FormItemSpec<
+        AzureSqlDatabaseFormState,
+        AzureSqlDatabaseState,
+        AzureSqlDatabaseFormItemSpec
+    > {
+    componentWidth: string;
+}
+
+export interface CreateResourceGroupDrawerState {
+    locationOptions: { name: string; displayName: string }[];
+    locationsLoadState: ApiStatus;
+    createLoadState: ApiStatus;
+    message?: string;
+}
+
+export interface CreateResourceGroupSpec {
+    resourceGroupName: string;
+    location: string;
+    tags?: Record<string, string>;
+}
+
+export interface CreateServerDrawerState {
+    locationOptions: { name: string; displayName: string }[];
+    locationsLoadState: ApiStatus;
+    createLoadState: ApiStatus;
+    defaultLocation?: string;
+    message?: string;
+}
+
+export interface CreateServerSpec {
+    serverName: string;
+    location: string;
+    authenticationType: string;
+    adminLogin?: string;
+    adminPassword?: string;
+    savePassword?: boolean;
+}
+
+export interface AzureSqlDatabaseContextProps extends FormContextProps<AzureSqlDatabaseFormState> {
+    loadAzureComponent(componentName: string): void;
+    startAzureSqlDatabaseDeployment(tags: Record<string, string>): void;
+    setCreateResourceGroupDrawerState(shouldOpen: boolean): void;
+    submitCreateResourceGroup(spec: CreateResourceGroupSpec): void;
+    setCreateServerDrawerState(shouldOpen: boolean): void;
+    submitCreateServer(spec: CreateServerSpec): void;
+    openFirewallRuleDialog(): void;
+    closeFirewallRuleDialog(): void;
+    addFirewallRule(firewallRuleSpec: FirewallRuleSpec): void;
+    signIntoAzureForFirewallRule(): void;
+}
+
+export interface AzureSqlDatabaseReducers extends FormReducers<AzureSqlDatabaseFormState> {
+    loadAzureComponent: { componentName: string };
+    startAzureSqlDatabaseDeployment: { tags: Record<string, string> };
+    setCreateResourceGroupDrawerState: { shouldOpen: boolean };
+    submitCreateResourceGroup: { spec: CreateResourceGroupSpec };
+    setCreateServerDrawerState: { shouldOpen: boolean };
+    submitCreateServer: { spec: CreateServerSpec };
+    openFirewallRuleDialog: {};
+    closeFirewallRuleDialog: {};
+    addAzureSqlFirewallRule: { firewallRuleSpec: FirewallRuleSpec };
+    signIntoAzureForFirewallRule: {};
+}

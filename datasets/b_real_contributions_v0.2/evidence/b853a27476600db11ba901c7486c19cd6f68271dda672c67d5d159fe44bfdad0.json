@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 306426718,
+      "login": "deeferentleeg",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-07-25T12:52:42Z",
+      "committer_at": "2026-07-25T12:52:42Z",
+      "tree_sha": "0242418eddd5a3b37eb796cfddd8d133119939d7"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "cca32d61160d2da7c69eb3634379de692672fded"
+  },
+  "observed_at": "2026-10-26T15:28:47.604797+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "226af85be030f02f810f3fce09dfca78b8794283972ddf2abc271ec6b0316bb2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3263f8f8dc281dcbb99262e99f7112cfce78d594dfea10f33db4c4ac8bace831",
+  "source_url": "https://api.github.com/repos/validatorjs/validator.js/commits/cca32d61160d2da7c69eb3634379de692672fded?per_page=100",
+  "status_code": 200
+}

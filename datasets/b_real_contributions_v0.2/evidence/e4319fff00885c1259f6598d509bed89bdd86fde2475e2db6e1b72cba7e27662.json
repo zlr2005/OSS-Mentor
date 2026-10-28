@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1547186,
+      "login": "ndyakov",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T16:44:49Z",
+      "committer_at": "2026-10-21T16:44:49Z",
+      "tree_sha": "1f7b9e498f90c5c1fdb0b24be7b1f7fbee021295"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "454251f54bc5b26ac72783833125aa1e2bee8bed"
+  },
+  "observed_at": "2026-10-26T13:29:10.830094+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e36e12f6d007c16a2e06d7102c114f8da1047c1ca31bb8d01786cd4639fc3900",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8bf982893c5ee6506f23228ab52b031f4cdb71cc80c9c386950795fe57928a11",
+  "source_url": "https://api.github.com/repos/redis/go-redis/commits/454251f54bc5b26ac72783833125aa1e2bee8bed?per_page=100",
+  "status_code": 200
+}

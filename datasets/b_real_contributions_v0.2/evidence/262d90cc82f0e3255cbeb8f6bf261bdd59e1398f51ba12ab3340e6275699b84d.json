@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 74809554,
+      "login": "xiehuanyi",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-20T23:50:26Z",
+      "committer_at": "2026-10-20T23:50:26Z",
+      "tree_sha": "df5f1e7aad25b333638b70148b2d6eece0d4af1e"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "efe1c4b2f92ca17fec7c37d9acdda3709d204d60"
+  },
+  "observed_at": "2026-10-27T15:30:13.591976+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fb82fcd83239bca756a229edb5f84861837721c11fd692ac2148e5b8fa25b439",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "515327f488e02e774f87091464ebaa810c68d057f5123bab950a7fea94400551",
+  "source_url": "https://api.github.com/repos/python/typeshed/commits/efe1c4b2f92ca17fec7c37d9acdda3709d204d60?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "ISC",
+    "full_name": "starship/starship",
+    "id": 178991158,
+    "language": "Rust",
+    "private": false,
+    "size": 47318
+  },
+  "observed_at": "2026-10-26T14:34:54.083393+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6a1ae17d19c797c0c1436b86a78a8998c2ac4f0fa82ea7b2dd1321aabfa46ea6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1c4e772ffdae841b8174827f786d806046e4fbf108d51aea38e89f6bf1bf5363",
+  "source_url": "https://api.github.com/repos/starship/starship",
+  "status_code": 200
+}

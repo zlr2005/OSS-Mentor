@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "372617a046cba93807c6ea2665a134e676fd5ed9",
+    "size": 9814
+  },
+  "observed_at": "2026-10-27T15:45:39.501393+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "50a00efa15a8279f1d2c521d1e0c6cad6a3cd47739182c83187546f1ed3b3e7f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "87618c870f52c348536ba487dbffbd90a27fc099ddd86eb04b975062f255b687",
+  "source_url": "https://api.github.com/repos/qos-ch/logback/git/blobs/372617a046cba93807c6ea2665a134e676fd5ed9",
+  "status_code": 200
+}

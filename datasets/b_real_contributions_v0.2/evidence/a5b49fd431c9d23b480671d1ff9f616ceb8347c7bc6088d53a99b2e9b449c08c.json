@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "860bf91d3cf0eeffa6e6fa45bef940c5d61f98bd",
+    "size": 2722
+  },
+  "observed_at": "2026-10-26T15:43:23.591681+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6d28ccba2a72f3964b1a358d5cabc9e0ebe5a43755abe802e6cbe62e69261895",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b8cdedaee3a140a5d1467ebbf28649510fa202ee5634d1a48556a42d26cfe58c",
+  "source_url": "https://api.github.com/repos/wagtail/wagtail/git/blobs/860bf91d3cf0eeffa6e6fa45bef940c5d61f98bd",
+  "status_code": 200
+}

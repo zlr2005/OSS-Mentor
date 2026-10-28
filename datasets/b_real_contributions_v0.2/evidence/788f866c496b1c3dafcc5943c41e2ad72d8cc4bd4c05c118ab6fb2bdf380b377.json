@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29139614,
+      "login": "renovate[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-22T06:21:07Z",
+      "committer_at": "2026-10-22T06:21:07Z",
+      "tree_sha": "7bf3daed8b7c2ac49a0af81a829591df8e545578"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1349c6789c01d33c7877cde72b0fc680baada788"
+  },
+  "observed_at": "2026-10-26T15:27:48.884783+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5e51ab6e31a392ce72b6be7ccc30126ca034fd7f4abc9f991db27890bedbc30a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8588c401a13e9830ca2d9f3f6c0344cb2cc2b72330d77a4edfd0126afd1e74a8",
+  "source_url": "https://api.github.com/repos/typescript-eslint/typescript-eslint/commits/1349c6789c01d33c7877cde72b0fc680baada788?per_page=100",
+  "status_code": 200
+}

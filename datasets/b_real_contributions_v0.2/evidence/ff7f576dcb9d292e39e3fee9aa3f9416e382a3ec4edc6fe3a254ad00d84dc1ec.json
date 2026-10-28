@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "4fbc926b7ce285d162ec5f6b609b458c1dd5073d",
+    "size": 14950
+  },
+  "observed_at": "2026-10-26T05:55:35.577067+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "148d771b273446bcef7998f755a618a334576e7ec1a54295f07986576e489b60",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ce47aa6a9e1a6988e00c9da9b0de326591491aba8f8480dd88270fa77bb62556",
+  "source_url": "https://api.github.com/repos/BigPizzaV3/CodexPlusPlus/git/blobs/4fbc926b7ce285d162ec5f6b609b458c1dd5073d",
+  "status_code": 200
+}

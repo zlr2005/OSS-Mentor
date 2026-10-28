@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "0ba18a8d0dcc4719a2afb07334c0eab46d86a28c",
+    "size": 7607
+  },
+  "observed_at": "2026-10-26T07:56:26.563280+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a2da443ed7ab065307b9d3b2f4bc5ff2568b2c99df5351216b624e1383a9f910",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "835f6c16a4e956d41d7dc4afdd126c65ac7e7c35c75a96fa555878907f5be7c6",
+  "source_url": "https://api.github.com/repos/labstack/echo/git/blobs/0ba18a8d0dcc4719a2afb07334c0eab46d86a28c",
+  "status_code": 200
+}

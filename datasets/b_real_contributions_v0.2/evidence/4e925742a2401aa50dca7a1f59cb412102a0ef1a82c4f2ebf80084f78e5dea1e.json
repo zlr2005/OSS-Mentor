@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "5dd17c58b28a22ce61901a41036d3fce14fe8b46",
+    "size": 4794
+  },
+  "observed_at": "2026-10-27T14:48:30.752301+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "973184b9b9af3b944569b3c7119d33602a7db33973576d6272257dd765e98356",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c406c98735ff0f053629781d094d60a64aaf49551dfb13e2dc22d90a3e5a7379",
+  "source_url": "https://api.github.com/repos/npm/make-fetch-happen/git/blobs/5dd17c58b28a22ce61901a41036d3fce14fe8b46",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "76e798b37e0298faa8b67ea02eb858fd05463374",
+    "size": 5620
+  },
+  "observed_at": "2026-10-26T13:13:02.772962+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "af477cc98e66f648fd635120ecc092b4e9f21b07409dde08c6edbab27b83f09f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "95cf2151c6f7c81cce6358df44184150ed874b73e18ace19bd13a0858d8426eb",
+  "source_url": "https://api.github.com/repos/pypa/wheel/git/blobs/76e798b37e0298faa8b67ea02eb858fd05463374",
+  "status_code": 200
+}

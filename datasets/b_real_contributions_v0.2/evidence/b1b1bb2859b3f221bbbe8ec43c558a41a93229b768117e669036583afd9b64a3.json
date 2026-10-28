@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pypa/build",
+    "id": 262827329,
+    "language": "Python",
+    "private": false,
+    "size": 1521
+  },
+  "observed_at": "2026-10-26T13:07:11.938793+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2914c90133bca5b022584dfb66388eb276f90f26c27b67a72d9f1bf9b745ed64",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "20cb9978233342e841bfe4877fb28865bee221e1f8d5c262d604429cb7ac6900",
+  "source_url": "https://api.github.com/repos/pypa/build",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 97764156,
+      "login": "pytorchmergebot",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T13:48:41Z",
+      "committer_at": "2026-10-25T13:48:41Z",
+      "tree_sha": "217438d566c69deae4fd9e2c5b1ac0e742650622"
+    },
+    "committer": {
+      "id": 97764156,
+      "login": "pytorchmergebot",
+      "type": "User"
+    },
+    "sha": "d0b9d245f4f400496b3a41355330b4322ca267df"
+  },
+  "observed_at": "2026-10-27T15:38:50.945475+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d96fc48c1d82f6a70bb3981586a88f2672c88f5f893cadfdfbefd12f5b140fab",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1f817fb01a794bb7a6830ce0ec9bbdfc2ce63607cfd4228c487b5242d587249b",
+  "source_url": "https://api.github.com/repos/pytorch/pytorch/commits/d0b9d245f4f400496b3a41355330b4322ca267df?per_page=100",
+  "status_code": 200
+}

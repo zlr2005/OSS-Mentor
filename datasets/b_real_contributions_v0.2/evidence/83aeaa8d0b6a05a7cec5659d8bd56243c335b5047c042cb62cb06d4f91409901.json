@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 5408889,
+      "login": "tylerpayne",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2025-10-02T16:35:12Z",
+      "committer_at": "2025-10-02T16:35:12Z",
+      "tree_sha": "3dd179cbc9299a1c7ee2b140d125e61b10c02484"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "c02791282b405d83632274274f31236b496ea3c6"
+  },
+  "observed_at": "2026-10-26T08:10:23.658070+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "12b4c72f3d3e1f1c8b932a28bcc9900ae19d9e8b5f94065bfae1706f5e5d2553",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "13079bb8280a7c14cd0437ae5fb2ccfeb115c90fe5ec8d198373119488d5dc08",
+  "source_url": "https://api.github.com/repos/microsoft/autogen/commits/c02791282b405d83632274274f31236b496ea3c6?per_page=100",
+  "status_code": 200
+}

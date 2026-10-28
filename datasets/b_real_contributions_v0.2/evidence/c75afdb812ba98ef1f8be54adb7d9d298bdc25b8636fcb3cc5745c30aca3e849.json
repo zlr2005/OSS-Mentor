@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e49b9fb93a5432aeb7f18b3b5cf7ad2ccae9ae24",
+    "size": 7591
+  },
+  "observed_at": "2026-10-26T07:07:31.637008+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "68374c69acb9392407782218639ccff51b502c0b982a2194cfa063e2eae944bb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4659e7d9a85fb249aeb5884355c4fdda554e6e7f9c50f3aee12e76243d5ed69f",
+  "source_url": "https://api.github.com/repos/google/guava/git/blobs/e49b9fb93a5432aeb7f18b3b5cf7ad2ccae9ae24",
+  "status_code": 200
+}

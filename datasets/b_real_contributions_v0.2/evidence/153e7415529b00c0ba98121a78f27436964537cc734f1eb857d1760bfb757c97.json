@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pypa/setuptools",
+    "id": 54980593,
+    "language": "Python",
+    "private": false,
+    "size": 49567
+  },
+  "observed_at": "2026-10-26T13:11:32.251680+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d2d4513fc8840881ecbb220187e8427048d06635f5b9fe91194f47dc3b3bf8aa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0d160bc8c421ae26650837f3836f929a3a80eb1a70b8ad7be9d870fbfbeafc33",
+  "source_url": "https://api.github.com/repos/pypa/setuptools",
+  "status_code": 200
+}

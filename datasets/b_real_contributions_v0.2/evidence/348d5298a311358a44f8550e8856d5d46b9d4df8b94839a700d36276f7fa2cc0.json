@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "chartjs/Chart.js",
+    "id": 8843683,
+    "language": "JavaScript",
+    "private": false,
+    "size": 44278
+  },
+  "observed_at": "2026-10-26T06:04:32.265127+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "72434677ec0890fd483c3e46cd29746ac2ee4d12770aec1dfbb90ed378fba517",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7cdb74ab4b4c4aca1885278ecefbe2f50985fee0c1a1700e0d6e9d31cd51838e",
+  "source_url": "https://api.github.com/repos/chartjs/Chart.js",
+  "status_code": 200
+}

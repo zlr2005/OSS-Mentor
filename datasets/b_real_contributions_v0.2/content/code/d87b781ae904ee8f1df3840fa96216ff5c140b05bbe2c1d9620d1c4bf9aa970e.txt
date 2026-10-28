@@ -1,0 +1,129 @@
+buildscript {
+	repositories {
+		gradlePluginPortal()
+	}
+	dependencies {
+		classpath libs.io.spring.security.project.plugin
+	}
+}
+
+plugins {
+	id "java-gradle-plugin"
+	id "groovy-gradle-plugin"
+	id "java"
+	id "groovy"
+	id "org.jetbrains.dokka" version "2.2.0"
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_17
+}
+
+apply plugin: 'io.spring.security.project'
+
+repositories {
+	gradlePluginPortal()
+	mavenCentral()
+}
+
+sourceSets {
+	main {
+		java {
+			srcDirs = []
+		}
+		groovy {
+			srcDirs += ["src/main/java"]
+		}
+	}
+}
+
+gradlePlugin {
+	plugins {
+		trang {
+			id = "trang"
+			implementationClass = "trang.TrangPlugin"
+		}
+		locks {
+			id = "locks"
+			implementationClass = "lock.GlobalLockPlugin"
+		}
+		managementConfiguration {
+			id = "io.spring.convention.management-configuration"
+			implementationClass = "io.spring.gradle.convention.ManagementConfigurationPlugin"
+		}
+		s101 {
+			id = "s101"
+			implementationClass = "s101.S101Plugin"
+		}
+		verifyDependenciesVersions {
+			id = "org.springframework.security.versions.verify-dependencies-versions"
+			implementationClass = "org.springframework.security.convention.versions.VerifyDependenciesVersionsPlugin"
+		}
+		checkExpectedBranchVersion {
+			id = "org.springframework.security.check-expected-branch-version"
+			implementationClass = "org.springframework.security.CheckExpectedBranchVersionPlugin"
+		}
+	}
+}
+
+configurations {
+	implementation {
+		exclude module: 'groovy-all'
+	}
+}
+
+dependencies {
+	implementation platform(libs.io.projectreactor.reactor.bom)
+
+	implementation libs.spring.nullability
+	implementation libs.com.google.code.gson.gson
+	implementation libs.com.thaiopensource.trag
+	implementation libs.net.sourceforge.saxon.saxon
+	implementation libs.org.yaml.snakeyaml
+	implementation localGroovy()
+
+	implementation libs.io.github.gradle.nexus.publish.plugin
+	implementation 'io.projectreactor:reactor-core'
+	implementation libs.org.gretty.gretty
+	implementation libs.com.github.ben.manes.gradle.versions.plugin
+	implementation libs.com.github.spullara.mustache.java.compiler
+	implementation libs.io.spring.javaformat.spring.javaformat.gradle.plugin
+	implementation libs.io.spring.nohttp.nohttp.gradle
+	implementation libs.org.jetbrains.kotlin.kotlin.gradle.plugin
+	implementation libs.org.jetbrains.dokka.dokka.gradle.plugin
+	implementation (libs.net.sourceforge.htmlunit) {
+		exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-client'
+	}
+	implementation libs.org.hidetake.gradle.ssh.plugin
+	implementation libs.org.sonarsource.scanner.gradle.sonarqube.gradle.plugin
+	implementation libs.com.squareup.okhttp3.okhttp
+	implementation libs.io.spring.security.project.plugin
+	implementation libs.io.spring.security.release.plugin
+	implementation(libs.io.spring.security.maven.plugin) {
+		// Build info is created by spring-io/artifactory-deploy-action; its jfrog dependencies bring in an old commons-compress
+		exclude group: 'org.jfrog.buildinfo'
+	}
+
+	testImplementation platform(libs.org.junit.junit.bom)
+	testImplementation platform(libs.org.mockito.mockito.bom)
+	testImplementation "org.junit.jupiter:junit-jupiter-api"
+	testImplementation "org.junit.jupiter:junit-jupiter-params"
+	testImplementation "org.junit.jupiter:junit-jupiter-engine"
+	testImplementation libs.org.apache.commons.commons.io
+	testImplementation libs.org.assertj.assertj.core
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.mockito:mockito-junit-jupiter'
+	testImplementation libs.com.squareup.okhttp3.mockwebserver
+
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+
+tasks.named('test', Test).configure {
+	onlyIf { !project.hasProperty("buildSrc.skipTests") }
+	useJUnitPlatform()
+	jvmArgs(
+			'--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+			'--add-opens', 'java.base/java.util=ALL-UNNAMED'
+	)
+}

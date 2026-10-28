@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 319465,
+      "login": "puzrin",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-09-11T03:38:37Z",
+      "committer_at": "2026-09-11T03:38:37Z",
+      "tree_sha": "6d60bbff0f85debffd69fe1073e25e49d803a875"
+    },
+    "committer": {
+      "id": 319465,
+      "login": "puzrin",
+      "type": "User"
+    },
+    "sha": "cf27366035edf9196667110c47d9d67b030a4152"
+  },
+  "observed_at": "2026-10-26T08:04:33.966571+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8c2ce712433b9a171a33c1734597331e678f4750412a183bf96d0dc565dfad31",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "926c91acff37f2e624f7df59ca3a81d4e1be0385e9aadaf9cd26483f92078be0",
+  "source_url": "https://api.github.com/repos/markdown-it/markdown-it/commits/cf27366035edf9196667110c47d9d67b030a4152?per_page=100",
+  "status_code": 200
+}

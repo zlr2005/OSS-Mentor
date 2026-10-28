@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 100715397,
+      "login": "zucchini-nlp",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T07:31:32Z",
+      "committer_at": "2026-10-23T07:31:32Z",
+      "tree_sha": "f70b2b86a83e4d9ddfee0215b3b52b9004778bcc"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "674c0e396a06aa9d96cdc4741ce9c0853eae64b8"
+  },
+  "observed_at": "2026-10-26T07:38:14.520907+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fc5f71fe5e660c27c184636d3b3ad0b8593087c4f53d446dc2dbdb363969de72",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "438c11de06176686432ba48bc5426f0544b5e7238b70dfd84da88a483ee00f2a",
+  "source_url": "https://api.github.com/repos/huggingface/transformers/commits/674c0e396a06aa9d96cdc4741ce9c0853eae64b8?per_page=100",
+  "status_code": 200
+}

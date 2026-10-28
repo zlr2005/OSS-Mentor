@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "resilience4j/resilience4j",
+    "id": 36793280,
+    "language": "Java",
+    "private": false,
+    "size": 9448
+  },
+  "observed_at": "2026-10-26T13:42:02.230473+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6f215db53ca073bf3d9138c0f6700c08c4debaa9c4273592fe3c965510552f33",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8990ed1802035f5c5d9333f94a6daf03e4f1f213539d1e04941556d820289b33",
+  "source_url": "https://api.github.com/repos/resilience4j/resilience4j",
+  "status_code": 200
+}

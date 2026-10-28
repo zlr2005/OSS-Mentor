@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "57027d25e971a321622d0653212c71fdc074e5bb",
+    "size": 8796
+  },
+  "observed_at": "2026-10-26T13:05:14.921698+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a09d1874eadde86cca73f02eff59b2438d605e13cfab115648292fa4e4f57d46",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "acae775f412f31582417e218878f4ab7d379ba3df44d78dadf1abe8ac1bb5db4",
+  "source_url": "https://api.github.com/repos/PyCQA/isort/git/blobs/57027d25e971a321622d0653212c71fdc074e5bb",
+  "status_code": 200
+}

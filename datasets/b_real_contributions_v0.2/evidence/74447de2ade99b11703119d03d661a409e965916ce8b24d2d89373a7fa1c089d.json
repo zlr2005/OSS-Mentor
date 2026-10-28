@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "6d1421682d8848903ac398e7cf9a6eebd4070edd",
+    "size": 882
+  },
+  "observed_at": "2026-10-26T14:49:00.597666+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d121295e26ec5c8af687dd5244a4d68ae2560260e78c4ede20c2dbaa6fced11a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c5a5b06153db53fa1b820c4ecee02a1c66f7c18fcf1da5f0c14a7b37c37ceaf6",
+  "source_url": "https://api.github.com/repos/sveltejs/svelte/git/blobs/6d1421682d8848903ac398e7cf9a6eebd4070edd",
+  "status_code": 200
+}

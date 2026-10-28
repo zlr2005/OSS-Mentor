@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "72d5e1792938b3582fc2ec9fec4246e716b1edfd",
+    "size": 11485
+  },
+  "observed_at": "2026-10-26T08:12:33.591587+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0ceaf01eb542c9862fd1007d98c0af82775d58d22a68037acf17c8bb08b3d370",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9ba0b799cbac10010d243322e621cb097cbe8ec6d4139af692270e05695b9161",
+  "source_url": "https://api.github.com/repos/microsoft/playwright/git/blobs/72d5e1792938b3582fc2ec9fec4246e716b1edfd",
+  "status_code": 200
+}

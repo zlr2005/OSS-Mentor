@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "bc0aa4d15513ec8726f190709fd18a426b8595ea",
+    "size": 1391
+  },
+  "observed_at": "2026-10-27T15:54:11.280745+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "181a3072e6167c321064b9c875aaba2fff14846c3febfac5e583f0673c2d25ef",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "afa6e9b27031e8fca2e6a771e3cc90803a25cc0bd15ff83fe522fc431b14e060",
+  "source_url": "https://api.github.com/repos/quarkusio/quarkus/git/blobs/bc0aa4d15513ec8726f190709fd18a426b8595ea",
+  "status_code": 200
+}

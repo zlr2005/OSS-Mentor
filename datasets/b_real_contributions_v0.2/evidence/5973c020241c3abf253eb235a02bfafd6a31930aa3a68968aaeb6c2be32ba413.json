@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1547007,
+      "login": "victordibia",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-03-11T19:42:46Z",
+      "committer_at": "2026-03-11T19:42:46Z",
+      "tree_sha": "a1daaa9b8fbb6a80f179d1fb9625649996e45f45"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b0477309d2a0baf489aa256646e41e513ab3bfe8"
+  },
+  "observed_at": "2026-10-26T08:10:03.656285+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "51f6423b24bbaff17e1e3dda834b7ee2ec054f06f90da45556c6908528a5b86e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b801177eb02778deb21e45159ab48e5a85bf6adfed76f57a9b27676d330fab2b",
+  "source_url": "https://api.github.com/repos/microsoft/autogen/commits/b0477309d2a0baf489aa256646e41e513ab3bfe8?per_page=100",
+  "status_code": 200
+}

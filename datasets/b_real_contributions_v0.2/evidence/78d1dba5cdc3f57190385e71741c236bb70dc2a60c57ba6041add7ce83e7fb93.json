@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 301978643,
+      "login": "Mounika2456",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-18T19:29:19Z",
+      "committer_at": "2026-10-23T13:36:49Z",
+      "tree_sha": "071fa548aa6526cb0952ec3f50eec4ef6fcdc02f"
+    },
+    "committer": {
+      "id": 579363,
+      "login": "ctz",
+      "type": "User"
+    },
+    "sha": "c30f81abcafe2cc75fddc34275b48e0524751558"
+  },
+  "observed_at": "2026-10-27T16:03:24.676173+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1ae750d60f1cdacac9bffdff6bfc5cedf22603c1282f5402868980fec4677179",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "96643d4fd7c3285f0d1cd6cc34027b02d4b6f77c5441490a803e722ddb130e19",
+  "source_url": "https://api.github.com/repos/rustls/rustls/commits/c30f81abcafe2cc75fddc34275b48e0524751558?per_page=100",
+  "status_code": 200
+}

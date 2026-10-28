@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1940490,
+      "login": "dtolnay",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-25T03:48:06Z",
+      "committer_at": "2026-08-25T03:48:27Z",
+      "tree_sha": "bf70a75ca4b3f286ad5f4ce49240563fe77ba159"
+    },
+    "committer": {
+      "id": 1940490,
+      "login": "dtolnay",
+      "type": "User"
+    },
+    "sha": "50b638405a3a526be2e16c090c88290b102283ee"
+  },
+  "observed_at": "2026-10-26T14:03:51.740043+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "af724025ad1eca22f8a4bcbe45b499ce5ed39505e57374c5206ab7d221f184c9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ecfb72ff8846040fbe9e40d31af099be78d7c89c89b638a10e86b1ddd5b70cb8",
+  "source_url": "https://api.github.com/repos/serde-rs/serde/commits/50b638405a3a526be2e16c090c88290b102283ee?per_page=100",
+  "status_code": 200
+}

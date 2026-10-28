@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "junegunn/fzf",
+    "id": 13807606,
+    "language": "Go",
+    "private": false,
+    "size": 8611
+  },
+  "observed_at": "2026-10-26T07:46:35.260805+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "df677ad3e603643fd3545fa965606defbefe4505cf095d4f632cac0d87f3fbfb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a5e05e1958483f4fb2d556a5b1b8af9ed352dcf095460ce63567cff91567ef7b",
+  "source_url": "https://api.github.com/repos/junegunn/fzf",
+  "status_code": 200
+}

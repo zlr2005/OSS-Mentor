@@ -1,0 +1,217 @@
+package pgtype_test
+
+import (
+	"context"
+	"math"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxtest"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestIntervalCodec(t *testing.T) {
+	pgxtest.RunValueRoundTripTests(context.Background(), t, defaultConnTestRunner, nil, "interval", []pgxtest.ValueRoundTripTest{
+		{
+			Param:  pgtype.Interval{Microseconds: 1, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: 1, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Microseconds: 1_000_000, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: 1_000_000, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Microseconds: 1_000_001, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: 1_000_001, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Microseconds: 123_202_800_000_000, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: 123_202_800_000_000, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Days: 1, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Days: 1, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Months: 1, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: 1, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Months: 12, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: 12, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Months: 13, Days: 15, Microseconds: 1_000_001, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: 13, Days: 15, Microseconds: 1_000_001, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Microseconds: -1, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: -1, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Microseconds: -1_000_000, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: -1_000_000, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Microseconds: -1_000_001, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: -1_000_001, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Microseconds: -123_202_800_000_000, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: -123_202_800_000_000, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Days: -1, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Days: -1, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Months: -1, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: -1, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Months: -12, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: -12, Valid: true}),
+		},
+		{
+			Param:  pgtype.Interval{Months: -13, Days: -15, Microseconds: -1_000_001, Valid: true},
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: -13, Days: -15, Microseconds: -1_000_001, Valid: true}),
+		},
+		{
+			Param:  "1 second",
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: 1_000_000, Valid: true}),
+		},
+		{
+			Param:  "1.000001 second",
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: 1_000_001, Valid: true}),
+		},
+		{
+			Param:  "34223 hours",
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Microseconds: 123_202_800_000_000, Valid: true}),
+		},
+		{
+			Param:  "1 day",
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Days: 1, Valid: true}),
+		},
+		{
+			Param:  "1 month",
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: 1, Valid: true}),
+		},
+		{
+			Param:  "1 year",
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: 12, Valid: true}),
+		},
+		{
+			Param:  "-13 mon",
+			Result: new(pgtype.Interval),
+			Test:   isExpectedEq(pgtype.Interval{Months: -13, Valid: true}),
+		},
+		{Param: time.Hour, Result: new(time.Duration), Test: isExpectedEq(time.Hour)},
+		{
+			Param:  pgtype.Interval{Months: 1, Days: 1, Valid: true},
+			Result: new(time.Duration),
+			Test:   isExpectedEq(time.Duration(2_678_400_000_000_000)),
+		},
+		{Param: pgtype.Interval{}, Result: new(pgtype.Interval), Test: isExpectedEq(pgtype.Interval{})},
+		{Param: nil, Result: new(pgtype.Interval), Test: isExpectedEq(pgtype.Interval{})},
+	})
+}
+
+func TestIntervalTextEncode(t *testing.T) {
+	m := pgtype.NewMap()
+
+	successfulTests := []struct {
+		source pgtype.Interval
+		result string
+	}{
+		{source: pgtype.Interval{Months: 2, Days: 1, Microseconds: 0, Valid: true}, result: "2 mon 1 day 00:00:00"},
+		{source: pgtype.Interval{Months: 0, Days: 0, Microseconds: 0, Valid: true}, result: "00:00:00"},
+		{source: pgtype.Interval{Months: 0, Days: 0, Microseconds: 6 * 60 * 1_000_000, Valid: true}, result: "00:06:00"},
+		{source: pgtype.Interval{Months: 0, Days: 1, Microseconds: 6*60*1_000_000 + 30, Valid: true}, result: "1 day 00:06:00.000030"},
+		{source: pgtype.Interval{Microseconds: 123_202_800_000_000, Valid: true}, result: "34223:00:00"},
+		{source: pgtype.Interval{Microseconds: -1_000_001, Valid: true}, result: "-00:00:01.000001"},
+		{source: pgtype.Interval{Microseconds: math.MinInt64, Valid: true}, result: "-2562047788:00:54.775808"},
+	}
+	for i, tt := range successfulTests {
+		buf, err := m.Encode(pgtype.DateOID, pgtype.TextFormatCode, tt.source, nil)
+		assert.NoErrorf(t, err, "%d", i)
+		assert.Equalf(t, tt.result, string(buf), "%d", i)
+	}
+}
+
+// A malformed interval whose time component has an empty hours segment
+// (for example ":05:06") must return an error instead of panicking with an
+// index out of range on timeParts[0][0].
+func TestIntervalScanMalformedTimeReturnsError(t *testing.T) {
+	for _, src := range []string{":05:06", "1 day :30:00", "00:00:01."} {
+		var v pgtype.Interval
+		if err := v.Scan(src); err == nil {
+			t.Errorf("Scan(%q): expected error, got nil", src)
+		}
+	}
+}
+
+func TestIntervalScanFractionPastMicrosecond(t *testing.T) {
+	cases := []struct {
+		src  string
+		want int64
+	}{
+		{"00:00:01.5", 1_500_000},
+		{"00:00:01.123456", 1_123_456},
+		{"00:00:01.0000001", 1_000_000},
+		{"00:00:01.1234567", 1_123_457},
+		{"-00:00:01.0000001", -1_000_000},
+	}
+	for _, c := range cases {
+		var v pgtype.Interval
+		if err := v.Scan(c.src); err != nil {
+			t.Fatalf("Scan(%q): %v", c.src, err)
+		}
+		if v.Microseconds != c.want {
+			t.Errorf("Scan(%q): microseconds %d, want %d", c.src, v.Microseconds, c.want)
+		}
+	}
+}
+
+func TestIntervalScanMalformedFractionReturnsError(t *testing.T) {
+	for _, src := range []string{
+		"00:00:01.a",
+		"00:00:01.1.2",
+		"00:00:01.12345x",
+		"00:00:01.123456x",
+		"00:00:01.000001e2",
+		"00:00:01.000001_2",
+		"00:00:01.+1",
+		"00:00:01.-1",
+		"-00:00:01.a",
+	} {
+		t.Run(src, func(t *testing.T) {
+			var v pgtype.Interval
+			if err := v.Scan(src); err == nil {
+				t.Errorf("Scan(%q): expected error, got %+v", src, v)
+			}
+		})
+	}
+}

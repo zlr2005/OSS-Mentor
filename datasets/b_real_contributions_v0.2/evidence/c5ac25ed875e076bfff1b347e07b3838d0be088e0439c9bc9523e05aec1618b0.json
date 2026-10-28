@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-17T20:17:52Z",
+      "committer_at": "2026-10-17T20:17:52Z",
+      "tree_sha": "528c3f0369507996ade18ba617bf55a96e8a34e9"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "cdcf6e54d77a0c46f14f43ae9e7c0a8579627c2b"
+  },
+  "observed_at": "2026-10-26T08:24:14.315691+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8bd362f6daff1f7788bdeeead54f8f0a12b47bfdea546123a4531b4eda8833d5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ada285e8de5370ecf670328b47062a856a9a51471b23e6b596afc0b79ced45e2",
+  "source_url": "https://api.github.com/repos/mockito/mockito/commits/cdcf6e54d77a0c46f14f43ae9e7c0a8579627c2b?per_page=100",
+  "status_code": 200
+}

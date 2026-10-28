@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "browserify/browserify",
+    "id": 931039,
+    "language": "JavaScript",
+    "private": false,
+    "size": 2529
+  },
+  "observed_at": "2026-10-26T05:58:08.647121+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b0b94800a68220540af304e643f4e81d43714f50704a23c98a90ca9225db97bb",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0d2189202de3621acd152a477f395e5d8406e062a88dad35f78043a48f76b725",
+  "source_url": "https://api.github.com/repos/browserify/browserify",
+  "status_code": 200
+}

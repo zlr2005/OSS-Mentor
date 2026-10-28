@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-15T09:40:03Z",
+      "committer_at": "2026-10-15T09:40:03Z",
+      "tree_sha": "619d683956dbcf1281eda84cae54a8f1c4b684b1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "1d4505ca6a28ebb5d97c1c35bbe71522f02744c0"
+  },
+  "observed_at": "2026-10-26T07:22:39.917858+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "2640de4c244d9efabd24257e91ff7195c4b2b78eaacf274564797ab1e7fdb729",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7b165275583fef885648468770c86b52b70d7a89f945de960ed342c0be43a774",
+  "source_url": "https://api.github.com/repos/helm/helm/commits/1d4505ca6a28ebb5d97c1c35bbe71522f02744c0?per_page=100",
+  "status_code": 200
+}

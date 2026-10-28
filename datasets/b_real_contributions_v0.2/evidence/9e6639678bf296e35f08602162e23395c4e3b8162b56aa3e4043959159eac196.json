@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MPL-2.0",
+    "full_name": "syncthing/syncthing",
+    "id": 14712850,
+    "language": "Go",
+    "private": false,
+    "size": 127732
+  },
+  "observed_at": "2026-10-26T14:52:24.373574+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8ecddbd315ecc48303cd0ba2d8d2d31807df71fb28d111cf79bd806686e81870",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fabbe65cbf965cf7a7c8a64a1489195c23a9ad7602967e4dea9e4df8f4700c48",
+  "source_url": "https://api.github.com/repos/syncthing/syncthing",
+  "status_code": 200
+}

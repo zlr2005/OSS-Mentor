@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "author": {},
+    "commit": {
+      "author_at": "2026-10-25T05:06:39Z",
+      "committer_at": "2026-10-25T05:06:39Z",
+      "tree_sha": "c7a8fde84ee81f0f340a7222ffef5711493b75dd"
+    },
+    "committer": {
+      "id": 215208954,
+      "login": "meta-codesync[bot]",
+      "type": "Bot"
+    },
+    "sha": "77a52441ac736d4702315fc3eabd6acccb53af7b"
+  },
+  "observed_at": "2026-10-26T06:41:06.976074+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1c0ead83f29fd2257c62ebbd012176ba273e3247d68b9d22d48d4e6ca09cb064",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8be987210b1633d6033c5b80ee7a44862b031f69a82f588b5d5f1f140c5457d9",
+  "source_url": "https://api.github.com/repos/facebook/buck2/commits/77a52441ac736d4702315fc3eabd6acccb53af7b?per_page=100",
+  "status_code": 200
+}

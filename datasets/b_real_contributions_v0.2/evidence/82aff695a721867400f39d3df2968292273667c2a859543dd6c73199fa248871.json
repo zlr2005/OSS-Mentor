@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 184500519,
+      "login": "Hrushikesh-ramilla",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T06:34:45Z",
+      "committer_at": "2026-10-25T22:38:23Z",
+      "tree_sha": "5de9427298e84b7929365f2e2c8230fefd5801e5"
+    },
+    "committer": {
+      "id": 812984,
+      "login": "romani",
+      "type": "User"
+    },
+    "sha": "c716aadd09ce74b1b253a3ea7797b7f7e9ac7920"
+  },
+  "observed_at": "2026-10-26T06:06:25.427286+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "89bebf414a5ad5cef67357202c607ebabffe4669439e792e9b2157452e35fcd2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2ae53876512926f6da59d046ebe4558583e069af060b723f4f6bc93a09bedccd",
+  "source_url": "https://api.github.com/repos/checkstyle/checkstyle/commits/c716aadd09ce74b1b253a3ea7797b7f7e9ac7920?per_page=100",
+  "status_code": 200
+}

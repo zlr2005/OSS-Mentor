@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 7071132,
+      "login": "JonathanBrouwer",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T20:18:21Z",
+      "committer_at": "2026-10-25T20:18:21Z",
+      "tree_sha": "33a6331fdbf152504fde1f0d34edff9f31296b34"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "90dd28617635ba963edb0c5d17c0e6015ea75fd8"
+  },
+  "observed_at": "2026-10-27T15:59:44.509792+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "21057ef2c9fa4fa1731c4d45221324a94c36753272b758a566e257630764494f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3904f7cc5a63c7e2d03796629758e9f341e45f2778574d6da3f6310c347880d9",
+  "source_url": "https://api.github.com/repos/rust-lang/rust/commits/90dd28617635ba963edb0c5d17c0e6015ea75fd8?per_page=100",
+  "status_code": 200
+}

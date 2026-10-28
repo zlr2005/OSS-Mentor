@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "microsoft/vscode",
+    "id": 41881900,
+    "language": "TypeScript",
+    "private": false,
+    "size": 1625892
+  },
+  "observed_at": "2026-10-26T08:18:07.425052+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1cc9b21c7e9675089b5c5a98c8fb38352233667a699c6aea840a5aae090ad6c7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "470e46682a40c63971fb1a508651b336dc07e2767872fe479565c0c135f32027",
+  "source_url": "https://api.github.com/repos/microsoft/vscode",
+  "status_code": 200
+}

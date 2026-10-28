@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "5865e98ea320fc841c882ddf371f4704dd6d672a",
+    "size": 12128
+  },
+  "observed_at": "2026-10-26T05:35:20.512541+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "9b1ba869f12296baa585678a051f3035ae7fc8582d97312a0b6e33f662ca49f7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "ee34d2f43e94ec3fcc34ec68a6ca37dd4d9fa6a1ba6ae303389bd5f09d251424",
+  "source_url": "https://api.github.com/repos/apache/shardingsphere/git/blobs/5865e98ea320fc841c882ddf371f4704dd6d672a",
+  "status_code": 200
+}

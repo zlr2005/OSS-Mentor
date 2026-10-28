@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 29717167,
+      "login": "nwoolmer",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T18:03:04Z",
+      "committer_at": "2026-10-21T18:03:04Z",
+      "tree_sha": "aab34ad8e4a3b53dc82fe29d25d3169f145f829d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "cebb783188c93f3a1355ed7242879fb0e24b4650"
+  },
+  "observed_at": "2026-10-26T13:21:44.177641+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5134a35898e1f59b207d73eef0df1c3f514209f13ddcd81480c43c75655e35f8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "76513c8afe4cdac66ebdd764b1212516d62b57254da601588509828baca79f7f",
+  "source_url": "https://api.github.com/repos/questdb/questdb/commits/cebb783188c93f3a1355ed7242879fb0e24b4650?per_page=100",
+  "status_code": 200
+}

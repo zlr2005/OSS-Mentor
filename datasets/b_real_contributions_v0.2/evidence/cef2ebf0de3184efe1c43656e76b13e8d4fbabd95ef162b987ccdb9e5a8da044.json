@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "94c858b54515d31e546820b5ebb5ab011fcb7660",
+    "size": 2098
+  },
+  "observed_at": "2026-10-26T14:05:35.208699+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "385b08e0a1adf7a1599dbbd13e26d816f4e43817f906f4d4a61c1eaa62c773c7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "da00fb7b0783ad9a317563e715a76be3b1342645c5000f082b7323d878ff84a0",
+  "source_url": "https://api.github.com/repos/sharkdp/bat/git/blobs/94c858b54515d31e546820b5ebb5ab011fcb7660",
+  "status_code": 200
+}

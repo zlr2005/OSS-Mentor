@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "997cdeeeffff23735371f9bab16017876cd61eaf",
+    "size": 13759
+  },
+  "observed_at": "2026-10-26T08:14:31.839071+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c0b071e197f20d2504147237892bba6944ad5c5357f297be900336b3e08d1526",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c41047b0ad04c9e081546df74b9e67f33088fe9c9ef145e64e220726bfadf914",
+  "source_url": "https://api.github.com/repos/microsoft/PowerToys/git/blobs/997cdeeeffff23735371f9bab16017876cd61eaf",
+  "status_code": 200
+}

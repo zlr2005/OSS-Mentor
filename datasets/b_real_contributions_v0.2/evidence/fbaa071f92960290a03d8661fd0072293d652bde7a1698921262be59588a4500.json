@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "9c9e8bc55639459de3cafa31bac5f8f678f69d93",
+    "size": 1085
+  },
+  "observed_at": "2026-10-26T15:08:06.530363+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3f586435eaac54778f7ac5218c5ae5a6c6ac5df91e909a4201f49fc5791a279f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "84fc9c9f7ed2809b70158fe89d7e57f7f1e01bd5ae656db45d1af678e6c902cc",
+  "source_url": "https://api.github.com/repos/testcontainers/testcontainers-java/git/blobs/9c9e8bc55639459de3cafa31bac5f8f678f69d93",
+  "status_code": 200
+}

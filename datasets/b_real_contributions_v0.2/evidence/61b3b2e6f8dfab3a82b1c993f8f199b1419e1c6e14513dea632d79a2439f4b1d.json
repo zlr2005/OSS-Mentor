@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "microsoft/Agents-for-net",
+    "id": 884411799,
+    "language": "C#",
+    "private": false,
+    "size": 46630
+  },
+  "observed_at": "2026-10-26T08:08:58.304911+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e0c0a23be69c345bd7e95e640da784c41aeb3b29612c042bcedf108faa55751b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2525a2446ba5e101102787efb83a5cd9b0f0f26cfb21150c160950f022bcf346",
+  "source_url": "https://api.github.com/repos/microsoft/Agents-for-net",
+  "status_code": 200
+}

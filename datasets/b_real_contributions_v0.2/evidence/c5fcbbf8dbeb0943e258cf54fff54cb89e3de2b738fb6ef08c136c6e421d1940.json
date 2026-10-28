@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "329bbe2383bdde1322af73c9584ef1a7da526a1c",
+    "size": 8550
+  },
+  "observed_at": "2026-10-26T15:07:49.421247+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0b57e9d3c8c5e278e992ece6ab3a88ce5bca13d1bab5ecd55546447366ee371e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "19cef58424babaaff480266dce2c682f3b2712892e80607458686a41618906ef",
+  "source_url": "https://api.github.com/repos/tauri-apps/tauri/git/blobs/329bbe2383bdde1322af73c9584ef1a7da526a1c",
+  "status_code": 200
+}

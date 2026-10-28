@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 14352046,
+      "login": "khollbach",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-17T19:36:06Z",
+      "committer_at": "2026-08-17T19:36:06Z",
+      "tree_sha": "941aed2141d36dfc21ed12a23cf1f9bbfd6f44ae"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7dd7b5b09e06ca58daadfb12bd45a9aa8fa716f2"
+  },
+  "observed_at": "2026-10-26T05:03:08.918163+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c6e99937832551f99c39a1c97f2b55eaed69da592aefd03732d705f456ce85e4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e5a20185dfb7d87fe7efaa48db7e10d3e94834dbd50b8d049ff70cfc6a8ad3e6",
+  "source_url": "https://api.github.com/repos/alacritty/alacritty/commits/7dd7b5b09e06ca58daadfb12bd45a9aa8fa716f2?per_page=100",
+  "status_code": 200
+}

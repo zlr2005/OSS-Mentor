@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "chronotope/chrono",
+    "id": 18210201,
+    "language": "Rust",
+    "private": false,
+    "size": 5114
+  },
+  "observed_at": "2026-10-26T06:09:06.519121+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a244752cd2e3031c312db9e1a0b3f573ff04fb06ff18de7d6c020e7e79da2519",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "32213dfa2e9ed520708ea8f47c22a74451a502038abd0a58a47ecd6122ab1936",
+  "source_url": "https://api.github.com/repos/chronotope/chrono",
+  "status_code": 200
+}

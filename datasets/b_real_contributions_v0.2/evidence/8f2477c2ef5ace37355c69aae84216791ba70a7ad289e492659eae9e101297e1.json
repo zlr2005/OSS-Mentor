@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "zed-industries/zed",
+    "id": 340547520,
+    "language": "Rust",
+    "private": false,
+    "size": 550249
+  },
+  "observed_at": "2026-10-26T15:53:27.091688+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c1ca78add9a4b91c91e11a8f2db642175cbd18d1ef88dbf6384a23105bef21e1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1b58e9982f54ea9d43b0872798dcfc2ddd63580b21d19ddfd2dc6fbde6d4f011",
+  "source_url": "https://api.github.com/repos/zed-industries/zed",
+  "status_code": 200
+}

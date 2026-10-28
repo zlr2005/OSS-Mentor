@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b5a143545267be325b05d9a420358fde9da958fa",
+    "size": 7271
+  },
+  "observed_at": "2026-10-26T08:04:49.618366+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "abb596aed6fcf70dff8b5c09337c0b3d90d89c2ef479970a9ef977126c474907",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6f2e1852bb90567d2bf44820dc39b8c2180ca51d24f19358a347ace442ea469b",
+  "source_url": "https://api.github.com/repos/markdown-it/markdown-it/git/blobs/b5a143545267be325b05d9a420358fde9da958fa",
+  "status_code": 200
+}

@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "b1fa7600fba6cc2d94bb073096e2ce7bedaf0186",
+    "size": 16961
+  },
+  "observed_at": "2026-10-26T05:16:14.747700+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "501f586a6040c1dfc47ce6945660de7ff5fff7d99eb0e740088ccd8ac0f2b7ef",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d2f944dc0cc6bba28d019403fc437b5f885c5635fb4216d1d9b6065c3c4b8a22",
+  "source_url": "https://api.github.com/repos/apache/iceberg/git/blobs/b1fa7600fba6cc2d94bb073096e2ce7bedaf0186",
+  "status_code": 200
+}

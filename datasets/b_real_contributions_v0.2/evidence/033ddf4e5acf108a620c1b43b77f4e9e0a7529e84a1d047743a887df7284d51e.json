@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "DioxusLabs/dioxus",
+    "id": 329782568,
+    "language": "Rust",
+    "private": false,
+    "size": 57258
+  },
+  "observed_at": "2026-10-26T06:20:54.252737+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "42fc44a25abcfa1218caf41a8733a6ba42e25962946d468e816a2351d1b0c478",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "11d4cbb43e64b861947ee39ddbd950d3d2a9bd2d34f2ffe4819f6d7b1f0e6425",
+  "source_url": "https://api.github.com/repos/DioxusLabs/dioxus",
+  "status_code": 200
+}

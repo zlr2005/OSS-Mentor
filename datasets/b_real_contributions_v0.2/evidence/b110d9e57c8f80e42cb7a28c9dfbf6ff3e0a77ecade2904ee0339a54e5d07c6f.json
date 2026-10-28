@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "d3bb295a8be31490659d97d19671aa9bec6b7716",
+    "size": 53278
+  },
+  "observed_at": "2026-10-26T13:24:33.996919+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "249877cec3dbe241e1214831994c51391668ad23613541d91635966f2b7f5550",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "86858fe9d30f3df70487f40d03a5dd472fc4bb142293184cb3f23492ffd1ef17",
+  "source_url": "https://api.github.com/repos/ratatui/ratatui/git/blobs/d3bb295a8be31490659d97d19671aa9bec6b7716",
+  "status_code": 200
+}

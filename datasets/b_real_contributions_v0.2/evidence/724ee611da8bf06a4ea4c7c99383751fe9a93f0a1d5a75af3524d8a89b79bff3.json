@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c61d66f5a8c407d57d4cb304760f04931dffe452",
+    "size": 1513
+  },
+  "observed_at": "2026-10-26T06:51:04.699816+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "aeb490fb6804c5c7712515809851f10cd5923473ce64e62f86dfe6cfef703930",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "292123d66baf05625f0841324a81a2da50a24cf608866c3a5fa1f18499155b53",
+  "source_url": "https://api.github.com/repos/freeCodeCamp/freeCodeCamp/git/blobs/c61d66f5a8c407d57d4cb304760f04931dffe452",
+  "status_code": 200
+}

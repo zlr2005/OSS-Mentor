@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1243153,
+      "login": "dicej",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-05T16:46:34Z",
+      "committer_at": "2026-10-05T16:46:34Z",
+      "tree_sha": "631e1ddaa37d73c162b540d68846299d87bbb105"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "af68085f747c4a57012393a7282932f96aaa0241"
+  },
+  "observed_at": "2026-10-26T15:11:58.262651+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d2c2974b21cfb1ef9cb5dc63608c5d4f1d08c114205594e7918810cafa48b214",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "258a89c192b38bea66cef427f98061d27940b6b8dc5551e869351b1af6594cbc",
+  "source_url": "https://api.github.com/repos/tokio-rs/mio/commits/af68085f747c4a57012393a7282932f96aaa0241?per_page=100",
+  "status_code": 200
+}

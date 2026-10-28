@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "920537a7fcccbfab174ea731c600248b6dd650bc",
+    "size": 10240
+  },
+  "observed_at": "2026-10-27T12:56:38.393843+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "29f143575912d7b1f44cdaf23c578519cffa4138f43e78bdb49980aedca386e8",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d3b73d701ba0dbd0c7e7cbd131e10cd60ea48031072fa4ac32947f107ea25031",
+  "source_url": "https://api.github.com/repos/chronotope/chrono/git/blobs/920537a7fcccbfab174ea731c600248b6dd650bc",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 54961032,
+      "login": "uozalp",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T20:04:41Z",
+      "committer_at": "2026-10-17T20:04:41Z",
+      "tree_sha": "0fd5effb8243292a2e8fb3747638bf7b1bd87e5a"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "aeecafaadcc41596dae517616eed71bdc98ff000"
+  },
+  "observed_at": "2026-10-26T06:19:29.087861+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "6bdedd046adc7e031b41ccdcd699e970cec66bd40e241888be3535a293fc0b41",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "cfd9fa5bf7259ced34e437e540f92c91623f43cd127c9eab64169996511faf51",
+  "source_url": "https://api.github.com/repos/derailed/k9s/commits/aeecafaadcc41596dae517616eed71bdc98ff000?per_page=100",
+  "status_code": 200
+}

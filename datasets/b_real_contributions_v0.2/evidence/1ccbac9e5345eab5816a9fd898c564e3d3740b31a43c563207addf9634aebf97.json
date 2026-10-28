@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 38270282,
+      "login": "alexr00",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T11:22:55Z",
+      "committer_at": "2026-10-22T11:22:55Z",
+      "tree_sha": "7a037bdeb0b4a65de5a22ff80329dd3b7bc95039"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b11d422f4438bdb0cc50bd1efe7b443e15d2aba1"
+  },
+  "observed_at": "2026-10-26T08:20:55.402499+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "45341a953e71264ba70230d41604516a4a87f85fc9ff08c08372a1773dcdd0e5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0cb3a82fbfd39aecf112717f237f9d83ea20749c04f71d93e9bed1933763cca5",
+  "source_url": "https://api.github.com/repos/microsoft/vscode-pull-request-github/commits/b11d422f4438bdb0cc50bd1efe7b443e15d2aba1?per_page=100",
+  "status_code": 200
+}

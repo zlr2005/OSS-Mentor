@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6473,
+      "login": "joshgoebel",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-08-19T01:57:10Z",
+      "committer_at": "2026-08-19T01:57:10Z",
+      "tree_sha": "0e2ec249f3db241dfd63261f7defb99b3d2d4f76"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "0bc57cfcfb7eab3de7b9ed07e51ff02f6dca441f"
+  },
+  "observed_at": "2026-10-26T07:23:16.462647+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "11f46c21df73707355d59b7d3ef8032c12c52905aedb00f5f5c75be5718620b1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0c3172f1a8476702657852fa00f3f7546a00c4d7aa8c5f10a1c5e07284a1839a",
+  "source_url": "https://api.github.com/repos/highlightjs/highlight.js/commits/0bc57cfcfb7eab3de7b9ed07e51ff02f6dca441f?per_page=100",
+  "status_code": 200
+}

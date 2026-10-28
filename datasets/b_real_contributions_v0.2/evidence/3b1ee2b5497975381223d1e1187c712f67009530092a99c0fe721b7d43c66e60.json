@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1784740,
+      "login": "thewilkybarkid",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2024-10-16T17:07:35Z",
+      "committer_at": "2024-10-16T17:07:35Z",
+      "tree_sha": "fe0057846ae1be6064e3d87640d38622b269d212"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "fa5f233e99458478fa5b18e77d953996e0b7a078"
+  },
+  "observed_at": "2026-10-27T14:46:34.929245+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1c1fe35b1dd468d73451f602d0c37babcbb2fba818eb32467c14b5694814f3dc",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "47f0c864a295cf382a059fad366b79a6061c0d7bb47f99c1c3ed60d34fa11ad5",
+  "source_url": "https://api.github.com/repos/npm/make-fetch-happen/commits/fa5f233e99458478fa5b18e77d953996e0b7a078?per_page=100",
+  "status_code": 200
+}

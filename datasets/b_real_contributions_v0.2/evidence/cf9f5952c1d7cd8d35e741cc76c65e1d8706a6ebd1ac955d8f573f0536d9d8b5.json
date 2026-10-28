@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "dtolnay/anyhow",
+    "id": 212936374,
+    "language": "Rust",
+    "private": false,
+    "size": 1102
+  },
+  "observed_at": "2026-10-26T06:21:53.644000+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "07a6eb473752e8ccfc4c1927e41dac39e22dc9ab5e3d096df81793a646f9e028",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "3b0bf66751b666c27b892056cc5eefc6261baecb7a349d44bd87eff958e104d5",
+  "source_url": "https://api.github.com/repos/dtolnay/anyhow",
+  "status_code": 200
+}

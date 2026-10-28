@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 185199662,
+      "login": "20ns",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-08T14:42:09Z",
+      "committer_at": "2026-10-08T14:42:09Z",
+      "tree_sha": "d756b55c5bc001825f84c12c4468027d1dd425e4"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "ee5d12846e3263b64eee6f65222280af54096ae8"
+  },
+  "observed_at": "2026-10-26T08:23:12.089388+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b3b99dbb4ade786863051c89e525dd5be7321bb13f490097aa690becfb91d011",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "0416b33e0aee64d3b2dd1cef72d71d8995c1deea74f2b693cb589a5083bbb626",
+  "source_url": "https://api.github.com/repos/mochajs/mocha/commits/ee5d12846e3263b64eee6f65222280af54096ae8?per_page=100",
+  "status_code": 200
+}

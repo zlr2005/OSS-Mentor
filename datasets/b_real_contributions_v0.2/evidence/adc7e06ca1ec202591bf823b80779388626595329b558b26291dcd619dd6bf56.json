@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/druid",
+    "id": 6358188,
+    "language": "Java",
+    "private": false,
+    "size": 439563
+  },
+  "observed_at": "2026-10-26T05:09:09.566825+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "ab28dd11a1ee6f8b8c462a5fb2e4c41c641a683ef5a6f4ab6be67613031f31a6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4916cc428c629086ae5666830b4c86a64c4afe4725ec088fc48c117f9a644ef4",
+  "source_url": "https://api.github.com/repos/apache/druid",
+  "status_code": 200
+}

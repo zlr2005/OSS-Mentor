@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 114552983,
+      "login": "guhou-hvi",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-01T16:43:50Z",
+      "committer_at": "2026-10-02T17:57:29Z",
+      "tree_sha": "521adbfda61594ebe78930a1d2b2a8292f622698"
+    },
+    "committer": {
+      "id": 1909233,
+      "login": "Tinche",
+      "type": "User"
+    },
+    "sha": "2c6cf5b9f6fefdb6c6d78244bb836e48c14fe482"
+  },
+  "observed_at": "2026-10-26T13:16:25.275616+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0178321e631f408fcd4a8bc6f7c7a75c135d6b8ce5f5468c1e7c4cd1eddc9fed",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "910ac93064d375e03bf7a0511d3db8017ad681f91fa9635f1ac20722850cfede",
+  "source_url": "https://api.github.com/repos/python-attrs/cattrs/commits/2c6cf5b9f6fefdb6c6d78244bb836e48c14fe482?per_page=100",
+  "status_code": 200
+}

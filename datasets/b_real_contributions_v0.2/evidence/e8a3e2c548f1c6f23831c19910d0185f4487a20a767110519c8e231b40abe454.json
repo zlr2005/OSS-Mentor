@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "NOASSERTION",
+    "full_name": "pmd/pmd",
+    "id": 4992906,
+    "language": "Java",
+    "private": false,
+    "size": 610957
+  },
+  "observed_at": "2026-10-26T08:47:07.364481+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "614fdf4a31794b038ae1f0c2ff613417f8483e6b09c227fb458aac673e4a9a9b",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8d640cf25c346d1c0021e02bb7a1681e50d5d0738589977dca2e6484ed5da1d8",
+  "source_url": "https://api.github.com/repos/pmd/pmd",
+  "status_code": 200
+}

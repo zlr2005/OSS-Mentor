@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 20343323,
+      "login": "a-googler",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T21:22:25Z",
+      "committer_at": "2026-10-22T21:23:49Z",
+      "tree_sha": "88a5dcac492045c23c23b04caa30575b82985659"
+    },
+    "committer": {
+      "id": 32201506,
+      "login": "copybara-github",
+      "type": "User"
+    },
+    "sha": "8f4ca2cbf3d72118d7256574ea525f8424a971e4"
+  },
+  "observed_at": "2026-10-26T07:03:27.901240+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "85084327da8a53cda0bcda4e1b16d454db9f52c79c8d42e4f3cfbb3d6accd509",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "11ebe26634f5dd4fb206157981dbdfd5c9075889e2a30b35dc92b3706bcf1708",
+  "source_url": "https://api.github.com/repos/google/closure-compiler/commits/8f4ca2cbf3d72118d7256574ea525f8424a971e4?per_page=100",
+  "status_code": 200
+}

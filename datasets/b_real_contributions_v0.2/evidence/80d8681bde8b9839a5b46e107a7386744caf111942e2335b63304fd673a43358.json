@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "a23cad00285c74d145a4bf5c6900af98aa385529",
+    "size": 22258
+  },
+  "observed_at": "2026-10-26T08:49:57.418569+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "91e7f80e41d3115e133e4932f45bf6e630b5ceec514e95d97286b2d967dedf03",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "451f7a4806e2a7f7f0834c5031c9ed7457bbd1ee39d7a75fb1a98667fcc7097b",
+  "source_url": "https://api.github.com/repos/pola-rs/polars/git/blobs/a23cad00285c74d145a4bf5c6900af98aa385529",
+  "status_code": 200
+}

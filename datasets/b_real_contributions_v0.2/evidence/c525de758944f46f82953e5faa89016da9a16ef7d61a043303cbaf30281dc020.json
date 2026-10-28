@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 49699333,
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-18T15:32:21Z",
+      "committer_at": "2026-10-18T15:32:21Z",
+      "tree_sha": "c52849b924268aca7868e53e300a34274556bacd"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f662d75523954c83a379f1e2d09596e4c44fd236"
+  },
+  "observed_at": "2026-10-26T05:44:20.319210+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0df4a47a43e9566a1f6d870b134c7dafdcb8d2cf58ef2ff43487d87dac3df2c6",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "28538a1d9a399098d9159d6fc5fe3f1adbd8732917689c6de875f1cb409dad47",
+  "source_url": "https://api.github.com/repos/assertj/assertj/commits/f662d75523954c83a379f1e2d09596e4c44fd236?per_page=100",
+  "status_code": 200
+}

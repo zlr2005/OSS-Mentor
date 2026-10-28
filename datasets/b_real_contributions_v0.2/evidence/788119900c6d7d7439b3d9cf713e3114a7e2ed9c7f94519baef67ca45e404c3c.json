@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 21273221,
+      "login": "ftnext",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2025-09-05T14:30:31Z",
+      "committer_at": "2025-09-05T14:30:31Z",
+      "tree_sha": "089db5e2dc8ce5640978f359a115604c6dc2e3bc"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "3fee27838e9fd0cb528861e41f3ff98164081a4b"
+  },
+  "observed_at": "2026-10-26T06:32:13.522856+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "60093d3095f0882d06b4f9e4d7952c4b576b33dd77a309b07796ef3dc86bc495",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "959f9fdd36eb359f0956b27d62122245642e3a1da1c2a8bb15898681cafde4cb",
+  "source_url": "https://api.github.com/repos/encode/httpx/commits/3fee27838e9fd0cb528861e41f3ff98164081a4b?per_page=100",
+  "status_code": 200
+}

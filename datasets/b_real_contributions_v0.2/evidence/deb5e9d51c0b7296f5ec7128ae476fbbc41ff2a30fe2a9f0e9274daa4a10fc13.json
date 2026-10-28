@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "afdeac5bfa4fd8561d78cbb6216197e1706afc69",
+    "size": 11359
+  },
+  "observed_at": "2026-10-26T14:49:16.057892+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "dc654e1feeb8766ae8a86315ab5bb8f0606081c87d0803f27e6a3b7e19a5baac",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2383aa255d3c2d0e579eb1c0ef142caf5b3f1d31e9fb255879ec8f9d6cb3c23c",
+  "source_url": "https://api.github.com/repos/swagger-api/swagger-core/git/blobs/afdeac5bfa4fd8561d78cbb6216197e1706afc69",
+  "status_code": 200
+}

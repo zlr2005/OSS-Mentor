@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "microsoft/playwright",
+    "id": 221981891,
+    "language": "TypeScript",
+    "private": false,
+    "size": 246061
+  },
+  "observed_at": "2026-10-26T08:11:32.712495+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "abab8def097fb06d22b32c0db2690ea98f7f89d4da8326bc254f7d3f1d29196e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "80c698eb31059cb0b834c0f9fe514ac03599863802ca7d82dcd6945a29e28533",
+  "source_url": "https://api.github.com/repos/microsoft/playwright",
+  "status_code": 200
+}

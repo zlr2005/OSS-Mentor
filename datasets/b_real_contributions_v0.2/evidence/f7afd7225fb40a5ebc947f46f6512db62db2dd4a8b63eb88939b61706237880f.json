@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "87fc6140ae9954ca4c35802f7a1aded044dc8595",
+    "size": 6879
+  },
+  "observed_at": "2026-10-26T07:42:59.089397+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "10a0e6de0e51ae8b08cdcf4ff122bca46b68a72fc022f8faeafdafad7ef0c2b2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "933465a30ed5622d0718ea0590f6c5005bbd4f95efe99b5382d13773f17167a4",
+  "source_url": "https://api.github.com/repos/JabRef/jabref/git/blobs/87fc6140ae9954ca4c35802f7a1aded044dc8595",
+  "status_code": 200
+}

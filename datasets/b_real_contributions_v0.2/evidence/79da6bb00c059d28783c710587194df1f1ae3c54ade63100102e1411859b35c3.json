@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 1202120,
+      "login": "xiangfu0",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T23:28:27Z",
+      "committer_at": "2026-10-23T23:28:27Z",
+      "tree_sha": "aaccb62f58ae00ff115da125f611ae22034d0fb1"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "dc759c51e667286ae9f9fcb0f6e4dc9ddbe34b1f"
+  },
+  "observed_at": "2026-10-26T05:29:44.961773+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "98fd810017eaee4be7103038829944bcd86e4bab8c16f06bf591b74789275f54",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8e5c116023ddbe5c2552d0febd06c73d73b95c79c8a42df61e1fc7f71be6b884",
+  "source_url": "https://api.github.com/repos/apache/pinot/commits/dc759c51e667286ae9f9fcb0f6e4dc9ddbe34b1f?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "langchain-ai/langgraph",
+    "id": 676672661,
+    "language": "Python",
+    "private": false,
+    "size": 530369
+  },
+  "observed_at": "2026-10-26T07:59:57.205456+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "953ebc87514e8a9cc28cf28ebb50b1169d691316726186677704ade79037d6ca",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "c1be9fa38af9883178fc046e9efdc0ca2df21cff417b50c297b208230b5f2ba2",
+  "source_url": "https://api.github.com/repos/langchain-ai/langgraph",
+  "status_code": 200
+}

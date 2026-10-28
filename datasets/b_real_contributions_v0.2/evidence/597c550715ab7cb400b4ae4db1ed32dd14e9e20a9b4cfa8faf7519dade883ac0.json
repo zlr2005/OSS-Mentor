@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 12915102,
+      "login": "krzysdz",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-09T16:24:38Z",
+      "committer_at": "2026-10-09T16:24:38Z",
+      "tree_sha": "5f7326c98990506a948080ff68d593ef9969d028"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "a419aa7350389a275ab45fde2e849ed1f02449ef"
+  },
+  "observed_at": "2026-10-26T06:38:12.308592+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "12a0444d2b87b0e1064e20ecf13c1675e66ef91cb7925f512141f9b18c0098c9",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "32e96046f6611c6397fdf407ceef29df21460c5fe3f1e0a73d24d8a8e6ce1697",
+  "source_url": "https://api.github.com/repos/expressjs/express/commits/a419aa7350389a275ab45fde2e849ed1f02449ef?per_page=100",
+  "status_code": 200
+}

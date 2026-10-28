@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "TanStack/query",
+    "id": 207645083,
+    "language": "TypeScript",
+    "private": false,
+    "size": 141293
+  },
+  "observed_at": "2026-10-26T14:56:14.656345+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "eb4b81c38ca5bcfefed44a6c480d77a0831851969ef709dad6b03af935b7e8b4",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a1139ddcefe9b16f9a5e588b48a0af9bc49b41c509cb7841ac8c665a932605b5",
+  "source_url": "https://api.github.com/repos/TanStack/query",
+  "status_code": 200
+}

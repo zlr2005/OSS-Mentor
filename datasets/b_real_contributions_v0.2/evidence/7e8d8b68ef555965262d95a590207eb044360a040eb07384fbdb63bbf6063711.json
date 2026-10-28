@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "apache/dubbo",
+    "id": 4710920,
+    "language": "Java",
+    "private": false,
+    "size": 61754
+  },
+  "observed_at": "2026-10-26T05:11:11.919888+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e832e506f427c81a74f14525e6c377a15026b1e9078b8b008f42aae095aa714d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "db205275aab00a4f0b847fd3f98a52742adff98dc418f8178bebf265532bb753",
+  "source_url": "https://api.github.com/repos/apache/dubbo",
+  "status_code": 200
+}

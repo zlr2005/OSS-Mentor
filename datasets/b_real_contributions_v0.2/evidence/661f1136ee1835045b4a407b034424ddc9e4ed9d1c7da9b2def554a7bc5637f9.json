@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "ecbc0593737be657aef92e3adcf3bcbd6fdb812e",
+    "size": 18091
+  },
+  "observed_at": "2026-10-27T13:17:08.770060+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d775a598c3a8ea6e7ee681a1c25c98c0b94264cb7666308605b78c2b33dc938d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "70a9bdbb426cf0a5d932f3b643d65994d24091498334d194b6e39ce8f95c6e78",
+  "source_url": "https://api.github.com/repos/facebook/zstd/git/blobs/ecbc0593737be657aef92e3adcf3bcbd6fdb812e",
+  "status_code": 200
+}

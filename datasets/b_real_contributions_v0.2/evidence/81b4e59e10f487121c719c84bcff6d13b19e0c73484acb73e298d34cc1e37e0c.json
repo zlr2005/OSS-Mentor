@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "fe2e44a2440f25d582d3fde6be83c5ef00461c7b",
+    "size": 4848
+  },
+  "observed_at": "2026-10-26T05:15:59.813417+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e5f33413c9356c31d5ee12a3e91abf661af7537317f1c3f4381c3b8079f57fff",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e7ae68416b881ca4cc744c74a36c5a43b830e6c69cde06c4eeff3cbe7dcf554b",
+  "source_url": "https://api.github.com/repos/apache/hudi/git/blobs/fe2e44a2440f25d582d3fde6be83c5ef00461c7b",
+  "status_code": 200
+}

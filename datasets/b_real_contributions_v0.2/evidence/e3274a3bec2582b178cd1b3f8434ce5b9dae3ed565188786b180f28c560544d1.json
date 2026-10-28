@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "6a995568207cc68eb58484e51706f9882d0e1ef5",
+    "size": 6590
+  },
+  "observed_at": "2026-10-27T13:41:05.509421+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8d3a5d8875d6293ead345d3cd222b218cdbcbe259ff35cad974620f7ca322909",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "8814affa1b880ba885398c674f218f80a5dc9e3bdf5e54e0ce6699a97625906c",
+  "source_url": "https://api.github.com/repos/Graylog2/graylog2-server/git/blobs/6a995568207cc68eb58484e51706f9882d0e1ef5",
+  "status_code": 200
+}

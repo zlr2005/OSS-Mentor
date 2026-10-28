@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 194226633,
+      "login": "ania-borowiec",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T08:34:04Z",
+      "committer_at": "2026-10-24T08:34:04Z",
+      "tree_sha": "d8a87941d49da753591e1f756806d9b4e631a0cf"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "102768513626f23c4797733f528525f054ba76c6"
+  },
+  "observed_at": "2026-10-26T07:53:37.408650+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d37ded91f9a4108300f3b9bd24cf8dde15715e835abb0aa3671c9250e91676dd",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "e27d734d328b79b124423076f1a7cd69b477b84103c6caec0e230d660d67be40",
+  "source_url": "https://api.github.com/repos/kubernetes/kubernetes/commits/102768513626f23c4797733f528525f054ba76c6?per_page=100",
+  "status_code": 200
+}

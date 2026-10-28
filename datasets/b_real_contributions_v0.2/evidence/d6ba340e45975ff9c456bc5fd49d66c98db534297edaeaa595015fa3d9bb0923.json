@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "62436a606aaf4b3cc67a3a133afce106d8804604",
+    "size": 1681
+  },
+  "observed_at": "2026-10-26T05:18:12.458972+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d2b1c65aa847a56f406a22512cb510772d91f9b794cc9af2e4499eb52a75b370",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9041a2311a9fdca6b646c87df0b98f09536cae0a4c1b0638038176d3eb657d95",
+  "source_url": "https://api.github.com/repos/apache/inlong/git/blobs/62436a606aaf4b3cc67a3a133afce106d8804604",
+  "status_code": 200
+}

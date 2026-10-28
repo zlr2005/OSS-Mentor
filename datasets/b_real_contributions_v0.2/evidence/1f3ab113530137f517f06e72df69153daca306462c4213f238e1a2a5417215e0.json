@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "BSD-2-Clause",
+    "full_name": "Leaflet/Leaflet",
+    "id": 931135,
+    "language": "JavaScript",
+    "private": false,
+    "size": 60360
+  },
+  "observed_at": "2026-10-26T08:00:46.941592+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0935407b51117b62906daa520af769f0cae10a2ded7f7f9339bdf68a2b27fa3d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "7fd71892d5eb2aa1bcb829a82790907a41eaaa12e157e1b0efe449b2134fc1ec",
+  "source_url": "https://api.github.com/repos/Leaflet/Leaflet",
+  "status_code": 200
+}

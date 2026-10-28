@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "tokio-rs/mio",
+    "id": 23138984,
+    "language": "Rust",
+    "private": false,
+    "size": 3642
+  },
+  "observed_at": "2026-10-26T15:11:42.385780+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "273e86c6d798001dbbd1fc5b4e6aaddc7ce46e407894c264f7fabb667ff6ac4c",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "164da9dd45597ff1f84e3562498a6b0cee55295922cce8ad6d62432c353de555",
+  "source_url": "https://api.github.com/repos/tokio-rs/mio",
+  "status_code": 200
+}

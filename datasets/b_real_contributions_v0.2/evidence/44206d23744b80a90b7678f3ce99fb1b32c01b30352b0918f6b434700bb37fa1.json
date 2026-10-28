@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 795598,
+      "login": "imsnif",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T14:39:03Z",
+      "committer_at": "2026-10-23T14:39:03Z",
+      "tree_sha": "948aa6e8da09ccba752a01ae1ba36ddc69a4cc97"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7014cb440c6cfae80eff2b599e75b38bd63c8a50"
+  },
+  "observed_at": "2026-10-26T15:53:52.159101+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "793a848675af3ac9331705d6a3a724eadfb28785529275cbe11b1dd8a7eca87d",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "abbfe8817cce4b424f3f47016e2715c40b396be46c03d303a1965b71e33a6389",
+  "source_url": "https://api.github.com/repos/zellij-org/zellij/commits/7014cb440c6cfae80eff2b599e75b38bd63c8a50?per_page=100",
+  "status_code": 200
+}

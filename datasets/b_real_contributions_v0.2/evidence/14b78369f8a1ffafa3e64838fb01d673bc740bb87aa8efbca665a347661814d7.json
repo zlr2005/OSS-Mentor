@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 355292,
+      "login": "leeturner",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T10:16:44Z",
+      "committer_at": "2026-10-21T10:16:44Z",
+      "tree_sha": "05e2b9192fd7de3de437d0e0e3c27ac8177722df"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "cb8fb550f0b78b6b72518d56aea49f241b80c12c"
+  },
+  "observed_at": "2026-10-26T15:50:35.973250+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "b0a99e1d7e90b78fb411471049172ad2a7c605c1989db4a806cd131042276067",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "2996e57059109f297352b92c3d748ef92a012b6c552a3829d428cbce197940a7",
+  "source_url": "https://api.github.com/repos/wiremock/wiremock/commits/cb8fb550f0b78b6b72518d56aea49f241b80c12c?per_page=100",
+  "status_code": 200
+}

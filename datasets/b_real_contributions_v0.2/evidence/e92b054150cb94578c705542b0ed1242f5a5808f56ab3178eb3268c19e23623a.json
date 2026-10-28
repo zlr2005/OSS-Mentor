@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "pypa/wheel",
+    "id": 98346885,
+    "language": "Python",
+    "private": false,
+    "size": 1926
+  },
+  "observed_at": "2026-10-26T13:12:07.567606+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e134db2489d9e904980fa5fb02f9e7c5a44af475224606019996185580b0361a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fb2eaaf4d0ce4d1b637e5aeaa75d723d9f0c7aa5ede5f8e1022fa70eb1725be8",
+  "source_url": "https://api.github.com/repos/pypa/wheel",
+  "status_code": 200
+}

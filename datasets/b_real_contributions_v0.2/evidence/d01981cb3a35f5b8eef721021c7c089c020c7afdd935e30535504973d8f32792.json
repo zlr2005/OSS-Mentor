@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "67368cfb22d74311df0ef9076a9d090e51174632",
+    "size": 69599
+  },
+  "observed_at": "2026-10-27T16:34:07.826381+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c53e0d41caddef6245209a8cd227c6298ab7c8f067da725229d3a4a4a8f8ac90",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f3067bdc5a68921a6b8d8e6b6b5b9c90fc8a8caf5da342bbac2bcefe4a99ac81",
+  "source_url": "https://api.github.com/repos/wezterm/wezterm/git/blobs/67368cfb22d74311df0ef9076a9d090e51174632",
+  "status_code": 200
+}

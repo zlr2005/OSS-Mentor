@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 9106997,
+      "login": "MichaelEischer",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T20:42:08Z",
+      "committer_at": "2026-10-17T20:57:11Z",
+      "tree_sha": "786958b225d4848c9aa721f1d75580c8f6dda809"
+    },
+    "committer": {
+      "id": 9106997,
+      "login": "MichaelEischer",
+      "type": "User"
+    },
+    "sha": "5d745e2ead1f122f90ba00be9d72f5121c33133a"
+  },
+  "observed_at": "2026-10-26T13:45:02.846294+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "bd2a172bfe826c20bf88979a17271b2979e68c715f1af2b6c68fd26ea8585dfa",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1cfbbb1dfab114d9b58abc64293ab4c8210dd1d721dbf13451bcd0d2daa6b137",
+  "source_url": "https://api.github.com/repos/restic/restic/commits/5d745e2ead1f122f90ba00be9d72f5121c33133a?per_page=100",
+  "status_code": 200
+}

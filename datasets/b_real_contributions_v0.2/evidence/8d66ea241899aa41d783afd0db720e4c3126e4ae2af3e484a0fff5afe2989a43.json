@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "59a5a84bfd98dec9fe328ac7d10fc6acc606f9e6",
+    "size": 112728
+  },
+  "observed_at": "2026-10-26T05:03:29.144408+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5323f129ed32a5e391b756c01e55fee09ff2e790b33d293efb276e14cb02e435",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1551c3e1250ad1799ec325f858dbf83213dc32e278c3f418d2913c5ff7053171",
+  "source_url": "https://api.github.com/repos/alacritty/alacritty/git/blobs/59a5a84bfd98dec9fe328ac7d10fc6acc606f9e6",
+  "status_code": 200
+}

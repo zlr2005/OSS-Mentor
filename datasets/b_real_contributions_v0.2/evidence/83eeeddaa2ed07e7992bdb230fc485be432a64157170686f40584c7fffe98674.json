@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "argoproj/argo-cd",
+    "id": 120896210,
+    "language": "Go",
+    "private": false,
+    "size": 229984
+  },
+  "observed_at": "2026-10-26T05:41:56.114404+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "8592fd82b71fbb32a990fb09faa6b4b907d11df1909f021d99a60a14370102d5",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "892681db978c3b264a79bb2ab0ace05a4d7cd7061955467eb3ff535922682020",
+  "source_url": "https://api.github.com/repos/argoproj/argo-cd",
+  "status_code": 200
+}

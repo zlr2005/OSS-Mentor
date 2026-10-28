@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "alibaba/fastjson2",
+    "id": 482425877,
+    "language": "Java",
+    "private": false,
+    "size": 135169
+  },
+  "observed_at": "2026-10-26T05:03:42.867104+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "86f79be16267a23caca3b87502ed36180899916eb480d3ff556c551a2589d943",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f633440ec69986ed0e1c75b59bb7ec7f6fca14023d71c5dda08a91d918f0cb9a",
+  "source_url": "https://api.github.com/repos/alibaba/fastjson2",
+  "status_code": 200
+}

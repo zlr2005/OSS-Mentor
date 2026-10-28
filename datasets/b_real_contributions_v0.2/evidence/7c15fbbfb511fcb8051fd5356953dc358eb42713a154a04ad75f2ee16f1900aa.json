@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "7146ba6774279cceb30cffa54ab5b017d26a5c87",
+    "size": 12161
+  },
+  "observed_at": "2026-10-26T14:17:27.010876+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "64d95c242fac7f9787ef3191769c05ca3c6235b4187b65c6464c0b0478a9cf54",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "1e4968b61273434a861353bd85c3f057f5bca291b811c87a0aaffb0d8460c7fb",
+  "source_url": "https://api.github.com/repos/spring-projects/spring-boot/git/blobs/7146ba6774279cceb30cffa54ab5b017d26a5c87",
+  "status_code": 200
+}

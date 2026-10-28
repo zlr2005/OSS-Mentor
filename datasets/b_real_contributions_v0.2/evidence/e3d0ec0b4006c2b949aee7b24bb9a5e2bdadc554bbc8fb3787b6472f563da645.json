@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "traefik/traefik",
+    "id": 42408804,
+    "language": "Go",
+    "private": false,
+    "size": 163220
+  },
+  "observed_at": "2026-10-26T15:18:35.058113+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "88b26f69d178896d0b86338153936af3877b54d04c70124fbb85b5ab1e1d81d0",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "331cde3149bf2761432d4a96019ab5220ab166dd9a53d2286e73db4d44715345",
+  "source_url": "https://api.github.com/repos/traefik/traefik",
+  "status_code": 200
+}

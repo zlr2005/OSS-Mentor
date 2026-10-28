@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "e3f7cbb3cf7099fd75665305dc980141fdc55bb4",
+    "size": 5955
+  },
+  "observed_at": "2026-10-26T06:05:17.532685+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "e7e16e96122c91c5dc36dbfe11ada5b0bfabfbeea30a89f2bbecffa85edb949a",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "95b46b0c82f7ad4766a569fb81553215e4f6446f6793c3dd95f97f41a472e2e3",
+  "source_url": "https://api.github.com/repos/chartjs/Chart.js/git/blobs/e3f7cbb3cf7099fd75665305dc980141fdc55bb4",
+  "status_code": 200
+}

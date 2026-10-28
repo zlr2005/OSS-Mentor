@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "c3859a359d65fd0938da78d297eb09b3d17c398a",
+    "size": 6663
+  },
+  "observed_at": "2026-10-26T06:52:55.636618+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1556d4fc5c80ac3096efa501cb7ccd1698e4d68ce96c314b75da2e51ccdbd705",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b70a4c843e229336c45fc003e593f9540e1e5920404746938f822786f40d3604",
+  "source_url": "https://api.github.com/repos/gin-gonic/gin/git/blobs/c3859a359d65fd0938da78d297eb09b3d17c398a",
+  "status_code": 200
+}

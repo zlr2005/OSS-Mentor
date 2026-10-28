@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "EPL-2.0",
+    "full_name": "junit-team/junit-framework",
+    "id": 29102367,
+    "language": "Java",
+    "private": false,
+    "size": 44554
+  },
+  "observed_at": "2026-10-26T07:47:46.037293+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "42f00573ca1112fc164488cf2639c58dc56ae827400e77b9777e056d9b64d30e",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "57fd96948298fd3b5df968864c3ebe53da7b5fa380016600a49016135beaf930",
+  "source_url": "https://api.github.com/repos/junit-team/junit-framework",
+  "status_code": 200
+}

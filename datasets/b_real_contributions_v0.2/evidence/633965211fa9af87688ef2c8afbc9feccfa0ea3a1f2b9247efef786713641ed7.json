@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "68dcb5021f4b8afcae1c909362962e5f2cd17156",
+    "size": 1799
+  },
+  "observed_at": "2026-10-26T15:51:13.784675+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "a1aaf42743a5f2bab2113b3230a2250fc64e4eca37248d0b8f21b1287af26db2",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f0964e84c1689766863063bcdc435784754c35540be1b7190d45d618a0c31ef1",
+  "source_url": "https://api.github.com/repos/wiremock/wiremock/git/blobs/68dcb5021f4b8afcae1c909362962e5f2cd17156",
+  "status_code": 200
+}

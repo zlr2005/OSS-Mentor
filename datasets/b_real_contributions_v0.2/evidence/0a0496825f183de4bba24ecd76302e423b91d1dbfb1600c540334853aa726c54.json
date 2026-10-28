@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "f354c57d7d58e3b6244f28f1d9925af3ffd7fb87",
+    "size": 16529
+  },
+  "observed_at": "2026-10-26T06:40:06.219485+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "072ba250a96b1d9552539bc2310510deda297736cc3b2752438ff14f863d3b44",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "4a686b9ad26ea9074ee1297865e66d8db704c0dee5c146ce8d9cad53b2be8359",
+  "source_url": "https://api.github.com/repos/eza-community/eza/git/blobs/f354c57d7d58e3b6244f28f1d9925af3ffd7fb87",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "go-chi/chi",
+    "id": 44344606,
+    "language": "Go",
+    "private": false,
+    "size": 3848
+  },
+  "observed_at": "2026-10-26T06:54:10.884791+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "42bf8aa4c7950b8589f8094806c82d918f55859d1bd568ff612f110dc40df194",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "a68676a2cfccd6dd93ad041b5c92fe522d9cd151f466fc654798a4419d8e1545",
+  "source_url": "https://api.github.com/repos/go-chi/chi",
+  "status_code": 200
+}

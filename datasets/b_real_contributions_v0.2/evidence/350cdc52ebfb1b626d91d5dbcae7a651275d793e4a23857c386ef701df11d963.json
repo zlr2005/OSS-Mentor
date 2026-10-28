@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 167124277,
+      "login": "cert-manager-prow[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-24T19:30:37Z",
+      "committer_at": "2026-10-24T19:30:37Z",
+      "tree_sha": "be45ae122ed6e6f1fc0033d43388174ca55c867c"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "fe479f2a86f21f0e516fea6fc47600deaf2e0c4f"
+  },
+  "observed_at": "2026-10-26T06:03:07.739530+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "5ffd9b0212f92a5d875ac4cc232a21b10e30fdac40ec32232a3c30855386e45f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d2bceb065a971ce4b3e8c0c0716e70a2ba5091ee2685a2d2feb29b5dcc6dac3e",
+  "source_url": "https://api.github.com/repos/cert-manager/cert-manager/commits/fe479f2a86f21f0e516fea6fc47600deaf2e0c4f?per_page=100",
+  "status_code": 200
+}

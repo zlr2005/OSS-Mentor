@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 16079446,
+      "login": "JackieTien97",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-24T00:56:09Z",
+      "committer_at": "2026-10-24T00:56:09Z",
+      "tree_sha": "36638866681ee49c3e7dd7067d007b4f51536231"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7ce3d58c3db0d1b78b44dc072611b585f3a18aad"
+  },
+  "observed_at": "2026-10-26T05:19:47.518925+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "4992da8afc7baeacf95c686158962ac959bae325b3b03a7942895e927951eb41",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "5320a145333f20cfb0a2bb370e65a4069473de0ba87a1e51c2625673eb087ba6",
+  "source_url": "https://api.github.com/repos/apache/iotdb/commits/7ce3d58c3db0d1b78b44dc072611b585f3a18aad?per_page=100",
+  "status_code": 200
+}

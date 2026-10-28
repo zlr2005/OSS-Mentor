@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 181008794,
+      "login": "kubernetes-prow[bot]",
+      "type": "Bot"
+    },
+    "commit": {
+      "author_at": "2026-10-23T17:51:00Z",
+      "committer_at": "2026-10-23T17:51:00Z",
+      "tree_sha": "2b241f8c892c1b17ec35f7750b650233df2fc3a0"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "b5a25d613ded192a41bcce303d23915e66a8ea93"
+  },
+  "observed_at": "2026-10-26T07:54:45.029377+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "56a506fd58a5fd9f1d5b3118c1aa2a7cbed2af339b549d928a8f56fede4714be",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "b6117af84060f49878ac3bbaa9dab6f44bcc7ffe33c03b8edfc90aa91f44884b",
+  "source_url": "https://api.github.com/repos/kubernetes/kubernetes/commits/b5a25d613ded192a41bcce303d23915e66a8ea93?per_page=100",
+  "status_code": 200
+}

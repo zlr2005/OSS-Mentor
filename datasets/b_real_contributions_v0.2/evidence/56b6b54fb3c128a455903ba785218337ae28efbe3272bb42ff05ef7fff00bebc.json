@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 35768171,
+      "login": "zeertzjq",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T00:21:28Z",
+      "committer_at": "2026-10-25T00:21:28Z",
+      "tree_sha": "41c44b4df31c78cc5eb2e51632b981c49fd92d70"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "876fd6f9e61e139bb705f6d3c7ae0432a47d6dcc"
+  },
+  "observed_at": "2026-10-27T14:26:49.826969+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "fee16f1fad3742ea91ea96b41d2da40a09c224a2fe5f2e36758102354f513ded",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6ab18421b07f72bedab6d726ff251087cb98ab28c4cf28d950279ea08e7f617d",
+  "source_url": "https://api.github.com/repos/neovim/neovim/commits/876fd6f9e61e139bb705f6d3c7ae0432a47d6dcc?per_page=100",
+  "status_code": 200
+}

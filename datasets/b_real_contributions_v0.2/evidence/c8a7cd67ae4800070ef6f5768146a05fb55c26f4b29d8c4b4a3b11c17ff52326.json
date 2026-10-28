@@ -1,0 +1,14 @@
+{
+  "fields": {
+    "encoding": "base64",
+    "sha": "0744f229d697ca3ed1b1b257bfdb70e3eecf0b9e",
+    "size": 7885
+  },
+  "observed_at": "2026-10-27T16:20:47.057219+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "71ea1da1afe7f4204de122fa02ef415ddf5461c476990b39242c5a9af784bd56",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "6bfd46e3b6b95417e940673233d13b29ac2d8f684e51cfb445749248a089a852",
+  "source_url": "https://api.github.com/repos/sympy/sympy/git/blobs/0744f229d697ca3ed1b1b257bfdb70e3eecf0b9e",
+  "status_code": 200
+}

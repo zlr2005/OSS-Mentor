@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 106037,
+      "login": "filbranden",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T01:07:57Z",
+      "committer_at": "2026-10-22T01:07:57Z",
+      "tree_sha": "0fe3293f9f3ddcba977e8ea08eecaa51578de062"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7bbe76369a9454d1d79b5cfb0ee4cb8d2b76f614"
+  },
+  "observed_at": "2026-10-26T13:08:36.818287+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "1ebcc56e2ca75a074ca855eec1184d3e2d05efca17c93628e8d1b147b2c89d73",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "fd4080699ad0ba8dfe2510c9a968d8c58379e8430d733450b7d1f4979c89cfdb",
+  "source_url": "https://api.github.com/repos/pypa/hatch/commits/7bbe76369a9454d1d79b5cfb0ee4cb8d2b76f614?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "Apache-2.0",
+    "full_name": "kestra-io/kestra",
+    "id": 204164353,
+    "language": "Java",
+    "private": false,
+    "size": 148721
+  },
+  "observed_at": "2026-10-26T07:50:35.234924+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "74211434d5c06637148470f4689911431c90ad41fe7eb03a7cd6100bb0b18fe1",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9302a5a61a7b83c8548470a89ba7637e64c708fbe08e7a8550e8b79db754435f",
+  "source_url": "https://api.github.com/repos/kestra-io/kestra",
+  "status_code": 200
+}

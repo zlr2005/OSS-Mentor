@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 179014267,
+      "login": "oxura",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-17T12:02:25Z",
+      "committer_at": "2026-10-17T12:02:25Z",
+      "tree_sha": "7c716f77b99df33072ca700046cdee63320ee7a9"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "092d13954b2a1509a1356bbeb5292a2dca36c04b"
+  },
+  "observed_at": "2026-10-27T15:57:52.171934+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "0270bf3d8cb69ecdec16decb8e0595802515d1488d007aa7dedeeb7298db4f06",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "d345e6eacd1dfc201ce932eadc9eb0b6b8d3b53a9d9b0e8a901a8e24f3c552d1",
+  "source_url": "https://api.github.com/repos/rollup/rollup/commits/092d13954b2a1509a1356bbeb5292a2dca36c04b?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 6950331,
+      "login": "bwplotka",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-23T07:58:54Z",
+      "committer_at": "2026-10-23T09:50:39Z",
+      "tree_sha": "cdc25d87f54f88af0b92e0829bfc6c7142ec195c"
+    },
+    "committer": {
+      "id": 6950331,
+      "login": "bwplotka",
+      "type": "User"
+    },
+    "sha": "632a351b6b1e4bb004984ccbc702b08f9f44c71c"
+  },
+  "observed_at": "2026-10-26T13:00:37.168269+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "22c0fb576f5014f905d5a03c83f2fdb3ded1754d9005b280510fddeb950b7000",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "f480bb4354b5c7a32c122b9cff2dc45882277155a8abf8031601727a0706c610",
+  "source_url": "https://api.github.com/repos/prometheus/prometheus/commits/632a351b6b1e4bb004984ccbc702b08f9f44c71c?per_page=100",
+  "status_code": 200
+}

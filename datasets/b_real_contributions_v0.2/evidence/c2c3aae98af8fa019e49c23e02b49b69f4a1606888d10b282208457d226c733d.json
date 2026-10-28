@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 65120973,
+      "login": "Isalia20",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-25T19:46:24Z",
+      "committer_at": "2026-10-25T23:21:36Z",
+      "tree_sha": "4d3bdc60beaf5b9918e1394edd443b71fb28f2b1"
+    },
+    "committer": {
+      "id": 97764156,
+      "login": "pytorchmergebot",
+      "type": "User"
+    },
+    "sha": "0dec1a3d7bcbe2e1b90c39168234a8056e7348c6"
+  },
+  "observed_at": "2026-10-27T15:37:34.836593+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "d48f1235b4615193ec9fc1b48af070dd980443d53ed771a33a110cc8abe21448",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "9e77d7f521f0132d899cba7f59f7cfa542316373951a2b8ee6ffe6262a78f0d8",
+  "source_url": "https://api.github.com/repos/pytorch/pytorch/commits/0dec1a3d7bcbe2e1b90c39168234a8056e7348c6?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 194859478,
+      "login": "DivyamTalwar",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-22T15:00:39Z",
+      "committer_at": "2026-10-22T15:00:39Z",
+      "tree_sha": "30b7aa2b0a640f58fab3f9c3660643359be1fe6d"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "7e2dacb6db07b41abb0c80d0608e46e197265554"
+  },
+  "observed_at": "2026-10-26T13:05:46.469029+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "95bac6cd42af881be3bfeedd4130028aabbb87389785b124d61336f860d000f7",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "bf5cce5b72d0c380eaff72728874be1b62f1b6e28d3c52d45a2a5ea90694100a",
+  "source_url": "https://api.github.com/repos/pydantic/pydantic-settings/commits/7e2dacb6db07b41abb0c80d0608e46e197265554?per_page=100",
+  "status_code": 200
+}

@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "archived": false,
+    "declared_spdx": "MIT",
+    "full_name": "go-task/task",
+    "id": 83252983,
+    "language": "Go",
+    "private": false,
+    "size": 21316
+  },
+  "observed_at": "2026-10-26T06:57:28.245904+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "3ceeb5797909699d76fd224312879be5dd3da583fba00cbc459e6a1261d9e55f",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "01b760e7c5ba647ebd2c8238a5ba8ebb5b0acf34e253d74282ae14e37b48a77a",
+  "source_url": "https://api.github.com/repos/go-task/task",
+  "status_code": 200
+}

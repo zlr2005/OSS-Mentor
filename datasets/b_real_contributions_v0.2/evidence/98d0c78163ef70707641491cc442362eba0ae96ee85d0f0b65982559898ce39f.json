@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "author": {
+      "id": 40191806,
+      "login": "hntrl",
+      "type": "User"
+    },
+    "commit": {
+      "author_at": "2026-10-21T22:30:04Z",
+      "committer_at": "2026-10-21T22:30:04Z",
+      "tree_sha": "41d0b6121688cfbff98722a0bc3c5c9e4d129a49"
+    },
+    "committer": {
+      "id": 19864447,
+      "login": "web-flow",
+      "type": "User"
+    },
+    "sha": "f096a32187d194b9f334cf7ec62e05c0050a1cfd"
+  },
+  "observed_at": "2026-10-26T07:59:27.479376+00:00",
+  "projection_not_raw": true,
+  "raw_artifact_sha256": "c0d78059036bfa127c01b9af0ce657e7a2380080655f99857e7dd9b25c412e39",
+  "schema_version": "b-sanitized-source-projection-v1",
+  "source_payload_sha256": "70d18d09ab0d0117b414bc011417281085b89f86079537afc248ec85c19e3314",
+  "source_url": "https://api.github.com/repos/langchain-ai/langchainjs/commits/f096a32187d194b9f334cf7ec62e05c0050a1cfd?per_page=100",
+  "status_code": 200
+}
