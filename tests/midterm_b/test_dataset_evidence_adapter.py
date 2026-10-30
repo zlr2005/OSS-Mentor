@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import copy
+import hashlib
+import json
 import sqlite3
 import tempfile
 from pathlib import Path
@@ -68,6 +71,189 @@ class DatasetEvidenceAdapterTests(unittest.TestCase):
         self.assertEqual(by_feature["preference.language.python"].confidence, 0.2)
         self.assertTrue(by_feature["preference.language.python"].details["event_time_unknown"])
         self.assertFalse(by_feature["preference.language.python"].details["recency_applied"])
+        self.assertEqual(
+            by_feature["preference.language.python"].details["event_time_basis"],
+            "unknown_observed_state_only",
+        )
+
+    def test_weak_interest_preserves_source_and_pagination_context(self) -> None:
+        manifest, records, _ = load_snapshot(FIXTURE)
+        manifest = copy.deepcopy(manifest)
+        records = copy.deepcopy(records)
+        source_locations = {
+            "weak_interest/evidence/star-page.json": "a" * 64,
+            "weak_interest/evidence/identity.json": "b" * 64,
+            "weak_interest/evidence/repository.json": "c" * 64,
+        }
+        records["_source_assets"] = source_locations
+        behavior = records["project_behaviors"][0]
+        behavior.update(
+            {
+                "source": "github_rest",
+                "source_location": "weak_interest/evidence/star-page.json",
+                "identity_source_location": "weak_interest/evidence/identity.json",
+                "evidence_location": "https://github.com/example/project",
+                "interpretation": "weak repository-language interest, not ability",
+                "event_at": "2026-10-13T00:00:00Z",
+                "event_time_unknown": False,
+            }
+        )
+        records["repositories"][0]["source_location"] = (
+            "weak_interest/evidence/repository.json"
+        )
+        manifest["weak_interest_coverage"] = [
+            {
+                "developer_key": "dev-a",
+                "endpoint": "starred",
+                "status": "partial",
+                "pages": 2,
+                "returned_count": 200,
+                "truncated": True,
+                "next_page": 3,
+            }
+        ]
+
+        result = adapt_a_dataset_records_to_profile_evidence(
+            manifest,
+            records,
+            developer_key="dev-a",
+            as_of=AS_OF,
+            allow_fixture=True,
+        )
+        weak = next(
+            item for item in result["evidence"] if item.source_kind == "github_weak"
+        )
+        self.assertEqual(weak.details["source"], "github_rest")
+        self.assertEqual(
+            weak.details["source_location"],
+            "weak_interest/evidence/star-page.json",
+        )
+        self.assertEqual(weak.details["source_sha256"], "a" * 64)
+        self.assertEqual(weak.details["identity_source_sha256"], "b" * 64)
+        self.assertEqual(weak.details["repository_source_sha256"], "c" * 64)
+        self.assertEqual(weak.details["repository_primary_language"], "Python")
+        self.assertEqual(
+            weak.details["language_mapping"],
+            {
+                "source_field": "repository.primary_language",
+                "source_value": "Python",
+                "target_feature": "preference.language.python",
+            },
+        )
+        self.assertEqual(
+            weak.details["evidence_location"],
+            "https://github.com/example/project",
+        )
+        self.assertEqual(weak.details["event_time_basis"], "github_starred_at")
+        self.assertEqual(weak.details["coverage_status"], "partial")
+        self.assertTrue(weak.details["coverage_truncated"])
+        self.assertEqual(weak.details["coverage_next_page"], 3)
+        self.assertIn("source_location", result["project_behavior_audit"][0])
+
+    def test_real_weak_interest_requires_traceable_source_assets(self) -> None:
+        manifest, records, _ = load_snapshot(FIXTURE)
+        manifest = copy.deepcopy(manifest)
+        records = copy.deepcopy(records)
+        manifest["fixture_only"] = False
+        manifest["weak_interest_coverage"] = [
+            {
+                "developer_key": "dev-a",
+                "endpoint": "starred",
+                "status": "completed",
+                "pages": 1,
+                "returned_count": 1,
+                "truncated": False,
+                "next_page": None,
+            }
+        ]
+        records["project_behaviors"][0].update(
+            {
+                "source_location": "behavior.json",
+                "identity_source_location": "identity.json",
+            }
+        )
+        records["repositories"][0]["source_location"] = "repository.json"
+        records["_source_assets"] = {
+            "behavior.json": "a" * 64,
+            "repository.json": "c" * 64,
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "weak-interest source asset is missing: identity.json",
+        ):
+            adapt_a_dataset_records_to_profile_evidence(
+                manifest,
+                records,
+                developer_key="dev-a",
+                as_of=AS_OF,
+            )
+
+    def test_database_reader_resolves_source_asset_hashes(self) -> None:
+        manifest = self.connection.execute(
+            "SELECT manifest_json FROM midterm_dataset_snapshot "
+            "WHERE dataset_version = ?",
+            (VERSION,),
+        ).fetchone()
+        manifest_payload = json.loads(manifest[0])
+        manifest_payload["weak_interest_coverage"] = [
+            {
+                "developer_key": "dev-a",
+                "endpoint": "starred",
+                "status": "completed",
+                "pages": 1,
+                "returned_count": 1,
+                "truncated": False,
+                "next_page": None,
+            }
+        ]
+        self.connection.execute(
+            "UPDATE midterm_dataset_snapshot SET manifest_json = ? "
+            "WHERE dataset_version = ?",
+            (json.dumps(manifest_payload), VERSION),
+        )
+        row = self.connection.execute(
+            "SELECT ordinal, payload_json FROM midterm_dataset_behavior "
+            "WHERE dataset_version = ?",
+            (VERSION,),
+        ).fetchone()
+        behavior = json.loads(row[1])
+        behavior.update(
+            {
+                "source_location": "records.json",
+                "identity_source_location": "records.json",
+                "evidence_location": "https://github.com/example/project",
+            }
+        )
+        self.connection.execute(
+            "UPDATE midterm_dataset_behavior SET payload_json = ? "
+            "WHERE dataset_version = ? AND ordinal = ?",
+            (json.dumps(behavior), VERSION, row[0]),
+        )
+        repository_row = self.connection.execute(
+            "SELECT ordinal, payload_json FROM midterm_dataset_repository "
+            "WHERE dataset_version = ?",
+            (VERSION,),
+        ).fetchone()
+        repository = json.loads(repository_row[1])
+        repository["source_location"] = "records.json"
+        self.connection.execute(
+            "UPDATE midterm_dataset_repository SET payload_json = ? "
+            "WHERE dataset_version = ? AND ordinal = ?",
+            (json.dumps(repository), VERSION, repository_row[0]),
+        )
+        self.connection.commit()
+
+        result = self.database_result()
+        weak = next(
+            item for item in result["evidence"] if item.source_kind == "github_weak"
+        )
+        expected_hash = hashlib.sha256(
+            (FIXTURE / "records.json").read_bytes()
+        ).hexdigest()
+        self.assertEqual(weak.details["source_sha256"], expected_hash)
+        self.assertEqual(weak.details["identity_source_sha256"], expected_hash)
+        self.assertEqual(weak.details["repository_source_sha256"], expected_hash)
+        self.assertEqual(weak.details["coverage_status"], "completed")
 
     def test_fixture_provenance_and_rename_are_preserved(self) -> None:
         result = self.snapshot_result()
@@ -142,14 +328,38 @@ class DatasetEvidenceAdapterTests(unittest.TestCase):
 
     def test_real_dataset_scope_preserves_not_delivered_signals(self) -> None:
         manifest, records, _ = load_snapshot(FIXTURE)
-        manifest = dict(manifest)
+        manifest = copy.deepcopy(manifest)
+        records = copy.deepcopy(records)
         manifest.update(
             {
                 "dataset_version": "real-scope-v0.2",
                 "fixture_only": False,
                 "not_delivered": ["star", "fork", "complete_repository_history"],
+                "weak_interest_coverage": [
+                    {
+                        "developer_key": "dev-a",
+                        "endpoint": "starred",
+                        "status": "completed",
+                        "pages": 1,
+                        "returned_count": 1,
+                        "truncated": False,
+                        "next_page": None,
+                    }
+                ],
             }
         )
+        records["project_behaviors"][0].update(
+            {
+                "source_location": "behavior.json",
+                "identity_source_location": "identity.json",
+            }
+        )
+        records["repositories"][0]["source_location"] = "repository.json"
+        records["_source_assets"] = {
+            "behavior.json": "a" * 64,
+            "identity.json": "b" * 64,
+            "repository.json": "c" * 64,
+        }
         result = adapt_a_dataset_records_to_profile_evidence(
             manifest,
             records,

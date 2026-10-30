@@ -87,7 +87,7 @@ def _dataset_limitations(manifest: Mapping[str, Any]) -> tuple[str, ...]:
 def _load_completed_dataset(
     connection: sqlite3.Connection,
     dataset_version: str,
-) -> tuple[dict[str, Any], dict[str, list[dict[str, Any]]]]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     version = _text(dataset_version, "dataset_version")
     row = connection.execute(
         "SELECT status FROM midterm_dataset_import WHERE dataset_version = ?",
@@ -114,6 +114,14 @@ def _load_completed_dataset(
             (version,),
         ).fetchall()
         records[kind] = [json.loads(item[0]) for item in rows]
+    records["_source_assets"] = {
+        str(relative_path): str(sha256)
+        for relative_path, sha256 in connection.execute(
+            "SELECT relative_path, sha256 FROM midterm_dataset_asset "
+            "WHERE dataset_version = ? ORDER BY relative_path",
+            (version,),
+        ).fetchall()
+    }
     return manifest, records
 
 
@@ -244,6 +252,12 @@ def _weak_behaviour_evidence(
     repositories = {
         row["repository_key"]: row for row in records.get("repositories", ())
     }
+    source_assets = dict(records.get("_source_assets") or {})
+    endpoint_coverage = {
+        str(row.get("endpoint")): copy.deepcopy(dict(row))
+        for row in (manifest.get("weak_interest_coverage") or ())
+        if row.get("developer_key") == developer_key
+    }
     evidence: list[ProfileEvidence] = []
     audit_by_ref: dict[str, dict[str, Any]] = {}
     for index, raw in enumerate(records.get("project_behaviors", ())):
@@ -303,6 +317,68 @@ def _weak_behaviour_evidence(
             "exclusion_reason": reason,
             "duplicate_count": 0,
         }
+        endpoint = "starred" if behaviour == "star" else "repos"
+        coverage = endpoint_coverage.get(endpoint, {})
+        source_location = raw.get("source_location")
+        identity_source_location = raw.get("identity_source_location")
+        repository_source_location = (
+            repository.get("source_location") if repository is not None else None
+        )
+        coverage_source_location = coverage.get("source_location")
+        if not manifest["fixture_only"] and behaviour in _WEAK_BEHAVIOUR_STRENGTH:
+            required_sources = {
+                "source_location": source_location,
+                "identity_source_location": identity_source_location,
+                "repository_source_location": repository_source_location,
+            }
+            for field, location in required_sources.items():
+                if not isinstance(location, str) or not location.strip():
+                    raise ValueError(f"real weak-interest evidence requires {field}")
+                if location not in source_assets:
+                    raise ValueError(f"weak-interest source asset is missing: {location}")
+            if not coverage:
+                raise ValueError(
+                    f"weak-interest coverage is missing: {developer_key}/{endpoint}"
+                )
+        source_context = {
+            "source": raw.get("source"),
+            "source_location": source_location,
+            "source_sha256": source_assets.get(source_location),
+            "identity_source_location": identity_source_location,
+            "identity_source_sha256": source_assets.get(identity_source_location),
+            "evidence_location": raw.get("evidence_location"),
+            "upstream_interpretation": raw.get("interpretation"),
+            "repository_full_name": (
+                repository.get("full_name") if repository is not None else None
+            ),
+            "repository_primary_language": (
+                repository.get("primary_language") if repository is not None else None
+            ),
+            "repository_observed_at": (
+                repository.get("observed_at") if repository is not None else None
+            ),
+            "repository_source_location": repository_source_location,
+            "repository_source_sha256": source_assets.get(repository_source_location),
+            "language_mapping": {
+                "source_field": "repository.primary_language",
+                "source_value": (
+                    repository.get("primary_language") if repository is not None else None
+                ),
+                "target_feature": feature_name,
+            },
+            "coverage_endpoint": endpoint,
+            "coverage_status": coverage.get("status"),
+            "coverage_pages": coverage.get("pages"),
+            "coverage_returned_count": coverage.get("returned_count"),
+            "coverage_truncated": coverage.get("truncated"),
+            "coverage_next_page": coverage.get("next_page"),
+            "coverage_error_type": coverage.get("error_type"),
+            "coverage_http_status": coverage.get("http_status"),
+            "coverage_observed_at": coverage.get("observed_at"),
+            "coverage_source_location": coverage_source_location,
+            "coverage_source_sha256": source_assets.get(coverage_source_location),
+        }
+        audit.update(copy.deepcopy(source_context))
         audit_by_ref[evidence_ref] = audit
         if reason:
             continue
@@ -324,7 +400,13 @@ def _weak_behaviour_evidence(
                     "behavior_type": behaviour,
                     "event_at": normalized_event_at,
                     "event_time_unknown": bool(raw.get("event_time_unknown")),
+                    "event_time_basis": (
+                        "github_starred_at"
+                        if behaviour == "star" and normalized_event_at is not None
+                        else "unknown_observed_state_only"
+                    ),
                     "recency_applied": False,
+                    **source_context,
                     "interpretation_basis": (
                         "weak repository-language interest; not ability evidence"
                     ),
@@ -447,6 +529,13 @@ def build_profile_evidence_from_a_snapshot(
 ) -> dict[str, Any]:
     """Validate a portable A snapshot, then adapt it to profile evidence."""
     manifest, records, _ = load_snapshot(Path(snapshot_directory))
+    records = {
+        **records,
+        "_source_assets": {
+            str(item["path"]): str(item["sha256"])
+            for item in manifest.get("files", ())
+        },
+    }
     return adapt_a_dataset_records_to_profile_evidence(
         manifest,
         records,
