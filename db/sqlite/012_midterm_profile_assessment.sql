@@ -202,6 +202,34 @@ CREATE INDEX IF NOT EXISTS profile_assessment_confirmation_user_idx
 CREATE INDEX IF NOT EXISTS developer_profile_feature_state_profile_idx
     ON developer_profile_feature_state(developer_profile_id, created_at DESC);
 
+-- A current pointer may only reference a feature state owned by the same
+-- developer profile.  The individual foreign keys prove that both rows exist;
+-- these triggers additionally protect the cross-row ownership invariant.
+CREATE TRIGGER IF NOT EXISTS developer_profile_current_feature_owner_insert
+BEFORE INSERT ON developer_profile_current_feature
+WHEN NOT EXISTS (
+    SELECT 1
+    FROM developer_profile_feature_state AS state
+    WHERE state.feature_state_id = NEW.feature_state_id
+      AND state.developer_profile_id = NEW.developer_profile_id
+)
+BEGIN
+    SELECT RAISE(ABORT, 'current feature-state owner mismatch');
+END;
+
+CREATE TRIGGER IF NOT EXISTS developer_profile_current_feature_owner_update
+BEFORE UPDATE OF developer_profile_id, feature_state_id
+ON developer_profile_current_feature
+WHEN NOT EXISTS (
+    SELECT 1
+    FROM developer_profile_feature_state AS state
+    WHERE state.feature_state_id = NEW.feature_state_id
+      AND state.developer_profile_id = NEW.developer_profile_id
+)
+BEGIN
+    SELECT RAISE(ABORT, 'current feature-state owner mismatch');
+END;
+
 -- History is append-only.  Deletes remain available for the explicit
 -- user/profile cascade, while in-place mutation of audit records is rejected.
 CREATE TRIGGER IF NOT EXISTS profile_questionnaire_no_update

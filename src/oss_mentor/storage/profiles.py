@@ -1640,6 +1640,13 @@ class SQLiteMidtermProfileStore(SQLiteProfileStorage):
         submission: AssessmentSubmission,
         idempotency_key: str,
     ) -> str:
+        if getattr(self, "_transaction_connection", None) is None:
+            with self.transaction() as transaction:
+                return transaction.create_assessment_submission(
+                    user_id=user_id,
+                    submission=submission,
+                    idempotency_key=idempotency_key,
+                )
         key = _required_text(idempotency_key, "idempotency_key")
         payload = submission.to_dict()
         with self.connect() as connection:
@@ -1727,6 +1734,13 @@ class SQLiteMidtermProfileStore(SQLiteProfileStorage):
         preview: ProfilePreview,
         input_sha256: str,
     ) -> str:
+        if getattr(self, "_transaction_connection", None) is None:
+            with self.transaction() as transaction:
+                return transaction.create_profile_preview(
+                    user_id=user_id,
+                    preview=preview,
+                    input_sha256=input_sha256,
+                )
         input_digest = _required_text(input_sha256, "input_sha256")
         payload = preview.to_dict()
         payload_digest = _json_sha256(payload)
@@ -1863,6 +1877,12 @@ class SQLiteMidtermProfileStore(SQLiteProfileStorage):
         user_id: int,
         plan: ConfirmationPlan,
     ) -> str:
+        if getattr(self, "_transaction_connection", None) is None:
+            with self.transaction() as transaction:
+                return transaction.create_confirmation_plan(
+                    user_id=user_id,
+                    plan=plan,
+                )
         payload = plan.to_dict()
         payload_digest = _json_sha256(payload)
         with self.connect() as connection:
@@ -2248,7 +2268,13 @@ class SQLiteMidtermProfileStore(SQLiteProfileStorage):
         *,
         user_id: int,
         profile_version: str | None = None,
+        developer_key: str | None = None,
     ) -> EnhancedProfileFeatures | None:
+        external_developer_key = (
+            None
+            if developer_key is None
+            else _required_text(developer_key, "developer_key")
+        )
         state = (
             self.get_current_feature_state(user_id=user_id)
             if profile_version is None
@@ -2256,13 +2282,14 @@ class SQLiteMidtermProfileStore(SQLiteProfileStorage):
         )
         if state is None:
             return None
+        if external_developer_key == state.profile_key:
+            raise ValueError("developer_key cannot be the platform profile_key")
         names = tuple(item.feature_name for item in state.features)
         return EnhancedProfileFeatures(
             profile_key=state.profile_key,
-            # A platform profile UUID is not a verified training/GitHub identity.
-            # Until an explicit identity mapping is persisted, model consumers
-            # must take the cold-start path rather than receiving a false match.
-            developer_key=None,
+            # The caller may inject only a separately verified external identity.
+            # A missing mapping remains None so model consumers take cold-start.
+            developer_key=external_developer_key,
             profile_version=state.profile_version,
             feature_schema_version=state.feature_schema_version,
             as_of=state.updated_at,
