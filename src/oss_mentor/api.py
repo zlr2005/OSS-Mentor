@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 
 from oss_mentor.candidate_sync import CandidateDetail, CandidateService
 from oss_mentor.collector.github_client import GitHubApiError, RateLimitExceeded
+from oss_mentor.contracts_midterm import IdempotencyConflictError, StalePlanError
 from oss_mentor.developer_profiles import (
     ALLOWED_LANGUAGES,
     ALLOWED_OPERATING_SYSTEMS,
@@ -35,14 +36,19 @@ from oss_mentor.services.auth_service import (
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 from oss_mentor.services.profile_service import ProfileService, as_developer_profile_v2
 from oss_mentor.services.recommendation_service import (
-    AuthenticationRequired,
     ModelUnavailableError,
-    ProfileRequired,
     RecommendationService,
     feedback_context_for_user,
 )
 from oss_mentor.services.github_profile_source import (
     CONSENT_VERSION, GitHubProfileError, GitHubProfileSource,
+)
+from oss_mentor.services.midterm_profile_service import (
+    MidtermProfileNotConfirmedError,
+    MidtermProfileRequiredError,
+    MidtermProfileService,
+    SQLiteMidtermProfileApiStore,
+    verified_developer_key,
 )
 from oss_mentor.storage.profiles import SQLiteProfileStorage
 from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
@@ -50,12 +56,20 @@ from oss_mentor.storage.candidates import SQLiteCandidateStorage
 
 
 API_VERSION = "v0.5"
+MIDTERM_API_VERSION = "v0.6"
 MAX_JSON_BODY_BYTES = 32 * 1024
 FEEDBACK_STATES = {"interested", "not_suitable", "started", "completed"}
 PROFILE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 TASK_DETAIL_PATH_PATTERN = re.compile(r"^/api/v1/tasks/([1-9][0-9]{0,18})$")
 REFRESH_TRUE = {"1", "true", "yes"}
 REFRESH_FALSE = {"0", "false", "no", ""}
+MIDTERM_PROFILE_PATHS = {
+    "/api/v1/me/profile/questionnaire",
+    "/api/v1/me/profile/assessment-preview",
+    "/api/v1/me/profile/assessment-confirm",
+    "/api/v1/me/profile/enhanced-features",
+}
+CLIENT_OWNER_FIELDS = {"user_id", "profile_key", "developer_key", "base_profile_version"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,6 +167,9 @@ class RecommendationApi:
         github_profile_source: GitHubProfileSource | None = None,
         recommendation_service: RecommendationService | None = None,
         candidate_service: CandidateService | None = None,
+        midterm_profile_store: SQLiteMidtermProfileApiStore | None = None,
+        midterm_profile_service: MidtermProfileService | None = None,
+        questionnaire_path: Path | None = None,
     ) -> None:
         self.store = store
         self.candidate_service = candidate_service
@@ -195,6 +212,30 @@ class RecommendationApi:
             self.recommendation_service.profile_service = recommendation_profile_service
         if self.recommendation_service.recommendation_store is None:
             self.recommendation_service.recommendation_store = recommendation_store
+        self.midterm_profile_store = midterm_profile_store
+        self.midterm_profile_service = midterm_profile_service
+        if (
+            self.midterm_profile_service is None
+            and self.profile_service is not None
+            and isinstance(store, SQLiteCandidateStore)
+        ):
+            self.midterm_profile_store = midterm_profile_store or SQLiteMidtermProfileApiStore(
+                store.database_path,
+                store.migration_path,
+            )
+            if questionnaire_path is None:
+                questionnaire_path = (
+                    Path(__file__).resolve().parents[2]
+                    / "config/midterm_profile/questionnaire_v0.1.json"
+                )
+            self.midterm_profile_service = MidtermProfileService(
+                store=self.midterm_profile_store,
+                profile_service=self.profile_service,
+                questionnaire_path=questionnaire_path,
+            )
+            if store.database_path.is_file():
+                self.midterm_profile_store.initialize()
+                self.midterm_profile_service.initialize()
 
     @staticmethod
     def _profile_body(profile: dict) -> dict:
@@ -204,6 +245,157 @@ class RecommendationApi:
 
     def _is_public_profile(self, profile_key: str) -> bool:
         return any(item["profile_key"] == profile_key for item in self.store.list_profiles_public())
+
+    def _midterm_profile_route(self, method, path, query, body, cookies) -> ApiResponse:
+        allowed = "GET" if path in {
+            "/api/v1/me/profile/questionnaire",
+            "/api/v1/me/profile/enhanced-features",
+        } else "POST"
+        if method != allowed:
+            return self._error(
+                405,
+                "method_not_allowed",
+                "method is not supported for this route",
+            )
+        if self.auth_service is None:
+            return self._error(503, "service_not_ready", "auth service is not configured")
+        user = self.auth_service.current_user(cookies.get(SESSION_COOKIE_NAME))
+        if user is None:
+            return self._error(401, "authentication_required", "login is required")
+        service = self.midterm_profile_service
+        if service is None:
+            return self._error(
+                503,
+                "service_not_ready",
+                "midterm profile service is not configured",
+            )
+        try:
+            service.initialize()
+        except (RuntimeError, ValueError):
+            return self._error(
+                503,
+                "service_not_ready",
+                "midterm profile storage is not ready",
+            )
+        user_id = int(user["user_id"])
+
+        if method == "GET":
+            if path == "/api/v1/me/profile/questionnaire":
+                if query:
+                    return self._error(
+                        400,
+                        "invalid_request",
+                        "questionnaire does not accept query parameters",
+                    )
+                return ApiResponse(
+                    200,
+                    {
+                        "questionnaire": service.questionnaire_payload(),
+                        "api_version": MIDTERM_API_VERSION,
+                    },
+                )
+            unsupported = sorted(set(query) - {"profile_version"})
+            if unsupported:
+                return self._error(
+                    400,
+                    "invalid_request",
+                    f"unsupported query parameter: {unsupported[0]}",
+                )
+            versions = query.get("profile_version") or []
+            if len(versions) > 1:
+                return self._error(
+                    400,
+                    "invalid_request",
+                    "profile_version must be supplied at most once",
+                )
+            profile_version = versions[0].strip() if versions else None
+            if versions and not profile_version:
+                return self._error(
+                    400,
+                    "invalid_request",
+                    "profile_version must be a non-empty string",
+                )
+            try:
+                features = service.enhanced_features(
+                    user_id=user_id,
+                    profile_version=profile_version,
+                    developer_key=verified_developer_key(user.get("github_login")),
+                )
+            except MidtermProfileRequiredError as exc:
+                return self._error(404, "profile_required", str(exc))
+            except MidtermProfileNotConfirmedError as exc:
+                return self._error(404, "profile_not_confirmed", str(exc))
+            except ValueError as exc:
+                return self._error(422, "profile_validation_failed", str(exc))
+            return ApiResponse(
+                200,
+                {
+                    "features": features.to_dict(),
+                    "api_version": MIDTERM_API_VERSION,
+                },
+            )
+
+        if query:
+            return self._error(
+                400,
+                "invalid_request",
+                "assessment routes do not accept query parameters",
+            )
+        if not isinstance(body, dict):
+            return self._error(400, "invalid_request", "request body must be a JSON object")
+        if set(body) & CLIENT_OWNER_FIELDS:
+            return self._error(
+                400,
+                "invalid_request",
+                "identity and profile versions are supplied by the server",
+            )
+        try:
+            if path == "/api/v1/me/profile/assessment-preview":
+                if set(body) != {"questionnaire_version", "answers", "idempotency_key"}:
+                    return self._error(
+                        400,
+                        "invalid_request",
+                        "assessment preview requires questionnaire_version, answers and idempotency_key",
+                    )
+                result = service.create_preview(
+                    user_id=user_id,
+                    questionnaire_version=body["questionnaire_version"],
+                    answers=body["answers"],
+                    idempotency_key=body["idempotency_key"],
+                )
+                return ApiResponse(
+                    200,
+                    {**result, "api_version": MIDTERM_API_VERSION},
+                )
+            if path == "/api/v1/me/profile/assessment-confirm":
+                if set(body) != {"plan_id", "decisions", "idempotency_key"}:
+                    return self._error(
+                        400,
+                        "invalid_request",
+                        "assessment confirmation requires plan_id, decisions and idempotency_key",
+                    )
+                confirmation = service.confirm(
+                    user_id=user_id,
+                    plan_id=body["plan_id"],
+                    decisions=body["decisions"],
+                    idempotency_key=body["idempotency_key"],
+                )
+                return ApiResponse(
+                    200,
+                    {
+                        "confirmation": confirmation.to_dict(),
+                        "api_version": MIDTERM_API_VERSION,
+                    },
+                )
+        except MidtermProfileRequiredError as exc:
+            return self._error(404, "profile_required", str(exc))
+        except KeyError:
+            return self._error(404, "not_found", "assessment plan or preview was not found")
+        except (StalePlanError, IdempotencyConflictError) as exc:
+            return self._error(409, "state_conflict", str(exc))
+        except ValueError as exc:
+            return self._error(422, "profile_validation_failed", str(exc))
+        return self._error(404, "not_found", "route was not found")
 
     def _profile_route(self, method, path, query, body, cookies) -> ApiResponse:
         suggestion = re.fullmatch(
@@ -284,7 +476,11 @@ class RecommendationApi:
         return self._error(404, "not_found", "route was not found")
 
     def _me_recommendations_route(self, query, cookies) -> ApiResponse:
-        if self.recommendation_service is None:
+        if (
+            self.recommendation_service is None
+            or self.auth_service is None
+            or self.profile_service is None
+        ):
             return self._error(503, "service_not_ready", "recommendation service is not configured")
         raw_limit = (query.get("limit") or ["10"])[0]
         try:
@@ -293,37 +489,25 @@ class RecommendationApi:
             return self._error(400, "invalid_limit", "limit must be an integer")
         if not 1 <= limit <= 100:
             return self._error(400, "invalid_limit", "limit must be between 1 and 100")
-        try:
-            result = self.recommendation_service.recommend_for_session(
-                session_id=cookies.get(SESSION_COOKIE_NAME), limit=limit
-            )
-        except AuthenticationRequired:
+        user = self.auth_service.current_user(cookies.get(SESSION_COOKIE_NAME))
+        if user is None:
             return self._error(401, "authentication_required", "login is required")
-        except ProfileRequired:
-            return self._error(404, "profile_required", "create a profile before requesting recommendations")
-        except ValueError as exc:
-            return self._error(400, "invalid_request", str(exc))
-        items = [item.to_dict() for item in result.items]
-        profile = result.profile
-        return ApiResponse(
-            200,
-            {
-                "run_id": result.run_id,
-                "profile": {
-                    "profile_key": profile.profile_key,
-                    "display_name": profile.display_name,
-                    "service_track": profile.service_track,
-                    "profile_source": profile.profile_source,
-                    "profile_version": profile.profile_version,
-                },
-                "feedback_context": result.feedback_context,
-                "warnings": list(result.warnings),
-                "count": len(items),
-                "items": items,
-                "match_version": result.match_version,
-                "rankings": list(result.rankings),
-                "api_version": API_VERSION,
-            },
+        user_id = int(user["user_id"])
+        profile = self.profile_service.profile_for_user(user_id)
+        if profile is None:
+            return self._error(
+                404,
+                "profile_required",
+                "create a profile before requesting recommendations",
+            )
+        return self._recommendations(
+            profile,
+            limit=limit,
+            feedback_context=feedback_context_for_user(
+                user_id,
+                str(profile["profile_key"]),
+            ),
+            developer_key=verified_developer_key(user.get("github_login")),
         )
 
     @staticmethod
@@ -402,8 +586,9 @@ class RecommendationApi:
         feedback_context: str | None = None,
         developer_key: str | None = None,
     ) -> ApiResponse:
+        contract_profile = as_developer_profile_v2(profile)
         batch = self.recommendation_service.recommend(
-            profile=as_developer_profile_v2(profile),
+            profile=contract_profile,
             limit=limit,
             feedback_context=feedback_context,
             developer_key=developer_key,
@@ -416,6 +601,7 @@ class RecommendationApi:
                     "display_name": profile["display_name"],
                     "service_track": profile["service_track"],
                     "profile_source": profile.get("profile_source", "stored"),
+                    "profile_version": contract_profile.profile_version,
                 },
                 "items": [
                     {
@@ -442,7 +628,11 @@ class RecommendationApi:
                 "count": len(batch.items),
                 "feedback_context": feedback_context,
                 "run_id": batch.run_id,
+                "service_track": batch.service_track,
                 "match_version": batch.match_version,
+                "profile_hash": batch.profile_hash,
+                "candidate_hash": batch.candidate_hash,
+                "created_at": batch.created_at,
                 "warnings": list(batch.warnings),
                 "rankings": list(batch.rankings),
                 "api_version": API_VERSION,
@@ -515,6 +705,8 @@ class RecommendationApi:
             return self._task_detail_route(path, query)
         if method == "GET" and path == "/api/v1/me/recommendations":
             return self._me_recommendations_route(query, cookies)
+        if path in MIDTERM_PROFILE_PATHS:
+            return self._midterm_profile_route(method, path, query, body, cookies)
         if path in {"/api/v1/me/profile", "/api/v1/me/profile/import-github"} or re.fullmatch(
             r"/api/v1/me/profile/suggestions/[1-9][0-9]{0,18}/(accept|reject)", path
         ):
@@ -587,7 +779,7 @@ class RecommendationApi:
                 profile,
                 limit=limit,
                 feedback_context=feedback_context_for_user(int(user["user_id"]), str(profile["profile_key"])),
-                developer_key=str(user["github_login"]),
+                developer_key=verified_developer_key(user.get("github_login")),
             )
         if method == "POST" and path == "/api/v1/recommendations/custom":
             if not isinstance(body, dict):
@@ -822,7 +1014,7 @@ def make_handler(
     static_root: Path | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        server_version = "OSS-Mentor-MVP/0.4"
+        server_version = "OSS-Mentor-MVP/0.6"
 
         def _parse_cookies(self) -> dict[str, str]:
             cookies: dict[str, str] = {}
@@ -972,12 +1164,16 @@ def serve(
     auth_service: AuthService | None = None,
     recommendation_service: RecommendationService | None = None,
     candidate_service: CandidateService | None = None,
+    midterm_profile_service: MidtermProfileService | None = None,
+    questionnaire_path: Path | None = None,
 ) -> None:
     api = RecommendationApi(
         store,
         auth_service=auth_service,
         recommendation_service=recommendation_service,
         candidate_service=candidate_service,
+        midterm_profile_service=midterm_profile_service,
+        questionnaire_path=questionnaire_path,
     )
     server = ThreadingHTTPServer(
         (host, port),

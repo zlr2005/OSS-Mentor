@@ -163,8 +163,15 @@ class ApiTests(unittest.TestCase):
             cookies={"oss_mentor_session": "session"},
         )
         self.assertEqual(200, response.status)
-        self.assertEqual("Known-Login", scorer.developer_key)
+        self.assertEqual("known-login", scorer.developer_key)
         self.assertEqual("coder-test", response.body["rankings"][0]["model_version"])
+        self.assertEqual("developer-profile-v0.5", response.body["profile"]["profile_version"])
+        self.assertEqual("newcomer", response.body["service_track"])
+        self.assertIn("profile_hash", response.body)
+        self.assertIn("candidate_hash", response.body)
+        self.assertIn("created_at", response.body)
+        self.assertEqual("known_history", response.body["rankings"][0]["profile_mode"])
+        self.assertEqual("fixture", response.body["rankings"][0]["coverage_state"])
 
     def test_health_and_profiles(self) -> None:
         health = self.api.handle("GET", "/health")
