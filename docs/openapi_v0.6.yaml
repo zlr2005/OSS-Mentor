@@ -1,0 +1,890 @@
+openapi: 3.0.3
+info:
+  title: OSS-Mentor API
+  version: 0.6.0
+  description: |
+    Current OSS-Mentor HTTP contract. Existing v0.5 routes remain additive and
+    compatible. Midterm questionnaire, assessment, confirmation and enhanced
+    feature export responses use api_version `v0.6`.
+
+    All responses include `request_id`. Errors use
+    `{error: {code, message, request_id}}`. User-owned routes resolve identity
+    exclusively from the authenticated session cookie.
+servers:
+  - url: http://127.0.0.1:8765
+paths:
+  /health:
+    get:
+      summary: Process health and database connectivity
+      responses:
+        "200":
+          description: Process alive and the database is usable
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/HealthResponse"}
+        "503":
+          description: Process alive but the database is missing or unusable
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/HealthResponse"}
+  /api/v1/auth/github/start:
+    get:
+      summary: Create an OAuth state and return the GitHub authorization URL
+      parameters:
+        - name: return_to
+          in: query
+          required: false
+          schema: {type: string, default: "/"}
+      responses:
+        "200": {description: Authorization URL, or oauth_configured=false with a message}
+        "400": {$ref: "#/components/responses/Error"}
+        "503": {$ref: "#/components/responses/Error"}
+  /api/v1/auth/github/callback:
+    get:
+      summary: Validate OAuth state, exchange code, and create a session
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: {type: string}
+        - name: state
+          in: query
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Session created and oss_mentor_session cookie set
+          headers:
+            Set-Cookie:
+              schema: {type: string}
+        "303":
+          description: Browser navigation redirect to return_to
+          headers:
+            Location:
+              schema: {type: string}
+        "400": {$ref: "#/components/responses/Error"}
+        "401": {$ref: "#/components/responses/Error"}
+        "502": {$ref: "#/components/responses/Error"}
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke the current local session
+      responses:
+        "200": {description: Session revoked and cookie cleared}
+  /api/v1/me:
+    get:
+      summary: Return the current logged-in user
+      security: [{SessionCookie: []}]
+      responses:
+        "200":
+          description: Current user public information
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CurrentUserResponse"}
+        "401": {$ref: "#/components/responses/Error"}
+        "503": {$ref: "#/components/responses/Error"}
+  /api/v1/profiles:
+    get:
+      summary: List anonymous public profile templates
+      responses:
+        "200": {description: Public profile summaries with api_version and request_id}
+  /api/v1/me/profile:
+    get:
+      summary: Read the signed-in user's profile and suggestions
+      security: [{SessionCookie: []}]
+      responses:
+        "200":
+          description: Owned profile; internal owner identifiers are omitted
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "405": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
+    put:
+      summary: Create or replace the signed-in user's editable profile
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ProfileWrite"}
+      responses:
+        "200":
+          description: Created or updated owned profile
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "405": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "413": {$ref: "#/components/responses/ProfileError"}
+        "415": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
+  /api/v1/me/profile/import-github:
+    post:
+      summary: Import a bounded public GitHub data sample
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [consent_version]
+              properties:
+                consent_version: {type: string, enum: [profile-import-consent-v0.1]}
+      responses:
+        "200":
+          description: Persisted suggestions and collection limitations
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileImportResponse"}
+        "400": {$ref: "#/components/responses/ProfileError"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "403": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "429": {$ref: "#/components/responses/ProfileError"}
+        "502": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
+  /api/v1/me/profile/suggestions/{suggestion_id}/accept:
+    post:
+      summary: Accept an owned pending profile suggestion
+      security: [{SessionCookie: []}]
+      parameters:
+        - $ref: "#/components/parameters/SuggestionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, maxProperties: 0}
+      responses:
+        "200":
+          description: Persisted profile and all suggestion statuses
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileDecisionResponse"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
+  /api/v1/me/profile/suggestions/{suggestion_id}/reject:
+    post:
+      summary: Reject an owned pending profile suggestion
+      security: [{SessionCookie: []}]
+      parameters:
+        - $ref: "#/components/parameters/SuggestionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, maxProperties: 0}
+      responses:
+        "200":
+          description: Persisted profile and all suggestion statuses
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProfileDecisionResponse"}
+        "401": {$ref: "#/components/responses/ProfileError"}
+        "404": {$ref: "#/components/responses/ProfileError"}
+        "409": {$ref: "#/components/responses/ProfileError"}
+        "422": {$ref: "#/components/responses/ProfileError"}
+        "503": {$ref: "#/components/responses/ProfileError"}
+  /api/v1/me/profile/questionnaire:
+    get:
+      summary: Return the active midterm profile questionnaire
+      description: |
+        Login is required, but a platform profile is not. The questionnaire is
+        a versioned public configuration owned by member B. The response does
+        not expose storage rows or another user's answers.
+      security: [{SessionCookie: []}]
+      responses:
+        "200":
+          description: Questionnaire configuration
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/QuestionnaireResponse"}
+        "401": {$ref: "#/components/responses/MidtermProfileError"}
+        "405": {$ref: "#/components/responses/MidtermProfileError"}
+        "503": {$ref: "#/components/responses/MidtermProfileError"}
+  /api/v1/me/profile/assessment-preview:
+    post:
+      summary: Persist answers and create an unsaved profile preview/plan
+      description: |
+        `user_id` and `profile_key` must come from the authenticated session;
+        the request body must not contain `user_id`, `profile_key`,
+        `developer_key`, or `base_profile_version`. `submitted_at` is generated
+        by the server. A repeated idempotency key with the same payload returns
+        the same submission, preview and plan; a different payload returns 409.
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AssessmentPreviewRequest"}
+      responses:
+        "200":
+          description: Persisted submission, preview and server-owned plan
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AssessmentPreviewResponse"}
+        "400": {$ref: "#/components/responses/MidtermProfileError"}
+        "401": {$ref: "#/components/responses/MidtermProfileError"}
+        "404": {$ref: "#/components/responses/MidtermProfileError"}
+        "405": {$ref: "#/components/responses/MidtermProfileError"}
+        "409": {$ref: "#/components/responses/MidtermProfileError"}
+        "422": {$ref: "#/components/responses/MidtermProfileError"}
+        "503": {$ref: "#/components/responses/MidtermProfileError"}
+  /api/v1/me/profile/assessment-confirm:
+    post:
+      summary: Apply explicit accept/reject decisions to a server-owned plan
+      description: |
+        `user_id` and the plan's ownership must come from the authenticated
+        session. The browser sends only `plan_id`, `decisions`, and
+        `idempotency_key`; it cannot submit a profile snapshot, owner ID,
+        developer_key, or base profile version. A stale plan or a reused key
+        with a different payload returns 409. Decisions, immutable feature
+        state and the current pointer commit atomically.
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AssessmentConfirmRequest"}
+      responses:
+        "200":
+          description: Immutable confirmation result and new current profile version
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AssessmentConfirmResponse"}
+        "400": {$ref: "#/components/responses/MidtermProfileError"}
+        "401": {$ref: "#/components/responses/MidtermProfileError"}
+        "404": {$ref: "#/components/responses/MidtermProfileError"}
+        "405": {$ref: "#/components/responses/MidtermProfileError"}
+        "409": {$ref: "#/components/responses/MidtermProfileError"}
+        "422": {$ref: "#/components/responses/MidtermProfileError"}
+        "503": {$ref: "#/components/responses/MidtermProfileError"}
+  /api/v1/me/profile/enhanced-features:
+    get:
+      summary: Export the confirmed 23-dimensional profile for model consumers
+      description: |
+        Login is required and the owned profile must have a confirmed feature
+        snapshot. `developer_key` must come from the authenticated session and
+        is normalized with strip().casefold(); it is null when no verified
+        mapping exists. It is never inferred from profile_key or accepted from
+        the query string. `observed_mask=false` means unknown, not low ability.
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: profile_version
+          in: query
+          required: false
+          schema: {type: string}
+          description: Optional immutable historical version; omitted means current
+      responses:
+        "200":
+          description: Ordered confirmed profile features for member C
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/EnhancedFeaturesResponse"}
+        "400": {$ref: "#/components/responses/MidtermProfileError"}
+        "401": {$ref: "#/components/responses/MidtermProfileError"}
+        "404": {$ref: "#/components/responses/MidtermProfileError"}
+        "405": {$ref: "#/components/responses/MidtermProfileError"}
+        "422": {$ref: "#/components/responses/MidtermProfileError"}
+        "503": {$ref: "#/components/responses/MidtermProfileError"}
+  /api/v1/tasks/{task_candidate_id}:
+    get:
+      summary: Task detail and current availability
+      parameters:
+        - name: task_candidate_id
+          in: path
+          required: true
+          schema: {type: integer, minimum: 1}
+        - name: refresh
+          in: query
+          schema: {type: boolean, default: false}
+      responses:
+        "200":
+          description: Task detail
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TaskDetail"}
+        "400": {description: Invalid query}
+        "404": {description: Task candidate not found}
+        "429": {description: GitHub rate limit exhausted}
+        "502": {description: GitHub upstream error}
+        "503": {description: Re-verification not configured}
+  /api/v1/me/recommendations:
+    get:
+      summary: Recommendations for the signed-in user's current profile
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200":
+          description: Recommendation batch
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RecommendationBatch"}
+        "400": {$ref: "#/components/responses/Error"}
+        "401": {$ref: "#/components/responses/Error"}
+        "404": {$ref: "#/components/responses/Error"}
+        "503": {$ref: "#/components/responses/Error"}
+  /api/v1/recommendations:
+    get:
+      summary: Legacy recommendations for a public stored profile
+      parameters:
+        - name: profile_key
+          in: query
+          required: true
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200": {description: Legacy recommendation response}
+        "400": {$ref: "#/components/responses/Error"}
+        "404": {$ref: "#/components/responses/Error"}
+  /api/v1/recommendations/custom:
+    post:
+      summary: Transient recommendations for a custom profile
+      responses:
+        "200": {description: Recommendations; profile_persisted is false}
+        "400": {$ref: "#/components/responses/Error"}
+  /api/v1/recommendation-options:
+    post:
+      summary: Live profile-option inventory
+      responses:
+        "200": {description: Option inventory}
+        "400": {$ref: "#/components/responses/Error"}
+  /api/v1/feedback:
+    post:
+      summary: Save recommendation feedback state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/FeedbackWrite"}
+      responses:
+        "200": {description: Feedback recorded}
+        "400": {$ref: "#/components/responses/Error"}
+        "401": {$ref: "#/components/responses/Error"}
+        "403": {$ref: "#/components/responses/Error"}
+        "404": {$ref: "#/components/responses/Error"}
+        "503": {$ref: "#/components/responses/Error"}
+  /api/v1/feedback/summary:
+    get:
+      summary: Feedback funnel and transition summary
+      responses:
+        "200": {description: Feedback summary}
+  /api/v1/status:
+    get:
+      summary: System, database, sync and candidate pool status
+      responses:
+        "200":
+          description: System status
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SystemStatus"}
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: oss_mentor_session
+  parameters:
+    SuggestionId:
+      name: suggestion_id
+      in: path
+      required: true
+      schema: {type: integer, minimum: 1, maximum: 9999999999999999999}
+  responses:
+    Error:
+      description: Unified error response
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    ProfileError:
+      description: Profile route error with unified request_id
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    MidtermProfileError:
+      description: |
+        400 invalid_request; 401 authentication_required; 404 profile_required,
+        profile_not_confirmed or not_found; 405 method_not_allowed;
+        409 state_conflict (stale plan or idempotency conflict);
+        422 profile_validation_failed; 503 service_not_ready.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+  schemas:
+    Error:
+      type: object
+      required: [error, request_id]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            request_id: {type: string}
+        request_id: {type: string}
+    HealthResponse:
+      type: object
+      required: [status, api_version, database_ready, request_id]
+      properties:
+        status: {type: string, enum: [ok, not_ready]}
+        api_version: {type: string}
+        database_ready: {type: boolean}
+        database_error: {type: string, nullable: true}
+        request_id: {type: string}
+    CurrentUserResponse:
+      type: object
+      required: [user, request_id]
+      properties:
+        user:
+          type: object
+          required: [user_id, github_login]
+          properties:
+            user_id: {type: integer}
+            github_login: {type: string}
+            display_name: {type: string, nullable: true}
+        request_id: {type: string}
+    ProfileWrite:
+      type: object
+      additionalProperties: false
+      required:
+        - service_track
+        - preferred_languages
+        - operating_systems
+        - preferred_task_types
+        - max_code_difficulty
+        - max_setup_difficulty
+        - desired_skill_stretch
+        - skills
+      properties:
+        display_name: {type: string, minLength: 1, maxLength: 60}
+        service_track: {type: string, enum: [newcomer, growth]}
+        preferred_languages:
+          type: array
+          items: {type: string}
+        operating_systems:
+          type: array
+          items: {type: string, enum: [windows, macos, linux]}
+        preferred_task_types:
+          type: array
+          items:
+            type: string
+            enum: [bug_fix, testing, documentation, feature, refactor, build_tooling]
+        max_code_difficulty: {type: integer, minimum: 0, maximum: 3}
+        max_setup_difficulty: {type: integer, minimum: 0, maximum: 3}
+        desired_skill_stretch: {type: integer, minimum: 0, maximum: 2}
+        skills:
+          type: object
+          additionalProperties: {type: integer, minimum: 0, maximum: 4}
+        locks:
+          type: object
+          additionalProperties: {type: boolean}
+    StoredProfile:
+      type: object
+      additionalProperties: true
+      required: [profile_key, display_name, service_track]
+      properties:
+        profile_key: {type: string}
+        display_name: {type: string}
+        service_track: {type: string, enum: [newcomer, growth]}
+        profile_source: {type: string}
+        preferred_languages: {type: array, items: {type: string}}
+        operating_systems: {type: array, items: {type: string}}
+        preferred_task_types: {type: array, items: {type: string}}
+        max_code_difficulty: {type: integer}
+        max_setup_difficulty: {type: integer}
+        desired_skill_stretch: {type: integer}
+        skills: {type: object, additionalProperties: {type: integer}}
+        field_metadata: {type: object, additionalProperties: true}
+    ProfileResponse:
+      type: object
+      required: [profile, api_version, request_id]
+      properties:
+        profile: {$ref: "#/components/schemas/StoredProfile"}
+        suggestions: {type: array, items: {type: object, additionalProperties: true}}
+        consent_version: {type: string}
+        api_version: {type: string}
+        request_id: {type: string}
+    ProfileImportResponse:
+      type: object
+      additionalProperties: true
+      required: [profile_key, github_import, merge_preview, persistence, suggestions, collection, api_version, request_id]
+      properties:
+        profile_key: {type: string}
+        github_import: {type: object, additionalProperties: true}
+        merge_preview: {type: object, additionalProperties: true}
+        persistence: {type: object, additionalProperties: true}
+        suggestions: {type: array, items: {type: object, additionalProperties: true}}
+        collection: {type: object, additionalProperties: true}
+        api_version: {type: string}
+        request_id: {type: string}
+    ProfileDecisionResponse:
+      type: object
+      additionalProperties: true
+      required: [profile, suggestion, suggestions, api_version, request_id]
+      properties:
+        profile: {$ref: "#/components/schemas/StoredProfile"}
+        suggestion: {type: object, additionalProperties: true}
+        suggestions: {type: array, items: {type: object, additionalProperties: true}}
+        api_version: {type: string}
+        request_id: {type: string}
+    QuestionnaireResponse:
+      type: object
+      required: [questionnaire, api_version, request_id]
+      properties:
+        questionnaire:
+          type: object
+          additionalProperties: true
+          required:
+            - schema_version
+            - questionnaire_id
+            - questionnaire_version
+            - feature_schema_version
+            - feature_names
+            - questions
+          properties:
+            schema_version: {type: string}
+            questionnaire_id: {type: string}
+            questionnaire_version: {type: string}
+            feature_schema_version: {type: string}
+            feature_names: {type: array, items: {type: string}}
+            base_question_ids: {type: array, items: {type: string}}
+            questions: {type: array, items: {type: object, additionalProperties: true}}
+        api_version: {type: string, enum: [v0.6]}
+        request_id: {type: string}
+    AssessmentPreviewRequest:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_version, answers, idempotency_key]
+      properties:
+        questionnaire_version: {type: string}
+        answers:
+          type: object
+          additionalProperties:
+            oneOf:
+              - {type: string}
+              - {type: array, items: {type: string}}
+        idempotency_key: {type: string, minLength: 1, maxLength: 200}
+    ProfileFeature:
+      type: object
+      required: [feature_name, observed, proposed_value, confidence, source_kind, evidence_refs, conflict, blocked_reason]
+      properties:
+        feature_name: {type: string}
+        observed: {type: boolean}
+        proposed_value: {type: number, minimum: 0, maximum: 1}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        source_kind:
+          type: string
+          nullable: true
+          enum: [github_weak, assessment_self_report, github_direct, user_confirmed, user_locked]
+        evidence_refs: {type: array, items: {type: string}}
+        conflict: {type: boolean}
+        blocked_reason: {type: string, nullable: true, enum: [field_locked]}
+    ProfilePreview:
+      type: object
+      required:
+        - preview_id
+        - profile_key
+        - base_profile_version
+        - questionnaire_id
+        - questionnaire_version
+        - feature_schema_version
+        - submitted_at
+        - answers
+        - features
+        - current_interests
+        - interpretation
+        - persisted
+      properties:
+        preview_id: {type: string}
+        profile_key: {type: string}
+        base_profile_version: {type: string}
+        questionnaire_id: {type: string}
+        questionnaire_version: {type: string}
+        feature_schema_version: {type: string}
+        submitted_at: {type: string, format: date-time}
+        answers: {type: object, additionalProperties: true}
+        features: {type: array, items: {$ref: "#/components/schemas/ProfileFeature"}}
+        current_interests: {type: array, items: {type: string}}
+        interpretation: {type: string}
+        persisted: {type: boolean}
+    FeatureValueSnapshot:
+      type: object
+      required: [observed, value, locked, evidence_refs]
+      properties:
+        observed: {type: boolean}
+        value: {type: number, minimum: 0, maximum: 1}
+        locked: {type: boolean}
+        evidence_refs: {type: array, items: {type: string}}
+    FeatureProposal:
+      type: object
+      required: [observed, value, confidence, source_kind, evidence_refs]
+      properties:
+        observed: {type: boolean}
+        value: {type: number, minimum: 0, maximum: 1}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        source_kind: {type: string, nullable: true}
+        evidence_refs: {type: array, items: {type: string}}
+    ConfirmationSuggestion:
+      type: object
+      required: [suggestion_id, feature_name, current, proposed, conflict, status, blocked_reason]
+      properties:
+        suggestion_id: {type: string}
+        feature_name: {type: string}
+        current: {$ref: "#/components/schemas/FeatureValueSnapshot"}
+        proposed: {$ref: "#/components/schemas/FeatureProposal"}
+        conflict: {type: boolean}
+        status: {type: string, enum: [pending, blocked, accepted, rejected]}
+        blocked_reason: {type: string, nullable: true, enum: [field_locked]}
+    ConfirmationPlan:
+      type: object
+      required:
+        - plan_id
+        - profile_key
+        - base_profile_version
+        - preview_id
+        - questionnaire_version
+        - feature_schema_version
+        - preview_submitted_at
+        - suggestions
+        - created_at
+        - status
+        - persisted
+      properties:
+        plan_id: {type: string}
+        profile_key: {type: string}
+        base_profile_version: {type: string}
+        preview_id: {type: string}
+        questionnaire_version: {type: string}
+        feature_schema_version: {type: string}
+        preview_submitted_at: {type: string, format: date-time}
+        suggestions: {type: array, items: {$ref: "#/components/schemas/ConfirmationSuggestion"}}
+        created_at: {type: string, format: date-time}
+        status: {type: string, enum: [open, completed, stale]}
+        persisted: {type: boolean}
+    AssessmentPreviewResponse:
+      type: object
+      required: [submission_id, preview, plan, api_version, request_id]
+      properties:
+        submission_id: {type: string}
+        preview: {$ref: "#/components/schemas/ProfilePreview"}
+        plan: {$ref: "#/components/schemas/ConfirmationPlan"}
+        api_version: {type: string, enum: [v0.6]}
+        request_id: {type: string}
+    AssessmentConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [plan_id, decisions, idempotency_key]
+      properties:
+        plan_id: {type: string, minLength: 1}
+        decisions:
+          type: object
+          minProperties: 1
+          additionalProperties: {type: string, enum: [accept, reject]}
+        idempotency_key: {type: string, minLength: 1, maxLength: 200}
+    ProfileFeatureStateRow:
+      type: object
+      required: [feature_name, observed, value, locked, evidence_refs]
+      properties:
+        feature_name: {type: string}
+        observed: {type: boolean}
+        value: {type: number, minimum: 0, maximum: 1}
+        locked: {type: boolean}
+        evidence_refs: {type: array, items: {type: string}}
+    ProfileFeatureState:
+      type: object
+      required: [schema_version, profile_key, profile_version, feature_schema_version, updated_at, features]
+      properties:
+        schema_version: {type: string}
+        profile_key: {type: string}
+        profile_version: {type: string}
+        feature_schema_version: {type: string}
+        updated_at: {type: string, format: date-time}
+        features: {type: array, items: {$ref: "#/components/schemas/ProfileFeatureStateRow"}}
+    ConfirmationDecision:
+      type: object
+      required: [suggestion_id, feature_name, decision, conflict_was_visible, decided_at]
+      properties:
+        suggestion_id: {type: string}
+        feature_name: {type: string}
+        decision: {type: string, enum: [accept, reject]}
+        conflict_was_visible: {type: boolean}
+        decided_at: {type: string, format: date-time}
+    AssessmentConfirmation:
+      type: object
+      required:
+        - confirmation_id
+        - plan_id
+        - profile_key
+        - base_profile_version
+        - new_profile_version
+        - confirmed_at
+        - decisions
+        - applied_suggestion_ids
+        - rejected_suggestion_ids
+        - remaining_suggestion_ids
+        - blocked_suggestion_ids
+        - profile_state
+        - persisted
+      properties:
+        confirmation_id: {type: string}
+        plan_id: {type: string}
+        profile_key: {type: string}
+        base_profile_version: {type: string}
+        new_profile_version: {type: string}
+        confirmed_at: {type: string, format: date-time}
+        decisions: {type: array, items: {$ref: "#/components/schemas/ConfirmationDecision"}}
+        applied_suggestion_ids: {type: array, items: {type: string}}
+        rejected_suggestion_ids: {type: array, items: {type: string}}
+        remaining_suggestion_ids: {type: array, items: {type: string}}
+        blocked_suggestion_ids: {type: array, items: {type: string}}
+        profile_state: {$ref: "#/components/schemas/ProfileFeatureState"}
+        persisted: {type: boolean}
+    AssessmentConfirmResponse:
+      type: object
+      required: [confirmation, api_version, request_id]
+      properties:
+        confirmation: {$ref: "#/components/schemas/AssessmentConfirmation"}
+        api_version: {type: string, enum: [v0.6]}
+        request_id: {type: string}
+    EnhancedProfileFeatures:
+      type: object
+      required:
+        - schema_version
+        - profile_state
+        - profile_key
+        - developer_key
+        - profile_version
+        - feature_schema_version
+        - as_of
+        - feature_names
+        - values
+        - observed_mask
+        - locked_mask
+        - current_interests
+        - evidence_refs
+        - interpretation
+      properties:
+        schema_version: {type: string, enum: [enhanced-profile-export-v0.1]}
+        profile_state: {type: string, enum: [confirmed]}
+        profile_key: {type: string}
+        developer_key:
+          type: string
+          nullable: true
+          description: Verified session identity, normalized; never profile_key
+        profile_version: {type: string}
+        feature_schema_version: {type: string}
+        as_of: {type: string, format: date-time}
+        feature_names: {type: array, minItems: 1, items: {type: string}}
+        values: {type: array, items: {type: number, minimum: 0, maximum: 1}}
+        observed_mask: {type: array, items: {type: boolean}}
+        locked_mask: {type: array, items: {type: boolean}}
+        current_interests: {type: array, items: {type: string}}
+        evidence_refs:
+          type: array
+          items: {type: array, items: {type: string}}
+        interpretation: {type: string}
+    EnhancedFeaturesResponse:
+      type: object
+      required: [features, api_version, request_id]
+      properties:
+        features: {$ref: "#/components/schemas/EnhancedProfileFeatures"}
+        api_version: {type: string, enum: [v0.6]}
+        request_id: {type: string}
+    TaskDetail:
+      type: object
+      additionalProperties: true
+      required: [task_candidate_id, repository_full_name, issue_number, title, html_url, availability, availability_reasons, refreshed, api_version, request_id]
+      properties:
+        task_candidate_id: {type: integer}
+        repository_full_name: {type: string}
+        issue_number: {type: integer}
+        title: {type: string}
+        body_text: {type: string, nullable: true}
+        html_url: {type: string, format: uri}
+        availability: {type: string}
+        availability_reasons: {type: array, items: {type: string}}
+        verified_at: {type: string, nullable: true}
+        refreshed: {type: boolean}
+        api_version: {type: string}
+        request_id: {type: string}
+    RecommendationItem:
+      type: object
+      additionalProperties: true
+      required: [task_candidate_id, repository_full_name, issue_number, title, html_url, service_track, score, matched_skills, missing_skills, reasons, warnings, availability]
+      properties:
+        task_candidate_id: {type: integer}
+        repository_full_name: {type: string}
+        issue_number: {type: integer}
+        title: {type: string}
+        html_url: {type: string, format: uri}
+        service_track: {type: string, enum: [newcomer, growth]}
+        score: {type: number, minimum: 0, maximum: 1}
+        difficulty: {type: object, additionalProperties: true}
+        matched_skills: {type: array, items: {type: string}}
+        missing_skills: {type: array, items: {type: string}}
+        reasons: {type: array, items: {type: object, additionalProperties: true}}
+        warnings: {type: array, items: {type: string}}
+        availability: {type: string}
+        verified_at: {type: string, nullable: true}
+        feedback_state: {type: string, nullable: true}
+    RecommendationBatch:
+      type: object
+      additionalProperties: true
+      required: [run_id, profile, feedback_context, warnings, count, items, match_version, api_version, request_id]
+      properties:
+        run_id: {type: string}
+        profile:
+          type: object
+          additionalProperties: true
+          properties:
+            profile_key: {type: string}
+            display_name: {type: string}
+            service_track: {type: string}
+            profile_source: {type: string}
+            profile_version: {type: string}
+        feedback_context: {type: string, nullable: true}
+        warnings: {type: array, items: {type: string}}
+        count: {type: integer, minimum: 0}
+        items: {type: array, items: {$ref: "#/components/schemas/RecommendationItem"}}
+        match_version: {type: string}
+        rankings: {type: array, items: {type: object, additionalProperties: true}}
+        api_version: {type: string}
+        request_id: {type: string}
+    FeedbackWrite:
+      type: object
+      additionalProperties: false
+      required: [task_candidate_id, feedback_context, feedback_state]
+      properties:
+        task_candidate_id: {type: integer, minimum: 1}
+        feedback_context: {type: string}
+        feedback_state: {type: string, enum: [interested, not_suitable, started, completed]}
+    SystemStatus:
+      type: object
+      additionalProperties: true
+      required: [database_ready, api_version, match_version, request_id]
+      properties:
+        database_ready: {type: boolean}
+        api_version: {type: string}
+        match_version: {type: string}
+        request_id: {type: string}

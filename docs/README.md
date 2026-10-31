@@ -9,6 +9,7 @@
 | [系统架构](architecture.md) | 模块怎样连接、运行时走哪条链路？ | `src/oss_mentor/`、`CODER/src/coder_issue/` |
 | [数据与模型](data-and-model.md) | 使用什么数据、算法如何计算、指标和限制是什么？ | 数据 manifest、模型 manifest、`metrics.json` |
 | [接口契约](interfaces.md) | B 输入什么、C 返回什么、D 怎样接平台？ | `contracts.py`、`model_scoring.py`、`api.py` |
+| [OpenAPI v0.6](openapi_v0.6.yaml) | 当前 HTTP 路径、请求/响应、身份与错误语义是什么？ | `api.py`、`contracts_midterm.py`、契约测试 |
 | [运行手册](operations.md) | 如何安装、生成缓存、启动、恢复训练和测试？ | CLI 与脚本参数、当前配置 |
 
 根目录 [README](../README.md) 是新成员的唯一总入口；[PRODUCT](../PRODUCT.md) 只描述产品承诺和边界。
@@ -21,7 +22,9 @@
 2. 本目录四份当前文档；
 3. Git 历史中的旧阶段文档。
 
-旧 OpenAPI 快照没有覆盖当前 CODER 接口，且包含已经不存在的路由，因此不再作为现行文档保留。新的机器可读规范应从代码和[接口契约](interfaces.md)重新生成并加入一致性测试。
+`openapi_v0.6.yaml` 是与当前路由一起维护的机器可读规范。修改 API 字段、
+认证方式或错误语义时，必须同步更新该文件和[接口契约](interfaces.md)，并
+由契约测试检查新增路由是否被登记。
 
 ## 维护规则
 

@@ -3,9 +3,12 @@
 本文给出当前 CODER 接入中成员 B 的输入、推荐模块的评分边界，以及成员 D 可消费的服务/HTTP 输出。代码真相位于：
 
 - `src/oss_mentor/contracts.py`
+- `src/oss_mentor/contracts_midterm.py`
 - `src/oss_mentor/model_scoring.py`
 - `src/oss_mentor/services/recommendation_service.py`
+- `src/oss_mentor/services/midterm_profile_service.py`
 - `src/oss_mentor/api.py`
+- `docs/openapi_v0.6.yaml`
 - `CODER/src/coder_issue/inference/scorer.py`
 
 ## 1. 职责划分
@@ -51,7 +54,12 @@ DeveloperProfileV2(
 - `service_track` 只能是 `newcomer` 或 `growth`；旧 `hybrid` 不在当前公共契约内。
 - 技能名执行 `strip().casefold()`；归一化后同名但等级冲突会拒绝。
 - 登录入口必须由服务端根据 session 读取当前用户画像，不能接收客户端提交的 owner/user ID。
-- `developer_key` 不是画像字段；D 从已认证 GitHub 身份传入当前 `github_login`，用于查找历史用户向量。
+- `developer_key` 不是画像字段，也不是平台所有权标识。D 只从已认证
+  session 的 GitHub 身份生成该值，执行 `strip().casefold()` 后用于查找历史
+  用户向量；没有已验证映射时必须为 `null`，模型走 cold-start。
+- `profile_key`、`user_id` 和其他平台内部 UUID 不得冒充
+  `developer_key`。浏览器不能通过请求体或查询参数指定或切换
+  `developer_key`。
 
 ### 候选任务
 
@@ -173,7 +181,9 @@ ModelScoreBatch(
 
 ## 5. HTTP API
 
-基础版本为 `v0.5`。所有 JSON 响应追加 `request_id`；错误形状为 `{"error":{"code","message","request_id"}}`。
+现有接口继续返回 `v0.5` 兼容字段。中期画像问答、预览、确认和增强特征导出
+使用 `api_version=v0.6`。所有 JSON 响应追加 `request_id`；错误形状为
+`{"error":{"code","message","request_id"}}`。
 
 | 方法与路径 | 认证 | 用途 |
 |---|---|---|
@@ -194,6 +204,24 @@ ModelScoreBatch(
 | `POST /api/v1/me/profile/import-github` | 是 | 经同意导入有限公开 GitHub 证据 |
 | `POST /api/v1/me/profile/suggestions/{id}/accept` | 是 | 接受画像建议 |
 | `POST /api/v1/me/profile/suggestions/{id}/reject` | 是 | 拒绝画像建议 |
+| `GET /api/v1/me/profile/questionnaire` | 是 | 获取当前版本画像问卷 |
+| `POST /api/v1/me/profile/assessment-preview` | 是 | 保存回答并生成预览和确认计划 |
+| `POST /api/v1/me/profile/assessment-confirm` | 是 | 按服务端计划确认接受/拒绝并生成画像版本 |
+| `GET /api/v1/me/profile/enhanced-features` | 是 | 导出 C 消费的已确认 23 维画像 |
+
+### 中期画像确认边界
+
+- `assessment-preview` 只接受 `questionnaire_version`、`answers` 和
+  `idempotency_key`；提交时刻、`user_id`、`profile_key` 和基础画像版本均由
+  服务端生成。
+- `assessment-confirm` 只接受 `plan_id`、`decisions` 和
+  `idempotency_key`。服务端按 `(session user_id, plan_id)` 读取计划和当前
+  画像状态，不接受浏览器提交整包计划、建议或画像快照。
+- stale plan、同一幂等键对应不同确认载荷、计划重复确认均返回
+  `409 state_conflict`。决策、不可变特征快照和 current pointer 在同一
+  事务内提交。
+- `enhanced-features` 只允许可选查询参数 `profile_version`。返回的
+  `observed_mask=false` 表示未知，不得解释为低能力零分。
 
 ### 登录推荐响应
 

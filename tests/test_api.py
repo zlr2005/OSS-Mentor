@@ -163,7 +163,7 @@ class ApiTests(unittest.TestCase):
             cookies={"oss_mentor_session": "session"},
         )
         self.assertEqual(200, response.status)
-        self.assertEqual("Known-Login", scorer.developer_key)
+        self.assertEqual("known-login", scorer.developer_key)
         self.assertEqual("coder-test", response.body["rankings"][0]["model_version"])
 
     def test_health_and_profiles(self) -> None:
