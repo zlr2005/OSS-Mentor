@@ -14,18 +14,19 @@
 ## 当前状态
 
 这一版提供 B 模块内部的确定性评分、GitHub 贡献证据解释、证据融合、确认规则、
-确认后特征交付和固定 fixture。
-确认规则使用私有字典结构，不保存数据库，也不接收浏览器提交的用户身份。
+确认后特征交付、固定 fixture，以及 D S0 公共契约与 SQLite 012 的持久化实现。
+浏览器输入仍不包含用户、开发者或画像所有权字段；服务端必须从 session 注入
+`user_id`，再由存储解析其唯一画像。
+
 尚未完成的内容包括：
 
-- D 的 `contracts_midterm.py` 适配；
-- 问卷回答、预览和确认记录的 SQLite `012` 迁移；
 - D 负责的 HTTP API 和页面；
-- A 的真实贡献数据公共契约适配（当前已有与计划字段对齐的私有适配器）；
-- C 的 CodeBERT 编码产物适配；
+- A 的真实 star/fork 等弱兴趣数据交付；
+- C 的统一代码编码产物与画像适配模型；
 - 基于真实样本的权重校准和误差分析。
 
-在 S0 公共契约冻结前，不应把本模块的私有字典结构复制成第二套公共契约。
+私有评分字典只在 B 业务模块内部使用，对外边界统一映射到
+`contracts_midterm.py`，不复制第二套公共契约。
 
 ## 画像确认规则
 
@@ -125,8 +126,9 @@ assert len(features["feature_names"]) == len(features["values"]) == 23
 assert len(features["observed_mask"]) == len(features["evidence_refs"]) == 23
 ```
 
-当前函数不接收完整当前画像，也不更新 `DeveloperProfileV2`。确认值和锁定值只能通过
-受信任的 `external_evidence` 传入；最终的当前值/建议值差异、确认和持久化由下一阶段实现。
+纯函数仍不直接更新 `DeveloperProfileV2`。确认值和锁定值只能通过受信任的
+`external_evidence` 传入；最终的当前值/建议值差异由确认模块计算，并由
+`SQLiteMidtermProfileStore` 持久化为不可变特征快照和当前版本指针。
 
 ### 给 C：特征含义
 
@@ -157,9 +159,27 @@ C 验证 23 维顺序、mask 和当前兴趣可以消费；D 验证问卷选项�
 两方都需记录验收的提交 SHA、命令和结果。当前测试命令显式发现 `tests/midterm_b`；
 共享 CI 是否登记这一目录由 D 确认，不能仅凭本地通过认定 CI 已覆盖。
 
-下一阶段仍需：D 的 S0 契约及迁移编号确认；B 的回答、预览和确认记录持久化；
-A 的真实本人贡献记录；C 的统一编码产物。确认业务规则已经实现，但此交付没有实现
-公共 API、页面或真实贡献数据接入。
+当前已完成 D S0 契约适配、A 合成 fixture 到 `ProfileEvidence` 的审计适配、
+`012_midterm_profile_assessment.sql` 以及 SQLite 回答、预览、计划、确认和特征版本持久化。
+A 的真实贡献与代码数据 v0.2 已完成 011 导入和 `ProfileEvidence` 联调；仍需 A 的真实
+star/fork 等弱兴趣记录、C 的统一编码产物，以及 D 负责的公共 API 和页面接入。
+合成 fixture 只验证程序边界，不能作为真实画像或模型效果结论。
+
+### 真实贡献数据 v0.2 联调
+
+联调固定 A 的 commit `7315e9b6d64ee123a975ed38eae155a4677c6ed3`，数据版本为
+`b-real-contributions-v0.2-20261028`。交付字节、表间引用和代码哈希校验通过；使用
+chunk size 500 和 777 两次导入均得到同一 batch ID，状态均为 `25255/25255 completed`，
+外键错误为 0。联调数据库位于忽略目录 `data/midterm/`，不提交生成的 SQLite 文件。
+
+本批覆盖 309 个仓库、3,865 条贡献和代码版本，其中 3,715 个代码版本可用，150 个按
+`code_size_limit` 或 `file_deleted_at_commit` 保留缺失原因。真实样本回归确认：已验证身份
+和可用代码可生成直接证据；未确认身份不生成证据；缺失代码保留排除原因，不填充为能力；
+项目行为只有 contribution，因此不生成弱兴趣证据。输出的 limitations 明确保留尚未交付的
+star、fork、owned repository interest、完整仓库历史和 CODER inference。
+
+平台 `profile_key` 是画像 UUID，不能直接充当训练数据 `developer_key`。当前没有经过验证的
+身份映射时，`EnhancedProfileFeatures.developer_key` 必须为 `null`，由 C 的模型走 cold-start。
 
 ## GitHub 贡献证据解释
 

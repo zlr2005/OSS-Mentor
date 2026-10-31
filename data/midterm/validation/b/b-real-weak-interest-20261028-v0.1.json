@@ -1,0 +1,95 @@
+{
+  "schema_version": "b-real-weak-interest-validation-v0.1",
+  "validation_date": "2026-10-30",
+  "status": "passed",
+  "source": {
+    "release_tag": "a-b-weak-interest-20261028",
+    "source_branch": "zlr/b-weak-interest-delivery",
+    "source_commit": "574cb6bf71891dbe1a96d8dce1292b1bbd906c56",
+    "dataset_version": "b-real-contributions-with-weak-8cc664dd7446b2d8",
+    "zip_size_bytes": 199303404,
+    "zip_sha256": "ea21efafa53504d784334e5b939d413b3e1ad603fb249f65b621254191730a4e",
+    "database_size_bytes": 1204207616,
+    "database_sha256": "f5908679a1d7cfaceb142f37eeb0352754401a3eb7c3b4d6f65d8fef894ecb1c"
+  },
+  "code": {
+    "branch": "codex/midterm-profile-persistence-w2",
+    "base_commit": "f212b360d12beb6cf91bf8fa363fb3fe71c7fb6f",
+    "profile_evidence_source_context_fix_commit": "2bc0aa2825ad7ce3cde19600378e9b8a6107f601"
+  },
+  "database_checks": {
+    "integrity_check": "ok",
+    "foreign_key_error_count": 0,
+    "schema_version": "b-profile-evidence-db-v1",
+    "fixture_only": false,
+    "import_status": "completed",
+    "import_checkpoint": 367960,
+    "import_total_items": 367960,
+    "asset_count": 15139
+  },
+  "source_counts": {
+    "developers": 1325,
+    "verified_identities": 1298,
+    "unconfirmed_identities": 27,
+    "contribution_behaviors": 2218,
+    "star_behaviors": 92852,
+    "fork_behaviors": 64291,
+    "owned_repository_behaviors": 29645,
+    "weak_behaviors_total": 186788,
+    "coverage_rows": 2548
+  },
+  "account_coverage": {
+    "complete_with_records": 970,
+    "complete_empty": 15,
+    "partial": 286,
+    "behavior_failed": 1,
+    "identity_failed": 4,
+    "excluded_identity_unconfirmed": 27,
+    "excluded_non_human_account": 22
+  },
+  "profile_evidence_results": {
+    "developers_checked": 1325,
+    "accounts_with_weak_evidence": 1232,
+    "direct_evidence_count": 8138,
+    "weak_evidence_count": 99093,
+    "weak_behaviors_audited": 186788,
+    "excluded_unsupported_or_missing_language": 87695
+  },
+  "checks": {
+    "zip_hash_matches_release": true,
+    "database_hash_matches_metadata": true,
+    "all_developers_checked": true,
+    "all_weak_evidence_has_source_hashes": true,
+    "all_weak_evidence_has_coverage_context": true,
+    "star_uses_starred_at": true,
+    "fork_and_owned_time_remains_unknown": true,
+    "recency_not_applied_to_unknown_time": true,
+    "unconfirmed_identity_produces_no_evidence": true,
+    "weak_interest_maps_only_to_language_preferences": true,
+    "weak_interest_is_not_interpreted_as_ability": true,
+    "partial_pending_and_failed_coverage_preserved": true
+  },
+  "tests": {
+    "dataset_evidence_adapter": {
+      "passed": 12,
+      "failed": 0
+    },
+    "midterm_b": {
+      "passed": 62,
+      "failed": 0
+    },
+    "python_full_suite": {
+      "passed": 621,
+      "failed": 0
+    },
+    "compileall": "passed",
+    "git_diff_check": "passed"
+  },
+  "limitations": [
+    "Weak-interest records are bounded public observations rather than complete account histories.",
+    "Partial, pending, failed, empty, and identity-failed states must remain distinguishable.",
+    "Repository primary language is observation-time metadata, not necessarily the language at the time of a star.",
+    "Fork and owned-repository acquisition times are unknown and must not be inferred from repository creation time.",
+    "Weak-interest language evidence must not be interpreted as programming ability or model-effect evidence."
+  ]
+}
