@@ -341,7 +341,15 @@ paths:
         "400": {$ref: "#/components/responses/Error"}
         "401": {$ref: "#/components/responses/Error"}
         "404": {$ref: "#/components/responses/Error"}
-        "503": {$ref: "#/components/responses/Error"}
+        "503":
+          description: |
+            `service_not_ready` when storage is unavailable, or
+            `model_unavailable` when CODER/model artifacts or candidate vectors
+            cannot score every eligible candidate. The service fails closed and
+            never silently switches to legacy ranking.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
   /api/v1/recommendations:
     get:
       summary: Legacy recommendations for a public stored profile
@@ -828,47 +836,144 @@ components:
         refreshed: {type: boolean}
         api_version: {type: string}
         request_id: {type: string}
+    RecommendationDifficulty:
+      type: object
+      required: [code, setup]
+      properties:
+        code: {type: integer, minimum: 0, maximum: 3}
+        setup: {type: integer, minimum: 0, maximum: 3}
+    RecommendationReason:
+      type: object
+      required: [code, label, evidence, score_delta, feature_version]
+      properties:
+        code:
+          type: string
+          enum:
+            - language_match
+            - task_type_match
+            - skill_match
+            - skill_stretch
+            - newcomer_signal
+            - active_repository
+            - fresh_issue
+            - contributing_guide_available
+            - issue_clarity
+            - growth_value
+            - negative_feedback_penalty
+            - diversity_rerank
+        label: {type: string}
+        evidence: {type: string}
+        score_delta: {type: number, minimum: -1, maximum: 1}
+        feature_version: {type: string}
     RecommendationItem:
       type: object
       additionalProperties: true
-      required: [task_candidate_id, repository_full_name, issue_number, title, html_url, service_track, score, matched_skills, missing_skills, reasons, warnings, availability]
+      required:
+        - task_candidate_id
+        - repository_full_name
+        - issue_number
+        - title
+        - html_url
+        - service_track
+        - score
+        - difficulty
+        - matched_skills
+        - missing_skills
+        - reasons
+        - warnings
+        - availability
+        - feedback_state
       properties:
-        task_candidate_id: {type: integer}
+        task_candidate_id: {type: integer, minimum: 1}
         repository_full_name: {type: string}
-        issue_number: {type: integer}
+        issue_number: {type: integer, minimum: 1}
         title: {type: string}
         html_url: {type: string, format: uri}
         service_track: {type: string, enum: [newcomer, growth]}
         score: {type: number, minimum: 0, maximum: 1}
-        difficulty: {type: object, additionalProperties: true}
+        difficulty: {$ref: "#/components/schemas/RecommendationDifficulty"}
         matched_skills: {type: array, items: {type: string}}
         missing_skills: {type: array, items: {type: string}}
-        reasons: {type: array, items: {type: object, additionalProperties: true}}
+        reasons: {type: array, items: {$ref: "#/components/schemas/RecommendationReason"}}
         warnings: {type: array, items: {type: string}}
-        availability: {type: string}
-        verified_at: {type: string, nullable: true}
-        feedback_state: {type: string, nullable: true}
+        availability: {type: string, enum: [available]}
+        verified_at: {type: string, format: date-time, nullable: true}
+        feedback_state:
+          type: string
+          nullable: true
+          enum: [interested, not_suitable, started, completed]
+        track: {type: string, description: Compatibility alias of service_track}
+        repository: {type: string, description: Compatibility alias of repository_full_name}
+        match_score: {type: number, description: Compatibility 0..100 alias of score}
+        skill_coverage: {type: number, minimum: 0, maximum: 1}
+        maximum_skill_gap: {type: integer, minimum: 0, maximum: 1}
+        skill_gaps: {type: array, items: {type: object, additionalProperties: true}}
+    RankingRow:
+      type: object
+      additionalProperties: false
+      required: [task_candidate_id, raw_score, final_score, raw_rank, final_rank, diversity_reranked]
+      properties:
+        task_candidate_id: {type: integer, minimum: 1}
+        raw_score: {type: number}
+        final_score: {type: number}
+        raw_rank: {type: integer, minimum: 1}
+        final_rank: {type: integer, minimum: 1}
+        diversity_reranked: {type: boolean}
+        scoring_engine:
+          type: string
+          enum: [coder_issue_repo]
+          description: Present for CODER-ranked rows
+        model_version: {type: string}
+        dataset_version: {type: string}
+        graph_version: {type: string}
+        encoder_version: {type: string}
+        profile_mode:
+          type: string
+          enum: [known_history, cold_start_population]
+          description: cold_start_population means the verified external developer key did not hit the training mapping
+        coverage_state:
+          type: string
+          enum: [fixed_train_graph, platform_candidate_cache]
     RecommendationBatch:
       type: object
       additionalProperties: true
-      required: [run_id, profile, feedback_context, warnings, count, items, match_version, api_version, request_id]
+      required:
+        - run_id
+        - profile
+        - feedback_context
+        - service_track
+        - match_version
+        - profile_hash
+        - candidate_hash
+        - created_at
+        - warnings
+        - count
+        - items
+        - rankings
+        - api_version
+        - request_id
       properties:
         run_id: {type: string}
         profile:
           type: object
-          additionalProperties: true
+          additionalProperties: false
+          required: [profile_key, display_name, service_track, profile_source, profile_version]
           properties:
             profile_key: {type: string}
             display_name: {type: string}
-            service_track: {type: string}
+            service_track: {type: string, enum: [newcomer, growth]}
             profile_source: {type: string}
             profile_version: {type: string}
         feedback_context: {type: string, nullable: true}
+        service_track: {type: string, enum: [newcomer, growth]}
+        match_version: {type: string}
+        profile_hash: {type: string}
+        candidate_hash: {type: string}
+        created_at: {type: string, format: date-time}
         warnings: {type: array, items: {type: string}}
         count: {type: integer, minimum: 0}
         items: {type: array, items: {$ref: "#/components/schemas/RecommendationItem"}}
-        match_version: {type: string}
-        rankings: {type: array, items: {type: object, additionalProperties: true}}
+        rankings: {type: array, items: {$ref: "#/components/schemas/RankingRow"}}
         api_version: {type: string}
         request_id: {type: string}
     FeedbackWrite:

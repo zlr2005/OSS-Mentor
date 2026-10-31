@@ -410,6 +410,10 @@ class MidtermOpenApiTests(unittest.TestCase):
             self.assertIn(path, document)
         self.assertIn("developer_key", document)
         self.assertIn("must come from the authenticated session", document)
+        self.assertIn("profile_mode", document)
+        self.assertIn("cold_start_population", document)
+        self.assertIn("coverage_state", document)
+        self.assertIn("model_unavailable", document)
         self.assertIn("409", document)
 
 

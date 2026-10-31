@@ -179,6 +179,17 @@ ModelScoreBatch(
 }
 ```
 
+冷启动和覆盖语义：
+
+- `developer_key=null` 或没有命中训练 `developer_mapping` 时，
+  `profile_mode=cold_start_population`，并使用训练用户均值向量；
+  批次 `warnings` 还会包含 `coder_unknown_developer_population_fallback`。
+- 这是可解释的冷启动降级结果，不是 `known_history`，也不是
+  `503 model_unavailable`。页面必须显式显示该状态。
+- `coverage_state=fixed_train_graph` 表示候选来自冻结训练图；
+  `coverage_state=platform_candidate_cache` 表示候选文本由当前平台缓存向量覆盖。
+  两种状态都必须与模型、数据集、图和编码器版本一起报告。
+
 ## 5. HTTP API
 
 现有接口继续返回 `v0.5` 兼容字段。中期画像问答、预览、确认和增强特征导出

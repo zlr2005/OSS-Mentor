@@ -586,8 +586,9 @@ class RecommendationApi:
         feedback_context: str | None = None,
         developer_key: str | None = None,
     ) -> ApiResponse:
+        contract_profile = as_developer_profile_v2(profile)
         batch = self.recommendation_service.recommend(
-            profile=as_developer_profile_v2(profile),
+            profile=contract_profile,
             limit=limit,
             feedback_context=feedback_context,
             developer_key=developer_key,
@@ -600,6 +601,7 @@ class RecommendationApi:
                     "display_name": profile["display_name"],
                     "service_track": profile["service_track"],
                     "profile_source": profile.get("profile_source", "stored"),
+                    "profile_version": contract_profile.profile_version,
                 },
                 "items": [
                     {
@@ -626,7 +628,11 @@ class RecommendationApi:
                 "count": len(batch.items),
                 "feedback_context": feedback_context,
                 "run_id": batch.run_id,
+                "service_track": batch.service_track,
                 "match_version": batch.match_version,
+                "profile_hash": batch.profile_hash,
+                "candidate_hash": batch.candidate_hash,
+                "created_at": batch.created_at,
                 "warnings": list(batch.warnings),
                 "rankings": list(batch.rankings),
                 "api_version": API_VERSION,
