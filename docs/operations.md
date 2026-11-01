@@ -110,6 +110,18 @@ $env:OSS_MENTOR_BASE_URL = 'http://127.0.0.1:8765'
 
 ### 默认 CODER 模式
 
+正式 `coder-full-search8-v1` 产物不写入 Git 历史，而是随同名 GitHub Release
+发布。下载 `coder-full-search8-v1.zip` 后先核对归档 SHA-256：
+
+```text
+16b500978862d78ee9c88c4fa7215a0a7d30545c2a05571a798de29d813c1dd1
+```
+
+随后将归档解压到仓库根目录。归档保留 `data/...` 相对路径，完整文件大小、
+逐文件 SHA-256、数据版本和编码器版本记录在
+`CODER/docs/coder_full_search8_bundle_manifest.json`；归档内部也包含同一份清单和
+`SHA256SUMS`。模型 bundle 当前包含 48 项平台候选缓存，不代表完整冻结候选集。
+
 ```powershell
 & '.\CODER\.venv\Scripts\python.exe' -m oss_mentor serve-api
 ```

@@ -1,0 +1,51 @@
+{
+  "bundle_version": "coder-full-search8-v1",
+  "source_commit": "b337ee5cdb9c5f8e6e55d22a69e1ecf2a8141de6",
+  "dataset_version": "gfibot-m0-v1.1",
+  "encoder_version": "sentence-transformers/all-MiniLM-L6-v2@c21050a7ef692090620a6d037dd736908f9c7cf6",
+  "release_url": "https://github.com/zlr2005/OSS-Mentor/releases/tag/coder-full-search8-v1",
+  "archive": {
+    "name": "coder-full-search8-v1.zip",
+    "bytes": 276663623,
+    "sha256": "16b500978862d78ee9c88c4fa7215a0a7d30545c2a05571a798de29d813c1dd1",
+    "unpack_root": "repository root"
+  },
+  "candidate_count": 48,
+  "files": [
+    {
+      "path": "data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1/weights.pt",
+      "bytes": 285768987,
+      "sha256": "38d279daa0c2fb1b632bcfbfce73abc524a27a535e24429dc9d8615cd59302ae"
+    },
+    {
+      "path": "data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1/embeddings.npz",
+      "bytes": 21799151,
+      "sha256": "70b6dc84c990af49d160014db3619407b6654f20b1288e02641698ab8092fd8d"
+    },
+    {
+      "path": "data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1/model_manifest.json",
+      "bytes": 1902,
+      "sha256": "62974d6a16e1c3dd00fb9b4179fc6cca68f81de7739351cafd65bedb953b3f48"
+    },
+    {
+      "path": "data/midterm/normalized/gfibot-m0-v1.1/mappings/developer_mapping.parquet",
+      "bytes": 341929,
+      "sha256": "124d4fe81c1d8829d30c8eb4492e4f4f73a7462c24f4e98ab1ce9775e097e0d8"
+    },
+    {
+      "path": "data/midterm/normalized/gfibot-m0-v1.1/mappings/issue_mapping.parquet",
+      "bytes": 1027983,
+      "sha256": "a0fb44ccf86bf97bd09e1f393ab31e48a1c7c858237536b4495b90c88624e18f"
+    },
+    {
+      "path": "data/midterm/platform/coder-full-search8-v1/candidates.npz",
+      "bytes": 6888,
+      "sha256": "d412c91ce99475f8033207f0a68e7422b7ae84006d60e9141c95d8a58bf1b4dc"
+    },
+    {
+      "path": "data/midterm/platform/coder-full-search8-v1/candidates.manifest.json",
+      "bytes": 386,
+      "sha256": "5d4fa113829b7131fdc6205851b355ad9c8c2b831d981e41e6f67f862bb796f8"
+    }
+  ]
+}
