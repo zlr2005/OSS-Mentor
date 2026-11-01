@@ -996,6 +996,9 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         auth_service=auth_service,
         recommendation_service=recommendation_service,
         candidate_service=candidate_service,
+        questionnaire_path=(
+            settings.repo_root / "config/midterm_profile/questionnaire_v0.1.json"
+        ),
     )
     return 0
 
