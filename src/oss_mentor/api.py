@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import re
 import sqlite3
@@ -56,7 +57,10 @@ from oss_mentor.services.midterm_profile_service import (
     SQLiteMidtermProfileApiStore,
     verified_developer_key,
 )
-from oss_mentor.services.model_gateway import current_model_metadata
+from oss_mentor.services.model_gateway import (
+    current_model_metadata,
+    scorer_with_profile,
+)
 from oss_mentor.storage.profiles import SQLiteProfileStorage
 from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
 from oss_mentor.storage.candidates import SQLiteCandidateStorage
@@ -887,6 +891,25 @@ class RecommendationApi:
                 "profile_required",
                 "create a profile before requesting recommendations",
             )
+        developer_key = verified_developer_key(user.get("github_login"))
+        enhanced_profile = None
+        if self.midterm_profile_service is not None:
+            try:
+                enhanced_profile = self.midterm_profile_service.enhanced_features(
+                    user_id=user_id,
+                    developer_key=developer_key,
+                ).to_dict()
+            except (
+                MidtermProfileRequiredError,
+                MidtermProfileNotConfirmedError,
+            ):
+                enhanced_profile = None
+            except ValueError as exc:
+                return self._error(
+                    422,
+                    "profile_validation_failed",
+                    str(exc),
+                )
         return self._recommendations(
             profile,
             limit=limit,
@@ -894,7 +917,8 @@ class RecommendationApi:
                 user_id,
                 str(profile["profile_key"]),
             ),
-            developer_key=verified_developer_key(user.get("github_login")),
+            developer_key=developer_key,
+            enhanced_profile=enhanced_profile,
         )
 
     @staticmethod
@@ -992,9 +1016,18 @@ class RecommendationApi:
         limit: int,
         feedback_context: str | None = None,
         developer_key: str | None = None,
+        enhanced_profile: dict[str, Any] | None = None,
     ) -> ApiResponse:
         contract_profile = as_developer_profile_v2(profile)
-        batch = self.recommendation_service.recommend(
+        recommendation_service = self.recommendation_service
+        scorer = scorer_with_profile(
+            recommendation_service.model_scorer,
+            enhanced_profile,
+        )
+        if scorer is not recommendation_service.model_scorer:
+            recommendation_service = copy.copy(recommendation_service)
+            recommendation_service.model_scorer = scorer
+        batch = recommendation_service.recommend(
             profile=contract_profile,
             limit=limit,
             feedback_context=feedback_context,

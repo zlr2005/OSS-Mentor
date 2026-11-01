@@ -132,8 +132,15 @@ candidates.npz
 & '.\CODER\.venv\Scripts\python.exe' -m oss_mentor serve-api `
   --coder-model-dir '.\data\models\gfibot-m0-v1.1\coder\coder-full-search8-v1' `
   --coder-mapping-dir '.\data\midterm\normalized\gfibot-m0-v1.1\mappings' `
-  --coder-candidate-cache '.\data\midterm\platform\coder-full-search8-v1\candidates.npz'
+  --coder-candidate-cache '.\data\midterm\platform\coder-full-search8-v1\candidates.npz' `
+  --profile-adapter-dir '.\data\models\gfibot-m0-v1.1\coder\profile-adapter-v1'
 ```
+
+`--profile-adapter-dir` 也可通过 `OSS_MENTOR_PROFILE_ADAPTER_DIR` 设置。目录必须包含
+`adapter_manifest.json` 与 `weights.pt`，且 manifest 中的基础模型版本必须与当前 CODER
+bundle 完全一致。未配置 adapter 时，`/api/v1/me/recommendations` 只使用基础 CODER；
+配置后，已在平台确认的 23 维画像会通过 D 侧 scorer adapter 注入同一次基础模型评分。
+没有已确认画像的请求仍走基础 CODER，不会伪造全零画像或静默切换规则排序。
 
 ### 旧规则兼容演示
 

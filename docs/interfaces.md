@@ -103,7 +103,10 @@ class ModelScorer(Protocol):
 
 当前 `CoderIssueScorer` 行为：
 
-- `profile` 已由平台用于硬过滤，当前模型不直接编码画像；
+- `profile` 已由平台用于硬过滤；未配置 profile adapter 时模型不直接编码画像；
+- 配置 `profile_adapter_dir` 后，D 只为已确认画像传入冻结的
+  `EnhancedProfileFeatures` 映射，C 在用户塔末端加入画像残差；
+- 没有已确认画像时仍使用基础 CODER，不构造全零“已确认”画像；
 - `developer_key` 命中映射时使用历史用户向量，否则使用总体均值；
 - 每个候选必须返回一个 `ModelScore`，不允许部分结果；
 - 不训练、不下载、不写模型文件。
