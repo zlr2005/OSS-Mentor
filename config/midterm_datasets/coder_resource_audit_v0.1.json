@@ -1,0 +1,65 @@
+{
+  "audit_version": "coder-resource-audit-v1",
+  "repository": "Ahren09/CODER",
+  "checked_at": "2026-10-15T06:22:05.113626+00:00",
+  "commit_sha": "d5f88cf76520e0ab0863f4f01f8f7dd37521d589",
+  "tree_sha": "ab22706296f895dc7edea0b535d3e3ca1cebbfae",
+  "tree_truncated": false,
+  "repository_license": null,
+  "repository_files": [
+    ".gitattributes",
+    ".gitignore",
+    "README.md",
+    "img/CODER.png",
+    "src/dataset/download_repositories.py",
+    "src/utility/utils.py"
+  ],
+  "inspected_files": [
+    {
+      "path": "README.md",
+      "size_bytes": 8674,
+      "sha256": "fef5de7b46bf5895cab525b85a7f446413ba96f07befa097b8c7915556a1b5e2",
+      "source_location": "provenance/4ed8480fe7c9f4f115fb7fd47aa2302feee60096a5c929c3d6105ee04981be6e.json.gz",
+      "url": "https://github.com/Ahren09/CODER/blob/d5f88cf76520e0ab0863f4f01f8f7dd37521d589/README.md"
+    },
+    {
+      "path": "src/dataset/download_repositories.py",
+      "size_bytes": 954,
+      "sha256": "76e7c2dae47d5907dad0a7a2e0b523267ce61233e8d370605cb2b554581afada",
+      "source_location": "provenance/209587426a30251feba3573b1541ca2a83f3467d76761dde47a719d0be1ce0ff.json.gz",
+      "url": "https://github.com/Ahren09/CODER/blob/d5f88cf76520e0ab0863f4f01f8f7dd37521d589/src/dataset/download_repositories.py"
+    },
+    {
+      "path": "src/utility/utils.py",
+      "size_bytes": 195,
+      "sha256": "0bdf20215325e818c6b6fdc6ec6106e13d494118e0f5bf26ee5cfab59da192b8",
+      "source_location": "provenance/b4010cda0bebcad31208374f0f30c68f410d468dac61a48aa8ebaa0cc6a55e97.json.gz",
+      "url": "https://github.com/Ahren09/CODER/blob/d5f88cf76520e0ab0863f4f01f8f7dd37521d589/src/utility/utils.py"
+    }
+  ],
+  "raw_data_link_check": {
+    "url": "https://drive.google.com/drive/folders/1-dehBnSc9kBcEKwL9SroEqNMVoLOvU1F",
+    "http_status": 404,
+    "status": "unavailable_from_this_environment"
+  },
+  "findings": {
+    "training_implementation_in_checked_tree": false,
+    "processed_dataset_in_checked_tree": false,
+    "license_file_in_checked_tree": false,
+    "readme_lists_raw_archives": [
+      "stargazers.tar.gz",
+      "stargazers_2023.tar.gz",
+      "watchers.tar.gz",
+      "subscribers.tar.gz",
+      "forks.tar.gz"
+    ],
+    "raw_archives_downloaded": false,
+    "reproduction_status": "partial_resources_only"
+  },
+  "limitations": [
+    "Link failure reflects this request; it does not prove permanent data deletion.",
+    "No explicit repository license found; no upstream source was vendored into project code.",
+    "GitHub supplements are separate sources, not confirmed original CODER benchmark records.",
+    "Training reconstruction and experiment protocol belong to C."
+  ]
+}
