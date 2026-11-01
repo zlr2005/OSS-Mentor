@@ -1,6 +1,6 @@
 {
   "created_at": "2026-10-28T02:56:45.115250+00:00",
-  "dataset_version": "c-issue-candidates-v1-20261028",
+  "dataset_version": "c-issue-candidates-v1-20261028-security-redacted-v1",
   "files": [
     {
       "path": ".gitattributes",
@@ -8,14 +8,19 @@
       "size_bytes": 9
     },
     {
+      "path": "README.md",
+      "sha256": "57c9c1225bc159722b557d995e514f9fa88a24304a6188caed99ad1156767580",
+      "size_bytes": 1871
+    },
+    {
       "path": "dataset.py",
       "sha256": "4036616ad873a2460c0919ab60a32ca018e4b8a3be4917968c78eff11d5ee5e8",
       "size_bytes": 3359
     },
     {
-      "path": "README.md",
-      "sha256": "09b8a1a1a3f587f7c8eeb60f33a655d4d9432788b4925c4e0913cda2395debda",
-      "size_bytes": 1401
+      "path": "publication_redaction.json",
+      "sha256": "949dabc66627b0dfc6dca4fdf5e4fa0a7dc2f906244c0774e9bd09b7592b32ca",
+      "size_bytes": 620
     },
     {
       "path": "schema.sql",
@@ -74,8 +79,8 @@
     },
     {
       "path": "tables/task_candidate.0010.jsonl",
-      "sha256": "7512ef90b2e4017156bc20b47d432fa5cd947aa97082813d2acd7fd4ae9ecd9d",
-      "size_bytes": 8218995
+      "sha256": "0e6af570f121067f54243447cf9676c862621f66582211009f2269ed1579f3f2",
+      "size_bytes": 8218925
     },
     {
       "path": "tables/task_candidate.0011.jsonl",
@@ -383,6 +388,24 @@
       "unknown": 6
     },
     "verification_current_by_timestamp": 0
+  },
+  "publication_redaction": {
+    "changes": [
+      {
+        "action": "credential_substrings_redacted",
+        "file": "tables/task_candidate.0010.jsonl",
+        "task_candidate_ids": [
+          4635
+        ]
+      }
+    ],
+    "credentials_validated_or_used": false,
+    "historical_git_content_removed": false,
+    "parent_dataset_version": "c-issue-candidates-v1-20261028",
+    "parent_manifest_sha256": "43a36ec9c0e0d3a46d3de219306d268145ac0f83bd5aef5ce5818c0f209f6cb7",
+    "policy": "withhold credential-bearing code; redact credential substrings in candidate text",
+    "provider_revocation_confirmed": false,
+    "redacted_at": "2026-11-01T15:31:21.327645+00:00"
   },
   "schema_version": "c-candidate-tables-v1",
   "source": "Canonical local oss_mentor.sqlite3 candidate tables; no personal tables exported",

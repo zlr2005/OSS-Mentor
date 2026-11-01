@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 
 from oss_mentor.datasets.snapshot import load_snapshot
+from oss_mentor.datasets.publication_secrets import require_publication_safe
 
 
 def digest(data):return hashlib.sha256(data).hexdigest()
@@ -48,6 +49,7 @@ def export_delivery(coverage_path,target,verifier_path):
            'license_documents','source_snapshots','excluded_commits','weak_interest_behaviors')
     tables={kind:[] for kind in kinds};developers={};repositories=set();validation_count=0
     def put(relative,data):
+        require_publication_safe(data)
         path=target/relative;path.parent.mkdir(parents=True,exist_ok=True)
         if path.exists() and path.read_bytes()!=data:raise ValueError('Conflicting content-addressed asset')
         path.write_bytes(data)
