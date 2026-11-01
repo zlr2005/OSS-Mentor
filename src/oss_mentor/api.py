@@ -6,6 +6,7 @@ import json
 import re
 import sqlite3
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -14,7 +15,12 @@ from uuid import UUID, uuid4
 
 from oss_mentor.candidate_sync import CandidateDetail, CandidateService
 from oss_mentor.collector.github_client import GitHubApiError, RateLimitExceeded
-from oss_mentor.contracts_midterm import IdempotencyConflictError, StalePlanError
+from oss_mentor.contracts_midterm import (
+    IdempotencyConflictError,
+    ProjectRecommendationItem,
+    PublicCandidateItem,
+    StalePlanError,
+)
 from oss_mentor.developer_profiles import (
     ALLOWED_LANGUAGES,
     ALLOWED_OPERATING_SYSTEMS,
@@ -50,6 +56,7 @@ from oss_mentor.services.midterm_profile_service import (
     SQLiteMidtermProfileApiStore,
     verified_developer_key,
 )
+from oss_mentor.services.model_gateway import current_model_metadata
 from oss_mentor.storage.profiles import SQLiteProfileStorage
 from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
 from oss_mentor.storage.candidates import SQLiteCandidateStorage
@@ -61,6 +68,9 @@ MAX_JSON_BODY_BYTES = 32 * 1024
 FEEDBACK_STATES = {"interested", "not_suitable", "started", "completed"}
 PROFILE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 TASK_DETAIL_PATH_PATTERN = re.compile(r"^/api/v1/tasks/([1-9][0-9]{0,18})$")
+RECOMMENDATION_RUN_PATH_PATTERN = re.compile(
+    r"^/api/v1/recommendation-runs/([A-Za-z0-9-]{1,80})$"
+)
 REFRESH_TRUE = {"1", "true", "yes"}
 REFRESH_FALSE = {"0", "false", "no", ""}
 MIDTERM_PROFILE_PATHS = {
@@ -105,14 +115,21 @@ _STATIC_ROUTES = {
     "/profile.html": ("profile.html", "text/html; charset=utf-8"),
     "/recommendations": ("recommendations.html", "text/html; charset=utf-8"),
     "/recommendations.html": ("recommendations.html", "text/html; charset=utf-8"),
+    "/recommendation-run": ("recommendation-run.html", "text/html; charset=utf-8"),
+    "/recommendation-run.html": ("recommendation-run.html", "text/html; charset=utf-8"),
     "/task": ("task.html", "text/html; charset=utf-8"),
     "/task.html": ("task.html", "text/html; charset=utf-8"),
+    "/assets/app.css": ("assets/app.css", "text/css; charset=utf-8"),
+    "/assets/ui.js": ("assets/ui.js", "text/javascript; charset=utf-8"),
+    "/assets/run.js": ("assets/run.js", "text/javascript; charset=utf-8"),
+    "/assets/questionnaire.js": ("assets/questionnaire.js", "text/javascript; charset=utf-8"),
     "/assets/task.js": ("assets/task.js", "text/javascript; charset=utf-8"),
     "/assets/task.css": ("assets/task.css", "text/css; charset=utf-8"),
     "/assets/recommendations.js": ("assets/recommendations.js", "text/javascript; charset=utf-8"),
     "/assets/recommendations.css": ("assets/recommendations.css", "text/css; charset=utf-8"),
     "/assets/profile.js": ("assets/profile.js", "text/javascript; charset=utf-8"),
     "/assets/profile.css": ("assets/profile.css", "text/css; charset=utf-8"),
+    "/assets/session-nav.js": ("assets/session-nav.js", "text/javascript; charset=utf-8"),
     "/assets/login.js": ("assets/login.js", "text/javascript; charset=utf-8"),
     "/assets/login.css": ("assets/login.css", "text/css; charset=utf-8"),
     "/assets/styles.css": ("assets/styles.css", "text/css; charset=utf-8"),
@@ -132,12 +149,88 @@ def load_static_asset(static_root: Path | None, path: str) -> StaticAsset | None
     return StaticAsset(source.read_bytes(), content_type)
 
 
-def _candidate_detail_body(row: dict[str, Any]) -> dict[str, Any]:
+_PATH_HINT_PATTERN = re.compile(
+    r"(?<![\w./-])("
+    r"(?:src|packages|lib|app|tests|docs|providers|modules|pkg|internal|crates)"
+    r"/[\w./-]+"
+    r"|[\w.-]+\.(?:py|ts|tsx|js|jsx|go|rs|java|kt|rb|md|yml|yaml|json|toml)"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _body_summary(value: Any, limit: int = 360) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
+    first = paragraphs[0] if paragraphs else text
+    first = re.sub(r"^#{1,6}\s*", "", first)
+    first = re.sub(r"\s+", " ", first)
+    return first[:limit].strip()
+
+
+def _impacted_paths(value: Any, limit: int = 6) -> list[str]:
+    seen: list[str] = []
+    for match in _PATH_HINT_PATTERN.findall(str(value or "")):
+        path = match.strip("`'\"(),.;:")
+        if path and path not in seen:
+            seen.append(path)
+        if len(seen) >= limit:
+            break
+    return seen
+
+
+def _task_guidance(
+    row: dict[str, Any],
+    task: dict[str, Any] | None,
+) -> dict[str, Any]:
+    body = row.get("body_text")
+    goal = _body_summary(body)
+    paths = _impacted_paths(body)
+    repository = str(row["repository"])
+    has_guide = bool(task and task.get("has_contributing_guide"))
+    return {
+        "goal": goal,
+        "goal_source": "issue_body_excerpt" if goal else "unavailable",
+        "impacted_paths": paths,
+        "impacted_paths_source": "body_text_heuristic" if paths else "unavailable",
+        "steps": [
+            "阅读上游 Issue 与评论，确认验收条件和当前是否仍可领取。",
+            "查看仓库 CONTRIBUTING / 开发文档，完成本地环境与测试命令准备。",
+            "定位相关模块并复现问题；改动前先确认已有测试与相邻实现。",
+            "补充或更新测试，运行对应测试子集，再按仓库规范提交 PR。",
+        ],
+        "steps_source": "generic_guidance",
+        "contributing_url": (
+            f"https://github.com/{repository}/blob/HEAD/CONTRIBUTING.md"
+            if has_guide
+            else None
+        ),
+    }
+
+
+def _candidate_detail_body(
+    row: dict[str, Any],
+    task: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Task detail straight from the local snapshot; never calls the network."""
 
+    task = task or {}
+    repository = str(row["repository"])
+    requirements = [
+        {
+            "skill_name": str(item.get("skill_name") or ""),
+            "minimum_level": int(item.get("minimum_level") or 0),
+            "importance": float(item.get("importance") or 0),
+        }
+        for item in (task.get("requirements") or [])
+        if item.get("skill_name")
+    ]
     return {
         "task_candidate_id": int(row["task_candidate_id"]),
-        "repository_full_name": str(row["repository"]),
+        "repository_full_name": repository,
+        "repository_url": f"https://github.com/{repository}",
         "issue_number": int(row["issue_number"]),
         "title": str(row["title"]),
         "body_text": row.get("body_text"),
@@ -146,6 +239,20 @@ def _candidate_detail_body(row: dict[str, Any]) -> dict[str, Any]:
         "availability_reasons": list(row.get("availability_reasons") or []),
         "verified_at": row.get("github_verified_at"),
         "refreshed": False,
+        "labels": list(task.get("labels") or []),
+        "task_types": list(task.get("task_types") or []),
+        "comment_count": int(
+            task.get("comment_count") or row.get("comment_count") or 0
+        ),
+        "last_activity_at": task.get("last_activity_at")
+        or row.get("last_activity_at"),
+        "primary_language": task.get("primary_language")
+        or row.get("primary_language"),
+        "estimated_code_difficulty": task.get("estimated_code_difficulty"),
+        "estimated_setup_difficulty": task.get("estimated_setup_difficulty"),
+        "newcomer_label_signal": bool(task.get("newcomer_label_signal")),
+        "skill_requirements": requirements,
+        "guidance": _task_guidance(row, task),
     }
 
 
@@ -475,6 +582,286 @@ class RecommendationApi:
             return self._error(422, "profile_validation_failed", str(exc))
         return self._error(404, "not_found", "route was not found")
 
+    def _recommendation_storage(self) -> SQLiteRecommendationStorage | None:
+        migration_path = getattr(self.store, "migration_path", None)
+        if migration_path is None:
+            return None
+        return SQLiteRecommendationStorage(self.store.database_path, migration_path)
+
+    def _load_recommendation_run(self, run_id: str) -> dict[str, Any] | None:
+        storage = self._recommendation_storage()
+        if storage is None:
+            return None
+        return storage.find_recommendation_batch(run_id)
+
+    def _run_permission_error(
+        self,
+        batch: dict[str, Any],
+        cookies: dict[str, str],
+    ) -> ApiResponse | None:
+        context = str(batch.get("feedback_context") or "")
+        if not context.startswith("user:"):
+            return None
+        if self.auth_service is None:
+            return self._error(
+                503,
+                "service_not_ready",
+                "authentication service is not configured",
+            )
+        user = self.auth_service.current_user(cookies.get(SESSION_COOKIE_NAME))
+        if user is None:
+            return self._error(401, "authentication_required", "login is required")
+        if not context.startswith(f"user:{int(user['user_id'])}:"):
+            return self._error(
+                403,
+                "insufficient_permission",
+                "recommendation run does not belong to the current user",
+            )
+        return None
+
+    @staticmethod
+    def _model_metadata_for_batch(batch: Any) -> dict[str, Any]:
+        if isinstance(batch, dict):
+            rankings = list(batch.get("rankings") or [])
+            match_version = str(batch.get("match_version") or "")
+            warnings = list(batch.get("warnings") or [])
+        else:
+            rankings = list(getattr(batch, "rankings", ()) or ())
+            match_version = str(getattr(batch, "match_version", "") or "")
+            warnings = list(getattr(batch, "warnings", ()) or ())
+        if not rankings or not rankings[0].get("scoring_engine"):
+            return current_model_metadata().to_dict()
+        first = rankings[0]
+        return {
+            "variant": str(first["scoring_engine"]),
+            "version": str(first.get("model_version") or "unknown"),
+            "status": "ok",
+            "dataset_version": first.get("dataset_version"),
+            "mapping_version": None,
+            "feature_versions": {
+                "matching": match_version,
+                "graph": str(first.get("graph_version") or ""),
+                "encoder": str(first.get("encoder_version") or ""),
+            },
+            "warnings": warnings,
+        }
+
+    def _save_run_ui_metadata(
+        self,
+        run_id: str,
+        profile: Any,
+        model: dict[str, Any],
+    ) -> None:
+        payload = {
+            "profile_key": getattr(profile, "profile_key", None),
+            "display_name": getattr(profile, "display_name", None),
+            "service_track": getattr(profile, "service_track", None),
+            "profile_source": getattr(profile, "profile_source", None),
+            "profile_version": getattr(profile, "profile_version", None),
+        }
+        with self.store.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO recommendation_run_ui_metadata (
+                    run_id, profile_json, model_json, created_at
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    profile_json = excluded.profile_json,
+                    model_json = excluded.model_json,
+                    created_at = excluded.created_at
+                """,
+                (
+                    run_id,
+                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                    json.dumps(model, ensure_ascii=False, sort_keys=True),
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+
+    def _load_run_ui_metadata(self, run_id: str) -> dict[str, Any]:
+        with self.store.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT profile_json, model_json
+                FROM recommendation_run_ui_metadata
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            return {}
+        return {
+            "profile": json.loads(row["profile_json"] or "{}"),
+            "model": json.loads(row["model_json"] or "{}"),
+        }
+
+    def _recommendation_run_route(
+        self,
+        run_id: str,
+        cookies: dict[str, str],
+    ) -> ApiResponse:
+        if self._recommendation_storage() is None:
+            return self._error(
+                503,
+                "service_not_ready",
+                "recommendation run storage is not configured",
+            )
+        batch = self._load_recommendation_run(run_id)
+        if batch is None:
+            return self._error(404, "not_found", "recommendation run was not found")
+        denied = self._run_permission_error(batch, cookies)
+        if denied is not None:
+            return denied
+        ui_metadata = self._load_run_ui_metadata(run_id)
+        return ApiResponse(
+            200,
+            {
+                "run_id": batch["run_id"],
+                "feedback_context": batch.get("feedback_context"),
+                "service_track": batch["service_track"],
+                "match_version": batch["match_version"],
+                "profile_snapshot_hash": batch["profile_snapshot_hash"],
+                "candidate_snapshot_hash": batch["candidate_snapshot_hash"],
+                "warnings": list(batch.get("warnings") or []),
+                "created_at": batch["created_at"],
+                "items": list(batch.get("items") or []),
+                "profile": ui_metadata.get("profile") or None,
+                "model": ui_metadata.get("model")
+                or self._model_metadata_for_batch(batch),
+                "api_version": API_VERSION,
+            },
+        )
+
+    def _public_candidates_route(
+        self,
+        query: dict[str, list[str]],
+    ) -> ApiResponse:
+        raw_limit = (query.get("limit") or ["6"])[0]
+        try:
+            limit = int(raw_limit)
+        except ValueError:
+            return self._error(400, "invalid_limit", "limit must be an integer")
+        if not 1 <= limit <= 30:
+            return self._error(400, "invalid_limit", "limit must be between 1 and 30")
+        tasks = [
+            task
+            for task in self.store.matchable_candidates()
+            if str(task.get("candidate_availability") or "")
+            in {"available", "temporarily_unverified"}
+        ]
+        tasks.sort(
+            key=lambda task: str(task.get("last_activity_at") or ""),
+            reverse=True,
+        )
+        items = [
+            PublicCandidateItem(
+                task_candidate_id=int(task["task_candidate_id"]),
+                repository_full_name=str(task["repository"]),
+                issue_number=int(task["issue_number"]),
+                title=str(task["title"]),
+                html_url=str(task["html_url"]),
+                availability=str(task.get("candidate_availability") or "available"),
+                verified_at=task.get("github_verified_at"),
+                primary_language=task.get("primary_language"),
+                labels=tuple(task.get("labels") or []),
+                task_types=tuple(task.get("task_types") or []),
+                comment_count=int(task.get("comment_count") or 0),
+                last_activity_at=task.get("last_activity_at"),
+                newcomer_label_signal=bool(task.get("newcomer_label_signal")),
+                estimated_code_difficulty=task.get("estimated_code_difficulty"),
+                estimated_setup_difficulty=task.get("estimated_setup_difficulty"),
+            ).to_dict()
+            for task in tasks[:limit]
+        ]
+        return ApiResponse(
+            200,
+            {
+                "items": items,
+                "count": len(items),
+                "personalized": False,
+                "warnings": ["public_candidates_are_not_personalized"],
+                "match_version": MATCH_VERSION_V3,
+                "model": current_model_metadata().to_dict(),
+                "api_version": API_VERSION,
+            },
+        )
+
+    def _project_recommendations_route(
+        self,
+        query: dict[str, list[str]],
+        cookies: dict[str, str],
+    ) -> ApiResponse:
+        if self._recommendation_storage() is None:
+            return self._error(
+                503,
+                "service_not_ready",
+                "recommendation run storage is not configured",
+            )
+        run_id = (query.get("run_id") or [""])[0].strip()
+        if not run_id:
+            return self._error(
+                400,
+                "missing_run_id",
+                "run_id query parameter is required",
+            )
+        batch = self._load_recommendation_run(run_id)
+        if batch is None:
+            return self._error(404, "not_found", "recommendation run was not found")
+        denied = self._run_permission_error(batch, cookies)
+        if denied is not None:
+            return denied
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for item in batch.get("items") or []:
+            grouped.setdefault(str(item["repository_full_name"]), []).append(item)
+        projects: list[dict[str, Any]] = []
+        for repository, entries in grouped.items():
+            scores = [float(item.get("score") or 0.0) for item in entries]
+            basis = [
+                f"本次推荐中该仓库有 {len(entries)} 个任务命中",
+                f"最高匹配分 {round(max(scores) * 100)}",
+            ]
+            if len(entries) >= 2:
+                basis.append("同一仓库多次命中，可作为持续参与入口")
+            projects.append(
+                ProjectRecommendationItem(
+                    repository_full_name=repository,
+                    repository_url=f"https://github.com/{repository}",
+                    score=sum(scores) / len(scores),
+                    ranking_source="issue_aggregation_compat_v0.1",
+                    basis=tuple(basis),
+                    related_issues=tuple(
+                        {
+                            "task_candidate_id": int(item["task_candidate_id"]),
+                            "issue_number": int(item["issue_number"]),
+                            "title": str(item["title"]),
+                            "html_url": str(item["html_url"]),
+                            "score": float(item.get("score") or 0.0),
+                        }
+                        for item in entries
+                    ),
+                    modules=(),
+                    contributing_url=None,
+                    checked_at=batch.get("created_at"),
+                    status="available",
+                    warnings=("modules_not_available",),
+                ).to_dict()
+            )
+        projects.sort(key=lambda item: (-item["score"], item["repository_full_name"]))
+        return ApiResponse(
+            200,
+            {
+                "run_id": run_id,
+                "items": projects,
+                "count": len(projects),
+                "ranking_source": "issue_aggregation_compat_v0.1",
+                "warnings": [
+                    "project_ranking_from_issue_aggregation",
+                    "project_model_not_connected",
+                ],
+                "api_version": API_VERSION,
+            },
+        )
+
     def _me_recommendations_route(self, query, cookies) -> ApiResponse:
         if (
             self.recommendation_service is None
@@ -554,7 +941,12 @@ class RecommendationApi:
                     502, "github_upstream_error", "GitHub returned an unrecoverable error"
                 )
             return ApiResponse(
-                200, {**_refreshed_candidate_detail_body(detail), "api_version": API_VERSION}
+                200,
+                {
+                    **_refreshed_candidate_detail_body(detail),
+                    "model": current_model_metadata().to_dict(),
+                    "api_version": API_VERSION,
+                },
             )
 
         if self.candidate_storage is None:
@@ -562,7 +954,22 @@ class RecommendationApi:
         row = self.candidate_storage.candidate_detail_row(task_candidate_id)
         if row is None:
             return self._error(404, "not_found", "task candidate was not found")
-        return ApiResponse(200, {**_candidate_detail_body(row), "api_version": API_VERSION})
+        task = next(
+            (
+                item
+                for item in self.store.matchable_candidates()
+                if int(item["task_candidate_id"]) == task_candidate_id
+            ),
+            None,
+        )
+        return ApiResponse(
+            200,
+            {
+                **_candidate_detail_body(row, task),
+                "model": current_model_metadata().to_dict(),
+                "api_version": API_VERSION,
+            },
+        )
 
     def _database_ready(self) -> tuple[bool, str | None]:
         """Separate "process is alive" from "database cannot be used"."""
@@ -593,6 +1000,12 @@ class RecommendationApi:
             feedback_context=feedback_context,
             developer_key=developer_key,
         )
+        if self._load_recommendation_run(batch.run_id) is not None:
+            self._save_run_ui_metadata(
+                batch.run_id,
+                contract_profile,
+                self._model_metadata_for_batch(batch),
+            )
         return ApiResponse(
             200,
             {
@@ -697,12 +1110,25 @@ class RecommendationApi:
     ) -> ApiResponse:
         query = query or {}
         cookies = cookies or {}
+        run_match = RECOMMENDATION_RUN_PATH_PATTERN.fullmatch(path)
+        if run_match is not None:
+            if method != "GET":
+                return self._error(
+                    405,
+                    "method_not_allowed",
+                    "method is not supported for this route",
+                )
+            return self._recommendation_run_route(run_match.group(1), cookies)
         if path.startswith("/api/v1/tasks/"):
             if method != "GET":
                 return self._error(
                     405, "method_not_allowed", "method is not supported for this route"
                 )
             return self._task_detail_route(path, query)
+        if method == "GET" and path == "/api/v1/public-candidates":
+            return self._public_candidates_route(query)
+        if method == "GET" and path == "/api/v1/me/project-recommendations":
+            return self._project_recommendations_route(query, cookies)
         if method == "GET" and path == "/api/v1/me/recommendations":
             return self._me_recommendations_route(query, cookies)
         if path in MIDTERM_PROFILE_PATHS:
@@ -908,6 +1334,7 @@ class RecommendationApi:
                     **status_data,
                     "api_version": API_VERSION,
                     "match_version": MATCH_VERSION_V2,
+                    "model": current_model_metadata().to_dict(),
                 },
             )
         if method == "GET" and path == "/api/v1/auth/github/start":
@@ -996,12 +1423,14 @@ class RecommendationApi:
             "/api/v1/recommendation-options",
             "/api/v1/feedback",
             "/api/v1/feedback/summary",
+            "/api/v1/public-candidates",
             "/api/v1/status",
             "/api/v1/auth/github/start",
             "/api/v1/auth/github/callback",
             "/api/v1/auth/logout",
             "/api/v1/me",
             "/api/v1/me/recommendations",
+            "/api/v1/me/project-recommendations",
         }:
             return self._error(405, "method_not_allowed", "method is not supported for this route")
         return self._error(404, "not_found", "route was not found")
