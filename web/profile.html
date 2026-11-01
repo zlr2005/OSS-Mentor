@@ -934,8 +934,8 @@
           </div>
 
           <p>
-            问答题目、计分和画像预览由成员 B 交付。这里已经接入 D 的网关，
-            接口未就绪时会明确说明，不会在浏览器里伪造分数。
+            回答会先生成未保存的预览和确认计划。只有你逐项接受或拒绝并确认后，
+            新画像版本才会写入当前账户。
           </p>
         </div>
 
@@ -947,6 +947,81 @@
         >
           正在检查问卷接口…
         </p>
+
+        <div id="questionnaire-shell" hidden>
+          <form id="questionnaire-form" class="questionnaire-form">
+            <div id="questionnaire-questions"></div>
+
+            <div class="questionnaire-actions">
+              <p id="questionnaire-form-error" class="profile-form-error" hidden></p>
+              <button
+                id="questionnaire-preview-button"
+                class="profile-save-button"
+                type="submit"
+              >
+                <span>生成画像预览</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </form>
+
+          <div
+            id="questionnaire-preview"
+            class="questionnaire-preview"
+            aria-live="polite"
+            hidden
+          >
+            <div class="questionnaire-preview-head">
+              <div>
+                <p class="profile-card-kicker">Unsaved Preview</p>
+                <h3>确认前先检查变化</h3>
+              </div>
+              <span class="profile-state-badge" data-state="pending">
+                尚未写入
+              </span>
+            </div>
+
+            <div id="questionnaire-preview-summary" class="questionnaire-summary"></div>
+            <div id="questionnaire-features" class="questionnaire-feature-grid"></div>
+
+            <div class="questionnaire-plan-head">
+              <div>
+                <p class="profile-card-kicker">Explicit Decisions</p>
+                <h4>逐项接受或拒绝</h4>
+              </div>
+              <span id="questionnaire-decision-count">0 / 0</span>
+            </div>
+
+            <div id="questionnaire-suggestions" class="questionnaire-suggestion-list"></div>
+
+            <div class="questionnaire-actions questionnaire-actions--split">
+              <button
+                id="questionnaire-reset-button"
+                class="profile-secondary-button"
+                type="button"
+              >
+                返回修改回答
+              </button>
+              <button
+                id="questionnaire-confirm-button"
+                class="profile-save-button"
+                type="button"
+                disabled
+              >
+                <span>确认并生成新版本</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+
+            <p
+              id="questionnaire-result"
+              class="questionnaire-result"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></p>
+          </div>
+        </div>
       </section>
 
       <!-- =========================================================

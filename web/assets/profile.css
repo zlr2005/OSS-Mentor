@@ -2468,3 +2468,345 @@ body {
 .github-import-card::after {
   display: none;
 }
+
+
+/* ================================================================
+   Midterm questionnaire
+   ================================================================ */
+
+#questionnaire-status[data-state="ready"],
+#questionnaire-status[data-state="success"] {
+  color: var(--accent);
+}
+
+#questionnaire-status[data-state="error"] {
+  color: var(--danger);
+}
+
+.questionnaire-form,
+.questionnaire-preview {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--elev-ring);
+}
+
+.questionnaire-question {
+  padding: 0 0 24px;
+  margin: 0 0 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.questionnaire-question:last-child {
+  padding-bottom: 0;
+  margin-bottom: 8px;
+  border-bottom: 0;
+}
+
+.questionnaire-prompt {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 13px;
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.questionnaire-question-meta {
+  flex: none;
+  padding: 2px 8px;
+  color: var(--accent);
+  background: var(--accent-tint);
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, transparent);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.questionnaire-hint {
+  margin: -5px 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.questionnaire-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.questionnaire-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    color .15s ease,
+    background .15s ease,
+    border-color .15s ease;
+}
+
+.questionnaire-option:hover {
+  color: var(--fg);
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--border));
+}
+
+.questionnaire-option:has(input:checked) {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+
+.questionnaire-option input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.questionnaire-option-label {
+  min-width: 0;
+}
+
+.questionnaire-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.questionnaire-actions .profile-form-error {
+  flex: 1;
+  margin: 0;
+  text-align: left;
+}
+
+.questionnaire-actions--split {
+  justify-content: space-between;
+}
+
+.questionnaire-preview {
+  margin-top: 22px;
+}
+
+.questionnaire-preview-head,
+.questionnaire-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.questionnaire-preview-head h3,
+.questionnaire-plan-head h4 {
+  margin: 3px 0 0;
+}
+
+.questionnaire-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.questionnaire-summary-card {
+  display: grid;
+  gap: 3px;
+  padding: 15px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 13px;
+}
+
+.questionnaire-summary-card strong {
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.questionnaire-summary-card small,
+.questionnaire-summary-label {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.questionnaire-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.questionnaire-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 11px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.questionnaire-feature code {
+  overflow: hidden;
+  color: var(--fg-2);
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.questionnaire-feature strong {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.questionnaire-feature-tag {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.questionnaire-plan-head {
+  margin-bottom: 14px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+#questionnaire-decision-count {
+  color: var(--muted);
+  font: 600 12px/1.4 var(--font-mono);
+}
+
+.questionnaire-suggestion-list {
+  display: grid;
+  gap: 10px;
+}
+
+.questionnaire-suggestion {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.questionnaire-suggestion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.questionnaire-suggestion-head code {
+  overflow: hidden;
+  color: var(--fg-2);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.questionnaire-suggestion-value {
+  flex: none;
+  color: var(--accent);
+  font: 600 12px/1.4 var(--font-mono);
+}
+
+.questionnaire-suggestion-evidence,
+.questionnaire-blocked {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.questionnaire-blocked {
+  color: var(--danger);
+}
+
+.questionnaire-decision-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.questionnaire-decision {
+  min-height: 34px;
+  padding: 0 13px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.questionnaire-decision:hover {
+  color: var(--fg);
+  border-color: color-mix(in oklab, var(--accent) 34%, var(--border));
+}
+
+.questionnaire-decision.is-selected {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 42%, transparent);
+}
+
+.questionnaire-result {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  color: var(--accent);
+  background: var(--accent-tint);
+  border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.questionnaire-result[data-state="error"] {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-color: color-mix(in oklab, var(--danger) 30%, transparent);
+}
+
+.questionnaire-empty {
+  padding: 16px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: 11px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .questionnaire-form,
+  .questionnaire-preview {
+    padding: 20px;
+  }
+
+  .questionnaire-options,
+  .questionnaire-summary,
+  .questionnaire-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .questionnaire-actions,
+  .questionnaire-actions--split {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .questionnaire-actions .profile-save-button,
+  .questionnaire-actions .profile-secondary-button {
+    width: 100%;
+  }
+}

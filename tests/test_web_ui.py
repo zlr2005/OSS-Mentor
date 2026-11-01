@@ -101,8 +101,12 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("/api/v1/auth/logout", session_nav)
         self.assertIn('body: "{}"', session_nav)
         self.assertIn('id="profile-questionnaire"', html)
+        self.assertIn('id="questionnaire-form"', html)
+        self.assertIn('id="questionnaire-preview"', html)
         self.assertIn("/api/v1/me/profile/questionnaire", questionnaire)
-        self.assertIn("questionnaire_not_ready", questionnaire)
+        self.assertIn("/api/v1/me/profile/assessment-preview", questionnaire)
+        self.assertIn("/api/v1/me/profile/assessment-confirm", questionnaire)
+        self.assertIn("idempotency_key", questionnaire)
 
     def test_status_page_uses_real_status_and_run_endpoints(self) -> None:
         html = self.asset("/status").body.decode("utf-8")
