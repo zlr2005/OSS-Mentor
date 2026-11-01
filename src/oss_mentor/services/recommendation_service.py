@@ -35,6 +35,7 @@ from oss_mentor.contracts import (
     RecommendationItemV3,
 )
 from oss_mentor.matching import MATCH_VERSION_V3, MatchResult, match_candidate
+from oss_mentor.model_scoring import ModelScorer
 from oss_mentor.storage.base import CandidateStore
 
 NEGATIVE_FEEDBACK_PENALTY = 0.25
@@ -48,6 +49,10 @@ class ProfileRequired(ValueError):
     """The authenticated user does not yet have a developer profile."""
 
 
+class ModelUnavailableError(RuntimeError):
+    """The configured model cannot safely score the complete candidate set."""
+
+
 @dataclass(frozen=True, slots=True)
 class AuthenticatedRecommendations:
     """Transport-neutral result for D's authenticated recommendation route."""
@@ -57,6 +62,8 @@ class AuthenticatedRecommendations:
     items: tuple[RecommendationItemV3, ...]
     run_id: str | None = None
     warnings: tuple[str, ...] = ()
+    match_version: str = MATCH_VERSION_V3
+    rankings: tuple[dict[str, Any], ...] = ()
 
 
 def profile_for_matching(profile: DeveloperProfileV2) -> dict[str, Any]:
@@ -185,11 +192,13 @@ class RecommendationService:
         profile_service=None,
         auth_service=None,
         recommendation_store=None,
+        model_scorer: ModelScorer | None = None,
     ):
         self.candidate_store = candidate_store
         self.profile_service = profile_service
         self.auth_service = auth_service
         self.recommendation_store = recommendation_store
+        self.model_scorer = model_scorer
 
     @staticmethod
     def _hash(value: Any) -> str:
@@ -289,6 +298,7 @@ class RecommendationService:
         limit: int = 10,
         feedback_context: str | None = None,
         excluded_candidate_ids: tuple[int, ...] = (),
+        developer_key: str | None = None,
     ) -> RecommendationBatchV3:
         if not isinstance(profile, DeveloperProfileV2):
             raise TypeError("profile must be DeveloperProfileV2")
@@ -309,6 +319,25 @@ class RecommendationService:
                 matching_profile, task, match_version=MATCH_VERSION_V3
             )) is not None
         ]
+        model_batch = None
+        if self.model_scorer is not None and matches:
+            scored_tasks = [task_by_id[item.task_candidate_id] for item in matches]
+            try:
+                model_batch = self.model_scorer.score(
+                    profile=profile,
+                    developer_key=developer_key,
+                    candidates=scored_tasks,
+                )
+            except Exception as exc:
+                raise ModelUnavailableError(str(exc)) from exc
+            model_scores = {item.task_candidate_id: item for item in model_batch.scores}
+            missing = [item.task_candidate_id for item in matches if item.task_candidate_id not in model_scores]
+            if missing:
+                raise ModelUnavailableError(f"CODER did not score eligible candidates: {missing[:10]}")
+            matches = [
+                replace(item, match_score=round(model_scores[item.task_candidate_id].score * 100.0, 6))
+                for item in matches
+            ]
         feedback_states = (
             self.candidate_store.feedback_states(
                 feedback_context, [match.task_candidate_id for match in matches]
@@ -336,6 +365,19 @@ class RecommendationService:
             limit=limit,
             raw_score_by_id=raw_score_by_id,
         )
+        if model_batch is not None:
+            coverage = {item.task_candidate_id: item.coverage_state for item in model_batch.scores}
+            for row in rankings:
+                row.update({
+                    "scoring_engine": "coder_issue_repo",
+                    "model_version": model_batch.model_version,
+                    "dataset_version": model_batch.dataset_version,
+                    "graph_version": model_batch.graph_version,
+                    "encoder_version": model_batch.encoder_version,
+                    "profile_mode": model_batch.profile_mode,
+                    "coverage_state": coverage[row["task_candidate_id"]],
+                })
+            batch_warnings = tuple(dict.fromkeys((*batch_warnings, *model_batch.warnings)))
         ranking_by_id = {item["task_candidate_id"]: item for item in rankings}
         items = tuple(
             recommendation_item_from_match(
@@ -420,6 +462,7 @@ class RecommendationService:
         limit: int = 10,
         feedback_context: str | None = None,
         excluded_candidate_ids: tuple[int, ...] = (),
+        developer_key: str | None = None,
     ) -> RecommendationBatchV3:
         """Return the shared batch contract required by the v0.5 service boundary."""
         return self.recommend_batch(
@@ -427,6 +470,7 @@ class RecommendationService:
             limit=limit,
             feedback_context=feedback_context,
             excluded_candidate_ids=excluded_candidate_ids,
+            developer_key=developer_key,
         )
 
     def recommendation_detail(
@@ -435,6 +479,7 @@ class RecommendationService:
         profile: DeveloperProfileV2,
         task_candidate_id: int,
         feedback_context: str | None = None,
+        developer_key: str | None = None,
     ) -> RecommendationItemV3:
         """Return one eligible matching candidate without diversity reordering."""
         if not isinstance(profile, DeveloperProfileV2):
@@ -455,6 +500,13 @@ class RecommendationService:
         )
         if match is None:
             raise KeyError("task candidate does not match the profile")
+        if self.model_scorer is not None:
+            batch = self.model_scorer.score(
+                profile=profile, developer_key=developer_key, candidates=[task]
+            )
+            if len(batch.scores) != 1:
+                raise RuntimeError("CODER did not return the requested candidate score")
+            match = replace(match, match_score=round(batch.scores[0].score * 100.0, 6))
         feedback_state = None
         if feedback_context:
             feedback_state = self.candidate_store.feedback_states(
@@ -491,6 +543,7 @@ class RecommendationService:
             profile=profile,
             limit=limit,
             feedback_context=feedback_context,
+            developer_key=str(user.get("github_login") or "") or None,
         )
         return AuthenticatedRecommendations(
             profile=profile,
@@ -498,4 +551,6 @@ class RecommendationService:
             items=batch.items,
             run_id=batch.run_id,
             warnings=batch.warnings,
+            match_version=batch.match_version,
+            rankings=batch.rankings,
         )

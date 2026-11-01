@@ -1,0 +1,113 @@
+{
+  "candidate_mode": "cross_repo",
+  "cutoff": 10,
+  "group": "predictable",
+  "main_table_is_protocol_homogeneous": true,
+  "main_table_protocol_count": 1,
+  "protocols": {
+    "85f175ba7feef5cc": {
+      "candidate_mode": "cross_repo",
+      "candidate_sha256": "2d736e96aaf07a4e3980e14184ea9206edced2bb33f8d0311ff489db8ff80608",
+      "dataset_version": "gfibot-m0-v1.1",
+      "graph_version": "gfibot-m0-v1.1",
+      "group": "predictable",
+      "selection_candidate": "valid_cross_repo.parquet",
+      "selection_group": "predictable",
+      "selection_metric": "ndcg@10",
+      "split": "test",
+      "target": "issue"
+    }
+  },
+  "rows": [
+    {
+      "best_checkpoint": "checkpoints\\trial-0002.best.pt",
+      "best_epoch": 15,
+      "best_trial": 2,
+      "best_validation_ndcg@10": 0.003912025401886599,
+      "candidate_sha256": "2d736e96aaf07a4e3980e14184ea9206edced2bb33f8d0311ff489db8ff80608",
+      "comparable_in_main_table": true,
+      "hit@10": 0.017679825623637686,
+      "metrics_available": true,
+      "missing_reason": null,
+      "model": "lightgcn",
+      "ndcg@10": 0.00787883662696066,
+      "protocol_id": "85f175ba7feef5cc",
+      "query_count": 4129,
+      "recall@10": 0.017679825623637686,
+      "run_id": "lightgcn-v2-earlystop",
+      "selected_parameters": {
+        "embedding_dim": 32,
+        "encoder_version": "disabled",
+        "issue_layers": 2,
+        "learning_rate": 0.005,
+        "repository_loss_weight": 0.0,
+        "structure_layers": 0
+      },
+      "status": "success",
+      "training_time_seconds": 4233.653,
+      "trial_budget": 4,
+      "variant": "lightgcn"
+    },
+    {
+      "best_checkpoint": "checkpoints\\trial-0004.best.pt",
+      "best_epoch": 50,
+      "best_trial": 4,
+      "best_validation_ndcg@10": 0.15773030986917377,
+      "candidate_sha256": "2d736e96aaf07a4e3980e14184ea9206edced2bb33f8d0311ff489db8ff80608",
+      "comparable_in_main_table": true,
+      "hit@10": 0.26979898280455317,
+      "metrics_available": true,
+      "missing_reason": null,
+      "model": "coder_issue_structure",
+      "ndcg@10": 0.1432028424088082,
+      "protocol_id": "85f175ba7feef5cc",
+      "query_count": 4129,
+      "recall@10": 0.26979898280455317,
+      "run_id": "coder-structure-v1-earlystop",
+      "selected_parameters": {
+        "embedding_dim": 32,
+        "encoder_version": "disabled",
+        "issue_layers": 2,
+        "learning_rate": 0.005,
+        "repository_loss_weight": 0.0,
+        "structure_layers": 3
+      },
+      "status": "success",
+      "training_time_seconds": 43829.474,
+      "trial_budget": 8,
+      "variant": "coder_issue_structure"
+    },
+    {
+      "best_checkpoint": null,
+      "best_epoch": null,
+      "best_trial": null,
+      "best_validation_ndcg@10": 0.28959986714796604,
+      "candidate_sha256": null,
+      "comparable_in_main_table": false,
+      "hit@10": null,
+      "metrics_available": false,
+      "missing_reason": "run_status=incomplete",
+      "model": "coder_issue_repo",
+      "ndcg@10": null,
+      "protocol_id": null,
+      "query_count": null,
+      "recall@10": null,
+      "run_id": "coder-full-single-v1",
+      "selected_parameters": {
+        "embedding_dim": 32,
+        "encoder_version": "sentence-transformers/all-MiniLM-L6-v2@c21050a7ef692090620a6d037dd736908f9c7cf6",
+        "issue_layers": 4,
+        "learning_rate": 0.001,
+        "repository_loss_weight": 0.1,
+        "structure_layers": 2
+      },
+      "status": "incomplete",
+      "training_time_seconds": 5493.811,
+      "trial_budget": 1,
+      "variant": "coder_issue_repo"
+    }
+  ],
+  "schema_version": 1,
+  "split": "test",
+  "target": "issue"
+}

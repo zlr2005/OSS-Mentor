@@ -3,6 +3,19 @@ services:
     build: .
     ports:
       - "${OSS_MENTOR_PORT:-8765}:8765"
+    # The API refuses non-loopback bindings unless it is asked explicitly, so the
+    # container must opt in: inside the image, loopback is only reachable from
+    # the container itself and port publishing would silently do nothing.
+    command:
+      - python
+      - -m
+      - oss_mentor
+      - serve-api
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8765"
+      - --allow-remote
     environment:
       OSS_MENTOR_HOST: 0.0.0.0
       OSS_MENTOR_PORT: "8765"

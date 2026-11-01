@@ -1,0 +1,105 @@
+{
+  "schema_version": "github-evidence-scenarios-v0.1",
+  "developer_key": "developer:fixture-b",
+  "observed_at": "2026-10-20T12:00:00Z",
+  "as_of": "2026-10-20T12:00:00Z",
+  "code_documents": [
+    {
+      "file_version_key": "file-version:source-1",
+      "repository_key": "repo:sample",
+      "path": "src/example.py",
+      "available": true
+    },
+    {
+      "file_version_key": "file-version:test-1",
+      "repository_key": "repo:sample",
+      "path": "tests/test_example.py",
+      "available": true
+    },
+    {
+      "file_version_key": "file-version:docs-1",
+      "repository_key": "repo:sample",
+      "path": "docs/getting-started.md",
+      "available": true
+    }
+  ],
+  "records": [
+    {
+      "developer_key": "developer:fixture-b",
+      "repository_key": "repo:sample",
+      "file_key": "file:source-1",
+      "file_version_key": "file-version:source-1",
+      "commit_sha": "1111111111111111111111111111111111111111",
+      "event_at": "2026-10-18T08:00:00Z",
+      "behavior_type": "commit",
+      "author_link_status": "confirmed",
+      "evidence_location": "fixture://commits/1111"
+    },
+    {
+      "developer_key": "developer:fixture-b",
+      "repository_key": "repo:sample",
+      "file_key": "file:test-1",
+      "file_version_key": "file-version:test-1",
+      "commit_sha": "2222222222222222222222222222222222222222",
+      "event_at": "2026-10-18T09:00:00Z",
+      "behavior_type": "pull_request_commit",
+      "author_link_status": "verified",
+      "evidence_location": "fixture://pulls/22/files"
+    },
+    {
+      "developer_key": "developer:fixture-b",
+      "repository_key": "repo:sample",
+      "file_key": "file:docs-1",
+      "file_version_key": "file-version:docs-1",
+      "commit_sha": "3333333333333333333333333333333333333333",
+      "event_at": "2026-10-18T10:00:00Z",
+      "behavior_type": "pull_request",
+      "author_link_status": "confirmed",
+      "evidence_location": "fixture://pulls/33/files"
+    },
+    {
+      "developer_key": "developer:fixture-b",
+      "repository_key": "repo:sample",
+      "file_key": "file:source-1",
+      "file_version_key": "file-version:source-1",
+      "commit_sha": "4444444444444444444444444444444444444444",
+      "event_at": "2026-10-18T11:00:00Z",
+      "behavior_type": "review",
+      "author_link_status": "ambiguous",
+      "evidence_location": "fixture://reviews/44"
+    },
+    {
+      "developer_key": "developer:fixture-b",
+      "repository_key": "repo:sample",
+      "file_key": "file:source-1",
+      "file_version_key": "file-version:source-1",
+      "commit_sha": "5555555555555555555555555555555555555555",
+      "event_at": "2026-10-22T08:00:00Z",
+      "behavior_type": "commit",
+      "author_link_status": "confirmed",
+      "evidence_location": "fixture://commits/5555"
+    },
+    {
+      "developer_key": "developer:fixture-b",
+      "repository_key": "repo:sample",
+      "file_key": "file:missing-1",
+      "file_version_key": "file-version:missing-1",
+      "commit_sha": "6666666666666666666666666666666666666666",
+      "event_at": "2026-10-18T12:00:00Z",
+      "behavior_type": "commit",
+      "author_link_status": "confirmed",
+      "evidence_location": "fixture://commits/6666"
+    },
+    {
+      "developer_key": "developer:fixture-b",
+      "repository_key": "repo:sample",
+      "file_key": "file:source-1",
+      "file_version_key": "file-version:source-1",
+      "commit_sha": "1111111111111111111111111111111111111111",
+      "event_at": "2026-10-18T08:00:00Z",
+      "behavior_type": "commit",
+      "author_link_status": "confirmed",
+      "evidence_location": "fixture://commits/1111"
+    }
+  ]
+}

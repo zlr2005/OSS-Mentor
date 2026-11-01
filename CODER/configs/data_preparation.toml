@@ -1,0 +1,28 @@
+schema_version = 1
+config_name = "gfibot-m0-v1.1"
+source_dataset_version = "gfibot-raw-v1"
+output_version = "gfibot-m0-v1.1"
+
+[inputs]
+base_config = "base.toml"
+raw_manifest = "../data_manifest.json"
+dataset_file_index = 0
+resolved_issue_file_index = 1
+
+[processing]
+batch_size = 4096
+progress_every = 25000
+max_document_bytes = 67108864
+parquet_compression = "zstd"
+verify_sha256 = true
+
+[split]
+protocol = "fixed_train_graph"
+train_before = "2021-01-01T00:00:00Z"
+valid_before = "2022-01-01T00:00:00Z"
+time_source = "resolution_proxy"
+
+[candidates]
+scope = "historical_resolved_issue_subset"
+supported_modes = ["same_repo", "cross_repo"]
+seed = 20261017

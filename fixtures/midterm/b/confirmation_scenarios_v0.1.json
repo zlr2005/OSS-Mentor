@@ -1,0 +1,109 @@
+{
+  "schema_version": "confirmation-scenarios-v0.1",
+  "confirmed_at": "2026-10-18T10:00:00Z",
+  "scenarios": [
+    {
+      "id": "accept_all",
+      "assessment_scenario": "zero_history",
+      "description": "接受全部可处理建议，未知特征仍保持未知",
+      "feature_overrides": [],
+      "decision_mode": "accept_all"
+    },
+    {
+      "id": "reject_all",
+      "assessment_scenario": "experienced_contributor",
+      "description": "拒绝全部建议，不改变原有特征值",
+      "feature_overrides": [],
+      "decision_mode": "reject_all"
+    },
+    {
+      "id": "partial_decision",
+      "assessment_scenario": "direction_change",
+      "description": "接受当前质量方向，拒绝文档能力建议，其余建议保留待处理",
+      "feature_overrides": [],
+      "decisions": [
+        {"feature_name": "current_interest.task.quality", "decision": "accept"},
+        {"feature_name": "capability.documentation", "decision": "reject"}
+      ]
+    },
+    {
+      "id": "explicit_conflict_acceptance",
+      "assessment_scenario": "evidence_conflict",
+      "description": "冲突已展示后，用户仍可显式接受建议",
+      "feature_overrides": [],
+      "decisions": [
+        {"feature_name": "capability.code_change", "decision": "accept"}
+      ]
+    },
+    {
+      "id": "current_field_locked",
+      "assessment_scenario": "experienced_contributor",
+      "description": "当前画像锁定字段不允许自动覆盖",
+      "feature_overrides": [
+        {
+          "feature_name": "capability.code_change",
+          "observed": true,
+          "value": 0.25,
+          "locked": true,
+          "evidence_refs": ["fixture:existing:code-change"]
+        }
+      ],
+      "decision_mode": "accept_all"
+    },
+    {
+      "id": "preview_field_locked",
+      "assessment_scenario": "manual_lock",
+      "description": "预览中的用户锁定证据同样形成不可处理建议",
+      "feature_overrides": [],
+      "decision_mode": "accept_all"
+    },
+    {
+      "id": "stale_profile_version",
+      "assessment_scenario": "zero_history",
+      "description": "预览创建后画像版本变化，确认必须返回版本冲突",
+      "feature_overrides": [],
+      "decision_mode": "accept_all",
+      "expected_error": "profile version conflict"
+    },
+    {
+      "id": "duplicate_confirmation",
+      "assessment_scenario": "zero_history",
+      "description": "同一输入和确认时间重复执行产生相同结果",
+      "feature_overrides": [],
+      "decision_mode": "accept_all"
+    },
+    {
+      "id": "unknown_suggestion",
+      "assessment_scenario": "zero_history",
+      "description": "确认不存在的建议标识必须失败",
+      "feature_overrides": [],
+      "decisions": [
+        {"suggestion_id": "suggestion:not-real", "decision": "accept"}
+      ],
+      "expected_error": "unknown suggestion ids"
+    },
+    {
+      "id": "unknown_feature_preserved",
+      "assessment_scenario": "partial_evidence",
+      "description": "接受全部建议后，非适用方向的未知特征仍保持未知",
+      "feature_overrides": [],
+      "decision_mode": "accept_all"
+    },
+    {
+      "id": "unlock_then_accept",
+      "assessment_scenario": "experienced_contributor",
+      "description": "用户显式解除锁定后，可以重新生成计划并接受建议",
+      "feature_overrides": [
+        {
+          "feature_name": "capability.code_change",
+          "observed": true,
+          "value": 0.25,
+          "locked": true,
+          "evidence_refs": ["fixture:existing:code-change"]
+        }
+      ],
+      "action": "unlock_then_accept",
+      "feature_name": "capability.code_change"
+    }
+  ]
+}

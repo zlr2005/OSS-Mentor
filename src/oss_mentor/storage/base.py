@@ -14,6 +14,15 @@ from oss_mentor.contracts import (
     RecommendationBatchV3,
     RecommendationItemV3,
 )
+from oss_mentor.contracts_midterm import (
+    AssessmentConfirmation,
+    AssessmentSubmission,
+    ConfirmationDecision,
+    ConfirmationPlan,
+    EnhancedProfileFeatures,
+    ProfileFeatureState,
+    ProfilePreview,
+)
 
 
 @runtime_checkable
@@ -97,6 +106,125 @@ class ProfileStore(Protocol):
     def delete_profile(self, profile_key: str) -> bool: ...
 
     def list_profiles_public(self) -> list[dict]: ...
+
+
+@runtime_checkable
+class MidtermProfileStore(Protocol):
+    """Persistence boundary for the B-owned midterm profile workflow.
+
+    ``user_id`` always comes from ``oss_user.user_id`` resolved by the current
+    session.  Implementations must resolve the owned ``developer_profile`` /
+    ``profile_key`` from that user and must never trust a browser-supplied
+    profile key, developer key or owner ID.
+
+    ``transaction()`` must use SQLite ``BEGIN IMMEDIATE`` (or an equivalent
+    serializable boundary) and yield a store bound to that transaction.
+    Confirmation commits must happen inside this boundary.
+    """
+
+    def initialize(self) -> None: ...
+
+    def transaction(self) -> ContextManager[MidtermProfileStore]: ...
+
+    def put_questionnaire(
+        self,
+        *,
+        questionnaire_id: str,
+        questionnaire_version: str,
+        schema_version: str,
+        feature_schema_version: str,
+        definition: dict,
+        definition_sha256: str,
+    ) -> None: ...
+
+    def get_questionnaire(
+        self,
+        *,
+        questionnaire_id: str,
+        questionnaire_version: str,
+    ) -> dict | None: ...
+
+    def create_assessment_submission(
+        self,
+        *,
+        user_id: int,
+        submission: AssessmentSubmission,
+        idempotency_key: str,
+    ) -> str: ...
+
+    def get_assessment_submission(
+        self,
+        *,
+        user_id: int,
+        submission_id: str,
+    ) -> dict | None: ...
+
+    def create_profile_preview(
+        self,
+        *,
+        user_id: int,
+        preview: ProfilePreview,
+        input_sha256: str,
+    ) -> str: ...
+
+    def get_profile_preview(
+        self,
+        *,
+        user_id: int,
+        preview_id: str,
+    ) -> ProfilePreview | None: ...
+
+    def create_confirmation_plan(
+        self,
+        *,
+        user_id: int,
+        plan: ConfirmationPlan,
+    ) -> str: ...
+
+    def get_confirmation_plan(
+        self,
+        *,
+        user_id: int,
+        plan_id: str,
+    ) -> ConfirmationPlan | None: ...
+
+    def get_current_feature_state(
+        self,
+        *,
+        user_id: int,
+    ) -> ProfileFeatureState | None: ...
+
+    def get_feature_state(
+        self,
+        *,
+        user_id: int,
+        profile_version: str,
+    ) -> ProfileFeatureState | None: ...
+
+    def find_confirmation_by_idempotency_key(
+        self,
+        *,
+        user_id: int,
+        idempotency_key: str,
+    ) -> AssessmentConfirmation | None: ...
+
+    def commit_assessment_confirmation(
+        self,
+        *,
+        user_id: int,
+        confirmation: AssessmentConfirmation,
+        decisions: tuple[ConfirmationDecision, ...],
+        feature_state: ProfileFeatureState,
+        idempotency_key: str,
+    ) -> AssessmentConfirmation: ...
+
+    def get_enhanced_profile_features(
+        self,
+        *,
+        user_id: int,
+        profile_version: str | None = None,
+        developer_key: str | None = None,
+    ) -> EnhancedProfileFeatures | None: ...
 
 
 @runtime_checkable

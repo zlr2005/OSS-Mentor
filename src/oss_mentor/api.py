@@ -12,6 +12,8 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 from uuid import UUID, uuid4
 
+from oss_mentor.candidate_sync import CandidateDetail, CandidateService
+from oss_mentor.collector.github_client import GitHubApiError, RateLimitExceeded
 from oss_mentor.developer_profiles import (
     ALLOWED_LANGUAGES,
     ALLOWED_OPERATING_SYSTEMS,
@@ -22,7 +24,6 @@ from oss_mentor.developer_profiles import (
 from oss_mentor.matching import (
     MATCH_VERSION_V2,
     MATCH_VERSION_V3,
-    rank_for_profile,
     recommendation_availability,
 )
 from oss_mentor.services.auth_service import (
@@ -32,24 +33,29 @@ from oss_mentor.services.auth_service import (
     SESSION_TTL_SECONDS,
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
-from oss_mentor.services.profile_service import ProfileService
-from oss_mentor.services.github_profile_source import (
-    CONSENT_VERSION, GitHubProfileError, GitHubProfileSource,
-)
+from oss_mentor.services.profile_service import ProfileService, as_developer_profile_v2
 from oss_mentor.services.recommendation_service import (
     AuthenticationRequired,
+    ModelUnavailableError,
     ProfileRequired,
     RecommendationService,
     feedback_context_for_user,
 )
+from oss_mentor.services.github_profile_source import (
+    CONSENT_VERSION, GitHubProfileError, GitHubProfileSource,
+)
 from oss_mentor.storage.profiles import SQLiteProfileStorage
 from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
+from oss_mentor.storage.candidates import SQLiteCandidateStorage
 
 
 API_VERSION = "v0.5"
 MAX_JSON_BODY_BYTES = 32 * 1024
 FEEDBACK_STATES = {"interested", "not_suitable", "started", "completed"}
 PROFILE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
+TASK_DETAIL_PATH_PATTERN = re.compile(r"^/api/v1/tasks/([1-9][0-9]{0,18})$")
+REFRESH_TRUE = {"1", "true", "yes"}
+REFRESH_FALSE = {"0", "false", "no", ""}
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +71,17 @@ class StaticAsset:
     content_type: str
 
 
+class _RecommendationProfileAdapter:
+    """Expose the contract loader expected by RecommendationService."""
+
+    def __init__(self, profile_service: Any) -> None:
+        self.profile_service = profile_service
+
+    def profile_for_user_contract(self, user_id: int):
+        profile = self.profile_service.profile_for_user(user_id)
+        return as_developer_profile_v2(profile) if profile is not None else None
+
+
 _STATIC_ROUTES = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
@@ -74,6 +91,10 @@ _STATIC_ROUTES = {
     "/profile.html": ("profile.html", "text/html; charset=utf-8"),
     "/recommendations": ("recommendations.html", "text/html; charset=utf-8"),
     "/recommendations.html": ("recommendations.html", "text/html; charset=utf-8"),
+    "/task": ("task.html", "text/html; charset=utf-8"),
+    "/task.html": ("task.html", "text/html; charset=utf-8"),
+    "/assets/task.js": ("assets/task.js", "text/javascript; charset=utf-8"),
+    "/assets/task.css": ("assets/task.css", "text/css; charset=utf-8"),
     "/assets/recommendations.js": ("assets/recommendations.js", "text/javascript; charset=utf-8"),
     "/assets/recommendations.css": ("assets/recommendations.css", "text/css; charset=utf-8"),
     "/assets/profile.js": ("assets/profile.js", "text/javascript; charset=utf-8"),
@@ -97,6 +118,30 @@ def load_static_asset(static_root: Path | None, path: str) -> StaticAsset | None
     return StaticAsset(source.read_bytes(), content_type)
 
 
+def _candidate_detail_body(row: dict[str, Any]) -> dict[str, Any]:
+    """Task detail straight from the local snapshot; never calls the network."""
+
+    return {
+        "task_candidate_id": int(row["task_candidate_id"]),
+        "repository_full_name": str(row["repository"]),
+        "issue_number": int(row["issue_number"]),
+        "title": str(row["title"]),
+        "body_text": row.get("body_text"),
+        "html_url": str(row["html_url"]),
+        "availability": str(row["candidate_availability"]),
+        "availability_reasons": list(row.get("availability_reasons") or []),
+        "verified_at": row.get("github_verified_at"),
+        "refreshed": False,
+    }
+
+
+def _refreshed_candidate_detail_body(detail: CandidateDetail) -> dict[str, Any]:
+    return {
+        **asdict(detail),
+        "availability_reasons": list(detail.availability_reasons),
+    }
+
+
 class RecommendationApi:
     """Transport-independent API routes, suitable for unit testing."""
 
@@ -107,8 +152,15 @@ class RecommendationApi:
         profile_service: ProfileService | None = None,
         github_profile_source: GitHubProfileSource | None = None,
         recommendation_service: RecommendationService | None = None,
+        candidate_service: CandidateService | None = None,
     ) -> None:
         self.store = store
+        self.candidate_service = candidate_service
+        self.candidate_storage: SQLiteCandidateStorage | None = None
+        if isinstance(store, SQLiteCandidateStore):
+            self.candidate_storage = SQLiteCandidateStorage(
+                store.database_path, store.migration_path
+            )
         self.auth_service = auth_service
         self.profile_service = profile_service
         if self.profile_service is None and isinstance(store, SQLiteCandidateStore):
@@ -116,21 +168,33 @@ class RecommendationApi:
                 SQLiteProfileStorage(store.database_path, store.migration_path)
             )
         self.github_profile_source = github_profile_source or GitHubProfileSource()
-        self.recommendation_service = recommendation_service
-        if (
-            self.recommendation_service is None
-            and self.auth_service is not None
-            and self.profile_service is not None
-            and isinstance(store, SQLiteCandidateStore)
-        ):
-            self.recommendation_service = RecommendationService(
-                candidate_store=store,
-                profile_service=self.profile_service,
-                auth_service=self.auth_service,
-                recommendation_store=SQLiteRecommendationStorage(
-                    store.database_path, store.migration_path
-                ),
+        recommendation_store = None
+        if isinstance(store, SQLiteCandidateStore):
+            recommendation_store = SQLiteRecommendationStorage(
+                store.database_path, store.migration_path
             )
+        recommendation_profile_service = self.profile_service
+        if (
+            recommendation_profile_service is not None
+            and not callable(
+                getattr(recommendation_profile_service, "profile_for_user_contract", None)
+            )
+        ):
+            recommendation_profile_service = _RecommendationProfileAdapter(
+                recommendation_profile_service
+            )
+        self.recommendation_service = recommendation_service or RecommendationService(
+            candidate_store=store,
+            profile_service=recommendation_profile_service,
+            auth_service=self.auth_service,
+            recommendation_store=recommendation_store,
+        )
+        if self.recommendation_service.auth_service is None:
+            self.recommendation_service.auth_service = self.auth_service
+        if self.recommendation_service.profile_service is None:
+            self.recommendation_service.profile_service = recommendation_profile_service
+        if self.recommendation_service.recommendation_store is None:
+            self.recommendation_service.recommendation_store = recommendation_store
 
     @staticmethod
     def _profile_body(profile: dict) -> dict:
@@ -256,7 +320,8 @@ class RecommendationApi:
                 "warnings": list(result.warnings),
                 "count": len(items),
                 "items": items,
-                "match_version": MATCH_VERSION_V3,
+                "match_version": result.match_version,
+                "rankings": list(result.rankings),
                 "api_version": API_VERSION,
             },
         )
@@ -265,23 +330,83 @@ class RecommendationApi:
     def _error(status: int, code: str, message: str) -> ApiResponse:
         return ApiResponse(status, {"error": {"code": code, "message": message}})
 
+    def _task_detail_route(self, path: str, query: dict[str, list[str]]) -> ApiResponse:
+        """Serve one task detail; GitHub re-verification is opt-in via refresh=true."""
+
+        match = TASK_DETAIL_PATH_PATTERN.fullmatch(path)
+        if match is None:
+            return self._error(404, "not_found", "route was not found")
+        task_candidate_id = int(match.group(1))
+        unsupported = sorted(set(query) - {"refresh"})
+        if unsupported:
+            return self._error(
+                400, "invalid_request", f"unsupported query parameter: {unsupported[0]}"
+            )
+        raw_refresh = (query.get("refresh") or ["0"])[0].strip().lower()
+        if raw_refresh in REFRESH_TRUE:
+            refresh = True
+        elif raw_refresh in REFRESH_FALSE:
+            refresh = False
+        else:
+            return self._error(400, "invalid_request", "refresh must be true or false")
+
+        if refresh:
+            if self.candidate_service is None:
+                return self._error(
+                    503,
+                    "service_not_ready",
+                    "task re-verification is not configured for this server",
+                )
+            try:
+                detail = self.candidate_service.candidate_detail(task_candidate_id)
+            except KeyError:
+                return self._error(404, "not_found", "task candidate was not found")
+            except RateLimitExceeded:
+                return self._error(429, "rate_limited", "GitHub rate limit exhausted")
+            except GitHubApiError as exc:
+                if getattr(exc, "status_code", None) == 429:
+                    return self._error(429, "rate_limited", "GitHub rate limit exhausted")
+                return self._error(
+                    502, "github_upstream_error", "GitHub returned an unrecoverable error"
+                )
+            return ApiResponse(
+                200, {**_refreshed_candidate_detail_body(detail), "api_version": API_VERSION}
+            )
+
+        if self.candidate_storage is None:
+            return self._error(503, "service_not_ready", "candidate storage is not configured")
+        row = self.candidate_storage.candidate_detail_row(task_candidate_id)
+        if row is None:
+            return self._error(404, "not_found", "task candidate was not found")
+        return ApiResponse(200, {**_candidate_detail_body(row), "api_version": API_VERSION})
+
+    def _database_ready(self) -> tuple[bool, str | None]:
+        """Separate "process is alive" from "database cannot be used"."""
+
+        if not self.store.database_path.is_file():
+            return False, "database_missing"
+        if self.candidate_storage is None:
+            return True, None
+        try:
+            with self.candidate_storage.connect() as connection:
+                connection.execute("SELECT 1").fetchone()
+        except sqlite3.Error:
+            return False, "database_unavailable"
+        return True, None
+
     def _recommendations(
         self,
         profile: dict[str, Any],
         *,
         limit: int,
         feedback_context: str | None = None,
+        developer_key: str | None = None,
     ) -> ApiResponse:
-        matches = rank_for_profile(
-            profile, self.store.matchable_candidates(), limit=limit
-        )
-        feedback_states = (
-            self.store.feedback_states(
-                feedback_context,
-                [match.task_candidate_id for match in matches],
-            )
-            if feedback_context
-            else {}
+        batch = self.recommendation_service.recommend(
+            profile=as_developer_profile_v2(profile),
+            limit=limit,
+            feedback_context=feedback_context,
+            developer_key=developer_key,
         )
         return ApiResponse(
             200,
@@ -294,13 +419,32 @@ class RecommendationApi:
                 },
                 "items": [
                     {
-                        **asdict(match),
-                        "feedback_state": feedback_states.get(match.task_candidate_id),
+                        **item.to_dict(),
+                        # Additive aliases retained for the existing v0.4 web client.
+                        "track": item.service_track,
+                        "repository": item.repository_full_name,
+                        "match_score": round(item.score * 100.0, 2),
+                        "skill_coverage": (
+                            len(item.matched_skills)
+                            / max(1, len(item.matched_skills) + len(item.missing_skills))
+                        ),
+                        "maximum_skill_gap": 1 if item.missing_skills else 0,
+                        "skill_gaps": [
+                            {"skill": name, "gap": 0, "developer_level": 1, "required_level": 1}
+                            for name in item.matched_skills
+                        ] + [
+                            {"skill": name, "gap": 1, "developer_level": 0, "required_level": 1}
+                            for name in item.missing_skills
+                        ],
                     }
-                    for match in matches
+                    for item in batch.items
                 ],
-                "count": len(matches),
+                "count": len(batch.items),
                 "feedback_context": feedback_context,
+                "run_id": batch.run_id,
+                "match_version": batch.match_version,
+                "warnings": list(batch.warnings),
+                "rankings": list(batch.rankings),
                 "api_version": API_VERSION,
             },
         )
@@ -346,6 +490,8 @@ class RecommendationApi:
             response = self._dispatch(method, path, query, body, cookies or {})
         except sqlite3.Error:
             response = self._error(503, "service_not_ready", "database is unavailable or requires migration")
+        except ModelUnavailableError as exc:
+            response = self._error(503, "model_unavailable", str(exc))
         body_out = {**response.body, "request_id": request_id}
         if "error" in body_out:
             body_out["error"]["request_id"] = request_id
@@ -361,6 +507,12 @@ class RecommendationApi:
     ) -> ApiResponse:
         query = query or {}
         cookies = cookies or {}
+        if path.startswith("/api/v1/tasks/"):
+            if method != "GET":
+                return self._error(
+                    405, "method_not_allowed", "method is not supported for this route"
+                )
+            return self._task_detail_route(path, query)
         if method == "GET" and path == "/api/v1/me/recommendations":
             return self._me_recommendations_route(query, cookies)
         if path in {"/api/v1/me/profile", "/api/v1/me/profile/import-github"} or re.fullmatch(
@@ -368,12 +520,14 @@ class RecommendationApi:
         ):
             return self._profile_route(method, path, query, body, cookies)
         if method == "GET" and path == "/health":
+            database_ready, database_error = self._database_ready()
             return ApiResponse(
-                200,
+                200 if database_ready else 503,
                 {
-                    "status": "ok",
+                    "status": "ok" if database_ready else "not_ready",
                     "api_version": API_VERSION,
-                    "database_ready": self.store.database_path.is_file(),
+                    "database_ready": database_ready,
+                    **({"database_error": database_error} if database_error else {}),
                 },
             )
         if method == "GET" and path == "/api/v1/profiles":
@@ -415,6 +569,25 @@ class RecommendationApi:
                 profile,
                 limit=limit,
                 feedback_context=f"preset:{profile_key}",
+            )
+        if method == "GET" and path == "/api/v1/me/recommendations":
+            user = self.auth_service.current_user(cookies.get(SESSION_COOKIE_NAME)) if self.auth_service else None
+            if user is None:
+                return self._error(401, "authentication_required", "login is required")
+            profile = self.profile_service.profile_for_user(int(user["user_id"])) if self.profile_service else None
+            if profile is None:
+                return self._error(404, "profile_required", "create a profile before requesting recommendations")
+            try:
+                limit = int((query.get("limit") or ["10"])[0])
+            except ValueError:
+                return self._error(400, "invalid_limit", "limit must be an integer")
+            if not 1 <= limit <= 100:
+                return self._error(400, "invalid_limit", "limit must be between 1 and 100")
+            return self._recommendations(
+                profile,
+                limit=limit,
+                feedback_context=feedback_context_for_user(int(user["user_id"]), str(profile["profile_key"])),
+                developer_key=str(user["github_login"]),
             )
         if method == "POST" and path == "/api/v1/recommendations/custom":
             if not isinstance(body, dict):
@@ -797,8 +970,15 @@ def serve(
     cors_origin: str | None = None,
     static_root: Path | None = None,
     auth_service: AuthService | None = None,
+    recommendation_service: RecommendationService | None = None,
+    candidate_service: CandidateService | None = None,
 ) -> None:
-    api = RecommendationApi(store, auth_service=auth_service)
+    api = RecommendationApi(
+        store,
+        auth_service=auth_service,
+        recommendation_service=recommendation_service,
+        candidate_service=candidate_service,
+    )
     server = ThreadingHTTPServer(
         (host, port),
         make_handler(api, cors_origin=cors_origin, static_root=static_root),

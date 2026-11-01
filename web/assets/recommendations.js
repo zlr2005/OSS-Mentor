@@ -84,7 +84,12 @@ function reasonRow(reason) {
 }
 
 function recommendationRow(item, index) {
-  const taskUrl = escapeHtml(safeUrl(item.html_url));
+  const githubUrl = escapeHtml(safeUrl(item.html_url));
+  const detailQuery = new URLSearchParams({
+    task_candidate_id: String(item.task_candidate_id),
+  });
+  if (feedbackContext) detailQuery.set("feedback_context", feedbackContext);
+  const detailUrl = escapeHtml(`/task?${detailQuery.toString()}`);
   const matched = item.matched_skills?.join("、") || "无明确要求";
   const missing = item.missing_skills?.join("、") || "无关键缺口";
   const warnings = item.warnings?.length
@@ -96,12 +101,13 @@ function recommendationRow(item, index) {
     <div class="rank-position">${String(index + 1).padStart(2, "0")}<span>${Math.round(item.score * 100)} 分</span></div>
     <article>
       <div class="task-meta"><strong>${escapeHtml(item.repository_full_name)}</strong><span>#${item.issue_number}</span><span>代码 ${item.difficulty.code} · 环境 ${item.difficulty.setup}</span></div>
-      <h3><a href="${taskUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a></h3>
+      <h3><a href="${detailUrl}">${escapeHtml(item.title)}</a></h3>
       <div class="reason-ledger">${(item.reasons || []).map(reasonRow).join("")}</div>
       <div class="skill-summary"><span><strong>已覆盖</strong> ${escapeHtml(matched)}</span><span><strong>成长空间</strong> ${escapeHtml(missing)}</span></div>
       ${warnings}
       <div class="item-actions">
-        <a class="task-link" href="${taskUrl}" target="_blank" rel="noopener noreferrer">查看任务</a>
+        <a class="task-link" href="${detailUrl}">查看任务详情</a>
+        <a class="task-link" href="${githubUrl}" target="_blank" rel="noopener noreferrer">GitHub 原文</a>
         <button class="feedback-button" type="button" data-feedback="not_suitable" ${feedbackRecorded ? "disabled" : ""}>${feedbackRecorded ? "已记录不适合" : "不适合我"}</button>
         <span class="feedback-status" role="status"></span>
       </div>

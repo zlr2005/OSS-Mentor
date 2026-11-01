@@ -1,0 +1,225 @@
+{
+  "schema_version": "profile-questionnaire-schema-v0.1",
+  "questionnaire_id": "oss-mentor-midterm-profile",
+  "questionnaire_version": "2026-10-18.v1",
+  "feature_schema_version": "enhanced-profile-features-v0.1",
+  "feature_names": [
+    "capability.change_scope",
+    "capability.code_change",
+    "capability.debugging",
+    "capability.documentation",
+    "capability.documentation_structure",
+    "capability.documentation_validation",
+    "capability.open_source_experience",
+    "capability.reproduction",
+    "capability.test_design",
+    "capability.testing",
+    "constraint.os.linux",
+    "constraint.os.macos",
+    "constraint.os.windows",
+    "constraint.weekly_time",
+    "current_interest.task.documentation",
+    "current_interest.task.implementation",
+    "current_interest.task.quality",
+    "preference.language.go",
+    "preference.language.java",
+    "preference.language.javascript",
+    "preference.language.python",
+    "preference.language.rust",
+    "preference.language.typescript"
+  ],
+  "base_question_ids": [
+    "open_source_stage",
+    "languages_used",
+    "code_change_confidence",
+    "testing_confidence",
+    "documentation_confidence",
+    "current_focus",
+    "weekly_time",
+    "operating_systems"
+  ],
+  "questions": [
+    {
+      "id": "open_source_stage",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "prompt": "你目前参与开源项目的经历更接近哪种情况？",
+      "options": [
+        {"id": "none", "label": "尚未参与过", "effects": [{"feature": "capability.open_source_experience", "value": 0.0, "confidence": 0.55}]},
+        {"id": "explored", "label": "阅读过项目或尝试过本地运行", "effects": [{"feature": "capability.open_source_experience", "value": 0.25, "confidence": 0.55}]},
+        {"id": "local_change", "label": "做过本地修改或复现过问题", "effects": [{"feature": "capability.open_source_experience", "value": 0.5, "confidence": 0.6}]},
+        {"id": "submitted", "label": "提交过 Issue、PR 或 Review", "effects": [{"feature": "capability.open_source_experience", "value": 0.75, "confidence": 0.65}]}
+      ]
+    },
+    {
+      "id": "languages_used",
+      "revision": 1,
+      "kind": "multi",
+      "required": true,
+      "min_selections": 1,
+      "max_selections": 3,
+      "prompt": "你希望近期使用哪些语言参与贡献？最多选择三项。",
+      "options": [
+        {"id": "python", "label": "Python", "effects": [{"feature": "preference.language.python", "value": 1.0, "confidence": 0.9}]},
+        {"id": "javascript", "label": "JavaScript", "effects": [{"feature": "preference.language.javascript", "value": 1.0, "confidence": 0.9}]},
+        {"id": "typescript", "label": "TypeScript", "effects": [{"feature": "preference.language.typescript", "value": 1.0, "confidence": 0.9}]},
+        {"id": "java", "label": "Java", "effects": [{"feature": "preference.language.java", "value": 1.0, "confidence": 0.9}]},
+        {"id": "go", "label": "Go", "effects": [{"feature": "preference.language.go", "value": 1.0, "confidence": 0.9}]},
+        {"id": "rust", "label": "Rust", "effects": [{"feature": "preference.language.rust", "value": 1.0, "confidence": 0.9}]}
+      ]
+    },
+    {
+      "id": "code_change_confidence",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "prompt": "面对有明确复现步骤的小范围代码修改，你目前更接近哪种情况？",
+      "options": [
+        {"id": "need_walkthrough", "label": "需要逐步指导", "effects": [{"feature": "capability.code_change", "value": 0.25, "confidence": 0.5}]},
+        {"id": "with_examples", "label": "参考相似代码可以尝试", "effects": [{"feature": "capability.code_change", "value": 0.5, "confidence": 0.55}]},
+        {"id": "independent_small", "label": "能独立完成并自测小修改", "effects": [{"feature": "capability.code_change", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "testing_confidence",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "prompt": "你目前处理自动化测试任务的经验如何？",
+      "options": [
+        {"id": "read_only", "label": "能阅读测试但需要指导", "effects": [{"feature": "capability.testing", "value": 0.25, "confidence": 0.5}]},
+        {"id": "modify_existing", "label": "能修改已有测试", "effects": [{"feature": "capability.testing", "value": 0.5, "confidence": 0.55}]},
+        {"id": "design_cases", "label": "能独立设计测试用例", "effects": [{"feature": "capability.testing", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "documentation_confidence",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "prompt": "你目前处理技术文档任务的经验如何？",
+      "options": [
+        {"id": "small_edit", "label": "能完成文字或链接修正", "effects": [{"feature": "capability.documentation", "value": 0.25, "confidence": 0.5}]},
+        {"id": "follow_and_update", "label": "能按实际流程更新一段说明", "effects": [{"feature": "capability.documentation", "value": 0.5, "confidence": 0.55}]},
+        {"id": "independent_guide", "label": "能独立编写并验证完整指南", "effects": [{"feature": "capability.documentation", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "current_focus",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "prompt": "你这次最希望尝试哪类贡献？",
+      "options": [
+        {"id": "implementation", "label": "代码实现与缺陷修复", "effects": [{"feature": "current_interest.task.implementation", "value": 1.0, "confidence": 0.95}]},
+        {"id": "quality", "label": "问题复现与测试", "effects": [{"feature": "current_interest.task.quality", "value": 1.0, "confidence": 0.95}]},
+        {"id": "documentation", "label": "文档与上手指南", "effects": [{"feature": "current_interest.task.documentation", "value": 1.0, "confidence": 0.95}]}
+      ]
+    },
+    {
+      "id": "weekly_time",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "prompt": "未来一周你大约能投入多少时间？",
+      "options": [
+        {"id": "under_2h", "label": "2 小时以内", "effects": [{"feature": "constraint.weekly_time", "value": 0.25, "confidence": 0.9}]},
+        {"id": "2_to_5h", "label": "2～5 小时", "effects": [{"feature": "constraint.weekly_time", "value": 0.5, "confidence": 0.9}]},
+        {"id": "over_5h", "label": "5 小时以上", "effects": [{"feature": "constraint.weekly_time", "value": 0.75, "confidence": 0.9}]}
+      ]
+    },
+    {
+      "id": "operating_systems",
+      "revision": 1,
+      "kind": "multi",
+      "required": true,
+      "min_selections": 1,
+      "max_selections": 3,
+      "prompt": "你当前可用于开发的操作系统有哪些？",
+      "options": [
+        {"id": "windows", "label": "Windows", "effects": [{"feature": "constraint.os.windows", "value": 1.0, "confidence": 0.95}]},
+        {"id": "macos", "label": "macOS", "effects": [{"feature": "constraint.os.macos", "value": 1.0, "confidence": 0.95}]},
+        {"id": "linux", "label": "Linux", "effects": [{"feature": "constraint.os.linux", "value": 1.0, "confidence": 0.95}]}
+      ]
+    },
+    {
+      "id": "implementation_debugging",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "applies_when": {"question_id": "current_focus", "includes": "implementation"},
+      "prompt": "面对可以稳定复现的缺陷，你通常能推进到哪一步？",
+      "options": [
+        {"id": "reproduce", "label": "按照步骤复现", "effects": [{"feature": "capability.debugging", "value": 0.25, "confidence": 0.5}]},
+        {"id": "locate", "label": "定位到可能的模块", "effects": [{"feature": "capability.debugging", "value": 0.5, "confidence": 0.55}]},
+        {"id": "fix_and_verify", "label": "提出修改并验证回归", "effects": [{"feature": "capability.debugging", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "implementation_scope",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "applies_when": {"question_id": "current_focus", "includes": "implementation"},
+      "prompt": "你愿意承担多大范围的代码改动？",
+      "options": [
+        {"id": "one_file", "label": "单文件小改动", "effects": [{"feature": "capability.change_scope", "value": 0.25, "confidence": 0.6}]},
+        {"id": "one_module", "label": "单模块内多文件改动", "effects": [{"feature": "capability.change_scope", "value": 0.5, "confidence": 0.6}]},
+        {"id": "cross_module", "label": "跨模块改动并补充测试", "effects": [{"feature": "capability.change_scope", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "quality_reproduction",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "applies_when": {"question_id": "current_focus", "includes": "quality"},
+      "prompt": "面对信息不完整的问题报告，你能如何复现？",
+      "options": [
+        {"id": "follow_exact", "label": "需要完整步骤", "effects": [{"feature": "capability.reproduction", "value": 0.25, "confidence": 0.5}]},
+        {"id": "fill_gaps", "label": "能补充少量缺失条件", "effects": [{"feature": "capability.reproduction", "value": 0.5, "confidence": 0.55}]},
+        {"id": "minimal_case", "label": "能构造最小复现并记录环境", "effects": [{"feature": "capability.reproduction", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "quality_test_design",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "applies_when": {"question_id": "current_focus", "includes": "quality"},
+      "prompt": "当已有修复但缺少测试时，你能做到哪一步？",
+      "options": [
+        {"id": "run_existing", "label": "运行并报告已有测试", "effects": [{"feature": "capability.test_design", "value": 0.25, "confidence": 0.5}]},
+        {"id": "adapt_case", "label": "参考已有测试补充场景", "effects": [{"feature": "capability.test_design", "value": 0.5, "confidence": 0.55}]},
+        {"id": "boundary_suite", "label": "独立设计正常与边界用例", "effects": [{"feature": "capability.test_design", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "documentation_structure",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "applies_when": {"question_id": "current_focus", "includes": "documentation"},
+      "prompt": "面对过时的上手文档，你能如何整理内容？",
+      "options": [
+        {"id": "correct_text", "label": "修正文案和链接", "effects": [{"feature": "capability.documentation_structure", "value": 0.25, "confidence": 0.5}]},
+        {"id": "reorder_steps", "label": "按真实流程重排步骤", "effects": [{"feature": "capability.documentation_structure", "value": 0.5, "confidence": 0.55}]},
+        {"id": "design_guide", "label": "重新设计完整上手路径", "effects": [{"feature": "capability.documentation_structure", "value": 0.75, "confidence": 0.6}]}
+      ]
+    },
+    {
+      "id": "documentation_validation",
+      "revision": 1,
+      "kind": "single",
+      "required": true,
+      "applies_when": {"question_id": "current_focus", "includes": "documentation"},
+      "prompt": "提交文档修改前，你会如何验证？",
+      "options": [
+        {"id": "visual_review", "label": "检查格式和链接", "effects": [{"feature": "capability.documentation_validation", "value": 0.25, "confidence": 0.5}]},
+        {"id": "follow_steps", "label": "从干净环境走一遍步骤", "effects": [{"feature": "capability.documentation_validation", "value": 0.5, "confidence": 0.55}]},
+        {"id": "multiple_environments", "label": "验证多个环境并记录差异", "effects": [{"feature": "capability.documentation_validation", "value": 0.75, "confidence": 0.6}]}
+      ]
+    }
+  ]
+}
