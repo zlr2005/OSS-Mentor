@@ -1,0 +1,72 @@
+{
+  "schema_version": "profile-issue-fit-annotation-v0.1",
+  "purpose": "pilot_guide_calibration_not_model_training_or_effect_claim",
+  "blinding": {
+    "hide_model_variant": true,
+    "hide_model_score": true,
+    "hide_model_rank": true
+  },
+  "double_review": {
+    "pilot_pairs": "all",
+    "independent_before_adjudication": true
+  },
+  "overall_fit": {
+    "0": "不适合",
+    "1": "较弱",
+    "2": "适合",
+    "3": "很适合",
+    "U": "证据不足，无法判断"
+  },
+  "dimension_scales": {
+    "skill_fit": ["0", "1", "2", "3", "U"],
+    "interest_fit": ["0", "1", "2", "3", "U"],
+    "time_fit": ["0", "1", "2", "3", "U"],
+    "environment_fit": ["0", "1", "2", "3", "U"],
+    "growth_value": ["0", "1", "2", "3", "U"]
+  },
+  "hard_blocker_codes": [
+    "none",
+    "issue_unavailable",
+    "language",
+    "operating_system",
+    "time_budget",
+    "skill_threshold",
+    "task_type",
+    "insufficient_evidence"
+  ],
+  "required_pair_fields": [
+    "annotation_set_version",
+    "pair_id",
+    "profile_key",
+    "profile_version",
+    "feature_schema_version",
+    "profile_as_of",
+    "issue_release_version",
+    "issue_key",
+    "issue_snapshot_at",
+    "issue_content_sha256"
+  ],
+  "required_annotation_fields": [
+    "annotator_id",
+    "guide_version",
+    "overall_fit",
+    "skill_fit",
+    "interest_fit",
+    "time_fit",
+    "environment_fit",
+    "growth_value",
+    "hard_blocker_code",
+    "confidence",
+    "reason_codes",
+    "profile_evidence_used",
+    "issue_evidence_used",
+    "annotation_started_at",
+    "annotation_completed_at"
+  ],
+  "adjudication_fields": [
+    "agreement_state",
+    "adjudicated_overall_fit",
+    "adjudicator_id",
+    "adjudication_reason"
+  ]
+}
