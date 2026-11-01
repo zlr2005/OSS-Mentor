@@ -1,0 +1,16 @@
+{
+  "changes": [
+    {
+      "action": "content_withheld",
+      "file_version_key": "file-version-fde425d96857094bd7ca70f9b3d69bdff062dff46f8cdc82a01ea8cc9c1c646a",
+      "source_content_sha256": "7a3bc864be5a79840633e5cbf581fe97f93ba28abe331a7e3508115a34deb41a"
+    }
+  ],
+  "credentials_validated_or_used": false,
+  "historical_git_content_removed": false,
+  "parent_dataset_version": "b-real-contributions-v0.2-20261028",
+  "parent_manifest_sha256": "790e73a1b050ae9055a187e8fa944bc483d1170a92670f3fc0b78a105de1d044",
+  "policy": "withhold credential-bearing code; redact credential substrings in candidate text",
+  "provider_revocation_confirmed": false,
+  "redacted_at": "2026-11-01T15:29:33.754327+00:00"
+}

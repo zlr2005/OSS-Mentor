@@ -14,3 +14,8 @@ python datasets/c_issue_candidates_v1/dataset.py --database data/c_candidate_del
 也可导入 dataset.read_table(root, 'task_candidate') 按原字段读取；table_files 和 table_counts 见 manifest。
 309 个仓库可经 repository.github_repository_id/full_name 与 B 的 repository.source_repository_id/full_name 对齐；不能把两个数据集内部 repository_id/key 直接等同。
 未包含 CODER 模型、权重、向量、评分真值或完整 Issue—文件映射。
+
+
+## Publication security update
+
+This security-redacted revision supersedes the original manifest. Credential-bearing code is withheld with secret_redacted_publication; candidate credential substrings are redacted. Read current counts and version from manifest.json. Source code hash/commit remain provenance, not proof that removed content is available. No credential was used or confirmed revoked. Git history and old databases/caches are not cleaned by this update.

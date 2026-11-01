@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+from oss_mentor.datasets.publication_secrets import require_publication_safe
 
 
 def sha(data):
@@ -68,6 +69,7 @@ def export(source, output):
         })
     output.mkdir(parents=True)
     data = ''.join(canonical(r) + '\n' for r in output_rows).encode('utf-8')
+    require_publication_safe(data)
     (output / 'candidate_texts.jsonl').write_bytes(data)
     result = {
         'schema_version': 'a-platform-cache-input-v1',

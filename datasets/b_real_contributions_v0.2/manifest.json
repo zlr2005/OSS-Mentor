@@ -1,7 +1,7 @@
 {
   "coverage_manifest_sha256": "c9d6fd966af05cc79d2c7ea99fb7d7649315c1c38a1dbb6d13e02a0a1cb06d45",
   "created_at": "2026-10-27T17:33:32.098948+00:00",
-  "dataset_version": "b-real-contributions-v0.2-20261028",
+  "dataset_version": "b-real-contributions-v0.2-20261028-security-redacted-v1",
   "entity_counts": {
     "code_documents": 3865,
     "contributions": 3865,
@@ -28,6 +28,11 @@
       "path": "011_midterm_datasets.sql",
       "sha256": "ed6bf4a16c725cfae9684ae9889b8bd5a96bd2fdef565ad897f681bb2ba184d3",
       "size_bytes": 6027
+    },
+    {
+      "path": "README.md",
+      "sha256": "cc06455a34dd62eed88ecfc19c2182659b3f96c87e7e0eb179d993d6fd9bfdce",
+      "size_bytes": 6362
     },
     {
       "path": "content/code/0005e1c2da868cf2606cc584934847361bbcebb075f0fad6ae8462963d6e5f65.txt",
@@ -8133,11 +8138,6 @@
       "path": "content/code/7a309ef3505043ff12fb05315288efb703c50ff7eeca2cf74911672f537728a9.txt",
       "sha256": "7a309ef3505043ff12fb05315288efb703c50ff7eeca2cf74911672f537728a9",
       "size_bytes": 9816
-    },
-    {
-      "path": "content/code/7a3bc864be5a79840633e5cbf581fe97f93ba28abe331a7e3508115a34deb41a.txt",
-      "sha256": "7a3bc864be5a79840633e5cbf581fe97f93ba28abe331a7e3508115a34deb41a",
-      "size_bytes": 8260
     },
     {
       "path": "content/code/7a47b606c2d330f31d3017ce3b3ea7b6577824cdbb61299cba93d4d8e0c4ccb0.txt",
@@ -52340,9 +52340,14 @@
       "size_bytes": 6738
     },
     {
+      "path": "publication_redaction.json",
+      "sha256": "ab084ff1d39b0421066f5ca21f754d0888736569f451a283fa9401cfab146fce",
+      "size_bytes": 714
+    },
+    {
       "path": "quality.json",
-      "sha256": "86a407e01fe0be2557c5965d31c370b789674b2885c86996dcc6edd0ecfe6aca",
-      "size_bytes": 616
+      "sha256": "8a07a22e0177c06467f05b0ad98493091ef8d893acbdeb2998a381bacb6ae0e6",
+      "size_bytes": 654
     },
     {
       "path": "reader.py",
@@ -52350,14 +52355,9 @@
       "size_bytes": 2599
     },
     {
-      "path": "README.md",
-      "sha256": "0afcdf98764a4e584cf139f0104516d96005b01ffc87809e66dfa874f3829b4b",
-      "size_bytes": 5892
-    },
-    {
       "path": "tables/code_documents.jsonl",
-      "sha256": "ec4c11efd9e7a06946484f5d787c64550e1ae9c25745919c5257f53a68bd1f6f",
-      "size_bytes": 3719656
+      "sha256": "fcd7f9955938614ee0bdab1ff7b436cfe176d4b32fabe70daea7adbdf377803a",
+      "size_bytes": 3719630
     },
     {
       "path": "tables/contributions.jsonl",
@@ -52366,7 +52366,7 @@
     },
     {
       "path": "tables/developer_contribution_index.jsonl",
-      "sha256": "62372f519d7867de1706f8b23773fd62902b35d0936b3fb9eccadcc23cfedfee",
+      "sha256": "1b007b1e03840f58551be3bf695fc794e43b157c03ee49cedf238bf8699ab053",
       "size_bytes": 648659
     },
     {
@@ -52441,10 +52441,26 @@
   "parent_dataset_version": "b-real-contributions-v0.1-20261028",
   "parent_manifest_sha256": "98c49bc3ea0d1c2bcffb0239f306dfda816eb40b287a115826979f2a81d5ff03",
   "provenance_mode": "Sanitized projections; complete original API envelopes remain at source.",
+  "publication_redaction": {
+    "changes": [
+      {
+        "action": "content_withheld",
+        "file_version_key": "file-version-fde425d96857094bd7ca70f9b3d69bdff062dff46f8cdc82a01ea8cc9c1c646a",
+        "source_content_sha256": "7a3bc864be5a79840633e5cbf581fe97f93ba28abe331a7e3508115a34deb41a"
+      }
+    ],
+    "credentials_validated_or_used": false,
+    "historical_git_content_removed": false,
+    "parent_dataset_version": "b-real-contributions-v0.2-20261028",
+    "parent_manifest_sha256": "790e73a1b050ae9055a187e8fa944bc483d1170a92670f3fc0b78a105de1d044",
+    "policy": "withhold credential-bearing code; redact credential substrings in candidate text",
+    "provider_revocation_confirmed": false,
+    "redacted_at": "2026-11-01T15:29:33.754327+00:00"
+  },
   "quality": {
     "code_availability": {
-      "available": 3715,
-      "missing": 150
+      "available": 3714,
+      "missing": 151
     },
     "confirmed_contribution_author_rate": 0.9953428201811125,
     "contribution_author_association": {
@@ -52457,10 +52473,11 @@
     },
     "developers_with_file_contributions": 1133,
     "developers_without_selected_file_contributions": 192,
-    "missing_code_rate": 0.03880983182406209,
+    "missing_code_rate": 0.03906856403622251,
     "missing_code_reasons": {
       "code_size_limit": 122,
-      "file_deleted_at_commit": 28
+      "file_deleted_at_commit": 28,
+      "secret_redacted_publication": 1
     },
     "unique_developer_key_count": 1325,
     "weak_interest_behavior_records": 0
