@@ -28,6 +28,7 @@ coder-prepare-data = "coder_issue.data.prepare_data:main"
 coder-validate-data = "coder_issue.data.validation:main"
 coder-run-baselines = "coder_issue.baselines.pipeline:main"
 coder-train-multigranular = "coder_issue.training.pipeline:main"
+coder-train-advanced-adapter = "coder_issue.training.advanced_profile_pipeline:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
