@@ -122,6 +122,17 @@ $env:OSS_MENTOR_BASE_URL = 'http://127.0.0.1:8765'
 `CODER/docs/coder_full_search8_bundle_manifest.json`；归档内部也包含同一份清单和
 `SHA256SUMS`。模型 bundle 当前包含 48 项平台候选缓存，不代表完整冻结候选集。
 
+为便于 B 侧只做身份重合审计而无需下载完整 bundle，轻量
+`developer_mapping.parquet` 另外直接纳入仓库：
+
+```text
+data/midterm/normalized/gfibot-m0-v1.1/mappings/developer_mapping.parquet
+SHA-256: 124d4fe81c1d8829d30c8eb4492e4f4f73a7462c24f4e98ab1ce9775e097e0d8
+```
+
+该映射的匹配键是规范化后的 GitHub login：`developer_key = login.strip().casefold()`；
+`developer_id` 仅为 CODER 内部连续整数索引。
+
 ```powershell
 & '.\CODER\.venv\Scripts\python.exe' -m oss_mentor serve-api
 ```
