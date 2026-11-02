@@ -133,6 +133,17 @@ SHA-256: 124d4fe81c1d8829d30c8eb4492e4f4f73a7462c24f4e98ab1ce9775e097e0d8
 该映射的匹配键是规范化后的 GitHub login：`developer_key = login.strip().casefold()`；
 `developer_id` 仅为 CODER 内部连续整数索引。
 
+供 B 侧生成 `profile_interaction_join_report.json` 的轻量历史交互联表为：
+
+```text
+data/midterm/graphs/gfibot-m0-v1.1/developer_issue_interactions.parquet
+SHA-256: 7487fb0f6b5da2da3bdec8e966244e10eb081648201f6f919e9b72633d6a6635
+```
+
+联表已经包含 `developer_key`、`issue_id`、`interaction_at` 和 `split`，并保留
+`developer_id`、`repository_id` 用于复核。行数、时间切分规则及源文件哈希记录在同目录
+`developer_issue_interactions.manifest.json`。
+
 ```powershell
 & '.\CODER\.venv\Scripts\python.exe' -m oss_mentor serve-api
 ```

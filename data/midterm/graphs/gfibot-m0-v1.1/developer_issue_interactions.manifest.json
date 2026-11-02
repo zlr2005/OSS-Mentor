@@ -1,0 +1,61 @@
+{
+  "schema_version": "profile-interaction-audit-v0.1",
+  "dataset_version": "gfibot-m0-v1.1",
+  "output": {
+    "path": "data/midterm/graphs/gfibot-m0-v1.1/developer_issue_interactions.parquet",
+    "bytes": 2021671,
+    "sha256": "7487fb0f6b5da2da3bdec8e966244e10eb081648201f6f919e9b72633d6a6635",
+    "row_count": 148096,
+    "columns": [
+      "developer_key",
+      "developer_id",
+      "issue_id",
+      "repository_id",
+      "interaction_at",
+      "split"
+    ]
+  },
+  "split_counts": {
+    "train": 123481,
+    "valid": 17581,
+    "test": 7034
+  },
+  "split_rules": {
+    "train": "interaction_at < 2021-01-01T00:00:00+00:00",
+    "valid": "2021-01-01T00:00:00+00:00 <= interaction_at < 2022-01-01T00:00:00+00:00",
+    "test": "interaction_at >= 2022-01-01T00:00:00+00:00"
+  },
+  "identity_join": {
+    "source_field": "developer_id",
+    "output_match_field": "developer_key",
+    "developer_key_normalization": "strip().casefold()",
+    "missing_mapping_count": 0
+  },
+  "source_files": [
+    {
+      "name": "train.parquet",
+      "bytes": 1799647,
+      "sha256": "ecfae054980546872a6c7854f6e4d3d112b10e03d06f396c4fc3e23a333f20dd"
+    },
+    {
+      "name": "valid.parquet",
+      "bytes": 260565,
+      "sha256": "3b8ca739071f273788d6b7294c9ce497b69336dfd1bbb7a42bb635075274943f"
+    },
+    {
+      "name": "test.parquet",
+      "bytes": 105924,
+      "sha256": "0aea0d87601b26a0a4a4772e91d918b3c1fe4819b94a83fe7c0c5b17e62caf1c"
+    },
+    {
+      "name": "split_manifest.json",
+      "bytes": 2469,
+      "sha256": "d17bd5a3c6102877a2f6726c4fdd65c252d2eb69b0bde50541892da71bde62ee"
+    },
+    {
+      "name": "developer_mapping.parquet",
+      "bytes": 341929,
+      "sha256": "124d4fe81c1d8829d30c8eb4492e4f4f73a7462c24f4e98ab1ce9775e097e0d8"
+    }
+  ]
+}
