@@ -69,6 +69,26 @@ outcome.outcome_at <= profile.as_of + observation_window
 
 ## 两阶段运行
 
+### B 独立画像自检
+
+B 不需要等待 A 的 outcome、历史候选或 C 的模型文件，可以先单独检查画像包：
+
+```powershell
+coder-validate-advanced-profiles `
+  --profiles data/advanced/advanced_temporal_profiles.parquet `
+  --output-dir data/advanced/profile-validation
+```
+
+命令同时支持 JSONL 和 Parquet，并输出：
+
+```text
+profile_validation_report.json
+profile_failures.jsonl
+```
+
+报告包含文件 SHA-256、有效/无效记录数、开发者数、时间范围、每个特征的观测率、每人
+画像数量和失败原因。全部通过时退出码为 0；任意记录失败时退出码为 1，便于 B 放入 CI。
+
 ### 审计
 
 ```powershell

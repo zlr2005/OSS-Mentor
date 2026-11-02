@@ -19,6 +19,10 @@ from coder_issue.models.profile import (
     tensorize_training_profile,
 )
 from coder_issue.training.advanced_profile_pipeline import run_pipeline
+from coder_issue.training.advanced_profile_validation import (
+    main as validate_profiles_main,
+    validate_profile_export,
+)
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
@@ -260,3 +264,42 @@ def test_audit_accepts_parquet_contract_inputs() -> None:
         args.mode = "audit"
         report = run_pipeline(args)
         assert report["split_pairs"] == {"train": 1, "validation": 1, "test": 1}
+
+
+def test_standalone_profile_validator_reports_coverage_and_failures() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        valid = _profile("valid-dev", "v1", "2025-01-01T00:00:00Z")
+        invalid = _profile("invalid-dev", "v1", "2025-04-01T00:00:00Z")
+        invalid["values"][0] = 0.5
+        profiles = root / "profiles.jsonl"
+        _write_jsonl(profiles, [valid, invalid])
+
+        report, failures = validate_profile_export(profiles)
+        exit_code = validate_profiles_main(
+            ["--profiles", str(profiles), "--output-dir", str(root / "validation")]
+        )
+
+        assert report["status"] == "failed"
+        assert report["records"]["total"] == 2
+        assert report["records"]["valid"] == 1
+        assert report["records"]["invalid"] == 1
+        assert report["records"]["developers"] == 1
+        assert report["feature_coverage"][
+            PROFILE_FEATURE_NAMES.index("current_interest.task.quality")
+        ]["observed_rate"] == 1.0
+        assert failures[0].code == "invalid_profile"
+        assert exit_code == 1
+        assert (root / "validation" / "profile_validation_report.json").is_file()
+        assert (root / "validation" / "profile_failures.jsonl").is_file()
+
+
+def test_standalone_profile_validator_returns_zero_for_valid_parquet() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        profiles = root / "profiles.parquet"
+        pq.write_table(pa.Table.from_pylist([_profile("valid-dev", "v1", "2025-01-01T00:00:00Z")]), profiles)
+        exit_code = validate_profiles_main(
+            ["--profiles", str(profiles), "--output-dir", str(root / "validation")]
+        )
+        assert exit_code == 0
