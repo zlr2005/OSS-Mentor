@@ -107,7 +107,12 @@ class ModelScorer(Protocol):
 - 配置 `profile_adapter_dir` 后，D 只为已确认画像传入冻结的
   `EnhancedProfileFeatures` 映射，C 在用户塔末端加入画像残差；
 - 没有已确认画像时仍使用基础 CODER，不构造全零“已确认”画像；
+- 在线模式由 D 控制：`off` 只跑基础 CODER；`shadow` 保存 original/profile
+  成对排名但向用户返回 original；`serve` 对 growth 用户的已确认画像启用 adapter；
 - `developer_key` 命中映射时使用历史用户向量，否则使用总体均值；
+- advanced adapter v1 的 `profile_mode` 为 `population_mean`（shadow original）或
+  `population_mean_profile`（serve），基础 CODER 未加载 adapter 时仍为
+  `known_history` / `cold_start_population`；
 - 每个候选必须返回一个 `ModelScore`，不允许部分结果；
 - 不训练、不下载、不写模型文件。
 

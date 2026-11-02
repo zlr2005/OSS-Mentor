@@ -10,13 +10,46 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from oss_mentor.cli import _candidate_store, main
+from oss_mentor.cli import (
+    _candidate_store,
+    _validate_advanced_adapter_bundle,
+    main,
+)
+from oss_mentor.collector.config import ConfigError
 from oss_mentor.collector.github_client import RateLimitExceeded
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 from oss_mentor.storage.candidates import SQLiteCandidateStorage
 
 
 class CliTests(unittest.TestCase):
+    def test_advanced_adapter_bundle_requires_frozen_growth_v1_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "weights.pt").write_bytes(b"fixture")
+            (root / "_SUCCESS").write_text("manifest-sha\n", encoding="utf-8")
+            manifest = {
+                "schema_version": "coder-profile-adapter-v0.1",
+                "adapter_version": "advanced-adapter-v1",
+                "service_track": "growth",
+                "base_user_mode": "population_mean",
+            }
+            (root / "adapter_manifest.json").write_text(
+                json.dumps(manifest),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                "advanced-adapter-v1",
+                _validate_advanced_adapter_bundle(root)["adapter_version"],
+            )
+
+            manifest["base_user_mode"] = "known_history"
+            (root / "adapter_manifest.json").write_text(
+                json.dumps(manifest),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ConfigError, "population_mean"):
+                _validate_advanced_adapter_bundle(root)
+
     def test_candidate_commands_use_v05_availability_storage(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(__file__).resolve().parents[1]

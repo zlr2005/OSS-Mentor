@@ -58,7 +58,10 @@ from oss_mentor.services.midterm_profile_service import (
     verified_developer_key,
 )
 from oss_mentor.services.model_gateway import (
+    ModelUnavailable,
     current_model_metadata,
+    ProfileAwareScorer,
+    ShadowProfileScorer,
     scorer_with_profile,
 )
 from oss_mentor.storage.profiles import SQLiteProfileStorage
@@ -281,7 +284,11 @@ class RecommendationApi:
         midterm_profile_store: SQLiteMidtermProfileApiStore | None = None,
         midterm_profile_service: MidtermProfileService | None = None,
         questionnaire_path: Path | None = None,
+        advanced_adapter_mode: str = "off",
     ) -> None:
+        if advanced_adapter_mode not in {"off", "shadow", "serve"}:
+            raise ValueError("advanced_adapter_mode must be off, shadow or serve")
+        self.advanced_adapter_mode = advanced_adapter_mode
         self.store = store
         self.candidate_service = candidate_service
         self.candidate_storage: SQLiteCandidateStorage | None = None
@@ -699,6 +706,69 @@ class RecommendationApi:
             "model": json.loads(row["model_json"] or "{}"),
         }
 
+    def _save_shadow_comparison(
+        self,
+        *,
+        run_id: str,
+        user_id: int,
+        batch: Any,
+        paired: dict[str, Any],
+    ) -> None:
+        with self.store.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO recommendation_advanced_adapter_shadow (
+                    run_id, user_id, mode, model_version,
+                    profile_adapter_version, profile_key, profile_version,
+                    profile_mode, candidate_snapshot_hash, paired_json, created_at
+                ) VALUES (?, ?, 'shadow', ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(run_id) DO UPDATE SET
+                    model_version = excluded.model_version,
+                    profile_adapter_version = excluded.profile_adapter_version,
+                    profile_key = excluded.profile_key,
+                    profile_version = excluded.profile_version,
+                    profile_mode = excluded.profile_mode,
+                    candidate_snapshot_hash = excluded.candidate_snapshot_hash,
+                    paired_json = excluded.paired_json,
+                    created_at = excluded.created_at
+                """,
+                (
+                    run_id,
+                    user_id,
+                    str(paired.get("model_version") or ""),
+                    str(paired.get("profile_adapter_version") or ""),
+                    str(paired.get("profile_key") or ""),
+                    str(paired.get("profile_version") or ""),
+                    str(paired.get("profile_mode") or ""),
+                    str(batch.candidate_hash),
+                    json.dumps(paired, ensure_ascii=False, sort_keys=True),
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+
+    def _load_shadow_comparison(self, run_id: str) -> dict[str, Any] | None:
+        with self.store.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM recommendation_advanced_adapter_shadow
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "mode": str(row["mode"]),
+            "model_version": str(row["model_version"]),
+            "profile_adapter_version": str(row["profile_adapter_version"]),
+            "profile_key": str(row["profile_key"]),
+            "profile_version": str(row["profile_version"]),
+            "profile_mode": str(row["profile_mode"]),
+            "candidate_snapshot_hash": str(row["candidate_snapshot_hash"]),
+            "paired": json.loads(row["paired_json"]),
+            "created_at": str(row["created_at"]),
+        }
+
     def _recommendation_run_route(
         self,
         run_id: str,
@@ -717,6 +787,8 @@ class RecommendationApi:
         if denied is not None:
             return denied
         ui_metadata = self._load_run_ui_metadata(run_id)
+        shadow = self._load_shadow_comparison(run_id)
+        model = ui_metadata.get("model") or self._model_metadata_for_batch(batch)
         return ApiResponse(
             200,
             {
@@ -730,8 +802,9 @@ class RecommendationApi:
                 "created_at": batch["created_at"],
                 "items": list(batch.get("items") or []),
                 "profile": ui_metadata.get("profile") or None,
-                "model": ui_metadata.get("model")
-                or self._model_metadata_for_batch(batch),
+                "model": model,
+                "advanced_adapter": model.get("advanced_adapter"),
+                "advanced_adapter_shadow": shadow,
                 "api_version": API_VERSION,
             },
         )
@@ -919,6 +992,7 @@ class RecommendationApi:
             ),
             developer_key=developer_key,
             enhanced_profile=enhanced_profile,
+            owner_user_id=user_id,
         )
 
     @staticmethod
@@ -1017,13 +1091,20 @@ class RecommendationApi:
         feedback_context: str | None = None,
         developer_key: str | None = None,
         enhanced_profile: dict[str, Any] | None = None,
+        owner_user_id: int | None = None,
     ) -> ApiResponse:
         contract_profile = as_developer_profile_v2(profile)
         recommendation_service = self.recommendation_service
-        scorer = scorer_with_profile(
-            recommendation_service.model_scorer,
-            enhanced_profile,
-        )
+        try:
+            scorer = scorer_with_profile(
+                recommendation_service.model_scorer,
+                enhanced_profile,
+                mode=self.advanced_adapter_mode,
+                service_track=str(profile.get("service_track") or ""),
+            )
+        except ModelUnavailable as exc:
+            return self._error(503, "model_unavailable", str(exc))
+        shadow_scorer = scorer if isinstance(scorer, ShadowProfileScorer) else None
         if scorer is not recommendation_service.model_scorer:
             recommendation_service = copy.copy(recommendation_service)
             recommendation_service.model_scorer = scorer
@@ -1033,11 +1114,31 @@ class RecommendationApi:
             feedback_context=feedback_context,
             developer_key=developer_key,
         )
+        shadow_recorded = False
+        if shadow_scorer is not None and owner_user_id is not None:
+            paired = shadow_scorer.paired_payload()
+            if paired is not None:
+                self._save_shadow_comparison(
+                    run_id=batch.run_id,
+                    user_id=owner_user_id,
+                    batch=batch,
+                    paired=paired,
+                )
+                shadow_recorded = True
+        advanced_adapter = self._advanced_adapter_metadata(
+            scorer=scorer,
+            profile_snapshot=enhanced_profile,
+            batch=batch,
+            shadow_recorded=shadow_recorded,
+        )
         if self._load_recommendation_run(batch.run_id) is not None:
+            model_metadata = self._model_metadata_for_batch(batch)
+            model_metadata["advanced_adapter_mode"] = self.advanced_adapter_mode
+            model_metadata["advanced_adapter"] = advanced_adapter
             self._save_run_ui_metadata(
                 batch.run_id,
                 contract_profile,
-                self._model_metadata_for_batch(batch),
+                model_metadata,
             )
         return ApiResponse(
             200,
@@ -1081,9 +1182,56 @@ class RecommendationApi:
                 "created_at": batch.created_at,
                 "warnings": list(batch.warnings),
                 "rankings": list(batch.rankings),
+                "advanced_adapter": advanced_adapter,
                 "api_version": API_VERSION,
             },
         )
+
+    def _advanced_adapter_metadata(
+        self,
+        *,
+        scorer: Any,
+        profile_snapshot: dict[str, Any] | None,
+        batch: Any,
+        shadow_recorded: bool,
+    ) -> dict[str, Any]:
+        base_scorer = getattr(scorer, "base_scorer", scorer)
+        adapter_manifest = (
+            getattr(base_scorer, "profile_adapter_manifest", None) or {}
+        )
+        rankings = list(getattr(batch, "rankings", ()) or ())
+        profile_mode = (
+            str(rankings[0].get("profile_mode"))
+            if rankings and rankings[0].get("profile_mode")
+            else None
+        )
+        profile_applied = (
+            self.advanced_adapter_mode == "serve"
+            and isinstance(scorer, ProfileAwareScorer)
+            and profile_snapshot is not None
+        )
+        return {
+            "mode": self.advanced_adapter_mode,
+            "active": profile_applied,
+            "profile_applied": profile_applied,
+            "profile_adapter_version": (
+                str(adapter_manifest.get("adapter_version"))
+                if adapter_manifest.get("adapter_version")
+                else None
+            ),
+            "profile_mode": profile_mode,
+            "profile_key": (
+                str(profile_snapshot.get("profile_key"))
+                if profile_snapshot and profile_snapshot.get("profile_key")
+                else None
+            ),
+            "profile_version": (
+                str(profile_snapshot.get("profile_version"))
+                if profile_snapshot and profile_snapshot.get("profile_version")
+                else None
+            ),
+            "shadow_recorded": shadow_recorded,
+        }
 
     def _validate_feedback_context(self, value: Any) -> tuple[str, str]:
         if not isinstance(value, str) or not 1 <= len(value) <= 140:
@@ -1531,7 +1679,8 @@ def make_handler(
                 self.send_header(
                     "Content-Security-Policy",
                     "default-src 'self'; script-src 'self'; style-src 'self'; "
-                    "img-src 'self' data:; connect-src 'self'; base-uri 'none'; "
+                    "img-src 'self' data: https://github.com https://avatars.githubusercontent.com; "
+                    "connect-src 'self'; base-uri 'none'; "
                     "frame-ancestors 'none'",
                 )
                 self.end_headers()
@@ -1628,6 +1777,7 @@ def serve(
     candidate_service: CandidateService | None = None,
     midterm_profile_service: MidtermProfileService | None = None,
     questionnaire_path: Path | None = None,
+    advanced_adapter_mode: str = "off",
 ) -> None:
     api = RecommendationApi(
         store,
@@ -1636,6 +1786,7 @@ def serve(
         candidate_service=candidate_service,
         midterm_profile_service=midterm_profile_service,
         questionnaire_path=questionnaire_path,
+        advanced_adapter_mode=advanced_adapter_mode,
     )
     server = ThreadingHTTPServer(
         (host, port),
