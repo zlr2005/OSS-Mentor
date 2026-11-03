@@ -1,0 +1,32 @@
+{
+  "status": "working",
+  "training_ready": false,
+  "splits": {
+    "train": {
+      "groups": 1193,
+      "developers": 368,
+      "labels": 2465
+    },
+    "validation": {
+      "groups": 268,
+      "developers": 214,
+      "labels": 386
+    },
+    "test": {
+      "groups": 169,
+      "developers": 152,
+      "labels": 220
+    }
+  },
+  "exclusions": {
+    "no_pre_cutoff_available_code": 246
+  },
+  "validation_start": "2026-01-01T00:00:00Z",
+  "test_start": "2026-07-01T00:00:00Z",
+  "source": "data/midterm/working/merged_ab_history_2024_2026_v3",
+  "source_manifest_sha256": "33bbb6239ed3c44838baa541150df03255bc40f5495aaeaa0148eede0e97f634",
+  "x_time_basis": "Commit event timestamp. First public availability was not independently verified.",
+  "y_definition": "Verified Issue closing outcomes within 90 days after the developer cutoff.",
+  "evaluation": "Forward-time split. Developers may recur across splits.",
+  "test_observation": "Positive outcomes observed to collection date. 2026 Q4 has an incomplete follow-up window."
+}
