@@ -9,7 +9,6 @@ import tempfile
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-import torch
 
 from coder_issue.models.profile import (
     PROFILE_FEATURE_NAMES,
@@ -19,6 +18,7 @@ from coder_issue.models.profile import (
     tensorize_training_profile,
 )
 from coder_issue.training.advanced_profile_pipeline import run_pipeline
+from coder_issue.training.advanced_profile_evaluation import evaluate
 from coder_issue.training.advanced_profile_validation import (
     main as validate_profiles_main,
     validate_profile_export,
@@ -27,7 +27,8 @@ from coder_issue.training.advanced_profile_validation import (
 
 def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
     path.write_text(
-        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8"
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
+        encoding="utf-8",
     )
 
 
@@ -187,7 +188,9 @@ def _fixture(root: Path) -> Namespace:
 def test_training_snapshot_has_a_separate_state_contract() -> None:
     snapshot = _profile("developer", "v1", "2025-01-01T00:00:00Z")
     config = ProfileAdapterConfig(embedding_dim=2, hidden_dim=2)
-    assert tensorize_training_profile(snapshot, config=config).developer_key == "developer"
+    assert (
+        tensorize_training_profile(snapshot, config=config).developer_key == "developer"
+    )
     try:
         tensorize_confirmed_profile(snapshot, config=config)
     except ValueError as exc:
@@ -204,7 +207,9 @@ def test_end_to_end_training_writes_a_loadable_reproducible_bundle() -> None:
         result = run_pipeline(args)
         output = Path(args.output_dir)
         after = (Path(args.model_dir) / "embeddings.npz").read_bytes()
-        manifest = json.loads((output / "adapter_manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads(
+            (output / "adapter_manifest.json").read_text(encoding="utf-8")
+        )
         loaded = ProfileResidualAdapter.load_bundle(
             output, expected_base_model_version="coder-fixture-v1"
         )
@@ -216,9 +221,10 @@ def test_end_to_end_training_writes_a_loadable_reproducible_bundle() -> None:
         assert "mrr" in result["metrics"]["paired_delta"]["test"]
         assert manifest["base_user_mode"] == "population_mean"
         assert manifest["service_track"] == "growth"
-        assert manifest["weights_sha256"] == hashlib.sha256(
-            (output / "weights.pt").read_bytes()
-        ).hexdigest()
+        assert (
+            manifest["weights_sha256"]
+            == hashlib.sha256((output / "weights.pt").read_bytes()).hexdigest()
+        )
         assert isinstance(loaded, ProfileResidualAdapter)
         for name in (
             "audit_report.json",
@@ -230,6 +236,31 @@ def test_end_to_end_training_writes_a_loadable_reproducible_bundle() -> None:
             "_SUCCESS",
         ):
             assert (output / name).is_file()
+
+
+def test_grouped_evaluation_reproduces_training_metrics() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        args = _fixture(root)
+        run_pipeline(args)
+        report = evaluate(
+            Namespace(
+                config=args.config,
+                profiles=args.profiles,
+                outcomes=args.outcomes,
+                candidates=args.candidates,
+                model_dir=args.model_dir,
+                issue_cache=args.issue_cache,
+                adapter_dir=args.output_dir,
+                training_metrics=str(Path(args.output_dir) / "training_metrics.json"),
+                output_dir=str(root / "evaluation"),
+            )
+        )
+        assert report["reproduction"]["status"] == "passed"
+        assert report["all_unknown_profile_fallback"]["maximum_absolute_delta"] == 0.0
+        assert report["splits"]["test"]["repository_history"]["True"]["outcomes"] == 1
+        assert report["paired_outcomes"]["records"] == 3
+        assert (root / "evaluation" / "_SUCCESS").is_file()
 
 
 def test_audit_mode_reports_future_profile_without_training() -> None:
@@ -244,7 +275,9 @@ def test_audit_mode_reports_future_profile_without_training() -> None:
         _write_jsonl(Path(args.profiles), rows)
         args.mode = "audit"
         report = run_pipeline(args)
-        failures = (Path(args.output_dir) / "failures.jsonl").read_text(encoding="utf-8")
+        failures = (Path(args.output_dir) / "failures.jsonl").read_text(
+            encoding="utf-8"
+        )
 
         assert report["pairs"] == 2
         assert "no earlier profile" in failures
@@ -257,7 +290,10 @@ def test_audit_accepts_parquet_contract_inputs() -> None:
         args = _fixture(root)
         for field in ("profiles", "outcomes", "candidates"):
             source = Path(getattr(args, field))
-            rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines()]
+            rows = [
+                json.loads(line)
+                for line in source.read_text(encoding="utf-8").splitlines()
+            ]
             target = source.with_suffix(".parquet")
             pq.write_table(pa.Table.from_pylist(rows), target)
             setattr(args, field, str(target))
@@ -285,9 +321,12 @@ def test_standalone_profile_validator_reports_coverage_and_failures() -> None:
         assert report["records"]["valid"] == 1
         assert report["records"]["invalid"] == 1
         assert report["records"]["developers"] == 1
-        assert report["feature_coverage"][
-            PROFILE_FEATURE_NAMES.index("current_interest.task.quality")
-        ]["observed_rate"] == 1.0
+        assert (
+            report["feature_coverage"][
+                PROFILE_FEATURE_NAMES.index("current_interest.task.quality")
+            ]["observed_rate"]
+            == 1.0
+        )
         assert failures[0].code == "invalid_profile"
         assert exit_code == 1
         assert (root / "validation" / "profile_validation_report.json").is_file()
@@ -298,7 +337,10 @@ def test_standalone_profile_validator_returns_zero_for_valid_parquet() -> None:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         profiles = root / "profiles.parquet"
-        pq.write_table(pa.Table.from_pylist([_profile("valid-dev", "v1", "2025-01-01T00:00:00Z")]), profiles)
+        pq.write_table(
+            pa.Table.from_pylist([_profile("valid-dev", "v1", "2025-01-01T00:00:00Z")]),
+            profiles,
+        )
         exit_code = validate_profiles_main(
             ["--profiles", str(profiles), "--output-dir", str(root / "validation")]
         )

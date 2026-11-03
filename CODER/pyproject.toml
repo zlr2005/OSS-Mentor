@@ -32,6 +32,7 @@ coder-train-advanced-adapter = "coder_issue.training.advanced_profile_pipeline:m
 coder-validate-advanced-profiles = "coder_issue.training.advanced_profile_validation:main"
 coder-prepare-advanced-issues = "coder_issue.training.advanced_issue_inputs:main"
 coder-freeze-advanced-profiles = "coder_issue.training.advanced_profile_freeze:main"
+coder-evaluate-advanced-adapter = "coder_issue.training.advanced_profile_evaluation:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
