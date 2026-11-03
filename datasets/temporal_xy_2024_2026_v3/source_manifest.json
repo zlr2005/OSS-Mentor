@@ -1,0 +1,21 @@
+{
+  "schema": "merged-ab-history-working-v1",
+  "source_roots": {
+    "ab": "datasets/b_real_contributions_v0.2",
+    "backfill": "data/midterm/working/advanced_adapter_backfill_2024_2026_v1"
+  },
+  "source_manifest_sha256": {
+    "ab": "2982ba88fb8707ac31283c737ea2b4e6c01cf0d0b1f5dba7b92cafc4573078cb",
+    "backfill": "db071a4e35f18eaa75562d74555fff017dc90f77f17a833f9c04c1a182f34b68"
+  },
+  "copied_tables_reference_root": "backfill",
+  "files_sha256": {
+    "conflicts.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "file_contributions.jsonl": "4cf910842aaf2ab1c9c63911434bea76a433b80cc3efe309b27b7ad49b060946",
+    "historical_controls.jsonl": "6a99ce99d4c4f9d30de489305fa65c0d1b73cfbc9a7b7824304fda6a7998ca1a",
+    "joined_samples.jsonl": "f1cc282ba9077c682883771ba10f1f6658bc864ac6d0d2aac32f59d2cef41a59",
+    "profile_previews.jsonl": "36001c0ca194a3ac1c3c826e2665d0ddd2cf4700d80a44bc0c2bbe2500846248",
+    "summary.json": "cf2228130b4f6cb1c5dde5027ccda9ff71d9829832fbfc462a4dce835c10358f",
+    "verified_outcomes.jsonl": "671876f201437601a584f3d39d9c5ad6b67122212e48d49ed9c3c89416480dbf"
+  }
+}
