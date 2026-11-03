@@ -3,7 +3,12 @@
 from .coder import CoderConfig, CoderIssueModel
 from .gat import StructuralGATConfig, StructuralGATEncoder
 from .lightgcn import LightGCN, LightGCNConfig
-from .profile import ProfileAdapterConfig, ProfileResidualAdapter, tensorize_confirmed_profile
+from .profile import (
+    ProfileAdapterConfig,
+    ProfileResidualAdapter,
+    tensorize_confirmed_profile,
+    tensorize_training_profile,
+)
 
 __all__ = [
     "CoderConfig",
@@ -15,4 +20,5 @@ __all__ = [
     "ProfileAdapterConfig",
     "ProfileResidualAdapter",
     "tensorize_confirmed_profile",
+    "tensorize_training_profile",
 ]

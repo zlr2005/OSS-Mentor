@@ -112,6 +112,12 @@ class CoderIssueScorer:
                 raise ValueError("profile adapter dimension does not match CODER user vectors")
 
     def _base_user(self, developer_key: str | None) -> tuple[np.ndarray, str, list[str]]:
+        if (
+            self.profile_adapter is not None
+            and self.profile_adapter_manifest is not None
+            and self.profile_adapter_manifest.get("base_user_mode") == "population_mean"
+        ):
+            return self.cold_start_user, "population_mean", []
         normalized = (developer_key or "").strip().casefold()
         developer_id = self.developer_ids.get(normalized)
         user = self.users[developer_id] if developer_id is not None else self.cold_start_user
