@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 from oss_mentor.profiling.temporal_training import (
     build_temporal_training_profile,
     load_questionnaire_contract,
+    validate_temporal_training_export,
     validate_temporal_training_profile,
 )
 
@@ -131,6 +132,32 @@ class TemporalTrainingProfileTests(unittest.TestCase):
         self.assertNotEqual(preview["delivery_status"], candidate["delivery_status"])
         self.assertEqual(preview["profile_hash"], candidate["profile_hash"])
 
+    def test_independent_export_validator_reports_coverage(self) -> None:
+        profile, _ = self.build()
+        report, failures = validate_temporal_training_export(
+            [profile],
+            expected_feature_names=self.questionnaire["feature_names"],
+            source="fixture.jsonl",
+        )
+        self.assertEqual(failures, [])
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(report["records"]["valid"], 1)
+        self.assertEqual(report["profiles_per_developer"]["by_developer"], {"exampleuser": 1})
+        self.assertEqual(
+            report["time_coverage"]["cutoffs"],
+            {"2025-04-01T00:00:00Z": 1},
+        )
+
+    def test_independent_export_validator_rejects_duplicate_snapshot(self) -> None:
+        profile, _ = self.build()
+        report, failures = validate_temporal_training_export(
+            [profile, copy.deepcopy(profile)],
+            expected_feature_names=self.questionnaire["feature_names"],
+        )
+        self.assertEqual(report["status"], "failed")
+        self.assertEqual(report["records"]["invalid"], 1)
+        self.assertIn("duplicate profile", failures[0]["detail"])
+
     def test_rejects_contribution_at_or_after_cutoff(self) -> None:
         group = copy.deepcopy(self.group)
         group["cutoff_at"] = "2025-01-15T12:00:00Z"
@@ -204,11 +231,36 @@ class TemporalTrainingProfileTests(unittest.TestCase):
             for line in (output / "profiles.jsonl").read_text(encoding="utf-8").splitlines()
         ]
         manifest = json.loads((output / "profile_manifest.json").read_text(encoding="utf-8"))
+        validation = json.loads(
+            (output / "profile_validation_report.json").read_text(encoding="utf-8")
+        )
         self.assertEqual(len(profiles), 3)
         self.assertEqual({row["split"] for row in profiles}, set(split_cutoffs))
         self.assertFalse(manifest["training_allowed"])
         self.assertEqual(manifest["profiles"]["failed"], 0)
+        self.assertEqual(validation["status"], "passed")
+        self.assertEqual(validation["records"]["valid"], 3)
         self.assertEqual((output / "profile_failures.jsonl").read_text(encoding="utf-8"), "")
+
+    def test_release_flag_requires_full_selection(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts/midterm_b/export_temporal_training_profiles.py"),
+                "--backfill-root",
+                str(self.backfill),
+                "--output-dir",
+                str(self.base / "invalid-release"),
+                "--preview-per-split",
+                "1",
+                "--release-training-package",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("requires --preview-per-split 0", result.stderr)
 
 
 if __name__ == "__main__":

@@ -9,11 +9,12 @@ from the later Y join.
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
+from statistics import mean
 from typing import Any, Iterable, Mapping
 
 from oss_mentor.datasets.code_languages import code_language
@@ -496,6 +497,112 @@ def validate_temporal_training_profile(
             raise ValueError("profile_hash does not match canonical profile content")
 
 
+def validate_temporal_training_export(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    expected_feature_names: Iterable[str] | None = None,
+    source: str | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Validate a complete B-to-C research-frozen profile export.
+
+    This validator is intentionally independent from the exporter.  Besides
+    validating each row, it rejects duplicate snapshots and all-unobserved
+    profiles, then returns the coverage report required by the handoff.
+    """
+
+    materialized = [dict(row) for row in rows]
+    expected = list(expected_feature_names) if expected_feature_names is not None else None
+    failures: list[dict[str, Any]] = []
+    valid: list[dict[str, Any]] = []
+    seen_identities: set[tuple[str, str]] = set()
+    seen_hashes: set[str] = set()
+    for index, row in enumerate(materialized):
+        record_id = str(
+            row.get("profile_version")
+            or row.get("profile_key")
+            or f"row:{index + 1}"
+        )
+        try:
+            validate_temporal_training_profile(row, verify_hash=True)
+            if expected is not None and row.get("feature_names") != expected:
+                raise ValueError("feature_names do not match the frozen questionnaire order")
+            if not any(row["observed_mask"]):
+                raise ValueError("training profile has no observed dimensions")
+            identity = (str(row["profile_key"]), str(row["profile_version"]))
+            if identity in seen_identities:
+                raise ValueError("duplicate profile_key/profile_version")
+            profile_hash = str(row["profile_hash"])
+            if profile_hash in seen_hashes:
+                raise ValueError("duplicate profile_hash")
+            seen_identities.add(identity)
+            seen_hashes.add(profile_hash)
+        except (KeyError, TypeError, ValueError) as error:
+            failures.append(
+                {
+                    "record_id": record_id,
+                    "code": "invalid_training_profile",
+                    "detail": str(error),
+                }
+            )
+        else:
+            valid.append(row)
+
+    developer_counts = Counter(str(row["developer_key"]) for row in valid)
+    split_counts = Counter(str(row.get("split", "unknown")) for row in valid)
+    cutoff_counts = Counter(str(row["as_of"]) for row in valid)
+    observed_counts = [sum(bool(value) for value in row["observed_mask"]) for row in valid]
+    feature_names = expected or (list(valid[0]["feature_names"]) if valid else [])
+    feature_counts = Counter()
+    for row in valid:
+        for feature_name, observed in zip(row["feature_names"], row["observed_mask"]):
+            if observed:
+                feature_counts[str(feature_name)] += 1
+    timestamps = [_timestamp(row["as_of"], "as_of") for row in valid]
+    count_values = list(developer_counts.values())
+    failure_codes = Counter(str(item["code"]) for item in failures)
+    report: dict[str, Any] = {
+        "schema_version": "b-temporal-profile-validation-report-v0.1",
+        "status": "passed" if valid and not failures else "failed",
+        "input": {"source": source},
+        "records": {
+            "total": len(materialized),
+            "valid": len(valid),
+            "invalid": len(failures),
+            "developers": len(developer_counts),
+            "profile_keys": len({str(row["profile_key"]) for row in valid}),
+            "profile_hashes": len(seen_hashes),
+            "all_unobserved_profiles": sum(count == 0 for count in observed_counts),
+        },
+        "by_split": dict(sorted(split_counts.items())),
+        "time_coverage": {
+            "earliest_as_of": min(timestamps).isoformat() if timestamps else None,
+            "latest_as_of": max(timestamps).isoformat() if timestamps else None,
+            "cutoffs": dict(sorted(cutoff_counts.items())),
+        },
+        "profiles_per_developer": {
+            "minimum": min(count_values) if count_values else None,
+            "maximum": max(count_values) if count_values else None,
+            "mean": mean(count_values) if count_values else None,
+            "by_developer": dict(sorted(developer_counts.items())),
+        },
+        "observed_dimensions_per_profile": {
+            "minimum": min(observed_counts) if observed_counts else None,
+            "maximum": max(observed_counts) if observed_counts else None,
+            "mean": mean(observed_counts) if observed_counts else None,
+        },
+        "feature_coverage": [
+            {
+                "feature_name": name,
+                "observed_profiles": feature_counts[name],
+                "observed_rate": feature_counts[name] / len(valid) if valid else 0.0,
+            }
+            for name in feature_names
+        ],
+        "failure_codes": dict(sorted(failure_codes.items())),
+    }
+    return report, failures
+
+
 def load_questionnaire_contract(path: Path) -> dict[str, Any]:
     questionnaire = load_questionnaire(path)
     if len(questionnaire["feature_names"]) != 23:
@@ -514,5 +621,6 @@ __all__ = [
     "load_questionnaire_contract",
     "sha256_file",
     "validate_temporal_training_profile",
+    "validate_temporal_training_export",
     "verified_login_from_evidence",
 ]

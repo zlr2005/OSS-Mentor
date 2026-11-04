@@ -27,19 +27,60 @@ python scripts/midterm_b/export_temporal_training_profiles.py `
   --preview-per-split 4
 ```
 
-产物：
+预览产物：
 
 ```text
 profiles.jsonl
 profile_manifest.json
 profile_failures.jsonl
 profile_audit.jsonl
+profile_validation_report.json
 ```
 
 预览行符合 `enhanced-profile-training-export-v0.1` 和 `profile_state=research_frozen`，同时包含
 `delivery_status=preview_not_for_training`。manifest 的 `training_allowed=false` 是硬边界：C 只能
 用它联调字段、shape、mask 和读取器，不能训练或调参。双方验收后再用
 `--preview-per-split 0` 生成完整候选，并经过独立冻结流程转为正式训练输入。
+
+## 生成正式冻结训练包
+
+正式模式必须显式启用，并且必须处理全部分组：
+
+```powershell
+python scripts/midterm_b/export_temporal_training_profiles.py `
+  --backfill-root C:\oss\OSS-Mentor-local-data\temporal_xy_v3_backfill_for_B `
+  --output-dir data\midterm\working\b_temporal_profile_training_v0.1 `
+  --preview-per-split 0 `
+  --release-training-package
+```
+
+正式模式要求安装 `pyarrow`，并在全量生成零失败、B 独立校验通过、JSONL/Parquet
+逐行一致时才把 manifest 的 `training_allowed` 设为 `true`。权威文件是
+`enhanced_profiles.jsonl`，`enhanced_profiles.parquet` 只是内容一致的训练加速副本。
+
+完整产物：
+
+```text
+enhanced_profiles.jsonl
+enhanced_profiles.parquet
+profile_manifest.json
+profile_validation_report.json
+profile_failures.jsonl
+profile_audit.jsonl
+```
+
+独立重跑 B 校验器：
+
+```powershell
+python scripts/midterm_b/validate_temporal_training_profiles.py `
+  --profiles data\midterm\working\b_temporal_profile_training_v0.1\enhanced_profiles.jsonl `
+  --output-dir data\midterm\working\b_temporal_profile_training_v0.1\b_validation
+```
+
+报告包含画像数、开发者数、每位开发者的快照数量、split、季度 cutoff、特征覆盖、失败
+类型、文件大小和 SHA-256。正式 manifest 仍明确记录源数据为 working、2026 Q4 后续观察窗
+不完整、commit 时间代理以及 2024 Q2 之前无画像 cutoff；这些限制不会被
+`training_allowed=true` 隐藏。
 
 ## 时间与隐私边界
 
