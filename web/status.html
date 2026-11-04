@@ -1,114 +1,139 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OSS-Mentor 系统状态</title>
-  <style>
-    :root {
-      --green: #16a34a;
-      --red: #dc2626;
-      --amber: #d97706;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-secondary: #64748b;
-      --border: #e2e8f0;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 2rem 1rem;
-      line-height: 1.6;
-    }
-    .container { max-width: 960px; margin: 0 auto; }
-    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-    .subtitle { color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.875rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.25rem;
-    }
-    .card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.5rem; }
-    .card .value { font-size: 1.75rem; font-weight: 700; }
-    .card .detail { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; }
-    .ok { color: var(--green); }
-    .warn { color: var(--amber); }
-    .error { color: var(--red); }
-    .section-title { font-size: 1rem; margin: 1.5rem 0 0.75rem; color: var(--text-secondary); }
-    table { width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-    th, td { padding: 0.6rem 1rem; text-align: left; font-size: 0.875rem; }
-    th { background: #f1f5f9; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
-    td { border-top: 1px solid var(--border); }
-    .badge {
-      display: inline-block;
-      padding: 0.15em 0.5em;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .badge-ok { background: #dcfce7; color: #166534; }
-    .badge-warn { background: #fef3c7; color: #92400e; }
-    .badge-error { background: #fee2e2; color: #991b1b; }
-    .loading { color: var(--text-secondary); font-style: italic; }
-    .error-msg { color: var(--red); background: #fee2e2; padding: 1rem; border-radius: 8px; }
-    footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.8rem; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>系统状态与推荐说明 · OSS-Mentor</title>
+<meta name="description" content="OSS-Mentor 系统状态：数据库、候选库存、数据质量、反馈统计、模型版本与失败状态。">
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/ui.js" defer></script>
+<script src="/assets/status.js" defer></script>
 </head>
-<body>
-<div class="container">
-  <h1>OSS-Mentor 系统状态</h1>
-  <p class="subtitle" id="update-time">正在加载…</p>
+<body data-page="status">
+<a class="skip" href="#main">跳到主要内容</a>
 
-  <div id="error" hidden></div>
-
-  <h2 class="section-title">系统概览</h2>
-  <div class="grid" id="status-grid">
-    <div class="card"><h3>数据库</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>仓库</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>候选任务</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>可推荐任务</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>新人友好</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>最后同步</h3><div class="value loading">—</div></div>
+<div class="demo-strip">
+  <div class="wrap">
+    <span class="dot" aria-hidden="true"></span>
+    <p><strong>系统状态。</strong>库存、数据质量和反馈来自本地服务；模型未接入 CODER 时会明确显示规则兼容模式。</p>
   </div>
-
-  <h2 class="section-title">数据质量</h2>
-  <div class="grid" id="quality-grid">
-    <div class="card"><h3>任务类型识别率</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>技能要求覆盖率</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>已提取特征</h3><div class="value loading">—</div></div>
-  </div>
-
-  <h2 class="section-title">反馈统计</h2>
-  <div class="grid" id="feedback-grid">
-    <div class="card"><h3>反馈总量</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>感兴趣</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>不适合</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>已开始</h3><div class="value loading">—</div></div>
-    <div class="card"><h3>已完成</h3><div class="value loading">—</div></div>
-  </div>
-
-  <h2 class="section-title">状态转化</h2>
-  <table id="transitions-table">
-    <thead><tr><th>转化路径</th><th>次数</th></tr></thead>
-    <tbody><tr><td class="loading" colspan="2">正在加载…</td></tr></tbody>
-  </table>
-
-  <h2 class="section-title">版本信息</h2>
-  <table id="version-table">
-    <thead><tr><th>组件</th><th>版本</th></tr></thead>
-    <tbody><tr><td class="loading" colspan="2">正在加载…</td></tr></tbody>
-  </table>
-
-  <footer>
-    <span>OSS-Mentor &middot; 本地状态页 &middot; 仅用于团队开发和检查</span>
-  </footer>
 </div>
 
-<script src="/assets/status.js"></script>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">OM</span>OSS-Mentor</a>
+    <nav class="nav" aria-label="主导航">
+      <a href="/recommendations">全部推荐</a>
+      <a href="/recommendation-run">推荐说明</a>
+      <a href="/status" aria-current="page">系统状态</a>
+      <a href="/profile">个人信息</a>
+    </nav>
+    <div class="session" role="status" aria-live="polite">
+      <span class="avatar-mono" aria-hidden="true">S</span>
+      <span class="who">系统状态<small>本地服务</small></span>
+      <span class="pill pill--neutral" id="status-pill">读取中</span>
+    </div>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="page-head band" aria-labelledby="status-title">
+    <div class="wrap">
+      <h1 id="status-title">本次运行的元数据与异常状态</h1>
+      <p class="lead">这一页说明推荐来自哪里：数据库、候选库存、数据质量、反馈统计、模型版本与已知失败状态。它不展示训练参数或内部权重。</p>
+      <p class="head-meta">
+        <span class="mono" id="status-updated">正在读取…</span>
+        <span aria-hidden="true">·</span>
+        <a href="/recommendation-run">查看推荐说明</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="rec-list-section" aria-labelledby="overview-title">
+    <div class="wrap">
+      <div class="banner" id="status-message" hidden role="status"></div>
+      <div class="sec-head">
+        <div class="sec-copy"><p class="eyebrow"><span class="mono">01</span> 系统概览</p><h2 id="overview-title">可核验的库存与运行状态</h2></div>
+      </div>
+      <dl class="status-kpis" id="status-grid">
+        <div class="status-kpi"><dt>数据库</dt><dd class="loading">—</dd></div>
+        <div class="status-kpi"><dt>仓库</dt><dd class="loading">—</dd></div>
+        <div class="status-kpi"><dt>候选任务</dt><dd class="loading">—</dd></div>
+        <div class="status-kpi"><dt>可推荐任务</dt><dd class="loading">—</dd></div>
+        <div class="status-kpi"><dt>新人友好</dt><dd class="loading">—</dd></div>
+        <div class="status-kpi"><dt>最后同步</dt><dd class="loading">—</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section aria-labelledby="quality-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-copy"><p class="eyebrow"><span class="mono">02</span> 数据质量</p><h2 id="quality-title">特征覆盖率与反馈统计</h2></div>
+      </div>
+      <div class="d-cols">
+        <div>
+          <dl class="status-kpis" id="quality-grid">
+            <div class="status-kpi"><dt>任务类型识别率</dt><dd class="loading">—</dd></div>
+            <div class="status-kpi"><dt>技能要求覆盖率</dt><dd class="loading">—</dd></div>
+            <div class="status-kpi"><dt>已提取特征</dt><dd class="loading">—</dd></div>
+          </dl>
+        </div>
+        <div>
+          <dl class="status-kpis" id="feedback-grid">
+            <div class="status-kpi"><dt>反馈总量</dt><dd class="loading">—</dd></div>
+            <div class="status-kpi"><dt>感兴趣</dt><dd class="loading">—</dd></div>
+            <div class="status-kpi"><dt>不适合</dt><dd class="loading">—</dd></div>
+            <div class="status-kpi"><dt>已开始</dt><dd class="loading">—</dd></div>
+            <div class="status-kpi"><dt>已完成</dt><dd class="loading">—</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="run-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-copy"><p class="eyebrow"><span class="mono">03</span> 本次运行</p><h2 id="run-title">推荐说明与模型状态</h2></div>
+      </div>
+      <div class="banner" id="run-banner" hidden></div>
+      <dl class="run-grid" id="run-grid">
+        <div class="run-item"><dt>run_id</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>model_variant</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>model_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>dataset_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>profile_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>mapping_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>model_status</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>warnings</dt><dd>未读取</dd></div>
+      </dl>
+      <div class="variant-block">
+        <h3>model_variant 取值说明</h3>
+        <div class="variant-chips" id="variant-chips"></div>
+      </div>
+      <ul class="run-warning-list" id="run-warnings" style="margin-top:14px"></ul>
+      <a class="link-ext" id="run-detail-link" href="/recommendation-run" hidden>查看完整推荐说明</a>
+    </div>
+  </section>
+
+  <section aria-labelledby="matrix-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-copy"><p class="eyebrow"><span class="mono">04</span> 状态矩阵</p><h2 id="matrix-title">推荐区会遇到的状态与应对</h2><p class="lead">每个状态都说明用户看到什么、下一步做什么。点「预览」会带着状态参数跳到推荐页。</p></div>
+      </div>
+      <div class="status-grid" id="status-matrix"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bottom" style="margin-top:0;border-top:0;padding-top:0">
+      <span>OSS-Mentor · 系统状态</span>
+      <span>fixture / rule_legacy / CODER 标识分开显示</span>
+    </div>
+  </div>
+</footer>
 </body>
 </html>

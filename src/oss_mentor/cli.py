@@ -920,6 +920,15 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
     coder_candidate_cache = Path(args.coder_candidate_cache) if args.coder_candidate_cache else (
         settings.repo_root / "data/midterm/platform/coder-full-search8-v1/candidates.npz"
     )
+    profile_adapter_dir = (
+        Path(args.profile_adapter_dir)
+        if args.profile_adapter_dir
+        else (
+            Path(os.environ["OSS_MENTOR_PROFILE_ADAPTER_DIR"])
+            if os.environ.get("OSS_MENTOR_PROFILE_ADAPTER_DIR")
+            else None
+        )
+    )
     if not args.legacy_ranking:
         for required in (
             coder_model_dir / "model_manifest.json",
@@ -930,6 +939,13 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         ):
             if not required.is_file():
                 raise ConfigError(f"CODER platform artifact is missing: {required}")
+        if profile_adapter_dir is not None:
+            for required in (
+                profile_adapter_dir / "adapter_manifest.json",
+                profile_adapter_dir / "weights.pt",
+            ):
+                if not required.is_file():
+                    raise ConfigError(f"CODER profile adapter artifact is missing: {required}")
         import sys
         sys.path.insert(0, str(settings.repo_root / "CODER/src"))
         from coder_issue.inference import CoderIssueScorer
@@ -940,6 +956,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
                 coder_model_dir,
                 coder_mapping_dir,
                 candidate_cache=coder_candidate_cache,
+                profile_adapter_dir=profile_adapter_dir,
             ),
         )
 
@@ -984,6 +1001,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "cors_origin": args.cors_origin,
             "oauth_configured": auth_settings.oauth_configured,
             "ranking_engine": "legacy" if args.legacy_ranking else "coder_issue_repo",
+            "profile_adapter_configured": profile_adapter_dir is not None,
             "task_refresh_enabled": candidate_service is not None,
         }
     )
@@ -1462,6 +1480,13 @@ def build_parser() -> argparse.ArgumentParser:
     serve_command.add_argument("--coder-model-dir")
     serve_command.add_argument("--coder-mapping-dir")
     serve_command.add_argument("--coder-candidate-cache")
+    serve_command.add_argument(
+        "--profile-adapter-dir",
+        help=(
+            "Optional frozen CODER profile-adapter bundle containing "
+            "adapter_manifest.json and weights.pt."
+        ),
+    )
     serve_command.add_argument(
         "--legacy-ranking", action="store_true",
         help="Explicit compatibility escape hatch; CODER is the default ranking engine.",

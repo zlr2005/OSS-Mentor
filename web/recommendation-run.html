@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>推荐说明 · OSS-Mentor</title>
+<meta name="description" content="OSS-Mentor 推荐说明：模型、画像来源、数据版本、理由与 warnings。">
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/ui.js" defer></script>
+<script src="/assets/run.js" defer></script>
+</head>
+<body data-page="run">
+<a class="skip" href="#main">跳到主要内容</a>
+
+<div class="demo-strip">
+  <div class="wrap">
+    <span class="dot" aria-hidden="true"></span>
+    <p><strong>推荐说明。</strong>模型、数据、画像版本与理由都来自服务端批次；没有接入的字段会明确显示为未登记。</p>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">OM</span>OSS-Mentor</a>
+    <nav class="nav" aria-label="主导航">
+      <a href="/recommendations">全部推荐</a>
+      <a href="/recommendation-run" aria-current="page">推荐说明</a>
+      <a href="/status">系统状态</a>
+      <a href="/profile">个人信息</a>
+    </nav>
+    <div class="session" role="status" aria-live="polite">
+      <span class="avatar-mono" aria-hidden="true">R</span>
+      <span class="who">推荐说明<small>可追溯批次</small></span>
+      <span class="pill pill--neutral" id="run-pill">读取中</span>
+    </div>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="page-head band" aria-labelledby="run-page-title">
+    <div class="wrap">
+      <h1 id="run-page-title">这次推荐是怎么来的</h1>
+      <p class="lead">这里展示本次运行的模型、画像来源、匹配版本、warnings 和每条推荐的依据。它不展示训练参数或内部权重。</p>
+      <p class="head-meta">
+        <span class="mono" id="run-id-meta">run_id —</span>
+        <span aria-hidden="true">·</span>
+        <a href="/status">系统状态</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="rec-list-section" id="run-summary-section" aria-labelledby="run-summary-title">
+    <div class="wrap">
+      <div class="banner" id="run-message" hidden role="status"></div>
+      <div class="sec-head">
+        <div class="sec-copy"><p class="eyebrow"><span class="mono">01</span> 运行摘要</p><h2 id="run-summary-title">模型与数据版本</h2></div>
+      </div>
+      <dl class="run-grid" id="run-summary">
+        <div class="run-item"><dt>run_id</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>service_track</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>match_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>model_variant</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>model_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>dataset_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>profile_version</dt><dd>未读取</dd></div>
+        <div class="run-item"><dt>mapping_version</dt><dd>未读取</dd></div>
+      </dl>
+      <div class="d-cols" style="margin-top:18px">
+        <div class="d-block">
+          <h4>画像来源</h4>
+          <dl class="pc-grid" id="profile-summary">
+            <div><dt>画像</dt><dd>未读取</dd></div>
+            <div><dt>来源</dt><dd>未读取</dd></div>
+            <div><dt>版本</dt><dd>未读取</dd></div>
+            <div><dt>快照哈希</dt><dd class="mono">未读取</dd></div>
+          </dl>
+        </div>
+        <div class="d-block">
+          <h4>warnings</h4>
+          <ul class="run-warning-list" id="run-warnings"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="run-items-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-copy"><p class="eyebrow"><span class="mono">02</span> 推荐依据</p><h2 id="run-items-title">每条推荐的排序与解释</h2></div>
+      </div>
+      <div class="run-item-list" id="run-items"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bottom" style="margin-top:0;border-top:0;padding-top:0">
+      <span>OSS-Mentor · 推荐说明</span>
+      <span>批次可追溯 · 模型与规则分开标识</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

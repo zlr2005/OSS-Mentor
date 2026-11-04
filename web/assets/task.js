@@ -1,214 +1,225 @@
 "use strict";
 
-const params = new URLSearchParams(window.location.search);
-const rawTaskId = (params.get("task_candidate_id") || "").trim();
-const feedbackContext = params.get("feedback_context") || null;
+(function () {
+  const ui = window.OMUI;
+  const params = new URLSearchParams(window.location.search);
+  const rawTaskId = params.get("task_candidate_id") || "";
+  const queryContext = params.get("feedback_context") || "";
+  const storedBatch = ui.readBatch();
+  const storedItem = (storedBatch?.items || []).find(
+    (item) => String(item.task_candidate_id) === String(rawTaskId)
+  );
+  let feedbackContext = queryContext || storedBatch?.feedback_context || "";
+  let currentTask = null;
 
-const title = document.querySelector("#task-title");
-const repository = document.querySelector("#task-repository");
-const repositoryFact = document.querySelector("#task-repository-fact");
-const issueNumber = document.querySelector("#task-issue-number");
-const issueFact = document.querySelector("#task-issue-fact");
-const availability = document.querySelector("#task-availability");
-const verifiedAt = document.querySelector("#task-verified-at");
-const verifiedFact = document.querySelector("#task-verified-fact");
-const reasons = document.querySelector("#task-availability-reasons");
-const body = document.querySelector("#task-body");
-const githubLink = document.querySelector("#task-github-link");
-const status = document.querySelector("#task-status");
-const refresh = document.querySelector("#refresh-task");
-const message = document.querySelector("#task-message");
-const messageTitle = document.querySelector("#task-message-title");
-const messageCopy = document.querySelector("#task-message-copy");
-const messageAction = document.querySelector("#task-message-action");
-const feedbackActions = document.querySelector("#feedback-actions");
-const feedbackNote = document.querySelector("#feedback-note");
+  const elements = {
+    body: document.getElementById("task-body"),
+    message: document.getElementById("task-message"),
+    context: document.getElementById("task-context"),
+    actions: document.getElementById("task-actions"),
+    feedback: document.getElementById("feedback-actions"),
+    feedbackNote: document.getElementById("feedback-note"),
+    github: document.getElementById("task-github"),
+    refresh: document.getElementById("refresh-task"),
+    idLabel: document.getElementById("task-id-label"),
+  };
 
-const availabilityLabels = {
-  available: "可领取",
-  closed: "已关闭",
-  assigned: "已有负责人",
-  linked_open_pr: "已有开放 PR",
-  locked: "讨论已锁定",
-  repository_inactive: "仓库不活跃",
-  temporarily_unverified: "待复核",
-};
-
-const reasonLabels = {
-  issue_closed: "Issue 已关闭",
-  issue_assigned: "Issue 已有负责人",
-  issue_locked: "讨论已锁定",
-  linked_open_pr: "已有关联的开放 PR",
-  repository_inactive: "仓库长期没有推送",
-  verification_older_than_limit: "上次 GitHub 复核已超过 24 小时",
-  github_unavailable: "GitHub 上已无法访问该 Issue",
-};
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"]/g, character => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;",
-  })[character]);
-}
-
-function safeUrl(value) {
-  try {
-    const url = new URL(String(value || ""), window.location.origin);
-    return url.protocol === "https:" && url.hostname === "github.com" ? url.href : "#";
-  } catch {
-    return "#";
+  function showMessage(code, title, body, actions = "") {
+    elements.message.hidden = false;
+    elements.message.innerHTML = `<p><span class="mono">${ui.escapeHtml(code)}</span> <b>${ui.escapeHtml(title)}</b> ${ui.escapeHtml(body)}</p>${actions ? `<div class="panel-actions">${actions}</div>` : ""}`;
   }
-}
 
-async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: "same-origin",
-    headers: {"Content-Type": "application/json", ...(options.headers || {})},
-    ...options,
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(payload.error?.message || `请求失败（${response.status}）`);
-    error.status = response.status;
-    error.code = payload.error?.code || "unknown_error";
-    throw error;
+  function hideMessage() {
+    elements.message.hidden = true;
   }
-  return payload;
-}
 
-function showMessage(headline, copy, action = null, isError = false) {
-  messageTitle.textContent = headline;
-  messageCopy.textContent = copy;
-  message.setAttribute("role", isError ? "alert" : "status");
-  messageAction.hidden = !action;
-  if (action) {
-    messageAction.href = action.href;
-    messageAction.textContent = action.label;
-  }
-  message.hidden = false;
-}
-
-function renderTask(task) {
-  const repositoryName = task.repository_full_name || "未知仓库";
-  const available = task.availability === "available";
-  const label = availabilityLabels[task.availability] || task.availability;
-  title.textContent = task.title || "（该 Issue 没有标题）";
-  repository.textContent = `${repositoryName} · #${task.issue_number}`;
-  repositoryFact.textContent = repositoryName;
-  issueNumber.textContent = `Issue #${task.issue_number}`;
-  issueFact.textContent = `#${task.issue_number}`;
-  availability.textContent = label;
-  availability.dataset.state = available ? "available" : "unavailable";
-  verifiedAt.textContent = task.verified_at
-    ? `最近复核 ${task.verified_at}`
-    : "尚无 GitHub 复核记录";
-  verifiedFact.textContent = task.verified_at || "尚无记录";
-  reasons.innerHTML = (task.availability_reasons || [])
-    .map(reason => `<li>${escapeHtml(reasonLabels[reason] || reason)}</li>`)
-    .join("");
-  const text = String(task.body_text || "").trim();
-  body.innerHTML = text
-    ? text.split(/\n{2,}/).map(block => `<p>${escapeHtml(block)}</p>`).join("")
-    : '<p class="task-placeholder">该 Issue 没有正文，请到 GitHub 查看完整讨论与验收要求。</p>';
-  const url = safeUrl(task.html_url);
-  githubLink.href = url;
-  githubLink.hidden = url === "#";
-  if (task.refreshed) {
-    status.textContent = "刚完成复核";
-  } else {
-    status.textContent = task.verified_at ? "使用本地记录" : "待复核";
-  }
-}
-
-async function loadTask(shouldRefresh) {
-  refresh.disabled = true;
-  body.setAttribute("aria-busy", "true");
-  message.hidden = true;
-  status.textContent = shouldRefresh ? "复核中" : "读取中";
-  if (shouldRefresh) refresh.textContent = "正在复核…";
-  try {
-    const suffix = shouldRefresh ? "?refresh=true" : "";
-    const task = await requestJson(`/api/v1/tasks/${rawTaskId}${suffix}`);
-    renderTask(task);
-  } catch (error) {
-    body.innerHTML = '<p class="task-placeholder">暂时无法读取任务描述。</p>';
-    status.textContent = "不可用";
-    if (error.status === 404) {
-      showMessage("找不到这个任务", "它可能已从候选池移除，或链接里的编号不正确。",
-        {href: "/recommendations", label: "返回推荐"}, false);
-    } else if (error.status === 429) {
-      showMessage("GitHub 限流", "短时间内复核请求过多，请稍后再试。",
-        {href: "#", label: "重试"}, true);
-    } else if (error.status === 502) {
-      showMessage("GitHub 暂时不可用", "上游返回了不可恢复的错误，稍后再试。",
-        {href: "#", label: "重试"}, true);
-    } else if (error.status === 503) {
-      showMessage("服务尚未就绪", "本地服务没有启用任务复核能力，请先查看本地任务记录。",
-        {href: "/recommendations", label: "返回推荐"}, true);
-    } else {
-      showMessage("任务详情暂时不可用", `${error.message}，请稍后重试。`,
-        {href: "#", label: "重试"}, true);
+  function recommendationBlock(item, batch) {
+    if (!item) {
+      return `<div class="d-block">
+        <h4>本次匹配依据</h4>
+        <p class="unavailable">没有找到该任务对应的推荐批次。请从推荐页进入，才能看到轨道、匹配分和推荐理由。</p>
+      </div>`;
     }
-    if (!messageAction.hidden) {
-      messageAction.addEventListener("click", event => {
-        if (messageAction.getAttribute("href") === "#") {
-          event.preventDefault();
-          loadTask(false);
-        }
-      }, {once: true});
-    }
-  } finally {
-    body.setAttribute("aria-busy", "false");
-    refresh.disabled = false;
-    refresh.textContent = "重新复核可用性";
+    const score = Math.round(Number(item.score || 0) * 100);
+    return `<div class="d-block">
+      <h4>本次匹配依据<span class="source-tag">RecommendationItemV3</span></h4>
+      <div class="run-context" style="margin:0 0 12px;box-shadow:none">
+        <div class="run-context-main">
+          <p>${ui.escapeHtml(ui.trackLabel(item.service_track))} · 匹配分 <b class="mono">${score}</b> · 代码难度 ${item.difficulty?.code ?? "—"} / 环境 ${item.difficulty?.setup ?? "—"}</p>
+          <p class="note mono">${ui.escapeHtml(batch?.run_id || "未标注批次")} · ${ui.escapeHtml(batch?.match_version || "")}</p>
+        </div>
+        <div class="run-context-actions"><a class="btn btn--sm btn--ghost" href="/recommendation-run${batch?.run_id ? `?run_id=${encodeURIComponent(batch.run_id)}` : ""}">推荐说明</a></div>
+      </div>
+      <div class="ic-skills" style="margin-top:0">
+        <div class="skill-row"><span class="skill-key">已覆盖</span><ul class="chips">${(item.matched_skills || []).map((skill) => `<li class="chip chip--cover">${ui.escapeHtml(skill)}</li>`).join("") || "<li class=\"chip\">无明确已覆盖技能</li>"}</ul></div>
+        <div class="skill-row"><span class="skill-key">待补齐</span><ul class="chips">${(item.missing_skills || []).map((skill) => `<li class="chip chip--gap">${ui.escapeHtml(skill)}</li>`).join("") || "<li class=\"chip\">无关键缺口</li>"}</ul></div>
+      </div>
+      <ul class="reason-list">${ui.reasonList(item.reasons || [])}</ul>
+    </div>`;
   }
-}
 
-feedbackActions.addEventListener("click", async event => {
-  const button = event.target.closest("[data-feedback]");
-  if (!button) return;
-  if (!feedbackContext) {
-    feedbackNote.dataset.error = "true";
-    feedbackNote.textContent = "缺少画像上下文，请从推荐页进入任务详情后再记录反馈。";
-    return;
+  function detailHTML(task) {
+    const availability = ui.availabilityInfo(task);
+    const guidance = task.guidance || {};
+    const requirements = task.skill_requirements || [];
+    const paths = guidance.impacted_paths || [];
+    const steps = guidance.steps || [];
+    const labels = task.labels || [];
+    const types = task.task_types || [];
+    const requirementsHtml = requirements.length
+      ? `<ul class="d-list">${requirements.map((item) => `<li><span class="mono">L${item.minimum_level}</span><span>${ui.escapeHtml(item.skill_name)} · 重要度 ${Number(item.importance || 0).toFixed(2)}</span></li>`).join("")}</ul>`
+      : `<p class="unavailable">本地快照没有该任务的技能要求；请在上游 Issue 中确认。</p>`;
+    const pathsHtml = paths.length
+      ? `<ul class="chips">${paths.map((path) => `<li class="chip mono">${ui.escapeHtml(path)}</li>`).join("")}</ul>`
+      : `<p class="unavailable">没有从 Issue 正文中识别到明确路径。请阅读正文或上游讨论确认改动位置。</p>`;
+    const labelsHtml = labels.length
+      ? `<ul class="chips">${labels.map((label) => `<li class="chip">${ui.escapeHtml(label)}</li>`).join("")}</ul>`
+      : `<p class="unavailable">上游没有提供标签。</p>`;
+    const guideHtml = guidance.contributing_url
+      ? `<p><a class="link-ext" href="${ui.escapeHtml(ui.safeGithubUrl(guidance.contributing_url))}" target="_blank" rel="noopener noreferrer">查看仓库 CONTRIBUTING 指南</a></p>`
+      : `<p class="unavailable">仓库未标记 CONTRIBUTING；请到 GitHub 仓库主页确认贡献入口。</p>`;
+    return `<div class="detail-shell">
+      <header class="detail-head">
+        <span class="repo-mark" aria-hidden="true" style="width:36px;height:36px;font-size:12px">${ui.escapeHtml(String(task.repository_full_name || "?").split("/").pop().slice(0, 2).toUpperCase())}</span>
+        <div class="dh-copy">
+          <div class="dh-sub">
+            <span class="full">${ui.escapeHtml(task.repository_full_name)}#${task.issue_number}</span>
+            <span class="dot-sep" aria-hidden="true"></span>
+            <span class="pill ${availability.className}" title="${ui.escapeHtml(availability.title)}">${ui.escapeHtml(availability.text)}</span>
+            ${task.primary_language ? `<span class="dot-sep" aria-hidden="true"></span><span class="mono">${ui.escapeHtml(task.primary_language)}</span>` : ""}
+          </div>
+          <h3>${ui.escapeHtml(task.title)}</h3>
+        </div>
+        <a class="btn btn--sm btn--ghost" href="${ui.escapeHtml(ui.safeGithubUrl(task.html_url))}" target="_blank" rel="noopener noreferrer">GitHub 原文</a>
+      </header>
+      <div class="detail-body task-guidance">
+        <div class="d-block">
+          <h4>任务目标<span class="source-tag">${ui.escapeHtml(guidance.goal_source || "unavailable")}</span></h4>
+          ${guidance.goal ? `<p>${ui.escapeHtml(guidance.goal)}</p>` : `<p class="unavailable">上游没有提供可读正文，请打开 GitHub 原文查看。</p>`}
+        </div>
+        <div class="d-cols">
+          <div class="d-block"><h4>技能要求</h4>${requirementsHtml}</div>
+          <div class="d-block"><h4>关联代码 / 模块<span class="source-tag">${ui.escapeHtml(guidance.impacted_paths_source || "unavailable")}</span></h4>${pathsHtml}</div>
+        </div>
+        <div class="d-block">
+          <h4>开始步骤<span class="source-tag">${ui.escapeHtml(guidance.steps_source || "generic_guidance")}</span></h4>
+          <ol class="steps">${steps.map((step) => `<li><span>${ui.escapeHtml(step)}</span></li>`).join("")}</ol>
+        </div>
+        <div class="d-block"><h4>贡献指南</h4>${guideHtml}</div>
+        <div class="d-cols">
+          <div class="d-block">
+            <h4>当前可用性</h4>
+            <p><span class="pill ${availability.className}">${ui.escapeHtml(availability.text)}</span></p>
+            <p class="note">最后复核：<span class="mono">${ui.escapeHtml(task.verified_at || "尚无记录")}</span></p>
+            <p class="note">上游最近活动：<span class="mono">${ui.escapeHtml(task.last_activity_at || "未记录")}</span></p>
+            <p class="note">讨论 <span class="mono">${task.comment_count || 0}</span> 条</p>
+            ${(task.availability_reasons || []).length ? `<ul class="d-list">${task.availability_reasons.map((reason) => `<li><span class="mono">!</span><span>${ui.escapeHtml(reason)}</span></li>`).join("")}</ul>` : ""}
+          </div>
+          <div class="d-block"><h4>上游标签</h4>${labelsHtml}${types.length ? `<p class="note" style="margin-top:9px">任务类型：${types.map((type) => ui.escapeHtml(type)).join(" · ")}</p>` : ""}</div>
+        </div>
+        ${recommendationBlock(storedItem, storedBatch)}
+        <div class="d-block"><h4>上游 Issue 描述</h4><div class="task-body-text">${ui.escapeHtml(task.body_text || "该 Issue 没有正文，请到 GitHub 查看完整讨论与验收要求。")}</div></div>
+      </div>
+      <footer class="detail-foot">
+        <p class="note">任务目标来自上游正文摘要；关联路径由正文启发式识别；开始步骤是页面提供的通用建议，不是上游结构化字段。</p>
+      </footer>
+    </div>`;
   }
-  const buttons = [...feedbackActions.querySelectorAll("[data-feedback]")];
-  buttons.forEach(item => { item.disabled = true; });
-  feedbackNote.dataset.error = "false";
-  feedbackNote.textContent = "正在保存…";
-  try {
-    await requestJson("/api/v1/feedback", {
-      method: "POST",
-      body: JSON.stringify({
-        task_candidate_id: Number(rawTaskId),
-        feedback_context: feedbackContext,
-        feedback_state: button.dataset.feedback,
-      }),
+
+  async function loadTask(refresh = false) {
+    elements.refresh.disabled = true;
+    elements.refresh.textContent = refresh ? "正在复核…" : "重新复核可用性";
+    hideMessage();
+    if (refresh) elements.body.setAttribute("aria-busy", "true");
+    try {
+      const suffix = refresh ? "?refresh=true" : "";
+      const task = await ui.requestJson(`/api/v1/tasks/${rawTaskId}${suffix}`);
+      currentTask = task;
+      elements.body.innerHTML = detailHTML(task);
+      elements.actions.hidden = false;
+      elements.idLabel.textContent = String(task.task_candidate_id);
+      const githubUrl = ui.safeGithubUrl(task.html_url);
+      elements.github.href = githubUrl;
+      elements.github.hidden = githubUrl === "#";
+      if (refresh) showMessage("refresh: ok", "已完成复核", "可用性与上游字段已刷新；提交前仍请以 GitHub 原文为准。");
+      updateFeedbackAvailability(task);
+    } catch (error) {
+      elements.body.innerHTML = ui.panel(
+        error.code || `http: ${error.status}`,
+        error.status === 404 ? "任务不存在或已失效" : "任务详情暂时不可用",
+        error.status === 404
+          ? "这个 task_candidate_id 不在当前候选池中。请从推荐页重新选择任务。"
+          : error.message,
+        `<a class="btn btn--sm btn--ghost" href="/recommendations">返回推荐</a><a class="link-ext" href="/status">查看系统状态</a>`
+      );
+      elements.actions.hidden = true;
+      if (error.status === 503) showMessage("503 service_not_ready", "任务复核未启用", "服务端没有启用单任务 GitHub 复核；本地快照仍可阅读。", `<a class="link-ext" href="/status">查看系统状态</a>`);
+      if (error.status === 429) showMessage("429 rate_limited", "GitHub 限流", "短时间内复核请求过多，请稍后再试。", `<a class="link-ext" href="/status">查看系统状态</a>`);
+      if (error.status === 502) showMessage("502 upstream_error", "GitHub 上游失败", "上游返回了不可恢复的错误，请稍后再试。", `<a class="link-ext" href="/status">查看系统状态</a>`);
+    } finally {
+      elements.refresh.disabled = false;
+      elements.refresh.textContent = "重新复核可用性";
+      elements.body.setAttribute("aria-busy", "false");
+    }
+  }
+
+  function updateFeedbackAvailability(task) {
+    const buttons = elements.feedback.querySelectorAll("[data-feedback]");
+    if (!feedbackContext) {
+      buttons.forEach((button) => { button.disabled = true; });
+      elements.feedbackNote.textContent = "从推荐页进入后可记录反馈；当前链接缺少画像上下文。";
+      return;
+    }
+    const currentState = storedItem?.feedback_state || "";
+    buttons.forEach((button) => {
+      button.disabled = false;
+      button.setAttribute("aria-pressed", String(button.dataset.feedback === currentState));
     });
-    buttons.forEach(item => item.setAttribute("aria-pressed", String(item === button)));
-    feedbackNote.textContent = "反馈已保存，后续推荐会参考它。";
-  } catch (error) {
-    let hint = `保存失败：${error.message}`;
-    if (error.status === 401) hint = "登录状态已失效，请重新登录后再记录反馈。";
-    if (error.status === 403) hint = "当前画像不属于登录用户，请从推荐页重新进入。";
-    if (error.status === 404) hint = "该任务已不在候选池中，无法记录反馈。";
-    feedbackNote.dataset.error = "true";
-    feedbackNote.textContent = hint;
-  } finally {
-    buttons.forEach(item => { item.disabled = false; });
+    elements.feedbackNote.textContent = currentState ? `当前记录：${currentState}` : "反馈只作用于当前画像。";
   }
-});
 
-refresh.addEventListener("click", () => loadTask(true));
+  elements.feedback.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-feedback]");
+    if (!button) return;
+    const buttons = elements.feedback.querySelectorAll("[data-feedback]");
+    buttons.forEach((item) => { item.disabled = true; });
+    elements.feedbackNote.textContent = "正在保存…";
+    try {
+      await ui.requestJson("/api/v1/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_candidate_id: Number(rawTaskId),
+          feedback_context: feedbackContext,
+          feedback_state: button.dataset.feedback,
+        }),
+      });
+      buttons.forEach((item) => {
+        item.disabled = false;
+        item.setAttribute("aria-pressed", String(item === button));
+      });
+      elements.feedbackNote.textContent = "反馈已保存，后续推荐会参考它。";
+    } catch (error) {
+      buttons.forEach((item) => { item.disabled = false; });
+      elements.feedbackNote.textContent = `保存失败：${error.message}`;
+    }
+  });
 
-if (!/^[1-9][0-9]{0,18}$/.test(rawTaskId)) {
-  title.textContent = "缺少任务编号";
-  repository.textContent = "任务详情";
-  body.innerHTML = '<p class="task-placeholder">链接里没有可用的 task_candidate_id。</p>';
-  status.textContent = "参数错误";
-  refresh.disabled = true;
-  feedbackActions.querySelectorAll("[data-feedback]").forEach(item => { item.disabled = true; });
-  showMessage("链接不完整", "请从推荐页打开任务，或补上 task_candidate_id 参数。",
-    {href: "/recommendations", label: "返回推荐"}, true);
-} else {
-  loadTask(false);
-}
+  elements.refresh.addEventListener("click", () => loadTask(true));
+
+  if (!/^[1-9][0-9]{0,18}$/.test(rawTaskId)) {
+    elements.body.innerHTML = ui.panel(
+      "400 invalid_task_id",
+      "链接缺少任务编号",
+      "请从推荐页打开任务，或补上 task_candidate_id 参数。",
+      `<a class="btn btn--sm btn--ghost" href="/recommendations">返回推荐</a>`
+    );
+    elements.actions.hidden = true;
+  } else {
+    if (storedBatch) {
+      elements.context.hidden = false;
+      elements.context.outerHTML = ui.runContext(storedBatch);
+    }
+    loadTask(false);
+  }
+})();
