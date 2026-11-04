@@ -991,11 +991,39 @@ components:
         encoder_version: {type: string}
         profile_mode:
           type: string
-          enum: [known_history, cold_start_population]
-          description: cold_start_population means the verified external developer key did not hit the training mapping
+          enum:
+            - known_history
+            - cold_start_population
+            - population_mean
+            - population_mean_profile
+          description: population_mean_profile means the v1 adapter used the frozen population-mean user plus a profile residual
         coverage_state:
           type: string
           enum: [fixed_train_graph, platform_candidate_cache]
+    AdvancedAdapterRuntime:
+      type: object
+      additionalProperties: false
+      required: [mode, active, profile_applied, shadow_recorded]
+      properties:
+        mode: {type: string, enum: [off, shadow, serve]}
+        active:
+          type: boolean
+          description: True only when the profile residual affected the returned ranking
+        profile_applied: {type: boolean}
+        profile_adapter_version: {type: string, nullable: true}
+        profile_mode:
+          type: string
+          nullable: true
+          enum:
+            - known_history
+            - cold_start_population
+            - population_mean
+            - population_mean_profile
+        profile_key: {type: string, nullable: true}
+        profile_version: {type: string, nullable: true}
+        shadow_recorded:
+          type: boolean
+          description: True when a paired original/profile result was persisted
     RecommendationBatch:
       type: object
       additionalProperties: true
@@ -1036,6 +1064,7 @@ components:
         count: {type: integer, minimum: 0}
         items: {type: array, items: {$ref: "#/components/schemas/RecommendationItem"}}
         rankings: {type: array, items: {$ref: "#/components/schemas/RankingRow"}}
+        advanced_adapter: {$ref: "#/components/schemas/AdvancedAdapterRuntime"}
         api_version: {type: string}
         request_id: {type: string}
     FeedbackWrite:
@@ -1149,6 +1178,30 @@ components:
           nullable: true
           additionalProperties: true
         model: {type: object, additionalProperties: true}
+        advanced_adapter:
+          allOf:
+            - {$ref: "#/components/schemas/AdvancedAdapterRuntime"}
+          nullable: true
+        advanced_adapter_shadow:
+          type: object
+          nullable: true
+          description: Paired original/profile rankings captured only in shadow mode
+          properties:
+            mode: {type: string, enum: [shadow]}
+            model_version: {type: string}
+            profile_adapter_version: {type: string}
+            profile_key: {type: string}
+            profile_version: {type: string}
+            profile_mode:
+              type: string
+              enum:
+                - known_history
+                - cold_start_population
+                - population_mean
+                - population_mean_profile
+            candidate_snapshot_hash: {type: string}
+            paired: {type: object, additionalProperties: true}
+            created_at: {type: string, format: date-time}
         api_version: {type: string}
         request_id: {type: string}
     SystemStatus:
