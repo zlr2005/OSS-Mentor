@@ -1075,6 +1075,10 @@ components:
         task_candidate_id: {type: integer, minimum: 1}
         feedback_context: {type: string}
         feedback_state: {type: string, enum: [interested, not_suitable, started, completed]}
+        run_id:
+          type: string
+          nullable: true
+          description: Optional recommendation run that produced this exposure
     PublicCandidateItem:
       type: object
       required:

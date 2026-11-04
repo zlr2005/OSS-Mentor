@@ -144,15 +144,17 @@
     return `${model.variant} · ${model.version}`;
   }
 
-  function detailUrl(item, feedbackContext) {
+  function detailUrl(item, feedbackContext, runId) {
     const query = new URLSearchParams({ task_candidate_id: String(item.task_candidate_id) });
     if (feedbackContext) query.set("feedback_context", feedbackContext);
+    if (runId) query.set("run_id", runId);
     return `/task?${query.toString()}`;
   }
 
   function issueCard(item, index, options) {
     const availability = availabilityInfo(item);
     const feedbackContext = options.feedbackContext || "";
+    const runId = options.runId || "";
     const feedbackState = item.feedback_state || "";
     const reasons = item.reasons || [];
     const first = index === 1;
@@ -162,7 +164,7 @@
          <button class="btn btn--sm btn--ghost" type="button" data-feedback="not_suitable" ${feedbackState ? "disabled" : ""}>${feedbackState === "not_suitable" ? "已记录不适合" : "不适合我"}</button>
          <span class="feedback-status" role="status"></span>`
       : "";
-    return `<article class="issue ${first ? "is-top" : ""}" data-candidate-id="${item.task_candidate_id}" data-track="${escapeHtml(item.service_track || "")}" data-feedback-context="${escapeHtml(feedbackContext)}">
+    return `<article class="issue ${first ? "is-top" : ""}" data-candidate-id="${item.task_candidate_id}" data-track="${escapeHtml(item.service_track || "")}" data-feedback-context="${escapeHtml(feedbackContext)}" data-run-id="${escapeHtml(runId)}">
       <div class="ic-body">
         <header class="ic-top">
           <span class="repo">
@@ -174,7 +176,7 @@
           ${trackPill(item.service_track)}
           <span class="pill ${availability.className}" title="${escapeHtml(availability.title)}">${escapeHtml(availability.text)}</span>
         </header>
-        <h3 class="ic-title"><a href="${escapeHtml(detailUrl(item, feedbackContext))}">${escapeHtml(item.title)}</a></h3>
+        <h3 class="ic-title"><a href="${escapeHtml(detailUrl(item, feedbackContext, runId))}">${escapeHtml(item.title)}</a></h3>
         <div class="ic-meta">
           <span class="meta-item mono">代码难度 ${item.difficulty?.code ?? "—"} · 环境 ${item.difficulty?.setup ?? "—"}</span>
           <span class="dot-sep" aria-hidden="true"></span>
@@ -199,7 +201,7 @@
         <span class="model-badge" title="模型与版本来自服务端">${escapeHtml(modelLabel(options.model))}</span>
         <div class="ic-actions">
           ${feedbackActions}
-          <a class="btn btn--sm btn--ghost" href="${escapeHtml(detailUrl(item, feedbackContext))}">查看详情</a>
+          <a class="btn btn--sm btn--ghost" href="${escapeHtml(detailUrl(item, feedbackContext, runId))}">查看详情</a>
           <a class="link-ext" href="${escapeHtml(safeGithubUrl(item.html_url))}" target="_blank" rel="noopener noreferrer">GitHub 原文</a>
         </div>
       </footer>
@@ -352,21 +354,23 @@
     }
   }
 
-  async function submitFeedback(taskCandidateId, state, feedbackContext, button, status) {
+  async function submitFeedback(taskCandidateId, state, feedbackContext, runId, button, status) {
     if (!feedbackContext) return;
     const original = button.textContent;
     button.disabled = true;
     button.textContent = "保存中…";
     if (status) status.textContent = "";
     try {
+      const body = {
+        task_candidate_id: Number(taskCandidateId),
+        feedback_context: feedbackContext,
+        feedback_state: state,
+      };
+      if (runId) body.run_id = runId;
       await requestJson("/api/v1/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_candidate_id: Number(taskCandidateId),
-          feedback_context: feedbackContext,
-          feedback_state: state,
-        }),
+        body: JSON.stringify(body),
       });
       button.textContent = state === "not_suitable" ? "已记录不适合" : "已记录";
       if (status) status.textContent = "反馈已保存";
@@ -384,8 +388,9 @@
     if (!card) return;
     const batch = readBatch();
     const context = card.dataset.feedbackContext || batch?.feedback_context || "";
+    const runId = card.dataset.runId || batch?.run_id || "";
     const status = card.querySelector(".feedback-status");
-    submitFeedback(card.dataset.candidateId, button.dataset.feedback, context, button, status);
+    submitFeedback(card.dataset.candidateId, button.dataset.feedback, context, runId, button, status);
   });
 
   window.OMUI = {

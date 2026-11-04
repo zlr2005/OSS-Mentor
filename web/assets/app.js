@@ -5,6 +5,7 @@ const state = {
   selected: null,
   mode: "preset",
   feedbackContext: null,
+  feedbackRunId: null,
   feedbackClientId: null,
   availability: null,
   availabilityRequest: 0,
@@ -420,6 +421,7 @@ async function loadRecommendations({ scrollToResults = true } = {}) {
   try {
     const payload = await request;
     state.feedbackContext = payload.feedback_context;
+    state.feedbackRunId = payload.run_id || null;
     elements.count.textContent = `找到 ${payload.count} 个通过门槛的任务`;
     if (!payload.items.length) {
       elements.list.innerHTML = "";
@@ -453,14 +455,16 @@ async function saveFeedback(button) {
   buttons.forEach(item => { item.disabled = true; });
   status.textContent = "正在保存…";
   try {
+    const feedbackBody = {
+      task_candidate_id: Number(button.dataset.taskCandidateId),
+      feedback_context: state.feedbackContext,
+      feedback_state: button.dataset.feedbackState,
+    };
+    if (state.feedbackRunId) feedbackBody.run_id = state.feedbackRunId;
     const payload = await getJson("/api/v1/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        task_candidate_id: Number(button.dataset.taskCandidateId),
-        feedback_context: state.feedbackContext,
-        feedback_state: button.dataset.feedbackState,
-      }),
+      body: JSON.stringify(feedbackBody),
     });
     const savedState = payload.feedback.feedback_state;
     buttons.forEach(item => {

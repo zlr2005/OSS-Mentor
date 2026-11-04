@@ -235,10 +235,11 @@
       return;
     }
     const context = state.batch?.feedback_context || "";
+    const runId = state.batch?.run_id || "";
     const model = state.batch?.model || null;
     elements.list.innerHTML = items.map((item, index) => {
       const globalIndex = state.items.indexOf(item) + 1;
-      return ui.issueCard(item, globalIndex, { feedbackContext: context, model });
+      return ui.issueCard(item, globalIndex, { feedbackContext: context, runId, model });
     }).join("");
     if (elements.toggleReasons?.getAttribute("aria-pressed") === "true") {
       elements.list.querySelectorAll("details").forEach((details) => { details.open = true; });
