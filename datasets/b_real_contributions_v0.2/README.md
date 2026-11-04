@@ -84,3 +84,8 @@ import_011.py 只创建/写入已有 011 定义的 midterm_dataset_* 表，不�
 该导入器是 normalized → 011 的桥接，不能改用旧 DatasetStore.import_snapshot 验证本目录。
 012_midterm_profile_assessment.sql 的编号和接入仍由 B/D 协调，本包不创建新迁移。
 本地未包含 B 的 ProfileEvidence 实现，因此这里只验收数据/011 兼容性，不宣称已通过 B 侧全量回归。
+
+
+## Publication security update
+
+This security-redacted revision supersedes the original manifest. Credential-bearing code is withheld with secret_redacted_publication; candidate credential substrings are redacted. Read current counts and version from manifest.json. Source code hash/commit remain provenance, not proof that removed content is available. No credential was used or confirmed revoked. Git history and old databases/caches are not cleaned by this update.

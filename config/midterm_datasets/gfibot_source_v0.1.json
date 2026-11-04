@@ -1,0 +1,18 @@
+{
+  "source_system": "gfibot_paper",
+  "record_id": 6837711,
+  "version": "0.0.3",
+  "doi": "10.5281/zenodo.6837711",
+  "source_url": "https://zenodo.org/records/6837711",
+  "license": "CC-BY-4.0",
+  "attribution": "Hao He, Haonan Su, Wenxin Xiao, Runzhi He, Minghui Zhou (2022). GFI-Bot dataset.",
+  "archive": "dump.zip",
+  "archive_bytes": 2463994466,
+  "archive_expected_checksum": "md5:b39aada99ab926252549fb5d6cbd4e69",
+  "selected_member": "dump/gfibot/resolved_issue.bson.gz",
+  "lifecycle": "working",
+  "frozen": false,
+  "feature_role": "outcome_only",
+  "full_archive_download_required": false,
+  "coder_original_dataset": false
+}
