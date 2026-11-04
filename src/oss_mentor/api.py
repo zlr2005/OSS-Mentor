@@ -1446,7 +1446,12 @@ class RecommendationApi:
         if method == "POST" and path == "/api/v1/feedback":
             if not isinstance(body, dict):
                 return self._error(400, "invalid_body", "request body must be a JSON object")
-            unknown = set(body) - {"task_candidate_id", "feedback_context", "feedback_state"}
+            unknown = set(body) - {
+                "task_candidate_id",
+                "feedback_context",
+                "feedback_state",
+                "run_id",
+            }
             if unknown:
                 return self._error(400, "invalid_feedback", "feedback contains unsupported fields")
             task_candidate_id = body.get("task_candidate_id")
@@ -1491,14 +1496,63 @@ class RecommendationApi:
                     feedback_context, service_track = self._validate_feedback_context(supplied_context)
                 except ValueError as exc:
                     return self._error(400, "invalid_feedback_context", str(exc))
+            run_id = body.get("run_id")
+            if run_id is not None:
+                if (
+                    not isinstance(run_id, str)
+                    or not re.fullmatch(r"[A-Za-z0-9-]{1,80}", run_id)
+                ):
+                    return self._error(
+                        400,
+                        "invalid_run_id",
+                        "run_id must be a recommendation run identifier",
+                    )
+                if self._recommendation_storage() is None:
+                    return self._error(
+                        503,
+                        "service_not_ready",
+                        "recommendation run storage is not configured",
+                    )
+                recommendation_run = self._load_recommendation_run(run_id)
+                if recommendation_run is None:
+                    return self._error(
+                        404,
+                        "recommendation_run_not_found",
+                        "recommendation run was not found",
+                    )
+                denied = self._run_permission_error(recommendation_run, cookies)
+                if denied is not None:
+                    return denied
+                if str(recommendation_run.get("feedback_context") or "") != feedback_context:
+                    return self._error(
+                        403,
+                        "insufficient_permission",
+                        "feedback context does not match the recommendation run",
+                    )
+                if not any(
+                    int(item.get("task_candidate_id") or 0) == task_candidate_id
+                    for item in recommendation_run.get("items") or ()
+                ):
+                    return self._error(
+                        404,
+                        "task_not_in_recommendation_run",
+                        "task candidate was not shown in the recommendation run",
+                    )
             try:
+                feedback_args = {
+                    "task_candidate_id": task_candidate_id,
+                    "feedback_context": feedback_context,
+                    "service_track": service_track,
+                    "feedback_state": feedback_state,
+                }
+                if run_id is not None:
+                    feedback_args["run_id"] = run_id
                 feedback = self.store.record_feedback(
-                    task_candidate_id=task_candidate_id,
-                    feedback_context=feedback_context,
-                    service_track=service_track,
-                    feedback_state=feedback_state,
+                    **feedback_args,
                 )
-            except ValueError:
+            except ValueError as exc:
+                if run_id is not None:
+                    return self._error(409, "invalid_feedback_run", str(exc))
                 return self._error(404, "task_not_found", "task candidate was not found")
             return ApiResponse(200, {"feedback": feedback, "api_version": API_VERSION})
         if method == "GET" and path == "/api/v1/status":

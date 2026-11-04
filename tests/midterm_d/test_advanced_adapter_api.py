@@ -317,6 +317,73 @@ class AdvancedAdapterApiTests(unittest.TestCase):
                 self.assertEqual(503, response.status)
                 self.assertEqual("model_unavailable", response.body["error"]["code"])
 
+    def test_feedback_is_linked_to_the_exact_recommendation_run(self) -> None:
+        api, _, recommendations = self.recommendations("off")
+        self.assertEqual(200, recommendations.status, recommendations.body)
+        run_id = recommendations.body["run_id"]
+        feedback_context = recommendations.body["feedback_context"]
+        task_candidate_id = int(recommendations.body["items"][0]["task_candidate_id"])
+        feedback = {
+            "task_candidate_id": task_candidate_id,
+            "feedback_context": feedback_context,
+            "feedback_state": "interested",
+            "run_id": run_id,
+        }
+        response = api.handle(
+            "POST",
+            "/api/v1/feedback",
+            body=feedback,
+            cookies={SESSION_COOKIE_NAME: "advanced-session"},
+        )
+        self.assertEqual(200, response.status, response.body)
+        self.assertTrue(response.body["feedback"]["changed"])
+        self.assertEqual(run_id, response.body["feedback"]["run_id"])
+
+        repeated = api.handle(
+            "POST",
+            "/api/v1/feedback",
+            body=feedback,
+            cookies={SESSION_COOKIE_NAME: "advanced-session"},
+        )
+        self.assertEqual(200, repeated.status, repeated.body)
+        self.assertFalse(repeated.body["feedback"]["changed"])
+        self.assertEqual(run_id, repeated.body["feedback"]["run_id"])
+
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            current = connection.execute(
+                """
+                SELECT recommendation_run_id
+                FROM recommendation_feedback
+                WHERE feedback_context = ? AND task_candidate_id = ?
+                """,
+                (feedback_context, task_candidate_id),
+            ).fetchone()
+            event = connection.execute(
+                """
+                SELECT run_id
+                FROM recommendation_feedback_event
+                ORDER BY recommendation_feedback_event_id DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        self.assertEqual(run_id, current["recommendation_run_id"])
+        self.assertEqual(run_id, event["run_id"])
+
+        missing = dict(feedback)
+        missing["run_id"] = "00000000-0000-4000-8000-000000000000"
+        rejected = api.handle(
+            "POST",
+            "/api/v1/feedback",
+            body=missing,
+            cookies={SESSION_COOKIE_NAME: "advanced-session"},
+        )
+        self.assertEqual(404, rejected.status)
+        self.assertEqual(
+            "recommendation_run_not_found",
+            rejected.body["error"]["code"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

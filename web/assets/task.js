@@ -5,11 +5,13 @@
   const params = new URLSearchParams(window.location.search);
   const rawTaskId = params.get("task_candidate_id") || "";
   const queryContext = params.get("feedback_context") || "";
+  const queryRunId = params.get("run_id") || "";
   const storedBatch = ui.readBatch();
   const storedItem = (storedBatch?.items || []).find(
     (item) => String(item.task_candidate_id) === String(rawTaskId)
   );
   let feedbackContext = queryContext || storedBatch?.feedback_context || "";
+  const feedbackRunId = queryRunId || storedBatch?.run_id || "";
   let currentTask = null;
 
   const elements = {
@@ -185,14 +187,16 @@
     buttons.forEach((item) => { item.disabled = true; });
     elements.feedbackNote.textContent = "正在保存…";
     try {
+      const feedbackBody = {
+        task_candidate_id: Number(rawTaskId),
+        feedback_context: feedbackContext,
+        feedback_state: button.dataset.feedback,
+      };
+      if (feedbackRunId) feedbackBody.run_id = feedbackRunId;
       await ui.requestJson("/api/v1/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_candidate_id: Number(rawTaskId),
-          feedback_context: feedbackContext,
-          feedback_state: button.dataset.feedback,
-        }),
+        body: JSON.stringify(feedbackBody),
       });
       buttons.forEach((item) => {
         item.disabled = false;
