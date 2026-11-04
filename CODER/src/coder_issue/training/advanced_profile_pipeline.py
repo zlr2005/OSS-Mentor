@@ -38,8 +38,14 @@ CONFIG_SCHEMA_VERSION = "advanced-adapter-training-config-v0.1"
 class AdvancedTrainingConfig:
     adapter_version: str
     seed: int
+    data_seed: int
     hidden_dim: int
     residual_scale: float
+    gate_mode: str
+    feature_dropout: float
+    residual_l2: float
+    hard_negative_weight: float
+    hard_negative_temperature: float
     observation_window_days: int
     negative_samples_per_positive: int
     outcome_weights: Mapping[str, float]
@@ -56,20 +62,34 @@ class AdvancedTrainingConfig:
     def from_path(cls, path: Path) -> "AdvancedTrainingConfig":
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         if payload.get("schema_version") != CONFIG_SCHEMA_VERSION:
-            raise ValueError("unsupported advanced adapter training config schema_version")
+            raise ValueError(
+                "unsupported advanced adapter training config schema_version"
+            )
         statuses = payload.get("accepted_verification_statuses", ["verified"])
-        if not isinstance(statuses, list) or not statuses or any(
-            not isinstance(item, str) or not item for item in statuses
+        if (
+            not isinstance(statuses, list)
+            or not statuses
+            or any(not isinstance(item, str) or not item for item in statuses)
         ):
-            raise ValueError("accepted_verification_statuses must be a non-empty string list")
+            raise ValueError(
+                "accepted_verification_statuses must be a non-empty string list"
+            )
         weights = payload.get("outcome_weights")
         if not isinstance(weights, dict):
             raise ValueError("outcome_weights must be an object")
         config = cls(
             adapter_version=str(payload["adapter_version"]),
             seed=int(payload["seed"]),
+            data_seed=int(payload.get("data_seed", payload["seed"])),
             hidden_dim=int(payload["hidden_dim"]),
             residual_scale=float(payload["residual_scale"]),
+            gate_mode=str(payload.get("gate_mode", "none")),
+            feature_dropout=float(payload.get("feature_dropout", 0.0)),
+            residual_l2=float(payload.get("residual_l2", 0.0)),
+            hard_negative_weight=float(payload.get("hard_negative_weight", 0.0)),
+            hard_negative_temperature=float(
+                payload.get("hard_negative_temperature", 1.0)
+            ),
             observation_window_days=int(payload["observation_window_days"]),
             negative_samples_per_positive=int(payload["negative_samples_per_positive"]),
             outcome_weights={str(key): float(value) for key, value in weights.items()},
@@ -92,6 +112,16 @@ class AdvancedTrainingConfig:
             raise ValueError("hidden_dim, epochs and batch_size must be positive")
         if self.residual_scale < 0 or self.learning_rate <= 0 or self.weight_decay < 0:
             raise ValueError("invalid residual_scale, learning_rate or weight_decay")
+        if self.gate_mode not in {"none", "coverage"}:
+            raise ValueError("gate_mode must be none or coverage")
+        if not 0.0 <= self.feature_dropout < 1.0:
+            raise ValueError("feature_dropout must be within [0, 1)")
+        if self.residual_l2 < 0 or self.hard_negative_weight < 0:
+            raise ValueError(
+                "residual_l2 and hard_negative_weight must be non-negative"
+            )
+        if self.hard_negative_temperature <= 0:
+            raise ValueError("hard_negative_temperature must be positive")
         if self.patience <= 0:
             raise ValueError("patience must be positive")
         PairBuildConfig(
@@ -144,7 +174,10 @@ def load_frozen_inputs(model_dir: Path, issue_cache: Path) -> FrozenInputs:
     base_user = torch.from_numpy(users.mean(axis=0).astype(np.float32, copy=False))
 
     with np.load(issue_cache) as payload:
-        keys = [normalize_issue_key(item) for item in payload["issue_keys"].astype(str).tolist()]
+        keys = [
+            normalize_issue_key(item)
+            for item in payload["issue_keys"].astype(str).tolist()
+        ]
         vectors = np.asarray(payload["issue_embeddings"], dtype=np.float32)
         if "content_sha256" not in payload.files:
             raise ValueError("historical issue cache must contain content_sha256")
@@ -152,7 +185,8 @@ def load_frozen_inputs(model_dir: Path, issue_cache: Path) -> FrozenInputs:
     if vectors.ndim != 2 or len(keys) != vectors.shape[0]:
         raise ValueError("issue cache keys and embeddings are inconsistent")
     if len(content_hashes) != len(keys) or any(
-        len(value) != 64 or any(character not in "0123456789abcdef" for character in value)
+        len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
         for value in content_hashes
     ):
         raise ValueError("issue cache content_sha256 values are inconsistent")
@@ -164,7 +198,9 @@ def load_frozen_inputs(model_dir: Path, issue_cache: Path) -> FrozenInputs:
         raise ValueError("issue cache contains non-finite embeddings")
     return FrozenInputs(
         base_user=base_user,
-        issue_embeddings={key: torch.from_numpy(vector.copy()) for key, vector in zip(keys, vectors)},
+        issue_embeddings={
+            key: torch.from_numpy(vector.copy()) for key, vector in zip(keys, vectors)
+        },
         issue_content_sha256=dict(zip(keys, content_hashes, strict=True)),
         model_manifest=manifest,
         model_manifest_sha256=_sha256(manifest_path),
@@ -183,6 +219,7 @@ def prepare_training_data(
         embedding_dim=int(frozen.base_user.shape[0]),
         hidden_dim=config.hidden_dim,
         residual_scale=config.residual_scale,
+        gate_mode=config.gate_mode,
     )
     profiles, profile_failures = load_temporal_profiles(
         profiles_path, adapter_config=adapter_config
@@ -224,7 +261,7 @@ def prepare_training_data(
         config=PairBuildConfig(
             observation_window_days=config.observation_window_days,
             negative_samples_per_positive=config.negative_samples_per_positive,
-            seed=config.seed,
+            seed=config.data_seed,
             outcome_weights=config.outcome_weights,
             accepted_verification_statuses=config.accepted_verification_statuses,
         ),
@@ -256,17 +293,22 @@ def prepare_training_data(
             name: len({row.outcome_id for row in rows}) for name, rows in splits.items()
         },
         "split_developers": {
-            name: len({row.developer_key for row in rows}) for name, rows in splits.items()
+            name: len({row.developer_key for row in rows})
+            for name, rows in splits.items()
         },
     }
     return splits, failures, report
 
 
-def _batch_indices(length: int, batch_size: int, *, seed: int, epoch: int) -> list[list[int]]:
+def _batch_indices(
+    length: int, batch_size: int, *, seed: int, epoch: int
+) -> list[list[int]]:
     generator = random.Random(seed + epoch)
     indices = list(range(length))
     generator.shuffle(indices)
-    return [indices[start : start + batch_size] for start in range(0, length, batch_size)]
+    return [
+        indices[start : start + batch_size] for start in range(0, length, batch_size)
+    ]
 
 
 def _batch_tensors(
@@ -278,8 +320,12 @@ def _batch_tensors(
     return (
         torch.stack([row.values for row in rows]).to(device),
         torch.stack([row.observed_mask for row in rows]).to(device),
-        torch.stack([frozen.issue_embeddings[row.positive_issue_key] for row in rows]).to(device),
-        torch.stack([frozen.issue_embeddings[row.comparison_issue_key] for row in rows]).to(device),
+        torch.stack(
+            [frozen.issue_embeddings[row.positive_issue_key] for row in rows]
+        ).to(device),
+        torch.stack(
+            [frozen.issue_embeddings[row.comparison_issue_key] for row in rows]
+        ).to(device),
         torch.tensor([row.weight for row in rows], dtype=torch.float32, device=device),
     )
 
@@ -289,10 +335,17 @@ def _weighted_bpr(
     positive: torch.Tensor,
     comparison: torch.Tensor,
     weights: torch.Tensor,
+    *,
+    hard_negative_weight: float = 0.0,
+    hard_negative_temperature: float = 1.0,
 ) -> torch.Tensor:
     positive_scores = (user * positive).sum(dim=-1)
     comparison_scores = (user * comparison).sum(dim=-1)
-    return (-F.logsigmoid(positive_scores - comparison_scores) * weights).sum() / weights.sum()
+    margin = positive_scores - comparison_scores
+    if hard_negative_weight:
+        difficulty = torch.sigmoid(-margin.detach() / hard_negative_temperature)
+        weights = weights * (1.0 + hard_negative_weight * difficulty)
+    return (-F.logsigmoid(margin) * weights).sum() / weights.sum()
 
 
 def evaluate_pairs(
@@ -326,10 +379,17 @@ def evaluate_pairs(
                 else base_user.squeeze(0)
             )
             positive_score = float(
-                torch.dot(user, frozen.issue_embeddings[first.positive_issue_key].to(device)).item()
+                torch.dot(
+                    user, frozen.issue_embeddings[first.positive_issue_key].to(device)
+                ).item()
             )
             comparison_scores = [
-                float(torch.dot(user, frozen.issue_embeddings[item.comparison_issue_key].to(device)).item())
+                float(
+                    torch.dot(
+                        user,
+                        frozen.issue_embeddings[item.comparison_issue_key].to(device),
+                    ).item()
+                )
                 for item in group
             ]
             rank = 1 + sum(score >= positive_score for score in comparison_scores)
@@ -343,7 +403,8 @@ def evaluate_pairs(
                     "rank": rank,
                     "candidate_count": len(comparison_scores) + 1,
                     "unseen_developer": bool(
-                        train_developers is not None and first.developer_key not in train_developers
+                        train_developers is not None
+                        and first.developer_key not in train_developers
                     ),
                 }
             )
@@ -357,15 +418,25 @@ def evaluate_pairs(
     }
     for cutoff in (5, 10, 20):
         hit = sum(rank <= cutoff for rank in ranks) / len(ranks)
-        ndcg = sum((1.0 / np.log2(rank + 1)) if rank <= cutoff else 0.0 for rank in ranks) / len(ranks)
+        ndcg = sum(
+            (1.0 / np.log2(rank + 1)) if rank <= cutoff else 0.0 for rank in ranks
+        ) / len(ranks)
         metrics[f"recall@{cutoff}"] = hit
         metrics[f"hit@{cutoff}"] = hit
-        metrics[f"mrr@{cutoff}"] = sum((1.0 / rank) if rank <= cutoff else 0.0 for rank in ranks) / len(ranks)
+        metrics[f"mrr@{cutoff}"] = sum(
+            (1.0 / rank) if rank <= cutoff else 0.0 for rank in ranks
+        ) / len(ranks)
         metrics[f"ndcg@{cutoff}"] = float(ndcg)
     if train_developers is not None:
         for label, selected in (
-            ("seen_developer", [row for row in group_rows if not row["unseen_developer"]]),
-            ("unseen_developer", [row for row in group_rows if row["unseen_developer"]]),
+            (
+                "seen_developer",
+                [row for row in group_rows if not row["unseen_developer"]],
+            ),
+            (
+                "unseen_developer",
+                [row for row in group_rows if row["unseen_developer"]],
+            ),
         ):
             selected_ranks = [int(row["rank"]) for row in selected]
             metrics[label] = {
@@ -385,6 +456,7 @@ def train_adapter(
     config: AdvancedTrainingConfig,
     *,
     device: str | torch.device = "cpu",
+    evaluate_test: bool = True,
 ) -> tuple[ProfileResidualAdapter, dict[str, Any]]:
     if not splits["train"]:
         raise ValueError("training split has no eligible pairs")
@@ -397,6 +469,7 @@ def train_adapter(
             embedding_dim=int(frozen.base_user.shape[0]),
             hidden_dim=config.hidden_dim,
             residual_scale=config.residual_scale,
+            gate_mode=config.gate_mode,
         )
     ).to(target_device)
     optimizer = torch.optim.AdamW(
@@ -419,10 +492,26 @@ def train_adapter(
             values, observed, positive, comparison, weights = _batch_tensors(
                 rows, frozen, device=target_device
             )
+            if config.feature_dropout:
+                keep = (
+                    torch.rand(observed.shape, device=target_device)
+                    >= config.feature_dropout
+                )
+                observed = observed & keep
             optimizer.zero_grad(set_to_none=True)
             base = frozen.base_user.to(target_device).expand(len(rows), -1)
             user = adapter.fuse(base, values, observed)
-            loss = _weighted_bpr(user, positive, comparison, weights)
+            loss = _weighted_bpr(
+                user,
+                positive,
+                comparison,
+                weights,
+                hard_negative_weight=config.hard_negative_weight,
+                hard_negative_temperature=config.hard_negative_temperature,
+            )
+            if config.residual_l2:
+                residual = user - base
+                loss = loss + config.residual_l2 * residual.square().sum(dim=-1).mean()
             loss.backward()
             optimizer.step()
             total_loss += float(loss.item()) * len(rows)
@@ -443,7 +532,10 @@ def train_adapter(
         validation_mrr = float(validation["mrr"])
         if validation_mrr > best_validation_mrr:
             best_validation_mrr = validation_mrr
-            best_state = {key: value.detach().cpu().clone() for key, value in adapter.state_dict().items()}
+            best_state = {
+                key: value.detach().cpu().clone()
+                for key, value in adapter.state_dict().items()
+            }
             stale_epochs = 0
         else:
             stale_epochs += 1
@@ -459,6 +551,9 @@ def train_adapter(
         "epochs_completed": len(history),
         "history": history,
     }
+    evaluated_splits = (
+        ("train", "validation", "test") if evaluate_test else ("train", "validation")
+    )
     original = {
         name: evaluate_pairs(
             None,
@@ -467,7 +562,7 @@ def train_adapter(
             train_developers=train_developers if name != "train" else None,
             device=torch.device("cpu"),
         )
-        for name in ("train", "validation", "test")
+        for name in evaluated_splits
     }
     profiled = {
         name: evaluate_pairs(
@@ -477,7 +572,7 @@ def train_adapter(
             train_developers=train_developers if name != "train" else None,
             device=torch.device("cpu"),
         )
-        for name in ("train", "validation", "test")
+        for name in evaluated_splits
     }
     metrics["coder_original"] = original
     metrics["coder_profile"] = profiled
@@ -485,13 +580,14 @@ def train_adapter(
         name: {
             key: (
                 float(profiled[name][key]) - float(original[name][key])
-                if profiled[name].get(key) is not None and original[name].get(key) is not None
+                if profiled[name].get(key) is not None
+                and original[name].get(key) is not None
                 else None
             )
             for key in ("pair_accuracy", "mrr", "mean_rank")
             if key in profiled[name] or key in original[name]
         }
-        for name in ("train", "validation", "test")
+        for name in evaluated_splits
     }
     return adapter, metrics
 
@@ -513,7 +609,9 @@ def write_audit(
     _write_json(output_dir / "audit_report.json", report)
     with (output_dir / "failures.jsonl").open("w", encoding="utf-8") as handle:
         for failure in failures:
-            handle.write(json.dumps(failure.to_dict(), ensure_ascii=False, sort_keys=True) + "\n")
+            handle.write(
+                json.dumps(failure.to_dict(), ensure_ascii=False, sort_keys=True) + "\n"
+            )
 
 
 def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
@@ -528,8 +626,13 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         config=config,
     )
     output_dir = Path(args.output_dir)
-    if any((output_dir / name).exists() for name in ("weights.pt", "adapter_manifest.json", "_SUCCESS")):
-        raise FileExistsError("output_dir already contains an adapter bundle; use a new run directory")
+    if any(
+        (output_dir / name).exists()
+        for name in ("weights.pt", "adapter_manifest.json", "_SUCCESS")
+    ):
+        raise FileExistsError(
+            "output_dir already contains an adapter bundle; use a new run directory"
+        )
     write_audit(output_dir, report=report, failures=failures)
     if args.mode == "audit":
         return report

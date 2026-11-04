@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from argparse import Namespace
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
@@ -9,6 +10,7 @@ import tempfile
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+import torch
 
 from coder_issue.models.profile import (
     PROFILE_FEATURE_NAMES,
@@ -17,7 +19,13 @@ from coder_issue.models.profile import (
     tensorize_confirmed_profile,
     tensorize_training_profile,
 )
-from coder_issue.training.advanced_profile_pipeline import run_pipeline
+from coder_issue.training.advanced_profile_pipeline import (
+    AdvancedTrainingConfig,
+    load_frozen_inputs,
+    prepare_training_data,
+    run_pipeline,
+    train_adapter,
+)
 from coder_issue.training.advanced_profile_evaluation import evaluate
 from coder_issue.training.advanced_profile_validation import (
     main as validate_profiles_main,
@@ -261,6 +269,56 @@ def test_grouped_evaluation_reproduces_training_metrics() -> None:
         assert report["splits"]["test"]["repository_history"]["True"]["outcomes"] == 1
         assert report["paired_outcomes"]["records"] == 3
         assert (root / "evaluation" / "_SUCCESS").is_file()
+
+
+def test_coverage_gate_preserves_exact_all_unknown_fallback() -> None:
+    adapter = ProfileResidualAdapter(
+        ProfileAdapterConfig(embedding_dim=2, hidden_dim=4, gate_mode="coverage")
+    )
+    base = torch.tensor([[0.25, -0.5]], dtype=torch.float32)
+    values = torch.zeros((1, len(PROFILE_FEATURE_NAMES)), dtype=torch.float32)
+    observed = torch.zeros_like(values, dtype=torch.bool)
+    assert torch.equal(adapter.fuse(base, values, observed), base)
+
+
+def test_training_seed_is_separate_from_frozen_pair_sampling() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        args = _fixture(root)
+        first = AdvancedTrainingConfig.from_path(Path(args.config))
+        second = replace(first, seed=first.seed + 1)
+        frozen = load_frozen_inputs(Path(args.model_dir), Path(args.issue_cache))
+
+        def pair_ids(config: AdvancedTrainingConfig) -> list[str]:
+            splits, _, _ = prepare_training_data(
+                profiles_path=Path(args.profiles),
+                outcomes_path=Path(args.outcomes),
+                candidates_path=Path(args.candidates),
+                frozen=frozen,
+                config=config,
+            )
+            return [row.pair_id for split in splits.values() for row in split]
+
+        assert first.data_seed == second.data_seed
+        assert pair_ids(first) == pair_ids(second)
+
+
+def test_trial_training_can_keep_test_split_sealed() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        args = _fixture(root)
+        config = AdvancedTrainingConfig.from_path(Path(args.config))
+        frozen = load_frozen_inputs(Path(args.model_dir), Path(args.issue_cache))
+        splits, _, _ = prepare_training_data(
+            profiles_path=Path(args.profiles),
+            outcomes_path=Path(args.outcomes),
+            candidates_path=Path(args.candidates),
+            frozen=frozen,
+            config=config,
+        )
+        _, metrics = train_adapter(splits, frozen, config, evaluate_test=False)
+        assert set(metrics["coder_original"]) == {"train", "validation"}
+        assert set(metrics["coder_profile"]) == {"train", "validation"}
 
 
 def test_audit_mode_reports_future_profile_without_training() -> None:

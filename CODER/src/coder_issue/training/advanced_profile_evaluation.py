@@ -64,6 +64,7 @@ def _score_outcomes(
     adapter: ProfileResidualAdapter,
     base_user: torch.Tensor,
     issue_embeddings: Mapping[str, torch.Tensor],
+    split_names: Sequence[str] = ("train", "validation", "test"),
 ) -> list[dict[str, Any]]:
     train_outcome_ids = {row.outcome_id for row in splits["train"]}
     train_developers = {row.developer_key for row in splits["train"]}
@@ -79,7 +80,7 @@ def _score_outcomes(
     output: list[dict[str, Any]] = []
     adapter.eval()
     with torch.inference_mode():
-        for split_name in ("train", "validation", "test"):
+        for split_name in split_names:
             groups: dict[str, list[TrainingPair]] = defaultdict(list)
             for row in splits[split_name]:
                 groups[row.outcome_id].append(row)
