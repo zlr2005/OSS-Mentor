@@ -1,0 +1,22 @@
+[
+  "scripts/midterm_a/assemble_sparse_expansion_handoff.py",
+  "scripts/midterm_a/verify_sparse_expansion_handoff.py",
+  "scripts/midterm_a/build_sparse_review_profiles.py",
+  "scripts/midterm_a/package_bc_supplement.py",
+  "scripts/midterm_a/unpack_bc_supplement.py",
+  "scripts/midterm_a/backfill_adapter_2024_2025.py",
+  "scripts/midterm_a/backfill_adapter_2024_2026.py",
+  "scripts/midterm_a/collect_targeted_adapter.py",
+  "scripts/midterm_a/continue_adapter_backfill.py",
+  "scripts/midterm_a/deepen_adapter_evidence.py",
+  "docs/sparse_data_completion_2026-11-05.md",
+  "docs/expanded_sparse_data_2026-11-04.md",
+  "tests/midterm_a/test_collect_targeted_adapter.py",
+  "tests/midterm_a/test_deepen_adapter_evidence.py",
+  "handoff/bc_supplement_20261105/README.md",
+  "handoff/bc_supplement_20261105/file_manifest.json",
+  "handoff/bc_supplement_20261105/summary.json",
+  "handoff/bc_supplement_20261105/verification.json",
+  "handoff/bc_supplement_20261105/upload_files.json",
+  "handoff/bc_supplement_20261105/evidence.zip"
+]
