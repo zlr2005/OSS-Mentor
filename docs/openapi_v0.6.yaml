@@ -397,6 +397,68 @@ paths:
       summary: Feedback funnel and transition summary
       responses:
         "200": {description: Feedback summary}
+  /api/v1/public-candidates:
+    get:
+      summary: Non-personalized public candidates for anonymous or zero-history users
+      description: |
+        These items are not CODER recommendations. `score` and
+        `service_track` remain null and the response explicitly says
+        `personalized=false`.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: {type: integer, minimum: 1, maximum: 30, default: 6}
+      responses:
+        "200":
+          description: Public candidate list
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PublicCandidateList"}
+        "400": {$ref: "#/components/responses/Error"}
+  /api/v1/me/project-recommendations:
+    get:
+      summary: Project participation cards derived from one recommendation run
+      description: |
+        This is an issue-aggregation compatibility view, not a separate project
+        ranking model. The response reports
+        `ranking_source=issue_aggregation_compat_v0.1`.
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: run_id
+          in: query
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Project cards with explicit aggregation provenance
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ProjectRecommendationList"}
+        "400": {$ref: "#/components/responses/Error"}
+        "401": {$ref: "#/components/responses/Error"}
+        "403": {$ref: "#/components/responses/Error"}
+        "404": {$ref: "#/components/responses/Error"}
+        "503": {$ref: "#/components/responses/Error"}
+  /api/v1/recommendation-runs/{run_id}:
+    get:
+      summary: Read one recommendation run snapshot and its model metadata
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 80}
+      responses:
+        "200":
+          description: Recommendation run explanation
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RecommendationRun"}
+        "401": {$ref: "#/components/responses/Error"}
+        "403": {$ref: "#/components/responses/Error"}
+        "404": {$ref: "#/components/responses/Error"}
+        "503": {$ref: "#/components/responses/Error"}
   /api/v1/status:
     get:
       summary: System, database, sync and candidate pool status
@@ -929,11 +991,39 @@ components:
         encoder_version: {type: string}
         profile_mode:
           type: string
-          enum: [known_history, cold_start_population]
-          description: cold_start_population means the verified external developer key did not hit the training mapping
+          enum:
+            - known_history
+            - cold_start_population
+            - population_mean
+            - population_mean_profile
+          description: population_mean_profile means the v1 adapter used the frozen population-mean user plus a profile residual
         coverage_state:
           type: string
           enum: [fixed_train_graph, platform_candidate_cache]
+    AdvancedAdapterRuntime:
+      type: object
+      additionalProperties: false
+      required: [mode, active, profile_applied, shadow_recorded]
+      properties:
+        mode: {type: string, enum: [off, shadow, serve]}
+        active:
+          type: boolean
+          description: True only when the profile residual affected the returned ranking
+        profile_applied: {type: boolean}
+        profile_adapter_version: {type: string, nullable: true}
+        profile_mode:
+          type: string
+          nullable: true
+          enum:
+            - known_history
+            - cold_start_population
+            - population_mean
+            - population_mean_profile
+        profile_key: {type: string, nullable: true}
+        profile_version: {type: string, nullable: true}
+        shadow_recorded:
+          type: boolean
+          description: True when a paired original/profile result was persisted
     RecommendationBatch:
       type: object
       additionalProperties: true
@@ -974,6 +1064,7 @@ components:
         count: {type: integer, minimum: 0}
         items: {type: array, items: {$ref: "#/components/schemas/RecommendationItem"}}
         rankings: {type: array, items: {$ref: "#/components/schemas/RankingRow"}}
+        advanced_adapter: {$ref: "#/components/schemas/AdvancedAdapterRuntime"}
         api_version: {type: string}
         request_id: {type: string}
     FeedbackWrite:
@@ -984,6 +1075,139 @@ components:
         task_candidate_id: {type: integer, minimum: 1}
         feedback_context: {type: string}
         feedback_state: {type: string, enum: [interested, not_suitable, started, completed]}
+        run_id:
+          type: string
+          nullable: true
+          description: Optional recommendation run that produced this exposure
+    PublicCandidateItem:
+      type: object
+      required:
+        - task_candidate_id
+        - repository_full_name
+        - issue_number
+        - title
+        - html_url
+        - availability
+        - score
+        - service_track
+      properties:
+        task_candidate_id: {type: integer, minimum: 1}
+        repository_full_name: {type: string}
+        issue_number: {type: integer, minimum: 1}
+        title: {type: string}
+        html_url: {type: string, format: uri}
+        availability: {type: string}
+        verified_at: {type: string, nullable: true}
+        primary_language: {type: string, nullable: true}
+        labels: {type: array, items: {type: string}}
+        task_types: {type: array, items: {type: string}}
+        comment_count: {type: integer, minimum: 0}
+        last_activity_at: {type: string, nullable: true}
+        newcomer_label_signal: {type: boolean}
+        estimated_code_difficulty: {type: integer, nullable: true}
+        estimated_setup_difficulty: {type: integer, nullable: true}
+        score: {type: number, nullable: true}
+        service_track: {type: string, nullable: true}
+    PublicCandidateList:
+      type: object
+      required: [items, count, personalized, warnings, match_version, model, api_version, request_id]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/PublicCandidateItem"}}
+        count: {type: integer, minimum: 0}
+        personalized: {type: boolean, enum: [false]}
+        warnings: {type: array, items: {type: string}}
+        match_version: {type: string}
+        model: {type: object, additionalProperties: true}
+        api_version: {type: string}
+        request_id: {type: string}
+    ProjectRecommendationItem:
+      type: object
+      required:
+        - repository_full_name
+        - repository_url
+        - score
+        - ranking_source
+        - basis
+        - related_issues
+        - status
+      properties:
+        repository_full_name: {type: string}
+        repository_url: {type: string, format: uri}
+        score: {type: number, minimum: 0, maximum: 1}
+        ranking_source: {type: string}
+        basis: {type: array, items: {type: string}}
+        related_issues: {type: array, items: {type: object, additionalProperties: true}}
+        modules: {type: array, items: {type: string}}
+        contributing_url: {type: string, nullable: true}
+        checked_at: {type: string, nullable: true}
+        status: {type: string}
+        warnings: {type: array, items: {type: string}}
+    ProjectRecommendationList:
+      type: object
+      required: [run_id, items, count, ranking_source, warnings, api_version, request_id]
+      properties:
+        run_id: {type: string}
+        items: {type: array, items: {$ref: "#/components/schemas/ProjectRecommendationItem"}}
+        count: {type: integer, minimum: 0}
+        ranking_source: {type: string}
+        warnings: {type: array, items: {type: string}}
+        api_version: {type: string}
+        request_id: {type: string}
+    RecommendationRun:
+      type: object
+      required:
+        - run_id
+        - service_track
+        - match_version
+        - profile_snapshot_hash
+        - candidate_snapshot_hash
+        - warnings
+        - created_at
+        - items
+        - model
+        - api_version
+        - request_id
+      properties:
+        run_id: {type: string}
+        feedback_context: {type: string, nullable: true}
+        service_track: {type: string, enum: [newcomer, growth]}
+        match_version: {type: string}
+        profile_snapshot_hash: {type: string}
+        candidate_snapshot_hash: {type: string}
+        warnings: {type: array, items: {type: string}}
+        created_at: {type: string}
+        items: {type: array, items: {$ref: "#/components/schemas/RecommendationItem"}}
+        profile:
+          type: object
+          nullable: true
+          additionalProperties: true
+        model: {type: object, additionalProperties: true}
+        advanced_adapter:
+          allOf:
+            - {$ref: "#/components/schemas/AdvancedAdapterRuntime"}
+          nullable: true
+        advanced_adapter_shadow:
+          type: object
+          nullable: true
+          description: Paired original/profile rankings captured only in shadow mode
+          properties:
+            mode: {type: string, enum: [shadow]}
+            model_version: {type: string}
+            profile_adapter_version: {type: string}
+            profile_key: {type: string}
+            profile_version: {type: string}
+            profile_mode:
+              type: string
+              enum:
+                - known_history
+                - cold_start_population
+                - population_mean
+                - population_mean_profile
+            candidate_snapshot_hash: {type: string}
+            paired: {type: object, additionalProperties: true}
+            created_at: {type: string, format: date-time}
+        api_version: {type: string}
+        request_id: {type: string}
     SystemStatus:
       type: object
       additionalProperties: true

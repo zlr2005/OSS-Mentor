@@ -1,0 +1,8 @@
+{
+  "clean_directory_extraction": "passed",
+  "src_config_base": "git HEAD",
+  "verified_outcomes": 392,
+  "verified_code_control_joins": 384,
+  "exit_code": 0,
+  "training_ready": false
+}

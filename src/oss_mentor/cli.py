@@ -71,6 +71,34 @@ def _env_port(name: str, default: int) -> int:
     return port
 
 
+def _validate_advanced_adapter_bundle(path: Path) -> dict[str, object]:
+    """Fail closed before serving unless C's v1 bundle is complete and eligible."""
+
+    required = (
+        path / "adapter_manifest.json",
+        path / "weights.pt",
+        path / "_SUCCESS",
+    )
+    for artifact in required:
+        if not artifact.is_file():
+            raise ConfigError(f"CODER profile adapter artifact is missing: {artifact}")
+    try:
+        manifest = json.loads(
+            (path / "adapter_manifest.json").read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ConfigError("CODER profile adapter manifest is unreadable") from exc
+    if manifest.get("schema_version") != "coder-profile-adapter-v0.1":
+        raise ConfigError("unsupported CODER profile adapter manifest schema")
+    if manifest.get("service_track") != "growth":
+        raise ConfigError("advanced adapter bundle must target the growth service track")
+    if manifest.get("base_user_mode") != "population_mean":
+        raise ConfigError("advanced adapter v1 requires base_user_mode=population_mean")
+    if not str(manifest.get("adapter_version") or "").strip():
+        raise ConfigError("advanced adapter bundle is missing adapter_version")
+    return manifest
+
+
 def _apply_path_overrides(settings: Settings, args: argparse.Namespace) -> Settings:
     updated = settings
     if getattr(args, "config", None):
@@ -920,6 +948,27 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
     coder_candidate_cache = Path(args.coder_candidate_cache) if args.coder_candidate_cache else (
         settings.repo_root / "data/midterm/platform/coder-full-search8-v1/candidates.npz"
     )
+    profile_adapter_dir = (
+        Path(args.profile_adapter_dir)
+        if args.profile_adapter_dir
+        else (
+            Path(os.environ["OSS_MENTOR_PROFILE_ADAPTER_DIR"])
+            if os.environ.get("OSS_MENTOR_PROFILE_ADAPTER_DIR")
+            else None
+        )
+    )
+    advanced_adapter_mode = str(args.advanced_adapter_mode or "off")
+    if advanced_adapter_mode not in {"off", "shadow", "serve"}:
+        raise ConfigError("--advanced-adapter-mode must be off, shadow or serve")
+    if advanced_adapter_mode != "off" and profile_adapter_dir is None:
+        raise ConfigError(
+            "--advanced-adapter-mode shadow/serve requires --profile-adapter-dir "
+            "or OSS_MENTOR_PROFILE_ADAPTER_DIR"
+        )
+    if advanced_adapter_mode != "off":
+        _validate_advanced_adapter_bundle(profile_adapter_dir)
+    if args.legacy_ranking and advanced_adapter_mode != "off":
+        raise ConfigError("--legacy-ranking cannot run advanced adapter shadow/serve")
     if not args.legacy_ranking:
         for required in (
             coder_model_dir / "model_manifest.json",
@@ -930,16 +979,24 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         ):
             if not required.is_file():
                 raise ConfigError(f"CODER platform artifact is missing: {required}")
-        import sys
         sys.path.insert(0, str(settings.repo_root / "CODER/src"))
         from coder_issue.inference import CoderIssueScorer
         from oss_mentor.services.recommendation_service import RecommendationService
+        if advanced_adapter_mode == "shadow" and not callable(
+            getattr(CoderIssueScorer, "score_paired", None)
+        ):
+            raise ConfigError(
+                "shadow mode requires a CODER scorer with paired profile scoring"
+            )
         recommendation_service = RecommendationService(
             store,
             model_scorer=CoderIssueScorer(
                 coder_model_dir,
                 coder_mapping_dir,
                 candidate_cache=coder_candidate_cache,
+                profile_adapter_dir=(
+                    profile_adapter_dir if advanced_adapter_mode != "off" else None
+                ),
             ),
         )
 
@@ -984,6 +1041,10 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "cors_origin": args.cors_origin,
             "oauth_configured": auth_settings.oauth_configured,
             "ranking_engine": "legacy" if args.legacy_ranking else "coder_issue_repo",
+            "advanced_adapter_mode": advanced_adapter_mode,
+            "profile_adapter_configured": (
+                advanced_adapter_mode != "off" and profile_adapter_dir is not None
+            ),
             "task_refresh_enabled": candidate_service is not None,
         }
     )
@@ -999,6 +1060,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         questionnaire_path=(
             settings.repo_root / "config/midterm_profile/questionnaire_v0.1.json"
         ),
+        advanced_adapter_mode=advanced_adapter_mode,
     )
     return 0
 
@@ -1462,6 +1524,19 @@ def build_parser() -> argparse.ArgumentParser:
     serve_command.add_argument("--coder-model-dir")
     serve_command.add_argument("--coder-mapping-dir")
     serve_command.add_argument("--coder-candidate-cache")
+    serve_command.add_argument(
+        "--profile-adapter-dir",
+        help=(
+            "Optional frozen CODER profile-adapter bundle containing "
+            "adapter_manifest.json and weights.pt."
+        ),
+    )
+    serve_command.add_argument(
+        "--advanced-adapter-mode",
+        choices=("off", "shadow", "serve"),
+        default=os.environ.get("OSS_MENTOR_ADVANCED_ADAPTER_MODE", "off"),
+        help="Advanced profile adapter runtime mode: off, shadow or serve.",
+    )
     serve_command.add_argument(
         "--legacy-ranking", action="store_true",
         help="Explicit compatibility escape hatch; CODER is the default ranking engine.",

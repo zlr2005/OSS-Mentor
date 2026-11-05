@@ -1,86 +1,124 @@
 <!doctype html>
-<!--
-THESIS: 推荐不是任务卡墙，而是一张可审阅的成长路线；拒绝“分数大字 + 同质卡片”的默认排列。
-OWN-WORLD: 延续 OSS-Mentor 的纸张米白、森林绿、陶土橙，以排序清单、证据条和工作台侧栏组织信息。
-STORY: 用户确认当前画像，逐项理解匹配依据与技能差距，然后打开任务或提交反馈。
-FIRST VIEWPORT: 顶栏下方左侧固定画像/批次摘要，右侧直接出现第一条推荐及其完整解释，刷新操作位于标题行。
-FORM: Operate 模式的“推荐审阅台”，自有结构第 4 项，surface seed 9d524f4d；桌面双栏、移动端单列。
--->
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="OSS-Mentor 登录用户的可解释开源任务推荐">
-    <title>我的推荐 · OSS-Mentor</title>
-    <link rel="stylesheet" href="/assets/styles.css">
-    <link rel="stylesheet" href="/assets/recommendations.css">
-    <script src="/assets/recommendations.js" defer></script>
-  </head>
-  <body>
-    <header class="topbar recommendation-topbar">
-      <a class="brand" href="/" aria-label="OSS-Mentor 首页">
-        <span class="brand-mark" aria-hidden="true">OM</span>
-        <span>OSS-Mentor</span>
-      </a>
-      <nav aria-label="主要导航">
-        <a href="/profile">画像</a>
-        <a href="/recommendations" aria-current="page">我的推荐</a>
-      </nav>
-    </header>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>全部推荐 · OSS-Mentor</title>
+<meta name="description" content="OSS-Mentor 个性化推荐：按轨道筛选、查看推荐依据、记录反馈并进入任务详情。">
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/ui.js" defer></script>
+<script src="/assets/recommendations.js" defer></script>
+</head>
+<body data-page="recommendations">
+<a class="skip" href="#main">跳到主要内容</a>
 
-    <main class="recommendation-main">
-      <header class="recommendation-heading">
-        <div>
-          <p class="recommendation-kicker">匹配版本 developer-task-match-v0.3</p>
-          <h1>有依据地选择<span>下一次贡献。</span></h1>
-          <p>仍可领取、符合画像硬约束的任务，按能力覆盖、成长空间与多样性排序。</p>
-        </div>
-        <button class="refresh-button" id="refresh-recommendations" type="button">刷新推荐</button>
-      </header>
+<div class="demo-strip">
+  <div class="wrap">
+    <span class="dot" aria-hidden="true"></span>
+    <p><strong>MVP 预览环境。</strong>推荐来自本地候选池；模型状态与数据版本在推荐说明和系统状态页可追溯。</p>
+  </div>
+</div>
 
-      <div class="recommendation-workbench">
-        <aside class="recommendation-context" aria-labelledby="context-title">
-          <div class="context-heading">
-            <p>当前上下文</p>
-            <span id="context-state">读取中</span>
-          </div>
-          <h2 id="context-title">你的成长画像</h2>
-          <dl id="profile-summary" class="context-list">
-            <div><dt>画像</dt><dd>正在读取…</dd></div>
-            <div><dt>轨道</dt><dd>—</dd></div>
-            <div><dt>推荐数</dt><dd>—</dd></div>
-            <div><dt>批次</dt><dd>—</dd></div>
-          </dl>
-          <p class="context-note">反馈只作用于当前登录用户和当前画像，不会影响其他用户。</p>
-          <a class="profile-link" href="/profile">调整开发者画像 <span aria-hidden="true">→</span></a>
-        </aside>
-
-        <section class="recommendation-results" aria-labelledby="recommendation-title">
-          <div class="results-heading">
-            <div>
-              <p>按适合度排序</p>
-              <h2 id="recommendation-title">推荐清单</h2>
-            </div>
-            <span id="result-status" role="status" aria-live="polite">正在生成推荐…</span>
-          </div>
-
-          <div class="recommendation-message" id="recommendation-message" role="status" hidden>
-            <strong id="message-title"></strong>
-            <p id="message-copy"></p>
-            <a id="message-action" href="/profile" hidden>前往画像页</a>
-          </div>
-
-          <ol class="ranked-list" id="ranked-list" aria-busy="true">
-            <li class="recommendation-loading"><span></span><span></span><span></span></li>
-            <li class="recommendation-loading"><span></span><span></span><span></span></li>
-          </ol>
-        </section>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">OM</span>OSS-Mentor</a>
+    <nav class="nav" aria-label="主导航">
+      <a href="/recommendations" aria-current="page">全部推荐</a>
+      <a href="/recommendation-run">推荐说明</a>
+      <a href="/status">系统状态</a>
+      <a href="/profile">个人信息</a>
+    </nav>
+    <div class="session" id="session-status" aria-label="当前账户与会话操作">
+      <span class="avatar-mono" aria-hidden="true">?</span>
+      <span class="who" role="status" aria-live="polite">正在读取会话<small>本地服务</small></span>
+      <span class="pill pill--neutral" id="session-pill">…</span>
+      <div class="session-actions" id="session-actions" role="group" aria-label="账户操作">
+        <span class="session-action-loading">读取中</span>
       </div>
-    </main>
+    </div>
+  </div>
+</header>
 
-    <footer>
-      <span>OSS-Mentor · 可解释推荐 v0.3</span>
-      <span>分数帮助排序，最终选择由你决定。</span>
-    </footer>
-  </body>
+<main id="main" tabindex="-1">
+  <section class="page-head band" aria-label="推荐概览">
+    <div class="wrap">
+      <p class="head-meta">
+        <span class="mono">推荐数量 <span id="result-count">—</span></span>
+        <span aria-hidden="true">·</span>
+        <span>模型与版本见 <a href="/recommendation-run">推荐说明</a></span>
+      </p>
+    </div>
+  </section>
+
+  <section class="rec-list-section" aria-labelledby="list-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-copy">
+          <p class="eyebrow"><span class="mono">01</span> 推荐列表</p>
+          <h2 id="list-title">本次运行的推荐结果</h2>
+        </div>
+        <p class="note" id="list-note" role="status">正在读取推荐…</p>
+      </div>
+
+      <div id="run-context"></div>
+      <div class="banner" id="recommendation-message" hidden role="status"></div>
+
+      <div class="toolbar" id="list-toolbar" hidden>
+        <div class="seg" role="group" aria-label="按推荐轨道筛选">
+          <button class="seg-btn" type="button" data-track="all" aria-pressed="true">全部 <span class="mono" id="track-count-all">0</span></button>
+          <button class="seg-btn" type="button" data-track="newcomer" aria-pressed="false">新手 <span class="mono" id="track-count-newcomer">0</span></button>
+          <button class="seg-btn" type="button" data-track="growth" aria-pressed="false">进阶 <span class="mono" id="track-count-growth">0</span></button>
+        </div>
+        <label class="search-field">
+          <span class="sr-only">搜索仓库或标题</span>
+          <input type="search" id="recommendation-search" placeholder="搜索仓库或标题" autocomplete="off">
+        </label>
+        <div class="spacer"></div>
+        <button class="btn btn--sm btn--quiet" type="button" id="toggle-reasons" aria-pressed="false">展开全部推荐依据</button>
+      </div>
+
+      <div class="issue-list" id="issue-list" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="public-candidates" aria-labelledby="pub-title" hidden>
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-copy">
+          <p class="eyebrow"><span class="mono">02</span> 公共候选</p>
+          <h2 id="pub-title">未登录也能浏览的公开候选</h2>
+        </div>
+      </div>
+      <div class="public-head">
+        <span class="badge">公共候选</span>
+        <p><strong>公共候选，不是根据你的画像生成的。</strong><span>它们当前开放、可用性待复核，没有匹配分、没有轨道判定，也不包含个性化依据；登录并完成画像后才能查看个性化推荐。</span></p>
+      </div>
+      <div class="public-grid" id="public-grid"></div>
+    </div>
+  </section>
+
+  <section id="project-opportunities" aria-labelledby="proj-title" hidden>
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-copy">
+          <p class="eyebrow"><span class="mono">03</span> 项目机会</p>
+          <h2 id="proj-title">进阶轨道的项目参与建议</h2>
+          <p class="lead">项目参与建议不承诺加入协作者，也不代表维护者已经邀请你参与。</p>
+        </div>
+      </div>
+      <div class="project-note" id="project-note">项目推荐模型尚未接入；以下卡片使用本次 Issue 批次聚合，并在卡片上标注聚合来源。</div>
+      <div class="proj-grid" id="proj-grid"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bottom" style="margin-top:0;border-top:0;padding-top:0">
+      <span>OSS-Mentor · 全部推荐</span>
+      <span>反馈只作用于当前画像 · 不自动领取 Issue</span>
+    </div>
+  </div>
+</footer>
+</body>
 </html>
