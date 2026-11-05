@@ -11,6 +11,7 @@ from coder_issue.training.advanced_protected_finetune import (
     _epoch_replay_rows,
     _low_coverage_weight,
     _parameter_anchor,
+    _passes_recall_guard,
 )
 
 
@@ -85,3 +86,27 @@ def test_parameter_anchor_is_zero_at_teacher_and_positive_after_update() -> None
 def test_low_coverage_multiplier_rejects_downweighting() -> None:
     with pytest.raises(ValueError, match="at least 1"):
         _low_coverage_weight([replace(_pair("row"), weight=1.0)], multiplier=0.5)
+
+
+def test_recall_guard_accepts_only_metrics_within_allowed_drop() -> None:
+    assert _passes_recall_guard(
+        {"recall@5": 0.321},
+        baseline_recall_at_5=0.326,
+        max_recall_at_5_drop=0.005,
+    )
+    assert not _passes_recall_guard(
+        {"recall@5": 0.3209},
+        baseline_recall_at_5=0.326,
+        max_recall_at_5_drop=0.005,
+    )
+    assert _passes_recall_guard(
+        {"recall@5": 0.0},
+        baseline_recall_at_5=0.326,
+        max_recall_at_5_drop=None,
+    )
+    with pytest.raises(ValueError, match="non-negative"):
+        _passes_recall_guard(
+            {"recall@5": 0.326},
+            baseline_recall_at_5=0.326,
+            max_recall_at_5_drop=-0.001,
+        )

@@ -112,6 +112,19 @@ def _margin(
     return (user * positive).sum(dim=-1) - (user * comparison).sum(dim=-1)
 
 
+def _passes_recall_guard(
+    metrics: Mapping[str, Any],
+    *,
+    baseline_recall_at_5: float,
+    max_recall_at_5_drop: float | None,
+) -> bool:
+    if max_recall_at_5_drop is None:
+        return True
+    if max_recall_at_5_drop < 0:
+        raise ValueError("max Recall@5 drop must be non-negative")
+    return float(metrics["recall@5"]) >= baseline_recall_at_5 - max_recall_at_5_drop
+
+
 def train_protected_adapter(
     *,
     base_train: Sequence[TrainingPair],
@@ -125,6 +138,7 @@ def train_protected_adapter(
     margin_anchor_weight: float,
     parameter_anchor_weight: float,
     low_coverage_multiplier: float,
+    max_recall_at_5_drop: float | None,
     device: str | torch.device,
     evaluate_test: bool = False,
 ) -> tuple[ProfileResidualAdapter, dict[str, Any], dict[str, list[TrainingPair]]]:
@@ -169,6 +183,7 @@ def train_protected_adapter(
         device=target_device,
     )
     best_validation_mrr = float(initial_validation["mrr"])
+    baseline_recall_at_5 = float(initial_validation["recall@5"])
     best_state = {
         key: value.detach().cpu().clone() for key, value in student.state_dict().items()
     }
@@ -263,7 +278,13 @@ def train_protected_adapter(
             }
         )
         validation_mrr = float(validation_metrics["mrr"])
-        if validation_mrr > best_validation_mrr:
+        recall_guard_passed = _passes_recall_guard(
+            validation_metrics,
+            baseline_recall_at_5=baseline_recall_at_5,
+            max_recall_at_5_drop=max_recall_at_5_drop,
+        )
+        history[-1]["recall_at_5_guard_passed"] = recall_guard_passed
+        if recall_guard_passed and validation_mrr > best_validation_mrr:
             best_validation_mrr = validation_mrr
             best_state = {
                 key: value.detach().cpu().clone()
@@ -320,6 +341,8 @@ def train_protected_adapter(
             "base_weighting": base_weighting,
             "supplement_weighting": supplement_weighting,
             "low_coverage_multiplier": low_coverage_multiplier,
+            "max_recall_at_5_drop": max_recall_at_5_drop,
+            "baseline_recall_at_5": baseline_recall_at_5,
         },
         "protection": {
             "warm_started_from_teacher": True,
@@ -339,9 +362,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         seed=args.seed,
         adapter_version=f"advanced-adapter-protected-{args.experiment}-s{args.seed}",
         learning_rate=args.learning_rate,
+        hard_negative_weight=(
+            args.hard_negative_weight
+            if args.hard_negative_weight is not None
+            else config.hard_negative_weight
+        ),
         epochs=args.epochs,
         patience=args.patience,
     )
+    config.validate()
     base_frozen = load_frozen_inputs(Path(args.model_dir), Path(args.base_issue_cache))
     supplement_cache = Path(args.supplement_issue_cache)
     frozen = _merge_frozen(base_frozen, supplement_cache)
@@ -420,6 +449,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         margin_anchor_weight=args.margin_anchor_weight,
         parameter_anchor_weight=args.parameter_anchor_weight,
         low_coverage_multiplier=args.low_coverage_multiplier,
+        max_recall_at_5_drop=args.max_recall_at_5_drop,
         device=args.device,
         evaluate_test=args.evaluate_test,
     )
@@ -459,6 +489,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "margin_anchor_weight": args.margin_anchor_weight,
                 "parameter_anchor_weight": args.parameter_anchor_weight,
                 "low_coverage_multiplier": args.low_coverage_multiplier,
+                "max_recall_at_5_drop": args.max_recall_at_5_drop,
             },
             "training_inputs": {
                 "base_profiles_sha256": _sha256(Path(args.base_profiles)),
@@ -517,7 +548,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--margin-anchor-weight", type=float, default=0.0)
     parser.add_argument("--parameter-anchor-weight", type=float, default=0.0)
     parser.add_argument("--low-coverage-multiplier", type=float, default=1.5)
+    parser.add_argument("--max-recall-at-5-drop", type=float)
     parser.add_argument("--learning-rate", type=float, default=0.0002)
+    parser.add_argument("--hard-negative-weight", type=float)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--device", default="cpu")
