@@ -1,5 +1,8 @@
 # Advanced Adapter v1 正式离线评估
 
+> 历史结果：本文记录优化前 Adapter v1。当前批准进入 shadow 的正式产物是 RC1
+> `advanced-adapter-v1-round2-optimized`；见 `docs/advanced-adapter-rc1-d-handoff.md`。
+
 ## 结论
 
 `advanced-adapter-v1` 已通过冻结测试集上的成对离线评估，可以进入 **shadow**，但当前证据

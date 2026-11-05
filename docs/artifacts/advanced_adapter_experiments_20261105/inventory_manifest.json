@@ -1,0 +1,17 @@
+{
+  "artifacts": {
+    "README.md": "4ac8fd755f6de9debc8dd0a87efd8227a173a765c75c01266089f274b3a6da8e",
+    "metrics_long.csv": "524a2ffdff0fe0cc9094142f596decf79290f431f8effcb32ba37bd1d4a3f5d9",
+    "runs.csv": "16e1083cc522db5bbe1f11138d09451c51cfaed00110bf2c45896c5ca15b0b1c"
+  },
+  "generated_at": "2026-11-05",
+  "local_training_records": 41,
+  "metric_records": 38301,
+  "models_root": "data/models",
+  "optimization_records": 25,
+  "optimization_report": "data/models/advanced_adapter_optimization_v1/optimization_report.json",
+  "rc1_weights_sha256": "6112db508fd1f14876c272624a5e8d4d711d0d32a694fb02d3267f5f04091b78",
+  "run_records": 70,
+  "schema_version": "advanced-adapter-experiment-inventory-v0.1",
+  "test_evaluation_records": 4
+}

@@ -1,5 +1,9 @@
 # Advanced Adapter v1 → D Shadow 接入说明
 
+> 历史说明：本文对应优化前的 Adapter v1，已被 RC1 交接替代。D 不应再按本文选择产物；
+> 请使用 `docs/advanced-adapter-rc1-d-handoff.md` 和
+> `CODER/artifacts/advanced_adapter_rc1/`。
+
 ## 接入状态
 
 C 已冻结并验证 `advanced-adapter-v1`。该 bundle **只批准用于 shadow**，尚未批准用于 serve。
