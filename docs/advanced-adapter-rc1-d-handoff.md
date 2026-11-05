@@ -26,9 +26,9 @@ data/midterm/platform/coder-full-search8-v1/candidates.npz
 `CODER/artifacts/advanced_adapter_rc1/release_manifest.json`。启动时必须完整校验，缺失、版本
 不一致、哈希不一致或维度不一致一律 fail-closed。
 
-## D 接线参数
+## D 已有接线参数
 
-建议 D 在 `serve-api` 增加或落实以下显式配置：
+最新 main 已提供以下显式配置，本 PR 不重复修改 D 的 runtime mode 实现：
 
 ```text
 --advanced-adapter-mode off|shadow|serve
@@ -37,9 +37,22 @@ data/midterm/platform/coder-full-search8-v1/candidates.npz
 
 - 默认 `off`；
 - 本次只批准 `shadow`；
-- `serve` 必须拒绝启动或保持不可选，直到后续线上门禁批准；
+- 虽然平台实现支持 `serve`，但 RC1 发布策略尚未批准它；部署配置必须保持 `shadow`；
 - `shadow` 中用户仍看到 `coder_original`，后台同时记录 `coder_profile`；
 - 不允许因为 Adapter 路径存在就自动启用。
+
+推荐启动命令：
+
+```powershell
+$env:PYTHONPATH = 'CODER/src'
+& '.\CODER\.venv\Scripts\python.exe' '.\CODER\scripts\verify_advanced_adapter_rc1.py'
+& '.\CODER\.venv\Scripts\python.exe' -m oss_mentor serve-api `
+  --coder-model-dir '.\data\models\gfibot-m0-v1.1\coder\coder-full-search8-v1' `
+  --coder-mapping-dir '.\data\midterm\normalized\gfibot-m0-v1.1\mappings' `
+  --coder-candidate-cache '.\data\midterm\platform\coder-full-search8-v1\candidates.npz' `
+  --profile-adapter-dir '.\CODER\artifacts\advanced_adapter_rc1' `
+  --advanced-adapter-mode shadow
+```
 
 ## 画像输入
 
