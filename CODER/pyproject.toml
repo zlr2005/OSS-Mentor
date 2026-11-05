@@ -36,6 +36,7 @@ coder-evaluate-advanced-adapter = "coder_issue.training.advanced_profile_evaluat
 coder-optimize-advanced-adapter = "coder_issue.training.advanced_profile_experiments:main"
 coder-prepare-adapter-supplement = "coder_issue.training.advanced_profile_supplement:main"
 coder-train-adapter-supplement = "coder_issue.training.advanced_supplement_experiment:main"
+coder-build-supplement-negatives = "coder_issue.training.advanced_supplement_negatives:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import hashlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import torch
-
 from coder_issue.models.profile import PROFILE_FEATURE_NAMES
 from coder_issue.training.advanced_issue_inputs import _content_sha256
+from coder_issue.training.advanced_profile_data import TrainingPair
 from coder_issue.training.advanced_profile_pipeline import (
     AdvancedTrainingConfig,
     FrozenInputs,
@@ -16,7 +16,9 @@ from coder_issue.training.advanced_profile_pipeline import (
 from coder_issue.training.advanced_profile_supplement import _candidate_row
 from coder_issue.training.advanced_supplement_experiment import (
     build_supplement_pairs,
+    reweight_training_pairs,
 )
+from coder_issue.training.advanced_supplement_negatives import _stable_order, _take
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
@@ -42,8 +44,8 @@ def _config() -> AdvancedTrainingConfig:
         negative_samples_per_positive=20,
         outcome_weights={"verified_closing_pr": 1.0},
         accepted_verification_statuses=("verified",),
-        train_end=datetime(2025, 12, 31, 23, 59, 59, tzinfo=timezone.utc),
-        validation_end=datetime(2026, 6, 30, 23, 59, 59, tzinfo=timezone.utc),
+        train_end=datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC),
+        validation_end=datetime(2026, 6, 30, 23, 59, 59, tzinfo=UTC),
         epochs=2,
         batch_size=2,
         learning_rate=0.001,
@@ -189,3 +191,73 @@ def test_supplement_pairs_are_training_only_and_use_versioned_embeddings(
     assert pairs[0].comparison_issue_key == comparison_key
     assert report["eligible_outcomes"] == 1
     assert report["pairs"] == 1
+
+
+def test_outcome_equal_weighting_and_pair_cap() -> None:
+    template = {
+        "developer_key": "developer",
+        "profile_key": "profile",
+        "profile_version": "profile-version",
+        "profile_hash": "a" * 64,
+        "profile_as_of": datetime(2025, 1, 1, tzinfo=UTC),
+        "outcome_at": datetime(2025, 1, 2, tzinfo=UTC),
+        "outcome_type": "verified_closing_pr",
+        "positive_issue_key": "org/repo#1",
+        "weight": 1.0,
+        "values": torch.zeros(len(PROFILE_FEATURE_NAMES)),
+        "observed_mask": torch.zeros(len(PROFILE_FEATURE_NAMES), dtype=torch.bool),
+    }
+    rows = [
+        TrainingPair(
+            pair_id=f"pair-{index}",
+            outcome_id="many-controls",
+            comparison_issue_key=f"org/repo#{index + 2}",
+            **template,
+        )
+        for index in range(4)
+    ] + [
+        TrainingPair(
+            pair_id="pair-single",
+            outcome_id="single-control",
+            comparison_issue_key="org/repo#9",
+            **template,
+        )
+    ]
+
+    equal, equal_report = reweight_training_pairs(rows, mode="outcome_equal")
+    totals = {
+        outcome_id: sum(row.weight for row in equal if row.outcome_id == outcome_id)
+        for outcome_id in {row.outcome_id for row in equal}
+    }
+    assert totals == {"many-controls": 1.0, "single-control": 1.0}
+    assert equal_report["outcome_total_weight_min"] == 1.0
+    capped, capped_report = reweight_training_pairs(
+        rows, mode="outcome_equal", maximum_pair_weight=0.25
+    )
+    assert (
+        sum(row.weight for row in capped if row.outcome_id == "single-control") == 0.25
+    )
+    assert capped_report["capped_pairs"] == 1
+
+
+def test_stratified_selection_is_seeded_and_does_not_reuse_candidates() -> None:
+    rows = [{"candidate_key": f"candidate-{index}"} for index in range(6)]
+    ordered_once = sorted(
+        rows,
+        key=lambda row: _stable_order(7, "outcome", str(row["candidate_key"])),
+    )
+    ordered_twice = sorted(
+        [rows[2], rows[5], rows[0], rows[4], rows[1], rows[3]],
+        key=lambda row: _stable_order(7, "outcome", str(row["candidate_key"])),
+    )
+    assert ordered_once == ordered_twice
+    assert ordered_once != sorted(
+        rows,
+        key=lambda row: _stable_order(8, "outcome", str(row["candidate_key"])),
+    )
+
+    selected = {str(ordered_once[0]["candidate_key"])}
+    chosen = _take(ordered_once, count=3, selected=selected)
+    assert len(chosen) == 3
+    assert len(selected) == 4
+    assert ordered_once[0] not in chosen

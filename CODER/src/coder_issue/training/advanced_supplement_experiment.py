@@ -9,13 +9,14 @@ evidence rather than to a changed evaluation candidate set.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
-from dataclasses import asdict, replace
-from datetime import timedelta
 import hashlib
 import json
+from collections import Counter, defaultdict
+from collections.abc import Sequence
+from dataclasses import asdict, replace
+from datetime import timedelta
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import numpy as np
 import torch
@@ -28,6 +29,7 @@ from coder_issue.training.advanced_profile_data import (
     load_temporal_profiles,
     parse_timestamp,
 )
+from coder_issue.training.advanced_profile_experiments import _validation_summary
 from coder_issue.training.advanced_profile_pipeline import (
     AdvancedTrainingConfig,
     FrozenInputs,
@@ -48,7 +50,7 @@ def _rows(path: Path) -> list[dict[str, Any]]:
                 continue
             value = json.loads(line)
             if not isinstance(value, dict):
-                raise ValueError(f"{path}:{line_number}: row must be an object")
+                raise TypeError(f"{path}:{line_number}: row must be an object")
             result.append(value)
     return result
 
@@ -102,6 +104,9 @@ def build_supplement_pairs(
     frozen: FrozenInputs,
     config: AdvancedTrainingConfig,
     cutoff_policy: str = "all",
+    cutoff_policy_weights: dict[str, float] | None = None,
+    pair_plan_path: Path | None = None,
+    candidates_path: Path | None = None,
 ) -> tuple[list[TrainingPair], list[DataFailure], dict[str, Any]]:
     adapter_config = ProfileAdapterConfig(
         embedding_dim=int(frozen.base_user.shape[0]),
@@ -117,15 +122,18 @@ def build_supplement_pairs(
     outcome_by_id = {row.outcome_id: row for row in outcomes}
     candidate_rows = {
         str(row["candidate_key"]): row
-        for row in _rows(supplement_dir / "candidate_snapshots.jsonl")
+        for row in _rows(
+            candidates_path or supplement_dir / "candidate_snapshots.jsonl"
+        )
     }
     failures: list[DataFailure] = [*profile_failures, *outcome_failures]
     pairs: list[TrainingPair] = []
     policies: Counter[str] = Counter()
     outcome_ids: set[str] = set()
     developer_keys: set[str] = set()
+    policy_weights = cutoff_policy_weights or {}
 
-    for plan in _rows(supplement_dir / "pair_plan.jsonl"):
+    for plan in _rows(pair_plan_path or supplement_dir / "pair_plan.jsonl"):
         if cutoff_policy != "all" and plan.get("cutoff_policy") != cutoff_policy:
             continue
         outcome_id = str(plan.get("outcome_id") or "unknown")
@@ -196,7 +204,7 @@ def build_supplement_pairs(
                     (
                         f"{outcome_id}\0{profile.profile_hash}\0{positive_key}"
                         f"\0{comparison_key}"
-                    ).encode("utf-8")
+                    ).encode()
                 ).hexdigest()
                 plan_pairs.append(
                     TrainingPair(
@@ -213,7 +221,11 @@ def build_supplement_pairs(
                         # loop. Logical Issue keys remain in pair_plan.jsonl.
                         positive_issue_key=positive_key,
                         comparison_issue_key=comparison_key,
-                        weight=float(config.outcome_weights[outcome.outcome_type]),
+                        weight=(
+                            float(config.outcome_weights[outcome.outcome_type])
+                            * float(policy_weights.get(str(plan["cutoff_policy"]), 1.0))
+                            * float(comparison.get("weight_multiplier", 1.0))
+                        ),
                         values=profile.tensors.values.detach().clone(),
                         observed_mask=profile.tensors.observed_mask.detach().clone(),
                     )
@@ -246,9 +258,58 @@ def build_supplement_pairs(
     return pairs, failures, report
 
 
+def reweight_training_pairs(
+    rows: Sequence[TrainingPair],
+    *,
+    mode: str,
+    maximum_pair_weight: float | None = None,
+) -> tuple[list[TrainingPair], dict[str, Any]]:
+    """Apply an outcome-level loss budget without changing sampled pairs."""
+    if mode not in {"pair", "outcome_equal"}:
+        raise ValueError(f"unsupported outcome weighting mode: {mode}")
+    if maximum_pair_weight is not None and maximum_pair_weight <= 0:
+        raise ValueError("maximum_pair_weight must be positive")
+    groups: dict[str, list[TrainingPair]] = defaultdict(list)
+    for row in rows:
+        groups[row.outcome_id].append(row)
+    output: list[TrainingPair] = []
+    capped_pairs = 0
+    totals: list[float] = []
+    for group in groups.values():
+        divisor = len(group) if mode == "outcome_equal" else 1
+        total = 0.0
+        for row in group:
+            weight = row.weight / divisor
+            if maximum_pair_weight is not None and weight > maximum_pair_weight:
+                weight = maximum_pair_weight
+                capped_pairs += 1
+            output.append(replace(row, weight=weight))
+            total += weight
+        totals.append(total)
+    output.sort(
+        key=lambda row: (row.outcome_at, row.outcome_id, row.comparison_issue_key)
+    )
+    return output, {
+        "mode": mode,
+        "maximum_pair_weight": maximum_pair_weight,
+        "outcomes": len(groups),
+        "pairs": len(output),
+        "capped_pairs": capped_pairs,
+        "outcome_total_weight_min": min(totals),
+        "outcome_total_weight_mean": sum(totals) / len(totals),
+        "outcome_total_weight_max": max(totals),
+    }
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     config_path = Path(args.config)
     config = AdvancedTrainingConfig.from_path(config_path)
+    if args.seed is not None:
+        config = replace(
+            config,
+            seed=args.seed,
+            adapter_version=f"{config.adapter_version}-s{args.seed}",
+        )
     if args.supplement_cutoff_policy != "all":
         config = replace(
             config,
@@ -258,9 +319,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     base_frozen = load_frozen_inputs(Path(args.model_dir), Path(args.base_issue_cache))
     supplement_dir = Path(args.supplement_dir)
-    frozen = _merge_frozen(
-        base_frozen, supplement_dir / "supplement_issue_embeddings.npz"
+    supplement_cache = (
+        Path(args.supplement_issue_cache)
+        if args.supplement_issue_cache
+        else supplement_dir / "supplement_issue_embeddings.npz"
     )
+    frozen = _merge_frozen(base_frozen, supplement_cache)
     base_splits, base_failures, base_report = prepare_training_data(
         profiles_path=Path(args.base_profiles),
         outcomes_path=Path(args.base_outcomes),
@@ -273,13 +337,28 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         frozen=frozen,
         config=config,
         cutoff_policy=args.supplement_cutoff_policy,
+        cutoff_policy_weights={
+            "calendar_quarter": args.calendar_quarter_weight,
+            "pre_interaction_minus_1s": args.pre_interaction_weight,
+        },
+        pair_plan_path=(
+            Path(args.supplement_pair_plan) if args.supplement_pair_plan else None
+        ),
+        candidates_path=(
+            Path(args.supplement_candidates) if args.supplement_candidates else None
+        ),
     )
     if supplement_failures:
         raise RuntimeError(
             f"supplement audit failed with {len(supplement_failures)} failures"
         )
+    train_rows, weighting_report = reweight_training_pairs(
+        [*base_splits["train"], *supplement_pairs],
+        mode=args.outcome_weighting,
+        maximum_pair_weight=args.maximum_pair_weight,
+    )
     splits = {
-        "train": [*base_splits["train"], *supplement_pairs],
+        "train": train_rows,
         "validation": list(base_splits["validation"]),
         "test": list(base_splits["test"]),
     }
@@ -287,6 +366,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "schema_version": "advanced-adapter-supplement-audit-v0.1",
         "base": base_report,
         "supplement": supplement_report,
+        "weighting": weighting_report,
         "combined": {
             "split_pairs": {name: len(rows) for name, rows in splits.items()},
             "split_outcomes": {
@@ -315,8 +395,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if args.mode == "audit":
         return report
 
-    adapter, metrics = train_adapter(splits, frozen, config, device=args.device)
+    adapter, metrics = train_adapter(
+        splits,
+        frozen,
+        config,
+        device=args.device,
+        evaluate_test=args.evaluate_test,
+    )
     _write_json(output_dir / "training_metrics.json", metrics)
+    validation = _validation_summary(adapter, splits, frozen)
+    _write_json(output_dir / "validation_selection.json", validation)
     split_manifest = {
         "schema_version": "advanced-adapter-split-v0.1",
         "protocol": "rc1_validation_test_frozen_supplement_train_only",
@@ -338,6 +426,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "base_model_manifest_sha256": frozen.model_manifest_sha256,
             "experiment_protocol": "rc1_validation_test_frozen_supplement_train_only",
             "supplement_cutoff_policy": args.supplement_cutoff_policy,
+            "outcome_weighting": args.outcome_weighting,
+            "maximum_pair_weight": args.maximum_pair_weight,
+            "calendar_quarter_weight": args.calendar_quarter_weight,
+            "pre_interaction_weight": args.pre_interaction_weight,
+            "test_evaluated_during_training": args.evaluate_test,
             "training_config_sha256": _sha256(config_path),
             "training_inputs": {
                 "base_profiles_sha256": _sha256(Path(args.base_profiles)),
@@ -345,8 +438,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "base_candidates_sha256": _sha256(Path(args.base_candidates)),
                 "base_issue_cache_sha256": _sha256(Path(args.base_issue_cache)),
                 "supplement_manifest_sha256": _sha256(supplement_manifest),
-                "supplement_issue_cache_sha256": _sha256(
-                    supplement_dir / "supplement_issue_embeddings.npz"
+                "supplement_issue_cache_sha256": _sha256(supplement_cache),
+                "supplement_pair_plan_sha256": _sha256(
+                    Path(args.supplement_pair_plan)
+                    if args.supplement_pair_plan
+                    else supplement_dir / "pair_plan.jsonl"
+                ),
+                "supplement_candidates_sha256": _sha256(
+                    Path(args.supplement_candidates)
+                    if args.supplement_candidates
+                    else supplement_dir / "candidate_snapshots.jsonl"
                 ),
             },
             "random_seed": config.seed,
@@ -354,6 +455,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "observation_window_days": config.observation_window_days,
             "split_manifest_sha256": _sha256(output_dir / "split_manifest.json"),
             "training_metrics_sha256": _sha256(output_dir / "training_metrics.json"),
+            "validation_selection_sha256": _sha256(
+                output_dir / "validation_selection.json"
+            ),
             "audit_report_sha256": _sha256(output_dir / "audit_report.json"),
             "failures_sha256": _sha256(output_dir / "failures.jsonl"),
             "training_config": {
@@ -375,9 +479,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-candidates", required=True)
     parser.add_argument("--base-issue-cache", required=True)
     parser.add_argument("--supplement-dir", required=True)
+    parser.add_argument("--supplement-pair-plan")
+    parser.add_argument("--supplement-candidates")
+    parser.add_argument("--supplement-issue-cache")
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--seed", type=int)
+    parser.add_argument(
+        "--outcome-weighting",
+        choices=("pair", "outcome_equal"),
+        default="pair",
+    )
+    parser.add_argument("--maximum-pair-weight", type=float)
+    parser.add_argument("--calendar-quarter-weight", type=float, default=1.0)
+    parser.add_argument("--pre-interaction-weight", type=float, default=1.0)
+    parser.add_argument(
+        "--evaluate-test",
+        action="store_true",
+        help="Evaluate test only after a configuration has been selected on validation.",
+    )
     parser.add_argument(
         "--supplement-cutoff-policy",
         choices=("all", "calendar_quarter", "pre_interaction_minus_1s"),
@@ -388,6 +509,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.calendar_quarter_weight <= 0 or args.pre_interaction_weight <= 0:
+        raise ValueError("cutoff policy weights must be positive")
     print(json.dumps(run(args), ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
