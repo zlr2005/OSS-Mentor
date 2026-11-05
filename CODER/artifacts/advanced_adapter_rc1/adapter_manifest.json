@@ -1,0 +1,51 @@
+{
+  "adapter_version": "advanced-adapter-v1-round2-optimized",
+  "base_model_manifest_sha256": "62974d6a16e1c3dd00fb9b4179fc6cca68f81de7739351cafd65bedb953b3f48",
+  "base_model_version": "coder-full-search8-v1",
+  "base_user_mode": "population_mean",
+  "config": {
+    "embedding_dim": 32,
+    "feature_names": [
+      "capability.change_scope",
+      "capability.code_change",
+      "capability.debugging",
+      "capability.documentation",
+      "capability.documentation_structure",
+      "capability.documentation_validation",
+      "capability.open_source_experience",
+      "capability.reproduction",
+      "capability.test_design",
+      "capability.testing",
+      "constraint.os.linux",
+      "constraint.os.macos",
+      "constraint.os.windows",
+      "constraint.weekly_time",
+      "current_interest.task.documentation",
+      "current_interest.task.implementation",
+      "current_interest.task.quality",
+      "preference.language.go",
+      "preference.language.java",
+      "preference.language.javascript",
+      "preference.language.python",
+      "preference.language.rust",
+      "preference.language.typescript"
+    ],
+    "feature_schema_version": "enhanced-profile-features-v0.1",
+    "gate_mode": "none",
+    "hidden_dim": 32,
+    "residual_scale": 0.75
+  },
+  "experiment_config_sha256": "69f1aaa744abb84fbe6413857cb0a870a1938fe0221589d13d327ab1014f0664",
+  "optimization_round": "round2",
+  "schema_version": "coder-profile-adapter-v0.1",
+  "selection_split": "validation",
+  "service_track": "growth",
+  "training_inputs": {
+    "candidates_sha256": "712f15a6b9585c536a6fab6d0f32ed2809e03421818c8a232446eec64b2e317c",
+    "issue_cache_sha256": "6cb0b8d3a178f8ff6bd90fb2495c0b10d9cc1f0b3dda7b78d122f468bfc585c8",
+    "outcomes_sha256": "be5b641db8d5d78757709cf2d54f93e735de7c0d45fe4563e7697c80ac815c21",
+    "profiles_sha256": "4a5ada3267e6f3d1af71d993cac1fef6a0f3ad13b07087aebf524c380fa84fec"
+  },
+  "validation_selection_sha256": "730592aa603791446bf6f9924f4f432fbe8f8537fcb66af8adac18286cc023fd",
+  "weights_sha256": "6112db508fd1f14876c272624a5e8d4d711d0d32a694fb02d3267f5f04091b78"
+}

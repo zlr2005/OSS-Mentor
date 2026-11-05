@@ -81,6 +81,20 @@ def _adapter(root: Path) -> Path:
     return path
 
 
+def _population_adapter(root: Path) -> Path:
+    path = root / "population-adapter"
+    adapter = ProfileResidualAdapter(ProfileAdapterConfig(embedding_dim=2, hidden_dim=2))
+    adapter.save_bundle(
+        path,
+        base_model_version="m1",
+        metadata={
+            "adapter_version": "advanced-adapter-v1",
+            "base_user_mode": "population_mean",
+        },
+    )
+    return path
+
+
 def test_known_and_cached_candidates_are_scored_with_provenance() -> None:
     with tempfile.TemporaryDirectory() as directory:
         model, mapping, cache = _bundle(Path(directory))
@@ -189,3 +203,25 @@ def test_profile_and_authenticated_developer_keys_must_match() -> None:
             assert "conflicts" in str(exc)
         else:
             raise AssertionError("conflicting developer identities must fail closed")
+
+
+def test_advanced_v1_uses_population_mean_even_for_mapped_developer() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        model, mapping, cache = _bundle(root)
+        scorer = CoderIssueScorer(
+            model,
+            mapping,
+            candidate_cache=cache,
+            profile_adapter_dir=_population_adapter(root),
+        )
+        result = scorer.score(
+            profile=_profile(developer_key="alice"),
+            developer_key="alice",
+            candidates=[
+                {"task_candidate_id": 1, "repository": "known/repo", "issue_number": 1},
+                {"task_candidate_id": 2, "repository": "new/repo", "issue_number": 2},
+            ],
+        )
+    assert result.profile_mode == "population_mean_profile"
+    assert "coder_unknown_developer_population_fallback" not in result.warnings

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -13,6 +14,7 @@ from torch import Tensor, nn
 
 
 PROFILE_EXPORT_SCHEMA_VERSION = "enhanced-profile-export-v0.1"
+PROFILE_TRAINING_SCHEMA_VERSION = "enhanced-profile-training-export-v0.1"
 PROFILE_FEATURE_SCHEMA_VERSION = "enhanced-profile-features-v0.1"
 PROFILE_FEATURE_NAMES = (
     "capability.change_scope",
@@ -51,14 +53,19 @@ class ProfileAdapterConfig:
     embedding_dim: int = 32
     hidden_dim: int = 32
     residual_scale: float = 1.0
+    gate_mode: str = "none"
 
     def __post_init__(self) -> None:
-        if not self.feature_names or len(set(self.feature_names)) != len(self.feature_names):
+        if not self.feature_names or len(set(self.feature_names)) != len(
+            self.feature_names
+        ):
             raise ValueError("feature_names must be non-empty and unique")
         if self.embedding_dim <= 0 or self.hidden_dim <= 0:
             raise ValueError("adapter dimensions must be positive")
         if self.residual_scale < 0:
             raise ValueError("residual_scale must be non-negative")
+        if self.gate_mode not in {"none", "coverage"}:
+            raise ValueError("gate_mode must be none or coverage")
 
 
 @dataclass(frozen=True)
@@ -70,28 +77,38 @@ class ProfileTensors:
     developer_key: str | None
 
 
-def _require_sequence(snapshot: Mapping[str, Any], field: str, length: int) -> Sequence[Any]:
+def _require_sequence(
+    snapshot: Mapping[str, Any], field: str, length: int
+) -> Sequence[Any]:
     value = snapshot.get(field)
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence) or len(value) != length:
+    if (
+        isinstance(value, (str, bytes))
+        or not isinstance(value, Sequence)
+        or len(value) != length
+    ):
         raise ValueError(f"{field} must contain exactly {length} entries")
     return value
 
 
-def tensorize_confirmed_profile(
+def _tensorize_profile(
     snapshot: Mapping[str, Any],
     *,
     config: ProfileAdapterConfig,
+    expected_schema_version: str,
+    expected_profile_state: str,
     device: str | torch.device = "cpu",
 ) -> ProfileTensors:
-    """Validate B's confirmed snapshot and return only model-consumed tensors."""
+    """Validate one profile snapshot and return only model-consumed tensors."""
 
-    if snapshot.get("schema_version") != PROFILE_EXPORT_SCHEMA_VERSION:
+    if snapshot.get("schema_version") != expected_schema_version:
         raise ValueError("unsupported enhanced profile export schema_version")
-    if snapshot.get("profile_state") != "confirmed":
-        raise ValueError("only confirmed profile snapshots can be scored")
+    if snapshot.get("profile_state") != expected_profile_state:
+        raise ValueError(f"profile_state must be {expected_profile_state}")
     if snapshot.get("feature_schema_version") != config.feature_schema_version:
         raise ValueError("profile feature_schema_version does not match adapter")
-    names = tuple(_require_sequence(snapshot, "feature_names", len(config.feature_names)))
+    names = tuple(
+        _require_sequence(snapshot, "feature_names", len(config.feature_names))
+    )
     if names != config.feature_names:
         raise ValueError("profile feature_names or their order do not match adapter")
 
@@ -111,7 +128,10 @@ def tensorize_confirmed_profile(
     if any(not isinstance(value, bool) for value in raw_locked):
         raise ValueError("locked_mask entries must be boolean")
 
-    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in raw_values):
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        for value in raw_values
+    ):
         raise ValueError("profile values must be JSON numbers")
     values = torch.as_tensor(raw_values, dtype=torch.float32, device=device)
     observed = torch.as_tensor(raw_observed, dtype=torch.bool, device=device)
@@ -128,9 +148,13 @@ def tensorize_confirmed_profile(
     expected_interests = {
         name
         for index, name in enumerate(names)
-        if name in INTEREST_FEATURES and raw_observed[index] and float(raw_values[index]) > 0.0
+        if name in INTEREST_FEATURES
+        and raw_observed[index]
+        and float(raw_values[index]) > 0.0
     }
-    if any(not isinstance(item, str) for item in interests) or len(interests) != len(set(interests)):
+    if any(not isinstance(item, str) for item in interests) or len(interests) != len(
+        set(interests)
+    ):
         raise ValueError("current_interests must contain unique strings")
     if set(interests) != expected_interests:
         raise ValueError("current_interests do not match the ordered feature arrays")
@@ -169,6 +193,40 @@ def tensorize_confirmed_profile(
     )
 
 
+def tensorize_confirmed_profile(
+    snapshot: Mapping[str, Any],
+    *,
+    config: ProfileAdapterConfig,
+    device: str | torch.device = "cpu",
+) -> ProfileTensors:
+    """Validate B's user-confirmed online snapshot."""
+
+    return _tensorize_profile(
+        snapshot,
+        config=config,
+        expected_schema_version=PROFILE_EXPORT_SCHEMA_VERSION,
+        expected_profile_state="confirmed",
+        device=device,
+    )
+
+
+def tensorize_training_profile(
+    snapshot: Mapping[str, Any],
+    *,
+    config: ProfileAdapterConfig,
+    device: str | torch.device = "cpu",
+) -> ProfileTensors:
+    """Validate B's immutable, evidence-derived offline training snapshot."""
+
+    return _tensorize_profile(
+        snapshot,
+        config=config,
+        expected_schema_version=PROFILE_TRAINING_SCHEMA_VERSION,
+        expected_profile_state="research_frozen",
+        device=device,
+    )
+
+
 class ProfileResidualAdapter(nn.Module):
     """Project values plus missingness into the frozen CODER user space.
 
@@ -186,14 +244,28 @@ class ProfileResidualAdapter(nn.Module):
             nn.ReLU(),
             nn.Linear(config.hidden_dim, config.embedding_dim),
         )
+        self.coverage_gate: nn.Linear | None = None
+        if config.gate_mode == "coverage":
+            self.coverage_gate = nn.Linear(1, 1)
+            nn.init.constant_(self.coverage_gate.weight, 2.0)
+            nn.init.constant_(self.coverage_gate.bias, -1.0)
 
     def forward(self, values: Tensor, observed_mask: Tensor) -> Tensor:
-        if values.shape != observed_mask.shape or values.shape[-1] != len(self.config.feature_names):
-            raise ValueError("profile values and observed_mask have incompatible shapes")
+        if values.shape != observed_mask.shape or values.shape[-1] != len(
+            self.config.feature_names
+        ):
+            raise ValueError(
+                "profile values and observed_mask have incompatible shapes"
+            )
         observed = observed_mask.to(dtype=torch.bool)
-        masked_values = values.to(dtype=torch.float32) * observed.to(dtype=torch.float32)
+        masked_values = values.to(dtype=torch.float32) * observed.to(
+            dtype=torch.float32
+        )
         inputs = torch.cat((masked_values, observed.to(dtype=torch.float32)), dim=-1)
         residual = self.network(inputs) * self.config.residual_scale
+        if self.coverage_gate is not None:
+            coverage = observed.to(dtype=torch.float32).mean(dim=-1, keepdim=True)
+            residual = residual * torch.sigmoid(self.coverage_gate(coverage))
         has_observation = observed.any(dim=-1, keepdim=True)
         return torch.where(has_observation, residual, torch.zeros_like(residual))
 
@@ -203,17 +275,30 @@ class ProfileResidualAdapter(nn.Module):
             raise ValueError("base user and profile residual shapes must match")
         return base_user + residual
 
-    def save_bundle(self, path: Path, *, base_model_version: str, metadata: Mapping[str, Any] | None = None) -> None:
+    def save_bundle(
+        self,
+        path: Path,
+        *,
+        base_model_version: str,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
         path.mkdir(parents=True, exist_ok=True)
-        torch.save(self.state_dict(), path / "weights.pt")
+        weights_path = path / "weights.pt"
+        torch.save(self.state_dict(), weights_path)
         payload = {
+            **dict(metadata or {}),
             "schema_version": "coder-profile-adapter-v0.1",
             "base_model_version": base_model_version,
+            "weights_sha256": hashlib.sha256(weights_path.read_bytes()).hexdigest(),
             "config": asdict(self.config),
-            **dict(metadata or {}),
         }
-        (path / "adapter_manifest.json").write_text(
+        manifest_path = path / "adapter_manifest.json"
+        manifest_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        (path / "_SUCCESS").write_text(
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest() + "\n",
             encoding="utf-8",
         )
 
@@ -225,15 +310,35 @@ class ProfileResidualAdapter(nn.Module):
         expected_base_model_version: str,
         map_location: str | torch.device = "cpu",
     ) -> "ProfileResidualAdapter":
-        manifest = json.loads((path / "adapter_manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads(
+            (path / "adapter_manifest.json").read_text(encoding="utf-8")
+        )
         if manifest.get("schema_version") != "coder-profile-adapter-v0.1":
             raise ValueError("unsupported profile adapter manifest")
         if manifest.get("base_model_version") != expected_base_model_version:
             raise ValueError("profile adapter was trained for another base model")
+        success_path = path / "_SUCCESS"
+        if success_path.is_file():
+            expected_manifest = success_path.read_text(encoding="utf-8").strip()
+            actual_manifest = hashlib.sha256(
+                (path / "adapter_manifest.json").read_bytes()
+            ).hexdigest()
+            if expected_manifest != actual_manifest:
+                raise ValueError(
+                    "profile adapter manifest SHA-256 does not match _SUCCESS"
+                )
+        weights_path = path / "weights.pt"
+        expected_weights = manifest.get("weights_sha256")
+        if (
+            expected_weights is not None
+            and hashlib.sha256(weights_path.read_bytes()).hexdigest()
+            != expected_weights
+        ):
+            raise ValueError("profile adapter weights SHA-256 does not match manifest")
         raw_config = dict(manifest["config"])
         raw_config["feature_names"] = tuple(raw_config["feature_names"])
         adapter = cls(ProfileAdapterConfig(**raw_config))
-        state = torch.load(path / "weights.pt", map_location=map_location, weights_only=True)
+        state = torch.load(weights_path, map_location=map_location, weights_only=True)
         adapter.load_state_dict(state)
         adapter.eval()
         return adapter

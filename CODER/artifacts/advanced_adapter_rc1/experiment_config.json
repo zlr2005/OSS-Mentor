@@ -1,0 +1,28 @@
+{
+  "accepted_verification_statuses": [
+    "verified"
+  ],
+  "adapter_version": "r2_no_gate_hard10-s20261105",
+  "batch_size": 128,
+  "data_seed": 20261102,
+  "epochs": 100,
+  "feature_dropout": 0.0,
+  "gate_mode": "none",
+  "hard_negative_temperature": 1.0,
+  "hard_negative_weight": 1.0,
+  "hidden_dim": 32,
+  "learning_rate": 0.001,
+  "negative_samples_per_positive": 20,
+  "observation_window_days": 90,
+  "outcome_weights": {
+    "verified_closing_pr": 1.0,
+    "verified_linked_pr": 0.8
+  },
+  "patience": 10,
+  "residual_l2": 0.0,
+  "residual_scale": 0.75,
+  "seed": 20261105,
+  "train_end": "2025-12-31T23:59:59+00:00",
+  "validation_end": "2026-06-30T23:59:59+00:00",
+  "weight_decay": 0.0001
+}

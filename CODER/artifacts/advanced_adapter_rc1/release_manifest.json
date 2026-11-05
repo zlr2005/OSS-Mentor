@@ -1,0 +1,85 @@
+{
+  "schema_version": "advanced-adapter-rc1-release-v0.1",
+  "release_id": "coder-profile-adapter-rc1-20261105",
+  "adapter_version": "advanced-adapter-v1-round2-optimized",
+  "service_track": "growth",
+  "approved_mode": "shadow",
+  "serve_approved": false,
+  "feature_schema_version": "enhanced-profile-features-v0.1",
+  "base_user_mode": "population_mean",
+  "adapter_files": {
+    "_SUCCESS": {
+      "bytes": 66,
+      "sha256": "ab47045d9465d8795868becafa42801d21c8e5dfdd75d43471b60ba5c69476ec"
+    },
+    "adapter_manifest.json": {
+      "bytes": 2166,
+      "sha256": "3d82e7948f5ab4923c842796dd1aff4906275f7e95e1cd30ad0cd40c3eca43d5"
+    },
+    "experiment_config.json": {
+      "bytes": 733,
+      "sha256": "69f1aaa744abb84fbe6413857cb0a870a1938fe0221589d13d327ab1014f0664"
+    },
+    "test_metrics.json": {
+      "bytes": 1626,
+      "sha256": "7fd3e189c06e0f5db20bc8ed739d66ece54812b964b9aae205b5381787a1368a"
+    },
+    "validation_selection.json": {
+      "bytes": 9288,
+      "sha256": "730592aa603791446bf6f9924f4f432fbe8f8537fcb66af8adac18286cc023fd"
+    },
+    "weights.pt": {
+      "bytes": 12573,
+      "sha256": "6112db508fd1f14876c272624a5e8d4d711d0d32a694fb02d3267f5f04091b78"
+    }
+  },
+  "required_external_coder_bundle": {
+    "version": "coder-full-search8-v1",
+    "default_model_dir": "data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1",
+    "files": {
+      "embeddings.npz": {
+        "bytes": 21799151,
+        "sha256": "70b6dc84c990af49d160014db3619407b6654f20b1288e02641698ab8092fd8d"
+      },
+      "feature_schema.json": {
+        "bytes": 358,
+        "sha256": "84fc5a0983b3f9e7199f4b5207b9e77ba7ebfe15396c547cc0fbaa88c53f8237"
+      },
+      "model_manifest.json": {
+        "bytes": 1902,
+        "sha256": "62974d6a16e1c3dd00fb9b4179fc6cca68f81de7739351cafd65bedb953b3f48"
+      },
+      "weights.pt": {
+        "bytes": 285768987,
+        "sha256": "38d279daa0c2fb1b632bcfbfce73abc524a27a535e24429dc9d8615cd59302ae"
+      }
+    }
+  },
+  "required_external_runtime_inputs": {
+    "developer_mapping.parquet": {
+      "default_path": "data/midterm/normalized/gfibot-m0-v1.1/mappings/developer_mapping.parquet",
+      "bytes": 341929,
+      "sha256": "124d4fe81c1d8829d30c8eb4492e4f4f73a7462c24f4e98ab1ce9775e097e0d8"
+    },
+    "issue_mapping.parquet": {
+      "default_path": "data/midterm/normalized/gfibot-m0-v1.1/mappings/issue_mapping.parquet",
+      "bytes": 1027983,
+      "sha256": "a0fb44ccf86bf97bd09e1f393ab31e48a1c7c858237536b4495b90c88624e18f"
+    },
+    "candidates.npz": {
+      "default_path": "data/midterm/platform/coder-full-search8-v1/candidates.npz",
+      "bytes": 6888,
+      "sha256": "d412c91ce99475f8033207f0a68e7422b7ae84006d60e9141c95d8a58bf1b4dc"
+    }
+  },
+  "frozen_test": {
+    "metrics_file": "test_metrics.json",
+    "coder_original_mrr": 0.16998642381075643,
+    "coder_profile_mrr": 0.26300633778764804,
+    "coder_original_pair_accuracy": 0.4955188679245283,
+    "coder_profile_pair_accuracy": 0.6004716981132076,
+    "outcomes": 212,
+    "pairs": 4240
+  },
+  "fail_closed": true
+}

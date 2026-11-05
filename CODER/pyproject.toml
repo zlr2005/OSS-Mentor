@@ -28,6 +28,16 @@ coder-prepare-data = "coder_issue.data.prepare_data:main"
 coder-validate-data = "coder_issue.data.validation:main"
 coder-run-baselines = "coder_issue.baselines.pipeline:main"
 coder-train-multigranular = "coder_issue.training.pipeline:main"
+coder-train-advanced-adapter = "coder_issue.training.advanced_profile_pipeline:main"
+coder-validate-advanced-profiles = "coder_issue.training.advanced_profile_validation:main"
+coder-prepare-advanced-issues = "coder_issue.training.advanced_issue_inputs:main"
+coder-freeze-advanced-profiles = "coder_issue.training.advanced_profile_freeze:main"
+coder-evaluate-advanced-adapter = "coder_issue.training.advanced_profile_evaluation:main"
+coder-optimize-advanced-adapter = "coder_issue.training.advanced_profile_experiments:main"
+coder-prepare-adapter-supplement = "coder_issue.training.advanced_profile_supplement:main"
+coder-train-adapter-supplement = "coder_issue.training.advanced_supplement_experiment:main"
+coder-build-supplement-negatives = "coder_issue.training.advanced_supplement_negatives:main"
+coder-protected-adapter-finetune = "coder_issue.training.advanced_protected_finetune:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
