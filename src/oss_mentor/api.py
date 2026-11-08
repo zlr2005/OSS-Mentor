@@ -632,8 +632,7 @@ class RecommendationApi:
             )
         return None
 
-    @staticmethod
-    def _model_metadata_for_batch(batch: Any) -> dict[str, Any]:
+    def _model_metadata_for_batch(self, batch: Any) -> dict[str, Any]:
         if isinstance(batch, dict):
             rankings = list(batch.get("rankings") or [])
             match_version = str(batch.get("match_version") or "")
@@ -643,7 +642,9 @@ class RecommendationApi:
             match_version = str(getattr(batch, "match_version", "") or "")
             warnings = list(getattr(batch, "warnings", ()) or ())
         if not rankings or not rankings[0].get("scoring_engine"):
-            return current_model_metadata().to_dict()
+            return current_model_metadata(
+                self.recommendation_service.model_scorer
+            ).to_dict()
         first = rankings[0]
         return {
             "variant": str(first["scoring_engine"]),
@@ -860,7 +861,9 @@ class RecommendationApi:
                 "personalized": False,
                 "warnings": ["public_candidates_are_not_personalized"],
                 "match_version": MATCH_VERSION_V3,
-                "model": current_model_metadata().to_dict(),
+                "model": current_model_metadata(
+                    self.recommendation_service.model_scorer
+                ).to_dict(),
                 "api_version": API_VERSION,
             },
         )
@@ -1044,7 +1047,9 @@ class RecommendationApi:
                 200,
                 {
                     **_refreshed_candidate_detail_body(detail),
-                    "model": current_model_metadata().to_dict(),
+                    "model": current_model_metadata(
+                        self.recommendation_service.model_scorer
+                    ).to_dict(),
                     "api_version": API_VERSION,
                 },
             )
@@ -1066,7 +1071,9 @@ class RecommendationApi:
             200,
             {
                 **_candidate_detail_body(row, task),
-                "model": current_model_metadata().to_dict(),
+                "model": current_model_metadata(
+                    self.recommendation_service.model_scorer
+                ).to_dict(),
                 "api_version": API_VERSION,
             },
         )
@@ -1580,7 +1587,9 @@ class RecommendationApi:
                     'automatic_refresh': self.refresh_worker.status() if self.refresh_worker else {'enabled': False},
                     "api_version": API_VERSION,
                     "match_version": MATCH_VERSION_V2,
-                    "model": current_model_metadata().to_dict(),
+                    "model": current_model_metadata(
+                        self.recommendation_service.model_scorer
+                    ).to_dict(),
                 },
             )
         if method == "GET" and path == "/api/v1/auth/github/start":

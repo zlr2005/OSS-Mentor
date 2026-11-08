@@ -355,6 +355,32 @@ class ApiTests(unittest.TestCase):
         self.assertIn("api_version", response.body)
         self.assertIn("match_version", response.body)
 
+    def test_status_endpoint_reports_loaded_gated_model(self) -> None:
+        class LoadedModel:
+            manifest = {
+                "model_version": "coder-gated-test",
+                "dataset_version": "dataset-test",
+                "feature_schema": "coder-gated-128+16-v1",
+                "graph_version": "graph-test",
+                "encoder_version": "encoder-test",
+                "scores_are_probabilities": False,
+                "independently_tested": False,
+            }
+
+        class LoadedScorer:
+            scoring_engine = "coder_gated"
+            model = LoadedModel()
+
+        self.api.recommendation_service.model_scorer = LoadedScorer()
+        response = self.api.handle("GET", "/api/v1/status")
+
+        self.assertEqual("coder_gated", response.body["model"]["variant"])
+        self.assertEqual("coder-gated-test", response.body["model"]["version"])
+        self.assertEqual("active", response.body["model"]["status"])
+        self.assertNotIn(
+            "coder_model_not_connected", response.body["model"]["warnings"]
+        )
+
     def test_status_endpoint_uses_real_sqlite_store(self) -> None:
         root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as temporary:
