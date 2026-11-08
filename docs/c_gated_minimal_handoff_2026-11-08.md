@@ -11,7 +11,8 @@
 - MiniLM 与 repository mapping 的本地重建及一致性校验；
 - 真实冻结资产的离线编码、发布、评分和版本切换验收。
 - 已接收并校验 `portable_gated_pr40_9bf9208d.zip`，资产版本和校验和不再依赖组长确认；
-- 正式资产已安装到本地忽略目录 `data/gated-v1`，Git 中只保存资产锁、安装器和验收报告。
+- 正式资产已安装到本地忽略目录 `data/gated-v1`；原始 ZIP 通过 Git LFS 存放在
+  `model-assets/portable_gated_pr40_9bf9208d.zip`，Git 中同时保存资产锁、安装器和验收报告。
 
 ## B 只需确认和提供
 
@@ -55,7 +56,7 @@ GitHub login，`feature_names` 顺序必须与冻结模型一致。B 不需要�
 
 ```powershell
 python scripts/rebuild_gated_runtime_assets.py `
-  --archive portable_gated_pr40_9bf9208d.zip `
+  --archive model-assets/portable_gated_pr40_9bf9208d.zip `
   --output data/gated-v1
 ```
 

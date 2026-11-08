@@ -1,6 +1,7 @@
 {
   "format": "oss-mentor-gated-runtime-lock-v1",
   "archive_name": "portable_gated_pr40_9bf9208d.zip",
+  "archive_repository_path": "model-assets/portable_gated_pr40_9bf9208d.zip",
   "archive_sha256": "179d6fe270522f194e7242ddd837a1850637c3c2f581a0e35300069fbcfcff0f",
   "source_head": "9bf9208d237f343ad3d1d993ccbe9a0f31c4935b",
   "model_version": "coder-gated-marginal_positive-s20261102",
