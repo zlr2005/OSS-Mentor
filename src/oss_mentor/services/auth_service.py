@@ -200,6 +200,13 @@ class AuthService:
             user_id = int(user["user_id"])
             if user.get("deleted_at"):
                 raise GitHubAuthError("user account is disabled")
+            if str(user["github_login"]) != str(github_login):
+                updated = self.store.update_github_login(
+                    user_id=user_id,
+                    github_login=str(github_login),
+                )
+                if not updated:
+                    raise GitHubAuthError("failed to update the GitHub login")
 
         self.store.store_oauth_credential(
             user_id=user_id,
