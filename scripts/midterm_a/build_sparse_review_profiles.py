@@ -9,6 +9,12 @@ from oss_mentor.profiling.assessment import ENHANCED_FEATURE_EXPORT_SCHEMA_VERSI
 from oss_mentor.profiling.delivery import validate_confirmed_feature_snapshot
 
 
+def dependency_digest(path):
+    """Hash UTF-8 code/config with Git-independent newline representation."""
+    content = path.read_bytes().decode('utf-8').replace('\r\n', '\n').replace('\r', '\n')
+    return b.digest(content.encode('utf-8'))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True, help='New, empty output directory')
@@ -49,7 +55,7 @@ def main():
                    b.ROOT/'scripts/midterm_a/backfill_adapter_2024_2026.py',
                    b.ROOT/'src/oss_mentor/profiling/delivery.py',
                    b.ROOT/'src/oss_mentor/datasets/code_languages.py']
-    version_dependencies={p.relative_to(b.ROOT).as_posix():b.digest(p.read_bytes()) for p in version_files}
+    version_dependencies={p.relative_to(b.ROOT).as_posix():dependency_digest(p) for p in version_files}
     source_hash=b.digest((source/'manifest.json').read_bytes())
     input_hashes={r.relative_to(b.ROOT).as_posix():b.digest((r/'manifest.json').read_bytes()) for r in roots}
     profiles=[];batches=[];inputs=[]
@@ -113,7 +119,7 @@ def main():
     b.save('validation.json',dict(status='passed',checks=['export_shape_with_preview_state','feature_order_and_unknowns','profile_hash','profile_join','preview_state'],profiles=len(profiles),joined_outcomes=len(joined),training_ready=False))
     names=['profile_previews.jsonl','profile_evidence_batches.jsonl','profile_input_index.jsonl','joined_samples.jsonl','summary.json','validation.json']
     b.save('manifest.json',dict(source_manifest_sha256=source_hash,input_manifest_sha256=input_hashes,
-        b_rule_sha256=version_dependencies,observed_at=observed_at,
+        b_rule_sha256=version_dependencies,dependency_hash_format='utf8-lf-v1',observed_at=observed_at,
         files_sha256={name:b.digest((b.OUT/name).read_bytes()) for name in names}))
     print(json.dumps(summary))
 
