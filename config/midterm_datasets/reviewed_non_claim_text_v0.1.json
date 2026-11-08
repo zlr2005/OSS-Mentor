@@ -1,0 +1,10 @@
+{
+  "https://github.com/vitejs/vite/issues/23393": {
+    "text_sha256": "d54a2854868c4211bce1982aad3cf1712101f3a43a2325e69e2eaee57d5d1dd2",
+    "note": "已阅读完整正文；working on 指作者开发 Storybook 集成插件，当前 workaround 也在该插件中，并未认领在 Vite 核心实现所请求 API。仍需核查完整时间线及关联 PR。"
+  },
+  "https://github.com/astral-sh/uv/issues/21829#issuecomment-5735325203": {
+    "text_sha256": "583a403011a3d556517d6f46946443c25e1c4307bcd5d62dc94e510d188f1d09",
+    "note": "已阅读完整评论；working on 指使用 Windows 11 系统，未表达认领该 Issue。仅对这份原文生效，内容改变后重新审查。"
+  }
+}

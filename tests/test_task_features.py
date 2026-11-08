@@ -2130,11 +2130,11 @@ class TaskFeatureTests(unittest.TestCase):
 
     def test_skill_v022_rules_version_only_changes_skill_requirement_rules(self) -> None:
         features = extract_task_features(self._record(title="Fix local parser value"))
-        self.assertEqual("task-features-v0.4", TASK_FEATURE_VERSION)
-        self.assertEqual("task-features-v0.4", features.task_feature_version)
+        self.assertEqual("task-features-v0.5", TASK_FEATURE_VERSION)
+        self.assertEqual("task-features-v0.5", features.task_feature_version)
         self.assertEqual("skill-requirements-v0.2.2", SKILL_REQUIREMENT_RULES_VERSION)
-        self.assertEqual("difficulty-rules-v0.2.1", DIFFICULTY_FORMULA_VERSION)
-        self.assertEqual("difficulty-rules-v0.2.1", self._difficulty(features)["formula_version"])
+        self.assertEqual("difficulty-rules-v0.2.2", DIFFICULTY_FORMULA_VERSION)
+        self.assertEqual("difficulty-rules-v0.2.2", self._difficulty(features)["formula_version"])
 
 if __name__ == "__main__":
     unittest.main()

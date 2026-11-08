@@ -120,7 +120,7 @@
           <span class="r-ver">${escapeHtml(reason.feature_version || "")}</span>
         </div>
         <p class="r-text">${escapeHtml(reason.evidence || "无额外证据")}</p>
-        <code class="r-ev">${points >= 0 ? "+" : ""}${points} 点</code>
+        <code class="r-ev">${points === 0 ? "匹配依据" : `${points >= 0 ? "+" : ""}${points} 点`}</code>
       </li>`;
     }).join("");
   }
@@ -149,6 +149,18 @@
     if (feedbackContext) query.set("feedback_context", feedbackContext);
     if (runId) query.set("run_id", runId);
     return `/task?${query.toString()}`;
+  }
+
+  function warningList(warnings) {
+    const labels = {
+      rule_reasons_are_context_only: "匹配依据不是模型分数的加分明细。",
+      gated_scores_are_not_success_probabilities: "排序分不代表完成任务的概率。",
+      inventory_availability_assumed: "本次试用未重新核验任务状态。",
+      profile_bootstrap_recommendations: "当前根据填写的画像推荐，个性化模型正在准备。",
+      model_features_preparing: "系统正在自动准备推荐资料。",
+      coder_no_public_code_history: "暂未取得可用公开代码历史，使用新用户推荐模式。",
+    };
+    return (warnings || []).map(value => `<p class="r-text">${escapeHtml(labels[value] || value)}</p>`).join("");
   }
 
   function issueCard(item, index, options) {
@@ -195,6 +207,7 @@
       <details class="ic-reasons reasons">
         <summary><span class="chev" aria-hidden="true"></span>推荐依据 <span class="count mono">${reasons.length} 条</span></summary>
         <ul class="reason-list">${reasonList(reasons)}</ul>
+        ${warningList(item.warnings)}
       </details>
       <div class="ic-skills">${skillRows(item)}</div>
       <footer class="ic-foot">

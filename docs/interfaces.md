@@ -1,5 +1,23 @@
 # 平台接口契约
 
+最新更新：已实现任意已注册登录账号的公开证据自动采集与冷启动初始化，不再要求手动配置evidence_by_login。启用worker的服务在准备期间返回明确标记的画像规则推荐，准备完成后切换到新模型；没有代码历史也支持冷启动。此模式是显式启用的初始化服务行为，非隐藏模型回退。详见 `docs/gated_all_accounts_2026-11-08.md`。以下早期阶段中的账号白名单/无worker描述以最新说明为准。
+
+## 2026-11-08 门控模型接入补充
+
+更新：实际编码worker与缓存自动发布已实现，使用 `--gated-worker-config` 启用。请求→状态→编码→原子generation发布→评分端热读取已对zlr2005的4条库存候选运行通过。下文“尚未实现工作进程”的记录属于此前阶段，当前以 `docs/gated_feature_worker_2026-11-08.md` 的配置、缺证据与有效期边界为准。
+
+`CachedGatedScorer` 实现相同 `ModelScorer` 端口，`scoring_engine=coder_gated`、`profile_mode=prepared_profile_gated`，不改变 DeveloperProfileV2、ModelScoreBatch 或 RecommendationItemV3 的字段结构。旧 CoderIssueScorer 仍记录 coder_issue_repo。D 不应将模型/覆盖标识限制为旧实现的两种取值。
+
+- B 的画像问答、证据确认、技能与难度规则保留；新模型依赖独立的证据编码特征，不将表单等级当作研究向量。
+- 列表与 `recommendation_detail` 均以当前完整合格候选池评分；候选池/画像/反馈不变时同任务分数一致。若原列表排除了部分任务，其候选池不同，不承诺与重新计算的详情相同；需要历史精确复现时应消费原推荐快照。
+- 模型评分下，规则匹配理由的 score_delta 为0，作为画像/任务匹配依据。负反馈仍显示实际降权；warning `rule_reasons_are_context_only` 提醒其不是模型分数分解。
+- 缺失、过期、画像或任务内容变化所需的特征返回503 / `model_features_required`；真正模型加载/损坏问题保持 `model_unavailable`。首次使用及自定义画像也适用。D 应区分此状态与未登录401、无画像、正常空候选。
+- 正式门控入口在有准备需求时，于本地生成去重JSON请求，默认目录为缓存目录旁的 `gated_feature_requests`，可通过 `--gated-request-dir` 指定。请求含当前画像、候选文本、身份键、模型及底座版本；只存服务端，不通过公开接口暴露。
+- 请求 state=required、automatic_encoding_available=false，表示需要准备，不表示已有后台训练/编码任务执行。当前实现自动登记需求，尚未实现实际特征编码工作进程；不得把该状态展示为自动更新已完成。B 的保存不依赖模型是否可评分，下一次推荐按新的画像指纹触发需求。
+- 用户已授权试用时跳过库存时效复核；`--assume-inventory-available` 假设仍保留，并不会绕过特征身份/模型/内容绑定检查。
+
+验证：真实导出权重下门控12项、推荐服务10项、推荐API6项、画像API18项、网页静态9项、CLI13项、画像平台联调11项通过；推荐页Node行为测试3项通过。另5项真实本机HTTP检查通过，使用隔离输入及真实权重，不是生产库存效果评价。HTTP记录 `data/midterm/working/platform_gated_bd_http_20261108_v1/verification.json`。以下章节保留旧CODER接口背景，新门控实现差异以此补充为准。
+
 本文给出当前 CODER 接入中成员 B 的输入、推荐模块的评分边界，以及成员 D 可消费的服务/HTTP 输出。代码真相位于：
 
 - `src/oss_mentor/contracts.py`

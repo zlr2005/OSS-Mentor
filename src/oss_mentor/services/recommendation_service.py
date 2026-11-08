@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import os
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any
@@ -36,6 +37,10 @@ from oss_mentor.contracts import (
 )
 from oss_mentor.matching import MATCH_VERSION_V3, MatchResult, match_candidate
 from oss_mentor.model_scoring import ModelScorer
+
+from oss_mentor.candidate_freshness import recommendation_is_current
+from oss_mentor.candidate_freshness import ASSUME_INVENTORY_ENV
+from oss_mentor.task_readiness import task_review_reasons, task_admission_warnings
 from oss_mentor.storage.base import CandidateStore
 
 NEGATIVE_FEEDBACK_PENALTY = 0.25
@@ -51,6 +56,9 @@ class ProfileRequired(ValueError):
 
 class ModelUnavailableError(RuntimeError):
     """The configured model cannot safely score the complete candidate set."""
+    def __init__(self, message: str, *, code: str = 'model_unavailable'):
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,7 +110,9 @@ def _warnings(task: dict[str, Any]) -> tuple[str, ...]:
             value = json.loads(value)
         except json.JSONDecodeError:
             value = []
-    return tuple(str(item) for item in value) if isinstance(value, list) else ()
+    existing = tuple(str(item) for item in value) if isinstance(value, list) else ()
+    assumed = ('inventory_availability_assumed',) if os.environ.get(ASSUME_INVENTORY_ENV) == '1' else ()
+    return tuple(dict.fromkeys((*existing, *task_admission_warnings(task), *assumed)))
 
 
 def _structured_reasons(
@@ -156,6 +166,7 @@ def recommendation_item_from_match(
     feedback_state: str | None = None,
     diversity_reason: Reason | None = None,
     additional_warnings: tuple[str, ...] = (),
+    model_scored: bool = False,
 ) -> RecommendationItemV3:
     """Map a 0-100 MatchResult into the public 0-1 v0.5 contract."""
     gaps = match.skill_gaps
@@ -173,7 +184,8 @@ def recommendation_item_from_match(
         ),
         matched_skills=tuple(str(item["skill"]) for item in gaps if int(item["gap"]) == 0),
         missing_skills=tuple(str(item["skill"]) for item in gaps if int(item["gap"]) > 0),
-        reasons=(*_structured_reasons(match, task, profile, feedback_state), *(
+        reasons=(*(replace(reason, score_delta=0.0) if model_scored and reason.code != REASON_CODE_NEGATIVE_FEEDBACK else reason
+                   for reason in _structured_reasons(match, task, profile, feedback_state)), *(
             (diversity_reason,) if diversity_reason is not None else ()
         )),
         warnings=(*_warnings(task), *additional_warnings),
@@ -193,12 +205,14 @@ class RecommendationService:
         auth_service=None,
         recommendation_store=None,
         model_scorer: ModelScorer | None = None,
+        allow_preparing_recommendations: bool = False,
     ):
         self.candidate_store = candidate_store
         self.profile_service = profile_service
         self.auth_service = auth_service
         self.recommendation_store = recommendation_store
         self.model_scorer = model_scorer
+        self.allow_preparing_recommendations = allow_preparing_recommendations
 
     @staticmethod
     def _hash(value: Any) -> str:
@@ -207,7 +221,7 @@ class RecommendationService:
 
     @staticmethod
     def _task_types(task: dict[str, Any]) -> set[str]:
-        return {str(value).casefold() for value in task.get("task_types", ())}
+        return {str(value).casefold() for value in task.get("task_types", ())} - {'other'}
 
     def _diversify(
         self,
@@ -305,12 +319,7 @@ class RecommendationService:
         if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
 
-        excluded_ids = set(excluded_candidate_ids)
-        tasks = [
-            task for task in self.candidate_store.matchable_candidates()
-            if task.get("candidate_availability", AVAILABILITY_AVAILABLE) == AVAILABILITY_AVAILABLE
-            and int(task["task_candidate_id"]) not in excluded_ids
-        ]
+        tasks = self.eligible_candidates(profile, excluded_candidate_ids=excluded_candidate_ids)
         task_by_id = {int(task["task_candidate_id"]): task for task in tasks}
         matching_profile = profile_for_matching(profile)
         matches = [
@@ -320,6 +329,7 @@ class RecommendationService:
             )) is not None
         ]
         model_batch = None
+        preparing = False
         if self.model_scorer is not None and matches:
             scored_tasks = [task_by_id[item.task_candidate_id] for item in matches]
             try:
@@ -329,7 +339,11 @@ class RecommendationService:
                     candidates=scored_tasks,
                 )
             except Exception as exc:
-                raise ModelUnavailableError(str(exc)) from exc
+                if self.allow_preparing_recommendations and getattr(exc,'error_code',None)=='model_features_required':
+                    preparing = True
+                else:
+                    raise ModelUnavailableError(str(exc), code=getattr(exc, 'error_code', 'model_unavailable')) from exc
+        if model_batch is not None:
             model_scores = {item.task_candidate_id: item for item in model_batch.scores}
             missing = [item.task_candidate_id for item in matches if item.task_candidate_id not in model_scores]
             if missing:
@@ -369,7 +383,7 @@ class RecommendationService:
             coverage = {item.task_candidate_id: item.coverage_state for item in model_batch.scores}
             for row in rankings:
                 row.update({
-                    "scoring_engine": "coder_issue_repo",
+                    "scoring_engine": getattr(self.model_scorer, 'scoring_engine', 'coder_issue_repo'),
                     "model_version": model_batch.model_version,
                     "dataset_version": model_batch.dataset_version,
                     "graph_version": model_batch.graph_version,
@@ -377,7 +391,11 @@ class RecommendationService:
                     "profile_mode": model_batch.profile_mode,
                     "coverage_state": coverage[row["task_candidate_id"]],
                 })
-            batch_warnings = tuple(dict.fromkeys((*batch_warnings, *model_batch.warnings)))
+            batch_warnings = tuple(dict.fromkeys((*batch_warnings, *model_batch.warnings, 'rule_reasons_are_context_only')))
+        elif preparing:
+            batch_warnings = tuple(dict.fromkeys((*batch_warnings,'model_features_preparing','profile_bootstrap_recommendations')))
+            for row in rankings:
+                row.update(scoring_engine='profile_bootstrap_rules',model_version=None,coverage_state='initializing')
         ranking_by_id = {item["task_candidate_id"]: item for item in rankings}
         items = tuple(
             recommendation_item_from_match(
@@ -398,6 +416,7 @@ class RecommendationService:
                     ) if ranking_by_id[match.task_candidate_id]["diversity_reranked"] else None
                 ),
                 additional_warnings=batch_warnings,
+                model_scored=model_batch is not None,
             )
             for match in selected
         )
@@ -455,6 +474,21 @@ class RecommendationService:
             self.recommendation_store.save_recommendation_batch(batch)
         return batch
 
+    def eligible_candidates(
+        self, profile: DeveloperProfileV2, *, excluded_candidate_ids: tuple[int, ...] = (),
+    ) -> list[dict[str, Any]]:
+        """Return the exact pre-score pool for online inference and offline preparation."""
+        if not isinstance(profile, DeveloperProfileV2):
+            raise TypeError("DeveloperProfileV2 required")
+        excluded = set(excluded_candidate_ids)
+        matching_profile = profile_for_matching(profile)
+        return [
+            task for task in self.candidate_store.matchable_candidates()
+            if int(task["task_candidate_id"]) not in excluded
+            and recommendation_is_current(task) and not task_review_reasons(task)
+            and match_candidate(matching_profile, task, match_version=MATCH_VERSION_V3) is not None
+        ]
+
     def recommend(
         self,
         *,
@@ -484,29 +518,39 @@ class RecommendationService:
         """Return one eligible matching candidate without diversity reordering."""
         if not isinstance(profile, DeveloperProfileV2):
             raise TypeError("profile must be DeveloperProfileV2")
+        tasks = self.eligible_candidates(profile)
         task = next(
             (
-                item for item in self.candidate_store.matchable_candidates()
+                item for item in tasks
                 if int(item["task_candidate_id"]) == int(task_candidate_id)
             ),
             None,
         )
-        if task is None or task.get(
-            "candidate_availability", AVAILABILITY_AVAILABLE
-        ) != AVAILABILITY_AVAILABLE:
+        if task is None or not recommendation_is_current(task) or task_review_reasons(task):
             raise KeyError("recommendable task candidate was not found")
         match = match_candidate(
             profile_for_matching(profile), task, match_version=MATCH_VERSION_V3
         )
         if match is None:
             raise KeyError("task candidate does not match the profile")
+        batch = None
+        preparing = False
         if self.model_scorer is not None:
-            batch = self.model_scorer.score(
-                profile=profile, developer_key=developer_key, candidates=[task]
-            )
-            if len(batch.scores) != 1:
-                raise RuntimeError("CODER did not return the requested candidate score")
-            match = replace(match, match_score=round(batch.scores[0].score * 100.0, 6))
+            try:
+                batch = self.model_scorer.score(
+                    profile=profile, developer_key=developer_key, candidates=tasks
+                )
+            except Exception as exc:
+                if self.allow_preparing_recommendations and getattr(exc,'error_code',None)=='model_features_required':
+                    preparing = True
+                else:
+                    raise ModelUnavailableError(str(exc), code=getattr(exc, 'error_code', 'model_unavailable')) from exc
+        if batch is not None:
+            scores = {item.task_candidate_id: item.score for item in batch.scores}
+            if any(item['task_candidate_id'] not in scores for item in tasks):
+                raise ModelUnavailableError('Model did not score the complete candidate pool')
+            match = replace(match, match_score=round(scores[task_candidate_id] * 100.0, 6))
+        match = replace(match, match_score=round(match.match_score, 2))
         feedback_state = None
         if feedback_context:
             feedback_state = self.candidate_store.feedback_states(
@@ -520,7 +564,10 @@ class RecommendationService:
                 ), 2),
             )
         return recommendation_item_from_match(
-            match, task, profile, feedback_state=feedback_state
+            match, task, profile, feedback_state=feedback_state,
+            model_scored=batch is not None,
+            additional_warnings=tuple(dict.fromkeys((*batch.warnings, 'rule_reasons_are_context_only'))) if batch is not None else
+                (('model_features_preparing','profile_bootstrap_recommendations') if preparing else ()),
         )
 
     def recommend_for_session(

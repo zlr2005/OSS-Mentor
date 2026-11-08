@@ -1,0 +1,8 @@
+{
+  "bundle": "data/gated-v1/bundle",
+  "cache": "data/midterm/platform/gated_live",
+  "requests": "data/midterm/platform/gated_feature_requests",
+  "assets": "data/gated-v1/assets",
+  "auto_collect_public": true,
+  "evidence_by_login": {}
+}

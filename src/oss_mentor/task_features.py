@@ -8,10 +8,11 @@ from typing import Any, Iterable
 
 from oss_mentor.candidate_rules import has_newcomer_label
 from oss_mentor.developer_profiles import ALLOWED_TASK_TYPES
+from oss_mentor.candidate_admission import admission_evidence
 
 
-TASK_FEATURE_VERSION = "task-features-v0.4"
-DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2.1"
+TASK_FEATURE_VERSION = "task-features-v0.5"
+DIFFICULTY_FORMULA_VERSION = "difficulty-rules-v0.2.2"
 SKILL_REQUIREMENT_RULES_VERSION = "skill-requirements-v0.2.2"
 PUBLIC_TASK_TYPES = frozenset(ALLOWED_TASK_TYPES)
 _TASK_TYPE_ACCEPTANCE_SCORE = 3.0
@@ -123,6 +124,11 @@ _LABEL_ALIASES: dict[str, tuple[str, float]] = {
     "c bug": ("bug_fix", 3.0),
     "confirmed bug": ("bug_fix", 3.0),
     "defect": ("bug_fix", 3.0),
+    "issue bug": ("bug_fix", 3.0),
+    ">bug": ("bug_fix", 3.0),
+    "🐛 bug": ("bug_fix", 3.0),
+    "type defect": ("bug_fix", 3.0),
+    "kind defect": ("bug_fix", 3.0),
     "regression": ("bug_fix", 3.0),
     # testing
     "test": ("testing", 3.0),
@@ -237,6 +243,18 @@ _PERFORMANCE_LABELS = frozenset(
 )
 
 _TITLE_RULES: tuple[_TextRule, ...] = (
+    _TextRule(
+        "bug_fix", "bug.title.named_exception_raised",
+        r"\b(?:raises?|throws?)\s+(?:an?\s+)?(?:[a-z_]*error|[a-z_]*exception)\b", 3.0,
+    ),
+    _TextRule(
+        "bug_fix", "bug.title.repeated_deoptimization",
+        r"\b(?:deoptimizes?|recompiles?)\b.{0,80}\b(?:every|each|repeatedly|retry limit)\b", 3.0,
+    ),
+    _TextRule(
+        "build_tooling", "build.title.automation_configuration",
+        r"^\s*(?:migrate|update|change|configure)\b.{0,80}\b(?:dependabot|github actions|release workflow|ci configuration)\b", 3.0,
+    ),
     # bug_fix: symptoms and failure statements, not generic words such as "missing".
     _TextRule(
         "bug_fix",
@@ -795,6 +813,29 @@ def _match_label_alias(
     if task_type is None:
         return None
     return task_type, 3.0, f"{task_type}.label.namespace"
+
+
+def _filled_issue_section(body: str, headings: str, *, minimum: int = 25) -> str:
+    """Require actual section content, not an empty template or placeholder."""
+    text = re.sub(r"<!--.*?-->", " ", body, flags=re.DOTALL)
+    pattern = rf"^#{{1,6}}\s+(?:{headings})\s*\r?$\s*([\s\S]*?)(?=^#{{1,6}}\s+|\Z)"
+    for match in re.finditer(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
+        section = match.group(1).strip()
+        section = re.sub(r"(?im)^\s*(?:_?no response_?|n/?a|none|not applicable)\s*$", "", section)
+        section = '\n'.join(line for line in section.splitlines() if not re.fullmatch(
+            r"\s*[*_]*(?:简要描述您碰到的问题|如何操作可以重现该问题|请填写以下信息|你期待的正确结果|请在此填写)[^\n]*", line))
+        meaningful = re.sub(r"[\W_]", "", section)
+        if len(meaningful) >= minimum and not re.fullmatch(
+            r"\s*(?:please\s+)?(?:describe|insert|paste|provide)\b[^.\n]*[.!]?\s*", section, re.I
+        ):
+            return section
+    return ""
+
+
+def _structured_bug_report(body: str) -> tuple[str, str] | None:
+    description = _filled_issue_section(body, r"describe the bug|bug description|问题描述|缺陷描述")
+    reproduction = _filled_issue_section(body, r"to reproduce|steps to reproduce|reproduction|复现步骤|重现步骤")
+    return (description, reproduction) if description and reproduction else None
 
 
 def _semantic_body(body: str) -> str:
@@ -1388,6 +1429,11 @@ def _classify_task_types(
         rules=_BODY_RULES,
         evidence_by_type=evidence_by_type,
     )
+    structured = _structured_bug_report(body)
+    if structured:
+        _add_evidence(evidence_by_type, task_type="bug_fix", source="body",
+                      rule_id="bug.body.filled_reproduction_report",
+                      matched_value=re.sub(r"\s+", " ", structured[0])[:160], weight=3.0)
 
     rejected = _reclassify_missing_capability(
         title=title,
@@ -1531,17 +1577,27 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
         or re.search(
             r"\b(?:roadmap|tracking issue|umbrella issue|umbrella milestone|"
             r"milestone tracker|dependency dashboard)\b",
-            combined,
+            title,
             flags=re.IGNORECASE,
         )
+        and not _TRACKER_ACTION_TITLE_PATTERN.search(title)
         or (
             re.search(r"\btracker\b", title, flags=re.IGNORECASE)
             and not _TRACKER_ACTION_TITLE_PATTERN.search(title)
         )
     )
+    if not non_actionable and re.search(
+        r"^(?:(?:this|the)\s+(?:issue|ticket)\s+(?:is\s+(?:an?\s+)?)?(?:tracking|tracks|collects|aggregates)\b|dependency dashboard\b)",
+        semantic_body, flags=re.IGNORECASE,
+    ):
+        non_actionable = True
     if non_actionable:
         reasons.append("non_actionable_tracker_or_dashboard")
 
+    # A template section heading is not a maintainer decision or an unresolved
+    # design. Actual proposal language, labels and alternatives still count.
+    design_body = _semantic_body(re.sub(r"(?im)^#{1,6}\s+proposal\s*\r?$", "", context.body))
+    design_text = f"{title}\n{design_body}"
     explicit_design_signal = bool(
         any(
             marker in normalized_labels
@@ -1557,7 +1613,7 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
         or re.search(
             r"(?:^|\b)(?:rfc|proposal|api design|needs discussion|design discussion)\b|"
             r"\b(?:multiple|several|alternative)\s+(?:options|approaches|designs)\b",
-            combined,
+            design_text,
             flags=re.IGNORECASE,
         )
     )
@@ -1629,7 +1685,9 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
         )
     )
     has_actionable_signal = bool(
-        context.has_reproduction_steps
+        (_structured_bug_report(context.body) and _filled_issue_section(
+            context.body, r"expected behavior|expected result|期待的正确结果|预期行为|预期结果", minimum=8))
+        or context.has_reproduction_steps
         or context.has_acceptance_criteria
         or context.has_expected_behavior
         or issue_template_action
@@ -1642,6 +1700,10 @@ def _assess_information_quality(context: _DifficultyContext) -> dict[str, Any]:
             flags=re.IGNORECASE,
         )
     )
+    bug_template_headings = r"describe the bug|bug description|to reproduce|steps to reproduce|reproduction|expected behavior|actual behavior|问题描述|复现步骤|预期行为"
+    if re.search(rf"(?im)^#{{1,6}}\s+(?:{bug_template_headings})\s*\r?$", context.body):
+        if not _filled_issue_section(context.body, bug_template_headings):
+            has_actionable_signal = False
 
     if non_actionable:
         actionability = "non_actionable"
@@ -3449,6 +3511,7 @@ def extract_task_features(record: dict[str, Any]) -> TaskFeatures:
         "difficulty_assessment": difficulty_assessment,
         "skill_requirement_evidence": skill_inference.evidence,
         **classification_evidence,
+        **admission_evidence(record),
     }
     return TaskFeatures(
         has_reproduction_steps=reproduction,

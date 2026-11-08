@@ -66,7 +66,9 @@ async function getJson(url, options = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error?.message || `请求失败（${response.status}）`);
+      const error = new Error(payload.error?.message || `请求失败（${response.status}）`);
+      error.code = payload.error?.code;
+      throw error;
   }
   return payload;
 }
@@ -159,6 +161,14 @@ function renderSkills(gaps) {
 }
 
 function renderRecommendation(item, index) {
+  const warningLabels = {
+    profile_bootstrap_recommendations: "当前根据填写的画像推荐，个性化模型正在准备。",
+    model_features_preparing: "系统正在自动准备推荐资料。",
+    coder_no_public_code_history: "暂未取得可用公开代码历史，使用新用户推荐模式。",
+    inventory_availability_assumed: "本次试用未重新核验任务状态。",
+    rule_reasons_are_context_only: "匹配依据不是模型分数的加分明细。",
+    gated_scores_are_not_success_probabilities: "排序分不代表完成任务的概率。",
+  };
   const reasonText = item.reasons.map(translateReason).join("；");
   const feedbackStatus = item.feedback_state
     ? `当前状态：${feedbackLabels[item.feedback_state]}`
@@ -176,7 +186,9 @@ function renderRecommendation(item, index) {
           <span class="tag">${item.track === "newcomer" ? "首次贡献" : "进阶成长"}</span>
           <span class="tag">技能覆盖 ${Math.round(item.skill_coverage * 100)}%</span>
           <span class="tag">最大差距 ${item.maximum_skill_gap} 级</span>
+          ${item.difficulty ? `<span class="tag">估计代码难度 ${escapeHtml(item.difficulty.code)}/3 · 环境难度 ${escapeHtml(item.difficulty.setup)}/3</span>` : ""}
         </div>
+        ${(item.warnings || []).length ? `<p class="feedback-status">${(item.warnings || []).map(value => escapeHtml(warningLabels[value] || value)).join("；")}</p>` : ""}
         <div class="reason-box">
           <strong>为什么推荐</strong>
           <p>${reasonText}</p>
@@ -435,7 +447,11 @@ async function loadRecommendations({ scrollToResults = true } = {}) {
   } catch (error) {
     elements.list.innerHTML = "";
     elements.count.textContent = "推荐加载失败";
-    showMessage("无法生成推荐", error.message, "error");
+    if (error.code === "model_features_required") {
+      showMessage("推荐资料需要准备", "首次使用或修改画像后，需要准备对应的推荐资料，完成后可重新获取推荐。", "empty");
+    } else {
+      showMessage("无法生成推荐", error.message, "error");
+    }
   } finally {
     elements.button.disabled = state.mode === "custom"
       ? !state.availability?.current_selection_count

@@ -140,6 +140,9 @@ def scorer_with_profile(
         raise ValueError("advanced adapter mode must be off, shadow or serve")
     if base_scorer is None:
         return None
+    bind_enhanced_profile = getattr(base_scorer, "bind_enhanced_profile", None)
+    if callable(bind_enhanced_profile):
+        base_scorer = bind_enhanced_profile(profile_snapshot)
     has_adapter = getattr(base_scorer, "profile_adapter", None) is not None
     if mode != "off" and service_track == "growth" and profile_snapshot is not None:
         if not has_adapter:
@@ -157,7 +160,45 @@ def scorer_with_profile(
     return base_only
 
 
-def current_model_metadata() -> ModelMetadata:
+def current_model_metadata(model_scorer: Any | None = None) -> ModelMetadata:
+    """Describe the scorer that is actually serving recommendation requests."""
+
+    if model_scorer is not None:
+        nested_model = getattr(model_scorer, "model", None)
+        manifest = getattr(nested_model, "manifest", None)
+        if not isinstance(manifest, dict):
+            manifest = getattr(model_scorer, "manifest", None)
+        if isinstance(manifest, dict) and manifest.get("model_version"):
+            variant = str(
+                getattr(model_scorer, "scoring_engine", None) or "coder_issue_repo"
+            )
+            feature_versions = {
+                key: str(manifest[key])
+                for key in ("feature_schema", "graph_version", "encoder_version")
+                if manifest.get(key)
+            }
+            warnings = []
+            if manifest.get("scores_are_probabilities") is False:
+                warnings.append("model_scores_are_not_probabilities")
+            if manifest.get("independently_tested") is False:
+                warnings.append("model_not_independently_tested")
+            return ModelMetadata(
+                variant=variant,
+                version=str(manifest["model_version"]),
+                status="active",
+                dataset_version=(
+                    str(manifest["dataset_version"])
+                    if manifest.get("dataset_version")
+                    else None
+                ),
+                mapping_version=(
+                    str(manifest["mapping_version"])
+                    if manifest.get("mapping_version")
+                    else None
+                ),
+                feature_versions=feature_versions,
+                warnings=tuple(warnings),
+            )
     return ModelMetadata(
         variant="rule_legacy",
         version=MATCH_VERSION_V3,

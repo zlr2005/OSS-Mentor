@@ -4,6 +4,16 @@
 
 ## 研究画像重建
 
+### 2026-11-08 A 侧复审修正
+
+后续跨环境修正：代码与配置依赖先将 UTF-8 换行统一为 LF 再计算 SHA-256，manifest 中以 `dependency_hash_format=utf8-lf-v1` 标识；输入数据、内容文件及交付文件仍按原始字节计算哈希。旧 `c244db7a...` 是旧包内 manifest 的哈希，不能作为本次修正后包的哈希。旧包与本机重建之间确认仅构建脚本的依赖哈希不同，其换行分别为 LF 和 CRLF；B 的 `508c1263...` 差异仍需对照双方 manifest 中的依赖和输入哈希才能确定。相同数据输入下，完整数据分别以本机换行和模拟 LF 构建，7 个文件逐字节相同；另有合成数据回归覆盖模拟 CRLF、非空目录拒绝、schema、预览状态和 manifest 文件集合。更改构建脚本后必须重建，旧包不代表当前版本。
+
+修正后的研究预览包单独交付 B，本地重建目录为 `data/midterm/working/sparse_review_profiles_20261108_v3`。运行 `python scripts/midterm_a/build_sparse_review_profiles.py --output <空目录> --observed-at 2026-11-05T00:00:00Z`；观察时间为重建时显式固定的参数，不是本次运行时间或首次公开时间的证明。输出目录非空时拒绝运行，校验文件由本次构建生成，manifest 只列出本次生成的文件。画像版本绑定源清单、输入清单、规则、配置、脚本、观察时间和输入内容哈希。顶层 schema 采用 `enhanced-profile-export-v0.1`；构建时借助正式导出校验器检查字段形状，但这不代表画像已经确认或通过 B 的契约复审。
+
+两次相同输入重建的 7 个输出文件逐字节一致。画像仍为 `research_preview`、`b_review_status=pending`、`training_ready=false`；275 份画像平均观测 4.065/23 维，仅有 8 种模型输入，不能据此宣称模型效果提升或训练就绪。首次公开可见时间仍未独立证实。
+
+C、C++ 和 Groovy 在本次交付中仅作为平台语言筛选信息，不新增到冻结的 23 维模型输入；平台具体接线仍需 D 核对。如果要将它们加入画像特征，需由 B 确定新版 Schema、C 适配模型后另行升级。
+
 新增 B/C 审核包 `data/midterm/working/sparse_review_profiles_20261105_v1`，沿用现有 B 解释与融合规则，从已校验贡献中按用户和严格截止点过滤、按仓库/commit/文件去重后，生成 275 份研究画像预览，覆盖 59 位开发者，并与全部 384 条完整补充记录联接。
 
 - `profile_previews.jsonl`：23 维值、observed_mask、证据引用及画像哈希。

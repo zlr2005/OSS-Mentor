@@ -106,6 +106,24 @@ test('dirty/new/busy profiles cannot import or decide before saving', () => {
   assert.equal(h.run('canChangeServerProfile()'), true);
 });
 
+test('blocked import explains the required action next to the import button without requesting GitHub', async () => {
+  for (const [patch, expected] of [
+    ['state.ready=true;state.persisted=false', /保存画像/],
+    ['state.ready=true;state.persisted=true;state.dirty=true', /保存画像/],
+    ['state.ready=false', /登录或重新加载/],
+    ['state.ready=true;state.busy=true', /稍后再试/],
+  ]) {
+    const h = harness();
+    const status = {textContent: '', dataset: {}};
+    h.context.document.getElementById = id => id === 'github-import-status' ? status : null;
+    h.run(patch);
+    await h.run('handleGithubImport()');
+    assert.match(status.textContent, expected);
+    assert.equal(status.dataset.state, 'error');
+    assert.equal(h.calls.length, 0);
+  }
+});
+
 test('form collection retains unknown skills and zero locks; empty choices fail validation', () => {
   const h = harness();
   const inputs = {'display-name': {value: 'Fixture'}, 'service-track': {value:'newcomer'},

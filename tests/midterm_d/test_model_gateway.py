@@ -79,7 +79,26 @@ class FakeShadowScorer(FakeScorer):
         )
 
 
+class FakeBoundScorer:
+    scoring_engine = "coder_gated"
+
+    def __init__(self, enhanced_profile=None) -> None:
+        self.enhanced_profile = enhanced_profile
+        self.profile_adapter = None
+
+    def bind_enhanced_profile(self, profile):
+        return FakeBoundScorer(profile)
+
+
 class ModelGatewayTests(unittest.TestCase):
+    def test_gated_scorer_binds_confirmed_profile_before_scoring(self) -> None:
+        base = FakeBoundScorer()
+        snapshot = {"schema_version": "enhanced-profile-export-v0.1"}
+        scorer = scorer_with_profile(base, snapshot, mode="off")
+        self.assertIsNot(base, scorer)
+        self.assertEqual(snapshot, scorer.enhanced_profile)
+        self.assertIsNone(base.enhanced_profile)
+
     def test_confirmed_profile_is_injected_into_scorer_port(self) -> None:
         base = FakeScorer()
         snapshot = {

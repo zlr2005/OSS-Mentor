@@ -1,0 +1,21 @@
+{
+  "format": "oss-mentor-gated-runtime-lock-v1",
+  "archive_name": "portable_gated_pr40_9bf9208d.zip",
+  "archive_repository_path": "model-assets/portable_gated_pr40_9bf9208d.zip",
+  "archive_sha256": "179d6fe270522f194e7242ddd837a1850637c3c2f581a0e35300069fbcfcff0f",
+  "source_head": "9bf9208d237f343ad3d1d993ccbe9a0f31c4935b",
+  "model_version": "coder-gated-marginal_positive-s20261102",
+  "feature_schema": "coder-gated-128+16-v1",
+  "seed": 20261102,
+  "minilm_revision": "c21050a7ef692090620a6d037dd736908f9c7cf6",
+  "bundle_weights_sha256": "f933bf970c906abcd44fff88dc76c9b8c065ace6fedc7e95557db5b2e10f5505",
+  "repository_mapping_sha256": "c0c665d7153caa4f65c04fcbecc8f1a341380cc078e2b5a75762456bdbccc2ab",
+  "required_backbone_dependencies": {
+    "assets/inputs/historical_issue_embeddings.npz": "6cb0b8d3a178f8ff6bd90fb2495c0b10d9cc1f0b3dda7b78d122f468bfc585c8",
+    "assets/encoding-assets/coder_bundle/data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1/embeddings.npz": "70b6dc84c990af49d160014db3619407b6654f20b1288e02641698ab8092fd8d",
+    "assets/encoding-assets/coder_bundle/data/models/gfibot-m0-v1.1/coder/coder-full-search8-v1/model_manifest.json": "62974d6a16e1c3dd00fb9b4179fc6cca68f81de7739351cafd65bedb953b3f48",
+    "assets/runs/bottleneck-diagnostics-20261106-v1/original-20261102/weights.pt": "4eb4db4d633f6e04f1ae57ed9b3ef9d67ea993d24c6d7d8a63f9ef10dd5ed1ea",
+    "assets/runs/history-fusion-v2-20261106-v1/learned_behavior-20261102/weights.pt": "d6d216f21d2ee33b71a94ca9d76059687b23de34477551466ba190770159dc73",
+    "assets/runs/transfer-cold-v3-20261107-v1/cosine-20261102/weights.pt": "34504bfdf1942594720968cc380b0278b3f349017d4784e76fcf7a24814823be"
+  }
+}

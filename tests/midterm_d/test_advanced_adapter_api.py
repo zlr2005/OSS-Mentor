@@ -150,6 +150,16 @@ class AdvancedAdapterApiTests(unittest.TestCase):
         self.store.initialize()
         with self.store.connect() as connection:
             connection.execute("DELETE FROM task_skill_requirement")
+            # The copied fixture is historical. Seed current, actionable test inputs
+            # so adapter tests exercise scoring rather than an empty filtered pool.
+            connection.execute("UPDATE task_candidate SET github_verified_at=?, verification_expires_at=NULL", (datetime.now(timezone.utc).isoformat(),))
+            for row in connection.execute("SELECT task_candidate_id, feature_evidence_json FROM task_candidate").fetchall():
+                evidence = json.loads(row["feature_evidence_json"] or "{}")
+                evidence.setdefault("difficulty_assessment", {})["information_quality"] = {"actionability": "actionable"}
+                connection.execute("UPDATE task_candidate SET feature_evidence_json=? WHERE task_candidate_id=?", (json.dumps(evidence), row["task_candidate_id"]))
+            connection.execute("""INSERT INTO task_skill_requirement
+                (task_candidate_id,skill_name,minimum_level,importance,requirement_source,feature_version)
+                SELECT task_candidate_id,'Python',0,1.0,'test','adapter-test-v1' FROM task_candidate""")
             connection.execute(
                 """
                 UPDATE task_candidate

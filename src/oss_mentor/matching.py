@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
+from oss_mentor.candidate_admission import expanded_content
 
 
 MATCH_VERSION_V1 = "developer-task-match-v0.1"
@@ -102,7 +103,8 @@ def match_candidate(
         value.casefold() for value in profile["preferred_task_types"]
     }
     task_types = {value.casefold() for value in task["task_types"]}
-    if preferred_types and not preferred_types.intersection(task_types):
+    unknown_expanded_type = expanded_content(task) and task_types == {'other'}
+    if preferred_types and not preferred_types.intersection(task_types) and not unknown_expanded_type:
         return None
     supported_operating_systems = {
         str(value).casefold() for value in task.get("operating_systems", ())
@@ -289,7 +291,7 @@ def rank_for_profile(
                 -(
                     pool[index].match_score
                     + (5.0 if match_version == MATCH_VERSION_V3 and (
-                        {str(value).casefold() for value in tasks_by_id[pool[index].task_candidate_id].get("task_types", ())}
+                        {str(value).casefold() for value in tasks_by_id[pool[index].task_candidate_id].get("task_types", ()) if str(value).casefold() != 'other'}
                         - covered_task_types
                     ) else 0.0)
                     - (repository_counts.get(pool[index].repository, 0) * 2.0
@@ -307,6 +309,7 @@ def rank_for_profile(
         covered_task_types.update(
             str(value).casefold()
             for value in tasks_by_id[chosen.task_candidate_id].get("task_types", ())
+            if str(value).casefold() != 'other'
         )
     return selected
 

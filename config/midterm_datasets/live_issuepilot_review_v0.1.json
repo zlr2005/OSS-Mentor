@@ -1,0 +1,18 @@
+{
+  "policy_version": "live-issuepilot-review-v1",
+  "review_basis": "Current GitHub repository README, Issue titles and labels; not a full implementation feasibility review",
+  "excluded_repositories": {
+    "google/material-design-lite": {
+      "reason": "project_readme_redirects_to_successor",
+      "evidence_url": "https://raw.githubusercontent.com/google/material-design-lite/master/README.md",
+      "evidence_file": "google__material-design-lite/readme_review.json"
+    }
+  },
+  "excluded_issues": {
+    "facebook/docusaurus#11719": "umbrella_issue_not_a_single_contribution_task",
+    "facebook/zstd#4785": "release_schedule_question",
+    "google/ml-compiler-opt#475": "training_support_question",
+    "microsoft/sarif-js-sdk#31": "third_party_package_announcement",
+    "microsoft/sarif-js-sdk#88": "legal_review_request_not_a_development_task"
+  }
+}

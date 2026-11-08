@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import http.client
 import random
 import time
 import urllib.error
@@ -253,7 +254,7 @@ class GitHubClient:
                     url=url,
                     payload=payload,
                 ) from exc
-            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException) as exc:
                 if attempt < self.max_retries:
                     self.retry_count += 1
                     self._sleep(self._retry_delay(attempt, {}))

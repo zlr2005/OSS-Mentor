@@ -1,0 +1,126 @@
+{
+  "retrieval_method": "github_connector",
+  "purpose": "discovery_seeds_only; refresh issue status before recommendation",
+  "repositories": [
+    {
+      "name": "apache/echarts",
+      "id": 9185792,
+      "owner": 47359,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-13T09:27:20Z",
+      "observed_at": "2026-10-16T08:38:26.388Z"
+    },
+    {
+      "name": "encode/httpx",
+      "id": 179492861,
+      "owner": 19159390,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-02T12:53:43Z",
+      "observed_at": "2026-10-16T08:38:26.863Z"
+    },
+    {
+      "name": "fastapi/fastapi",
+      "id": 160919119,
+      "owner": 156354296,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-15T14:24:58Z",
+      "observed_at": "2026-10-16T08:38:26.387Z"
+    },
+    {
+      "name": "microsoft/vscode",
+      "id": 41881900,
+      "owner": 6154722,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T08:36:25Z",
+      "observed_at": "2026-10-16T08:38:26.385Z"
+    },
+    {
+      "name": "nodejs/node",
+      "id": 27193779,
+      "owner": 9950313,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T06:40:38Z",
+      "observed_at": "2026-10-16T08:38:26.834Z"
+    },
+    {
+      "name": "numpy/numpy",
+      "id": 908607,
+      "owner": 288276,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T05:15:20Z",
+      "observed_at": "2026-10-16T08:38:26.380Z"
+    },
+    {
+      "name": "pallets/flask",
+      "id": 596892,
+      "owner": 16748505,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-07T14:02:59Z",
+      "observed_at": "2026-10-16T08:38:26.190Z"
+    },
+    {
+      "name": "pandas-dev/pandas",
+      "id": 858127,
+      "owner": 21206976,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-15T22:55:36Z",
+      "observed_at": "2026-10-16T08:38:26.585Z"
+    },
+    {
+      "name": "pytest-dev/pytest",
+      "id": 37489525,
+      "owner": 8897583,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-13T03:51:44Z",
+      "observed_at": "2026-10-16T08:38:26.189Z"
+    },
+    {
+      "name": "scikit-learn/scikit-learn",
+      "id": 843222,
+      "owner": 365630,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-14T13:00:44Z",
+      "observed_at": "2026-10-16T08:38:26.390Z"
+    },
+    {
+      "name": "vitejs/vite",
+      "id": 257485422,
+      "owner": 65625612,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-15T16:11:17Z",
+      "observed_at": "2026-10-16T08:38:26.391Z"
+    },
+    {
+      "name": "vuejs/core",
+      "id": 137078487,
+      "owner": 6128107,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T07:52:52Z",
+      "observed_at": "2026-10-16T08:38:26.385Z"
+    }
+  ]
+}

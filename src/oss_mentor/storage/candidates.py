@@ -13,8 +13,12 @@ from oss_mentor.candidate_rules import (
     AvailabilityResult,
     EligibilityResult,
     evaluate_availability,
+    has_beginner_label,
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.task_features import extract_task_features, infer_skill_requirements
+from oss_mentor.candidate_admission import expanded_content, EXPANDED_CONTENT_POLICY
+from oss_mentor.task_readiness import task_admission_warnings
 
 
 def _utc_now() -> datetime:
@@ -338,7 +342,8 @@ class SQLiteCandidateStorage(SQLiteCandidateStore):
             """
             UPDATE task_candidate
             SET candidate_availability = ?,
-                availability_reasons_json = ?
+                availability_reasons_json = ?,
+                newcomer_label_signal = ?
             WHERE repository_id = ? AND issue_number = ?
             """,
             (
@@ -348,10 +353,33 @@ class SQLiteCandidateStorage(SQLiteCandidateStore):
                     ensure_ascii=False,
                     separators=(",", ":"),
                 ),
+                int(has_beginner_label(record.get('labels') or [])),
                 repository_id,
                 int(record["issue_number"]),
             ),
         )
+
+        # Keep inferred requirements and difficulty consistent with refreshed text.
+        task = connection.execute(
+            'SELECT tc.*, r.primary_language FROM task_candidate tc JOIN repository r USING(repository_id) '
+            'WHERE tc.repository_id=? AND tc.issue_number=?',
+            (repository_id, int(record['issue_number'])),
+        ).fetchone()
+        feature_record = {**dict(task), 'labels': json.loads(task['labels_json'])}
+        if expanded_content(record):
+            feature_record['admission_policy'] = EXPANDED_CONTENT_POLICY
+        warnings = json.loads(task['warnings_json'])
+        inference_note = '难度与技能要求为规则推断，尚未经实际构建验证'
+        if inference_note not in warnings:
+            warnings.append(inference_note)
+        features = extract_task_features(feature_record)
+        warnings.extend(w for w in task_admission_warnings({**feature_record, **features.to_dict()}) if w not in warnings)
+        connection.execute('UPDATE task_candidate SET warnings_json=? WHERE task_candidate_id=?',
+                           (json.dumps(warnings, ensure_ascii=False), task['task_candidate_id']))
+        self.update_features(connection, task_candidate_id=task['task_candidate_id'], features=features)
+        self.replace_skill_requirements(connection, task_candidate_id=task['task_candidate_id'],
+                                       requirements=infer_skill_requirements(feature_record, features),
+                                       feature_version=features.task_feature_version)
 
     def get_sync_checkpoint(self, full_name: str) -> dict[str, Any]:
         self.initialize()
@@ -643,7 +671,7 @@ class SQLiteCandidateStorage(SQLiteCandidateStore):
         older_than_hours: int = 24,
         now: datetime | None = None,
     ) -> int:
-        cutoff = _iso((now or _utc_now()) - timedelta(hours=older_than_hours))
+        cutoff = _iso((now or _utc_now()) - timedelta(hours=min(older_than_hours, 24)))
         with self.connect() as connection:
             cursor = connection.execute(
                 """
@@ -652,11 +680,13 @@ class SQLiteCandidateStorage(SQLiteCandidateStore):
                     availability_reasons_json = '["verification_older_than_limit"]'
                 WHERE candidate_availability = 'available'
                   AND (
-                      github_verified_at IS NULL
-                      OR github_verified_at < ?
+                      julianday(github_verified_at) IS NULL
+                      OR julianday(github_verified_at) <= julianday(?)
+                      OR julianday(github_verified_at) > julianday(?)
+                      OR (verification_expires_at IS NOT NULL AND COALESCE(julianday(verification_expires_at), 0) <= julianday(?))
                   )
                 """,
-                (cutoff,),
+                (cutoff, _iso(now), _iso(now)),
             )
             return int(cursor.rowcount)
 

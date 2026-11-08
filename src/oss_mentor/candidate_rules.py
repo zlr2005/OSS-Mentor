@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
+from oss_mentor.candidate_freshness import verification_is_current
+from oss_mentor.candidate_admission import expanded_content, SOFT_INFORMATION_LABELS
 
 
 FEATURE_VERSION = "candidate-eligibility-v0.1"
@@ -75,6 +77,12 @@ def has_newcomer_label(labels: Iterable[str]) -> bool:
     return bool(normalized.intersection(NEWCOMER_LABELS))
 
 
+def has_beginner_label(labels: Iterable[str]) -> bool:
+    """A welcome-to-contribute label alone is insufficient for the novice track."""
+    normalized = {label.strip().casefold() for label in labels}
+    return bool(normalized.intersection(NEWCOMER_LABELS - {'help wanted', 'help-wanted', 'contribution welcome'}))
+
+
 def _parse_time(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -118,6 +126,10 @@ def evaluate_availability(
         )
     if record.get("is_locked"):
         return AvailabilityResult("locked", ("issue_locked",), verified_at)
+    if record.get('context_review_reasons') or record.get('assignment_state') in {'claimed_in_comments', 'unknown'}:
+        return AvailabilityResult('temporarily_unverified', ('requires_context_review',), verified_at)
+    if record.get('has_linked_open_pr') is not False or record.get('assignment_state') != 'unassigned':
+        return AvailabilityResult('temporarily_unverified', ('availability_checks_incomplete',), verified_at)
 
     parsed = _parse_time(verified_at)
     current = now or datetime.now(timezone.utc)
@@ -133,7 +145,7 @@ def evaluate_availability(
             ("requires_github_verification",),
             verified_at,
         )
-    if current - parsed > timedelta(hours=maximum_age_hours):
+    if current - parsed >= timedelta(hours=maximum_age_hours) or not verification_is_current(record, now=current):
         return AvailabilityResult(
             "temporarily_unverified",
             ("verification_older_than_limit",),
@@ -147,7 +159,7 @@ def evaluate_candidate(record: dict[str, Any]) -> EligibilityResult:
     newcomer_signal = has_newcomer_label(labels)
     normalized_labels = {str(label).strip().casefold() for label in labels}
     reasons: list[str] = []
-    warnings: list[str] = []
+    warnings: list[str] = list(record.get('admission_warnings') or [])
 
     if record.get("is_pull_request"):
         reasons.append("pull_request_not_issue")
@@ -164,7 +176,11 @@ def evaluate_candidate(record: dict[str, Any]) -> EligibilityResult:
         reasons.append("locked")
     if record.get("has_linked_open_pr") is True:
         reasons.append("linked_open_pr")
-    blocking = sorted(normalized_labels.intersection(BLOCKING_LABELS))
+    if record.get('assignment_state') in {'claimed_in_comments', 'unknown'}:
+        reasons.append('assignment_requires_review')
+    reasons.extend(record.get('context_review_reasons') or [])
+    blocking_labels = BLOCKING_LABELS - SOFT_INFORMATION_LABELS if expanded_content(record) else BLOCKING_LABELS
+    blocking = sorted(normalized_labels.intersection(blocking_labels))
     reasons.extend(f"blocking_label:{label}" for label in blocking)
     if reasons:
         return EligibilityResult(

@@ -29,9 +29,36 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install package
-        run: pip install -e .
+        run: pip install -e ".[test]"
       - name: Run tests
-        run: python -m unittest discover -s tests -v
+        run: python -m pytest tests -v
+
+  gated-runtime-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install locked gated worker environment
+        run: >-
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu
+          -e ".[test,gated-worker]"
+      - name: Rebuild locked runtime assets
+        run: >-
+          python scripts/rebuild_gated_runtime_assets.py
+          --archive model-assets/portable_gated_pr40_9bf9208d.zip
+          --output /tmp/gated-v1
+      - name: Run real frozen-asset B/C/D smoke test
+        run: >-
+          python scripts/verify_gated_bcd_local.py
+          --assets /tmp/gated-v1
+          --output /tmp/gated-bcd-smoke
 
   sqlite-migration-tests:
     runs-on: ubuntu-latest
@@ -101,6 +128,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build -t oss-mentor:ci-test .
+      - name: Build gated worker image
+        run: docker build -f Dockerfile.gated-worker -t oss-mentor-gated-worker:ci-test .
 
   web-smoke-tests:
     runs-on: ubuntu-latest
@@ -131,4 +160,4 @@ jobs:
           node --check web/assets/login.js
           node --check web/assets/recommendations.js
       - name: Run profile gateway tests
-        run: node --test tests/profile_gateway.test.cjs
+        run: node --test tests/profile_gateway.test.cjs tests/recommendations_gated.test.cjs

@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY scripts ./scripts
+COPY config ./config
+
+ARG PYTORCH_CPU_INDEX=https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir --extra-index-url ${PYTORCH_CPU_INDEX} ".[gated-worker]"
+
+# Mount the reconstructed data/gated-v1 tree and a production config at runtime.
+ENTRYPOINT ["python", "scripts/run_gated_feature_worker.py"]
+CMD ["--config", "/run/gated-worker.json"]

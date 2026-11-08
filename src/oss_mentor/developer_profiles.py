@@ -12,7 +12,7 @@ from typing import Any
 CUSTOM_PROFILE_VERSION = "custom-profile-v0.2"
 ALLOWED_SERVICE_TRACKS = {"newcomer", "growth"}
 ALLOWED_OPERATING_SYSTEMS = {"windows", "macos", "linux"}
-ALLOWED_LANGUAGES = {"python", "javascript", "typescript", "java", "go", "rust"}
+ALLOWED_LANGUAGES = {"python", "javascript", "typescript", "java", "go", "rust", "c", "c++", "groovy"}
 LANGUAGE_DISPLAY_NAMES = {
     "python": "Python",
     "javascript": "JavaScript",
@@ -20,6 +20,9 @@ LANGUAGE_DISPLAY_NAMES = {
     "java": "Java",
     "go": "Go",
     "rust": "Rust",
+    "c": "C",
+    "c++": "C++",
+    "groovy": "Groovy",
 }
 ALLOWED_TASK_TYPES = {
     "bug_fix",
@@ -1527,7 +1530,7 @@ def custom_profile_for_matching(payload: Any) -> dict[str, Any]:
         for value in _custom_string_list(
             payload.get("preferred_languages"),
             "preferred_languages",
-            maximum=6,
+            maximum=len(ALLOWED_LANGUAGES),
             allowed=ALLOWED_LANGUAGES,
         )
     ]

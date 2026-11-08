@@ -30,6 +30,7 @@
     track: "all",
     query: "",
     preview: new URLSearchParams(window.location.search).get("state"),
+    preparationPolls: 0,
   };
 
   function currentReturnTo() {
@@ -356,6 +357,12 @@
       updateCounts();
       renderList();
       loadProjects(batch.run_id);
+      if ((batch.warnings || []).includes("model_features_preparing")) {
+        showMessage("model_features_preparing", "个性化准备中", "当前先按你填写的画像推荐，系统正在自动准备个性化模型资料，无需重复填写。完成后将自动更新。");
+        if (state.preparationPolls++ < 24) setTimeout(() => loadAuthenticated(session), 5000);
+      } else {
+        state.preparationPolls = 0;
+      }
     } catch (error) {
       if (error.status === 401) {
         renderAnonymous(session);
@@ -363,6 +370,11 @@
       }
       if (error.status === 404 && error.code === "profile_required") {
         renderNoProfile(session);
+        return;
+      }
+      if (error.code === "model_features_required") {
+        renderPreviewPanel("model_features_required", "推荐资料需要准备", "你的画像已保留。首次使用或修改画像后，需要准备对应资料，完成后可重新获取推荐。", '<a class="btn btn--sm btn--ghost" href="/recommendations">重新获取</a>');
+        loadPublicCandidates();
         return;
       }
       renderSessionCard(null);

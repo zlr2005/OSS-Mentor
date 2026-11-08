@@ -280,6 +280,7 @@ class RecommendationApi:
         profile_service: ProfileService | None = None,
         github_profile_source: GitHubProfileSource | None = None,
         recommendation_service: RecommendationService | None = None,
+        refresh_worker=None,
         candidate_service: CandidateService | None = None,
         midterm_profile_store: SQLiteMidtermProfileApiStore | None = None,
         midterm_profile_service: MidtermProfileService | None = None,
@@ -290,6 +291,7 @@ class RecommendationApi:
             raise ValueError("advanced_adapter_mode must be off, shadow or serve")
         self.advanced_adapter_mode = advanced_adapter_mode
         self.store = store
+        self.refresh_worker = refresh_worker
         self.candidate_service = candidate_service
         self.candidate_storage: SQLiteCandidateStorage | None = None
         if isinstance(store, SQLiteCandidateStore):
@@ -630,8 +632,7 @@ class RecommendationApi:
             )
         return None
 
-    @staticmethod
-    def _model_metadata_for_batch(batch: Any) -> dict[str, Any]:
+    def _model_metadata_for_batch(self, batch: Any) -> dict[str, Any]:
         if isinstance(batch, dict):
             rankings = list(batch.get("rankings") or [])
             match_version = str(batch.get("match_version") or "")
@@ -641,7 +642,9 @@ class RecommendationApi:
             match_version = str(getattr(batch, "match_version", "") or "")
             warnings = list(getattr(batch, "warnings", ()) or ())
         if not rankings or not rankings[0].get("scoring_engine"):
-            return current_model_metadata().to_dict()
+            return current_model_metadata(
+                self.recommendation_service.model_scorer
+            ).to_dict()
         first = rankings[0]
         return {
             "variant": str(first["scoring_engine"]),
@@ -858,7 +861,9 @@ class RecommendationApi:
                 "personalized": False,
                 "warnings": ["public_candidates_are_not_personalized"],
                 "match_version": MATCH_VERSION_V3,
-                "model": current_model_metadata().to_dict(),
+                "model": current_model_metadata(
+                    self.recommendation_service.model_scorer
+                ).to_dict(),
                 "api_version": API_VERSION,
             },
         )
@@ -965,6 +970,20 @@ class RecommendationApi:
                 "create a profile before requesting recommendations",
             )
         developer_key = verified_developer_key(user.get("github_login"))
+        requires_confirmed_profile = (
+            getattr(
+                self.recommendation_service.model_scorer,
+                "scoring_engine",
+                None,
+            )
+            == "coder_gated"
+        )
+        if requires_confirmed_profile and self.midterm_profile_service is None:
+            return self._error(
+                503,
+                "service_not_ready",
+                "confirmed profile service is required for gated recommendations",
+            )
         enhanced_profile = None
         if self.midterm_profile_service is not None:
             try:
@@ -972,10 +991,13 @@ class RecommendationApi:
                     user_id=user_id,
                     developer_key=developer_key,
                 ).to_dict()
-            except (
-                MidtermProfileRequiredError,
-                MidtermProfileNotConfirmedError,
-            ):
+            except MidtermProfileRequiredError as exc:
+                if requires_confirmed_profile:
+                    return self._error(404, "profile_required", str(exc))
+                enhanced_profile = None
+            except MidtermProfileNotConfirmedError as exc:
+                if requires_confirmed_profile:
+                    return self._error(404, "profile_not_confirmed", str(exc))
                 enhanced_profile = None
             except ValueError as exc:
                 return self._error(
@@ -1042,7 +1064,9 @@ class RecommendationApi:
                 200,
                 {
                     **_refreshed_candidate_detail_body(detail),
-                    "model": current_model_metadata().to_dict(),
+                    "model": current_model_metadata(
+                        self.recommendation_service.model_scorer
+                    ).to_dict(),
                     "api_version": API_VERSION,
                 },
             )
@@ -1064,7 +1088,9 @@ class RecommendationApi:
             200,
             {
                 **_candidate_detail_body(row, task),
-                "model": current_model_metadata().to_dict(),
+                "model": current_model_metadata(
+                    self.recommendation_service.model_scorer
+                ).to_dict(),
                 "api_version": API_VERSION,
             },
         )
@@ -1093,11 +1119,14 @@ class RecommendationApi:
         enhanced_profile: dict[str, Any] | None = None,
         owner_user_id: int | None = None,
     ) -> ApiResponse:
+        tasks = self.store.matchable_candidates()
+        task_by_id = {int(task['task_candidate_id']): task for task in tasks}
         contract_profile = as_developer_profile_v2(profile)
         recommendation_service = self.recommendation_service
+        base_scorer = recommendation_service.model_scorer
         try:
             scorer = scorer_with_profile(
-                recommendation_service.model_scorer,
+                base_scorer,
                 enhanced_profile,
                 mode=self.advanced_adapter_mode,
                 service_track=str(profile.get("service_track") or ""),
@@ -1169,6 +1198,12 @@ class RecommendationApi:
                             {"skill": name, "gap": 1, "developer_level": 0, "required_level": 1}
                             for name in item.missing_skills
                         ],
+                        'difficulty': {
+                            'code': task_by_id[item.task_candidate_id].get('estimated_code_difficulty'),
+                            'setup': task_by_id[item.task_candidate_id].get('estimated_setup_difficulty'),
+                        },
+                        'verified_at': task_by_id[item.task_candidate_id].get('github_verified_at'),
+                        'verification_expires_at': task_by_id[item.task_candidate_id].get('verification_expires_at'),
                     }
                     for item in batch.items
                 ],
@@ -1275,7 +1310,7 @@ class RecommendationApi:
         except sqlite3.Error:
             response = self._error(503, "service_not_ready", "database is unavailable or requires migration")
         except ModelUnavailableError as exc:
-            response = self._error(503, "model_unavailable", str(exc))
+            response = self._error(503, exc.code, str(exc))
         body_out = {**response.body, "request_id": request_id}
         if "error" in body_out:
             body_out["error"]["request_id"] = request_id
@@ -1567,9 +1602,12 @@ class RecommendationApi:
                 200,
                 {
                     **status_data,
+                    'automatic_refresh': self.refresh_worker.status() if self.refresh_worker else {'enabled': False},
                     "api_version": API_VERSION,
                     "match_version": MATCH_VERSION_V2,
-                    "model": current_model_metadata().to_dict(),
+                    "model": current_model_metadata(
+                        self.recommendation_service.model_scorer
+                    ).to_dict(),
                 },
             )
         if method == "GET" and path == "/api/v1/auth/github/start":
@@ -1827,6 +1865,7 @@ def serve(
     cors_origin: str | None = None,
     static_root: Path | None = None,
     auth_service: AuthService | None = None,
+    refresh_worker=None,
     recommendation_service: RecommendationService | None = None,
     candidate_service: CandidateService | None = None,
     midterm_profile_service: MidtermProfileService | None = None,
@@ -1838,6 +1877,7 @@ def serve(
         auth_service=auth_service,
         recommendation_service=recommendation_service,
         candidate_service=candidate_service,
+        refresh_worker=refresh_worker,
         midterm_profile_service=midterm_profile_service,
         questionnaire_path=questionnaire_path,
         advanced_adapter_mode=advanced_adapter_mode,
@@ -1847,8 +1887,12 @@ def serve(
         make_handler(api, cors_origin=cors_origin, static_root=static_root),
     )
     try:
+        if refresh_worker:
+            refresh_worker.start()
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        if refresh_worker:
+            refresh_worker.stop()
         server.server_close()

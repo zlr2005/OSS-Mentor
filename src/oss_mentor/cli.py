@@ -7,10 +7,13 @@ import json
 import os
 import sqlite3
 import sys
+import subprocess
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
+from types import SimpleNamespace
+from contextlib import closing
 
 from oss_mentor.api import serve
 from oss_mentor.candidate_refresh import CandidateRefresher
@@ -51,6 +54,8 @@ from oss_mentor.ranking_evaluation import (
 )
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 from oss_mentor.storage.candidates import SQLiteCandidateStorage
+from oss_mentor.inventory_import import import_inventory, import_prepared_inventory
+from oss_mentor.candidate_refresh_worker import CandidateRefreshWorker
 from oss_mentor.task_features import extract_task_features, infer_skill_requirements
 
 
@@ -526,10 +531,20 @@ def command_sync_candidates(settings: Settings, args: argparse.Namespace) -> int
 
 
 def command_refresh_candidates(settings: Settings, args: argparse.Namespace) -> int:
-    repositories = _select_repositories(settings, args)
+    store = _candidate_store(settings, args)
+    if getattr(args, 'from_database', False):
+        store.initialize()
+        with store.connect() as connection:
+            rows = connection.execute('SELECT full_name,ecosystem,primary_language FROM repository ORDER BY full_name').fetchall()
+        requested = set(args.repo or [])
+        repositories = [SimpleNamespace(**dict(r)) for r in rows if not requested or r['full_name'] in requested]
+        missing = requested - {r.full_name for r in repositories}
+        if missing:
+            raise ConfigError('repositories not present in database: ' + ', '.join(sorted(missing)))
+    else:
+        repositories = _select_repositories(settings, args)
     if not repositories:
         raise ConfigError("no repositories selected")
-    store = _candidate_store(settings, args)
     if args.dry_run:
         stale = store.stale_candidates(
             repositories=[repository.full_name for repository in repositories],
@@ -543,14 +558,19 @@ def command_refresh_candidates(settings: Settings, args: argparse.Namespace) -> 
                 "candidate_count": len(stale),
                 "older_than_hours": args.older_than_hours,
                 "limit": args.limit,
-                "estimated_github_requests_max": len(repositories) + 2 * len(stale),
+                "estimated_github_requests_max": (min(len(repositories), len(stale)) + 52 * len(stale)) * (settings.max_retries + 1),
             }
         )
         return 0
     if not args.allow_network:
         print("Refusing candidate refresh without --allow-network.", file=sys.stderr)
         return 2
-    if settings.github_token is None:
+    token = settings.github_token
+    if not token and getattr(args, 'use_gh_auth', False):
+        credential = subprocess.run(['gh', 'auth', 'token'], capture_output=True, text=True, timeout=15)
+        if credential.returncode == 0:
+            token = credential.stdout.strip() or None
+    if token is None:
         print("GITHUB_TOKEN is required for candidate refresh.", file=sys.stderr)
         return 2
 
@@ -558,7 +578,7 @@ def command_refresh_candidates(settings: Settings, args: argparse.Namespace) -> 
         api_base=settings.github_api_base,
         api_version=settings.github_api_version,
         user_agent=settings.user_agent,
-        token=settings.github_token,
+        token=token,
         timeout_seconds=settings.http_timeout_seconds,
         max_retries=settings.max_retries,
         backoff_base_seconds=settings.backoff_base_seconds,
@@ -576,6 +596,7 @@ def command_refresh_candidates(settings: Settings, args: argparse.Namespace) -> 
         repositories,
         older_than_hours=args.older_than_hours,
         limit=args.limit,
+        refresh_empty_repositories=False,
     )
     status = "completed"
     if result.rate_limited or result.failed_count:
@@ -604,6 +625,30 @@ def command_refresh_candidates(settings: Settings, args: argparse.Namespace) -> 
     _write_json(args.output, report)
     _json_dump(report)
     return 0 if status == "completed" else 1
+
+
+def command_import_inventory(settings: Settings, args: argparse.Namespace) -> int:
+    store = _candidate_store(settings, args)
+    snapshot = Path(args.snapshot).expanduser().resolve()
+    if not snapshot.is_file():
+        raise ConfigError('inventory snapshot does not exist: ' + str(snapshot))
+    if snapshot == store.database_path:
+        raise ConfigError('inventory source and platform destination must differ')
+    backup = None
+    if store.database_path.is_file():
+        stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+        backup = store.database_path.with_name(store.database_path.stem + '.before_inventory_' + stamp + '.sqlite3')
+        with closing(sqlite3.connect(store.database_path.as_uri() + '?mode=ro', uri=True)) as source:
+            with closing(sqlite3.connect(backup)) as destination:
+                source.backup(destination)
+    if args.prepared_database:
+        result = import_prepared_inventory(snapshot, Path(args.prepared_database).expanduser().resolve(), store)
+    else:
+        result = import_inventory(snapshot, store, evidence_paths=[Path(p).expanduser().resolve() for p in args.evidence])
+    result['backup_path'] = str(backup) if backup else None
+    _write_json(args.output, result)
+    _json_dump(result)
+    return 0
 
 
 def command_candidate_report(settings: Settings, args: argparse.Namespace) -> int:
@@ -918,6 +963,50 @@ def command_feedback_summary(settings: Settings, args: argparse.Namespace) -> in
 
 
 def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
+    from oss_mentor.candidate_freshness import inventory_assumption
+    assumed = getattr(args, 'assume_inventory_available', False)
+    if assumed and (args.enable_task_refresh or getattr(args, 'refresh_interval_seconds', 0)):
+        raise ConfigError('--assume-inventory-available requires --refresh-interval-seconds 0 and no --enable-task-refresh')
+    worker = None
+    log = None
+    try:
+        worker_config = getattr(args, 'gated_worker_config', None)
+        if worker_config:
+            config = json.loads(Path(worker_config).read_text(encoding='utf-8'))
+            if not args.gated_bundle or not args.gated_cache:
+                raise ConfigError('--gated-worker-config requires gated bundle and cache')
+            if Path(config['bundle']).resolve()!=Path(args.gated_bundle).resolve() or Path(config['cache']).resolve()!=Path(args.gated_cache).resolve():
+                raise ConfigError('Feature worker bundle/cache must match the server')
+            if getattr(args, 'gated_request_dir', None) and Path(args.gated_request_dir).resolve()!=Path(config['requests']).resolve():
+                raise ConfigError('Feature worker request directory must match the server')
+            args.gated_request_dir = config['requests']
+            Path(args.gated_cache).mkdir(parents=True,exist_ok=True)
+            requests = Path(config['requests']);requests.mkdir(parents=True,exist_ok=True)
+            log = (requests/'worker.log').open('ab')
+            worker = subprocess.Popen([sys.executable,str(settings.repo_root/'scripts/run_gated_feature_worker.py'),
+                '--config',str(Path(worker_config).resolve())],stdout=log,stderr=log,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+        with inventory_assumption(assumed):
+            return _command_serve_api(settings, args)
+    finally:
+        if worker is not None:
+            if os.name == 'nt':
+                subprocess.run(['taskkill','/PID',str(worker.pid),'/T','/F'],
+                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                worker.terminate()
+            try:worker.wait(timeout=5)
+            except subprocess.TimeoutExpired:worker.kill();worker.wait()
+        if log is not None:log.close()
+
+
+def _command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
+    gated_bundle = getattr(args, "gated_bundle", None)
+    gated_cache = getattr(args, "gated_cache", None)
+    if bool(gated_bundle) != bool(gated_cache):
+        raise ConfigError("--gated-bundle and --gated-cache must be supplied together")
+    if gated_bundle and (args.legacy_ranking or args.coder_model_dir or args.coder_mapping_dir or args.coder_candidate_cache):
+        raise ConfigError("Gated ranking cannot be combined with legacy or original CODER options")
     store = _sqlite_store(settings, args.database)
     if not store.database_path.is_file():
         raise ConfigError(f"SQLite database does not exist: {store.database_path}")
@@ -965,11 +1054,26 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "--advanced-adapter-mode shadow/serve requires --profile-adapter-dir "
             "or OSS_MENTOR_PROFILE_ADAPTER_DIR"
         )
+    if gated_bundle and advanced_adapter_mode != "off":
+        raise ConfigError("Gated ranking cannot run advanced adapter shadow/serve")
     if advanced_adapter_mode != "off":
         _validate_advanced_adapter_bundle(profile_adapter_dir)
     if args.legacy_ranking and advanced_adapter_mode != "off":
         raise ConfigError("--legacy-ranking cannot run advanced adapter shadow/serve")
-    if not args.legacy_ranking:
+    if gated_bundle:
+        from oss_mentor.gated_scoring import CachedGatedScorer
+        from oss_mentor.services.recommendation_service import RecommendationService
+        if not Path(gated_cache).is_dir():
+            raise ConfigError(f"Gated feature cache is missing: {gated_cache}")
+        try:
+            scorer = CachedGatedScorer(Path(gated_bundle), Path(gated_cache),
+                automatic_encoding=bool(getattr(args, 'gated_worker_config', None)),
+                request_dir=Path(args.gated_request_dir) if getattr(args, 'gated_request_dir', None) else Path(gated_cache).parent / 'gated_feature_requests')
+        except (OSError, ValueError, KeyError) as exc:
+            raise ConfigError(f"Invalid gated model bundle: {exc}") from exc
+        recommendation_service = RecommendationService(store, model_scorer=scorer,
+            allow_preparing_recommendations=bool(getattr(args, 'gated_worker_config', None)))
+    elif not args.legacy_ranking:
         for required in (
             coder_model_dir / "model_manifest.json",
             coder_model_dir / "embeddings.npz",
@@ -1032,6 +1136,22 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
                 settings.repository_config_path, wave=None, enabled_only=True
             ),
         )
+    refresh_worker = None
+    refresh_interval = getattr(args, 'refresh_interval_seconds', 0)
+    refresh_token = settings.github_token
+    if refresh_interval and not refresh_token and getattr(args, 'use_gh_auth', False):
+        credential = subprocess.run(['gh', 'auth', 'token'], capture_output=True, text=True, timeout=15)
+        if credential.returncode == 0:
+            refresh_token = credential.stdout.strip() or None
+    if refresh_interval and refresh_token:
+        candidate_store = SQLiteCandidateStorage(store.database_path, store.migration_path)
+        def synchronizer_factory():
+            github = GitHubClient(api_base=settings.github_api_base, api_version=settings.github_api_version,
+                user_agent=settings.user_agent, token=refresh_token, timeout_seconds=min(settings.http_timeout_seconds, 15),
+                max_retries=1, backoff_base_seconds=1)
+            return CandidateSynchronizer(None, github, candidate_store)
+        refresh_worker = CandidateRefreshWorker(candidate_store, synchronizer_factory,
+            interval_seconds=refresh_interval, limit=args.refresh_limit)
     _json_dump(
         {
             "event": "api_started",
@@ -1040,12 +1160,15 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
             "database_path": str(store.database_path),
             "cors_origin": args.cors_origin,
             "oauth_configured": auth_settings.oauth_configured,
-            "ranking_engine": "legacy" if args.legacy_ranking else "coder_issue_repo",
+            "ranking_engine": "coder_gated" if gated_bundle else ("legacy" if args.legacy_ranking else "coder_issue_repo"),
+            "inventory_availability_assumed": getattr(args, 'assume_inventory_available', False),
+            "model_version": recommendation_service.model_scorer.model.manifest["model_version"] if gated_bundle else None,
             "advanced_adapter_mode": advanced_adapter_mode,
             "profile_adapter_configured": (
                 advanced_adapter_mode != "off" and profile_adapter_dir is not None
             ),
             "task_refresh_enabled": candidate_service is not None,
+            'automatic_refresh_enabled': refresh_worker is not None,
         }
     )
     serve(
@@ -1057,6 +1180,7 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         auth_service=auth_service,
         recommendation_service=recommendation_service,
         candidate_service=candidate_service,
+        refresh_worker=refresh_worker,
         questionnaire_path=(
             settings.repo_root / "config/midterm_profile/questionnaire_v0.1.json"
         ),
@@ -1386,6 +1510,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     add_selection_arguments(refresh_command)
     refresh_command.add_argument("--all-enabled", action="store_true")
+    refresh_command.add_argument('--from-database', action='store_true', help='Select imported repositories from the destination DB instead of pilot config.')
+    refresh_command.add_argument('--use-gh-auth', action='store_true', help='Use the existing gh credential in memory when GITHUB_TOKEN is unset; never persist it.')
     refresh_command.add_argument(
         "--older-than-hours", type=int, default=24, choices=range(1, 24 * 365 + 1)
     )
@@ -1395,6 +1521,14 @@ def build_parser() -> argparse.ArgumentParser:
     refresh_command.add_argument("--dry-run", action="store_true")
     refresh_command.add_argument("--allow-network", action="store_true")
     refresh_command.set_defaults(handler=command_refresh_candidates)
+
+    inventory_command = subparsers.add_parser('import-inventory', help='Import a screened snapshot and derive explainable task features offline.')
+    inventory_command.add_argument('--snapshot', required=True, help='Read-only issue_inventory SQLite snapshot.')
+    inventory_command.add_argument('--database', required=True, help='Destination platform SQLite database.')
+    inventory_command.add_argument('--evidence', action='append', default=[], help='Retained complete_evidence.json; repeat for multiple batches.')
+    inventory_command.add_argument('--prepared-database', help='Reuse a validated conversion of exactly this snapshot and feature-rule version.')
+    inventory_command.add_argument('--output', help='JSON import report.')
+    inventory_command.set_defaults(handler=command_import_inventory)
 
     report_command = subparsers.add_parser(
         "candidate-report", help="Generate an aggregate candidate-pool report offline."
@@ -1517,6 +1651,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=_env_port("OSS_MENTOR_PORT", 8765),
         choices=range(1, 65536),
     )
+    serve_command.add_argument('--refresh-interval-seconds', type=int, default=300, choices=range(0, 86401), help='Refresh due candidates in bounded batches; 0 disables the worker. Requires GitHub credentials.')
+    serve_command.add_argument('--refresh-limit', type=int, default=20, choices=range(1, 101))
+    serve_command.add_argument('--use-gh-auth', action='store_true', help='Use the existing gh credential for the read-only refresh worker when GITHUB_TOKEN is unset.')
     serve_command.add_argument(
         "--cors-origin",
         help="Optional exact Access-Control-Allow-Origin value; disabled by default.",
@@ -1524,6 +1661,11 @@ def build_parser() -> argparse.ArgumentParser:
     serve_command.add_argument("--coder-model-dir")
     serve_command.add_argument("--coder-mapping-dir")
     serve_command.add_argument("--coder-candidate-cache")
+    serve_command.add_argument("--gated-bundle", help="Exported CODER gated NumPy model directory.")
+    serve_command.add_argument("--gated-cache", help="Current offline feature context directory; required with --gated-bundle.")
+    serve_command.add_argument('--gated-request-dir', help='Local directory for deduplicated feature preparation requests; defaults beside the gated cache.')
+    serve_command.add_argument('--gated-worker-config', help='Trusted local feature-worker configuration; starts/stops a background encoder with this server.')
+    serve_command.add_argument('--assume-inventory-available', action='store_true', help='Trial mode: trust stored available status without enforcing inventory verification age; disables network refresh.')
     serve_command.add_argument(
         "--profile-adapter-dir",
         help=(

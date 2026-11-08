@@ -41,6 +41,8 @@ class CandidateRefresher:
         *,
         older_than_hours: int = 24,
         limit: int = 500,
+        refresh_empty_repositories: bool = True,
+        selected_candidates: list[dict[str, Any]] | None = None,
     ) -> CandidateRefreshResult:
         self.store.initialize()
         errors: list[dict[str, Any]] = []
@@ -48,7 +50,15 @@ class CandidateRefresher:
         checked_names: list[str] = []
         rate_limited = False
 
+        candidates = selected_candidates if selected_candidates is not None else self.store.stale_candidates(
+            repositories=[r.full_name for r in repositories],
+            older_than_hours=older_than_hours, limit=limit,
+        ) if repositories else []
+        selected_names = {c['repository'] for c in candidates}
+
         for repository in repositories:
+            if not refresh_empty_repositories and repository.full_name not in selected_names:
+                continue
             try:
                 health = self.synchronizer.fetch_repository_health(
                     repository.full_name
@@ -77,11 +87,7 @@ class CandidateRefresher:
             ):
                 active_names.append(repository.full_name)
 
-        candidates = self.store.stale_candidates(
-            repositories=active_names,
-            older_than_hours=older_than_hours,
-            limit=limit,
-        ) if active_names else []
+        candidates = [c for c in candidates if c['repository'] in active_names]
         refreshed_count = 0
         unavailable_count = 0
         timeline_checked_count = 0
@@ -93,6 +99,9 @@ class CandidateRefresher:
                 record = self.synchronizer.fetch_current_issue(
                     repository, issue_number
                 )
+                expected_id = candidate.get('github_issue_id')
+                if expected_id and str(record.get('github_issue_id')) != str(expected_id):
+                    raise GitHubApiError('issue identity changed', status_code=410)
             except RateLimitExceeded as exc:
                 errors.append(
                     self._error("candidate", f"{repository}#{issue_number}", exc)

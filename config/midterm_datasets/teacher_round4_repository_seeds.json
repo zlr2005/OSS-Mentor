@@ -1,0 +1,281 @@
+{
+  "retrieval_method": "github_connector_repository_metadata_only",
+  "purpose": "Repository IDs for querying teacher opensource.events only; no GitHub-discovered issues admitted",
+  "repositories": [
+    {
+      "name": "astral-sh/ruff",
+      "id": 523043277,
+      "owner": 115962839,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T11:59:50Z",
+      "observed_at": "2026-10-16T12:09:38.651Z",
+      "metadata_url": "https://api.github.com/repos/astral-sh/ruff"
+    },
+    {
+      "name": "astral-sh/uv",
+      "id": 699532645,
+      "owner": 115962839,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T12:04:05Z",
+      "observed_at": "2026-10-16T12:09:39.568Z",
+      "metadata_url": "https://api.github.com/repos/astral-sh/uv"
+    },
+    {
+      "name": "pydantic/pydantic",
+      "id": 90194616,
+      "owner": 110818415,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-15T14:13:38Z",
+      "observed_at": "2026-10-16T12:09:39.569Z",
+      "metadata_url": "https://api.github.com/repos/pydantic/pydantic"
+    },
+    {
+      "name": "psf/requests",
+      "id": 1362490,
+      "owner": 50630501,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-09-28T16:55:48Z",
+      "observed_at": "2026-10-16T12:09:39.857Z",
+      "metadata_url": "https://api.github.com/repos/psf/requests"
+    },
+    {
+      "name": "python/mypy",
+      "id": 7053637,
+      "owner": 1525981,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T09:14:13Z",
+      "observed_at": "2026-10-16T12:09:40.500Z",
+      "metadata_url": "https://api.github.com/repos/python/mypy"
+    },
+    {
+      "name": "python/cpython",
+      "id": 81598961,
+      "owner": 1525981,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T12:03:57Z",
+      "observed_at": "2026-10-16T12:09:40.503Z",
+      "metadata_url": "https://api.github.com/repos/python/cpython"
+    },
+    {
+      "name": "Textualize/textual",
+      "id": 355959597,
+      "owner": 93378883,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-09T17:24:10Z",
+      "observed_at": "2026-10-16T12:09:40.637Z",
+      "metadata_url": "https://api.github.com/repos/Textualize/textual"
+    },
+    {
+      "name": "Textualize/rich",
+      "id": 220809393,
+      "owner": 93378883,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-06-23T03:10:19Z",
+      "observed_at": "2026-10-16T12:09:40.638Z",
+      "metadata_url": "https://api.github.com/repos/Textualize/rich"
+    },
+    {
+      "name": "vercel/next.js",
+      "id": 70107786,
+      "owner": 14985020,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T11:57:32Z",
+      "observed_at": "2026-10-16T12:09:41.426Z",
+      "metadata_url": "https://api.github.com/repos/vercel/next.js"
+    },
+    {
+      "name": "huggingface/transformers",
+      "id": 155220641,
+      "owner": 25720743,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T12:00:15Z",
+      "observed_at": "2026-10-16T12:09:41.521Z",
+      "metadata_url": "https://api.github.com/repos/huggingface/transformers"
+    },
+    {
+      "name": "denoland/deno",
+      "id": 133442384,
+      "owner": 42048915,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-07T13:56:06Z",
+      "observed_at": "2026-10-16T12:09:41.770Z",
+      "metadata_url": "https://api.github.com/repos/denoland/deno"
+    },
+    {
+      "name": "prettier/prettier",
+      "id": 75104123,
+      "owner": 25822731,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-15T11:02:24Z",
+      "observed_at": "2026-10-16T12:09:42.274Z",
+      "metadata_url": "https://api.github.com/repos/prettier/prettier"
+    },
+    {
+      "name": "sveltejs/svelte",
+      "id": 74293321,
+      "owner": 23617963,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-15T19:57:35Z",
+      "observed_at": "2026-10-16T12:09:42.303Z",
+      "metadata_url": "https://api.github.com/repos/sveltejs/svelte"
+    },
+    {
+      "name": "sharkdp/bat",
+      "id": 130464961,
+      "owner": 4209276,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-14T19:41:07Z",
+      "observed_at": "2026-10-16T12:09:42.586Z",
+      "metadata_url": "https://api.github.com/repos/sharkdp/bat"
+    },
+    {
+      "name": "microsoft/TypeScript",
+      "id": 20929025,
+      "owner": 6154722,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T07:06:33Z",
+      "observed_at": "2026-10-16T12:09:42.764Z",
+      "metadata_url": "https://api.github.com/repos/microsoft/TypeScript"
+    },
+    {
+      "name": "rust-lang/rust",
+      "id": 724712,
+      "owner": 5430905,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T12:06:00Z",
+      "observed_at": "2026-10-16T12:09:42.766Z",
+      "metadata_url": "https://api.github.com/repos/rust-lang/rust"
+    },
+    {
+      "name": "tokio-rs/tokio",
+      "id": 67836789,
+      "owner": 20248544,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T11:15:35Z",
+      "observed_at": "2026-10-16T12:09:43.097Z",
+      "metadata_url": "https://api.github.com/repos/tokio-rs/tokio"
+    },
+    {
+      "name": "BurntSushi/ripgrep",
+      "id": 53631945,
+      "owner": 456674,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-08-04T13:59:44Z",
+      "observed_at": "2026-10-16T12:09:43.313Z",
+      "metadata_url": "https://api.github.com/repos/BurntSushi/ripgrep"
+    },
+    {
+      "name": "cli/cli",
+      "id": 212613049,
+      "owner": 59704711,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T11:54:06Z",
+      "observed_at": "2026-10-16T12:09:43.430Z",
+      "metadata_url": "https://api.github.com/repos/cli/cli"
+    },
+    {
+      "name": "golang/go",
+      "id": 23096959,
+      "owner": 4314092,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T01:39:22Z",
+      "observed_at": "2026-10-16T12:09:43.462Z",
+      "metadata_url": "https://api.github.com/repos/golang/go"
+    },
+    {
+      "name": "jqlang/jq",
+      "id": 5101141,
+      "owner": 104800540,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-13T07:47:59Z",
+      "observed_at": "2026-10-16T12:09:43.683Z",
+      "metadata_url": "https://api.github.com/repos/jqlang/jq"
+    },
+    {
+      "name": "nushell/nushell",
+      "id": 186024298,
+      "owner": 50749515,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T11:53:12Z",
+      "observed_at": "2026-10-16T12:09:43.902Z",
+      "metadata_url": "https://api.github.com/repos/nushell/nushell"
+    },
+    {
+      "name": "zed-industries/zed",
+      "id": 340547520,
+      "owner": 79345384,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T12:02:17Z",
+      "observed_at": "2026-10-16T12:09:43.980Z",
+      "metadata_url": "https://api.github.com/repos/zed-industries/zed"
+    },
+    {
+      "name": "neovim/neovim",
+      "id": 16408992,
+      "owner": 6471485,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T10:35:16Z",
+      "observed_at": "2026-10-16T12:09:44.028Z",
+      "metadata_url": "https://api.github.com/repos/neovim/neovim"
+    },
+    {
+      "name": "eslint/eslint",
+      "id": 11061773,
+      "owner": 6019716,
+      "archived": false,
+      "disabled": false,
+      "has_issues": true,
+      "pushed_at": "2026-10-16T08:22:27Z",
+      "observed_at": "2026-10-16T12:09:44.605Z",
+      "metadata_url": "https://api.github.com/repos/eslint/eslint"
+    }
+  ]
+}

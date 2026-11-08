@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import io
+import http.client
 import unittest
 import urllib.error
 from email.message import Message
@@ -252,6 +253,36 @@ class GitHubClientTests(unittest.TestCase):
                 self.assertEqual(1, result.payload["id"])
                 self.assertEqual(2, opener.calls)
                 self.assertEqual(1, client.retry_count)
+
+
+class IncompleteBodyTests(unittest.TestCase):
+    def test_truncated_body_can_retry_without_returning_partial_payload(self):
+        class TruncatedResponse(FakeResponse):
+            def read(self):
+                raise http.client.IncompleteRead(b'{"partial":', 20)
+        url = 'https://api.github.com/repos/example/demo'
+        opener = ExceptionSequenceOpener([
+            TruncatedResponse(url=url, payload={}), FakeResponse(url=url, payload={'id': 1})])
+        client = GitHubClient(api_base='https://api.github.com', api_version='2026-03-10',
+                              user_agent='OSS-Mentor-test/0', token=None, max_retries=1,
+                              opener=opener, sleep=lambda _: None, random_source=lambda: 0)
+        self.assertEqual(client.get('/repos/example/demo').payload, {'id': 1})
+        self.assertEqual(client.request_count, 2)
+        self.assertEqual(client.retry_count, 1)
+
+    def test_truncated_body_with_no_retries_becomes_normal_source_failure(self):
+        class TruncatedResponse(FakeResponse):
+            def read(self):
+                raise http.client.IncompleteRead(b'partial', 20)
+        url = 'https://api.github.com/repos/example/demo'
+        client = GitHubClient(api_base='https://api.github.com', api_version='2026-03-10',
+                              user_agent='OSS-Mentor-test/0', token=None, max_retries=0,
+                              opener=ExceptionSequenceOpener([TruncatedResponse(url=url, payload={})]))
+        with self.assertRaises(GitHubApiError) as failure:
+            client.get('/repos/example/demo')
+        self.assertIsInstance(failure.exception.__cause__, http.client.IncompleteRead)
+        self.assertIsNone(failure.exception.payload)
+        self.assertEqual(client.request_count, 1)
 
 
 if __name__ == "__main__":

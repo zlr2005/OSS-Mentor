@@ -1,0 +1,25 @@
+{
+  "platform_interface_integration_verified": true,
+  "public_and_authenticated_api_tests_passed": true,
+  "regression_tests_passed": 56,
+  "changed_module_recheck_passed": 7,
+  "http_checks_passed": 5,
+  "all209_exported_target_ranks_reproduced": true,
+  "max_absolute_export_score_error": 3.5762786865234375e-07,
+  "live_inventory_or_user_features_generated": false,
+  "production_ready": false,
+  "remaining": "Generate trusted current user/candidate contexts and run check_gated_readiness against actual database before enabling this entry point",
+  "original_platform_model_replaced": false,
+  "source_sha256": {
+    "src\\oss_mentor\\gated_scoring.py": "2ec31b9b902844c67b308abb3f1e21465a1afe04fef5ae0c594d8a680d493230",
+    "scripts\\export_gated_model.py": "979377ae0804392977d4f4866daa2ffd927d83f7341c5bce3d35395e72dcaeb7",
+    "scripts\\prepare_gated_context.py": "88efcced8d4a8cd04545629179e56dbb17c5ecee44bd5b8c6e6c7b9206d1535f",
+    "scripts\\run_gated_api.py": "2684421faeb3e41045abc29456cb86fa2dcd895b9408f8afe01c59a685fb0427",
+    "scripts\\check_gated_readiness.py": "db8bacb86c3794ce3a1795aa3afbe794330678984de32f3583bc1cb3c7a2d053",
+    "tests\\test_gated_scoring.py": "524749b560deeb803cbe862e0f861ed0b885178454b5c68ddc655a5b96792b5a",
+    "data\\midterm\\working\\platform_gated_bundle_20261108_v1\\weights.npz": "f933bf970c906abcd44fff88dc76c9b8c065ace6fedc7e95557db5b2e10f5505",
+    "data\\midterm\\working\\platform_gated_bundle_20261108_v1\\manifest.json": "8e862371afa02e26532faf3e13fa0e12145cf11b120ab09bb5bb03df8c6d675f",
+    "data\\midterm\\working\\platform_gated_parity_20261108_v1\\verification.json": "784f4d9462cc3b9e6970b46cb6b69764ee9d65b4e6b7b5e5a38f4d3b5f0a58ed",
+    "data\\midterm\\working\\platform_gated_http_20261108_v2\\verification.json": "2823374d1bc63ac23e11a7b86a58e72fac7c64569c5f33f1c6968c94f53a4bc2"
+  }
+}
