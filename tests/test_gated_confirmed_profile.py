@@ -8,10 +8,9 @@ import unittest
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "tests"), str(ROOT / "CODER/src")]
+sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "tests")]
 
 import test_gated_scoring as fixtures
-from coder_issue.models.profile import PROFILE_FEATURE_NAMES, PROFILE_FEATURE_SCHEMA_VERSION
 from oss_mentor.gated_scoring import (
     CachedGatedScorer,
     FEATURE_SCHEMA,
@@ -21,6 +20,21 @@ from oss_mentor.gated_scoring import (
     enhanced_profile_fingerprint,
 )
 from run_gated_feature_worker import atomic_json, process
+
+
+PROFILE_FEATURE_SCHEMA_VERSION = "enhanced-profile-features-v0.1"
+PROFILE_FEATURE_NAMES = (
+    "capability.change_scope", "capability.code_change", "capability.debugging",
+    "capability.documentation", "capability.documentation_structure",
+    "capability.documentation_validation", "capability.open_source_experience",
+    "capability.reproduction", "capability.test_design", "capability.testing",
+    "constraint.os.linux", "constraint.os.macos", "constraint.os.windows",
+    "constraint.weekly_time", "current_interest.task.documentation",
+    "current_interest.task.implementation", "current_interest.task.quality",
+    "preference.language.go", "preference.language.java",
+    "preference.language.javascript", "preference.language.python",
+    "preference.language.rust", "preference.language.typescript",
+)
 
 
 def confirmed_profile(developer_key: str = "sample", version: str = "confirmed-v1"):
