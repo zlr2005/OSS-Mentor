@@ -14,12 +14,13 @@
 - 正式资产已安装到本地忽略目录 `data/gated-v1`；原始 ZIP 通过 Git LFS 存放在
   `model-assets/portable_gated_pr40_9bf9208d.zip`，Git 中同时保存资产锁、安装器和验收报告。
 
-## B 只需确认和提供
+## B 已确认
 
 1. 最终 Schema 固定为 `enhanced-profile-export-v0.1`，继续使用 `values` 与 `as_of`；
-2. 一个服务端正式画像出口，返回 confirmed snapshot；
-3. `profile_version` 在任何模型输入变化时更新；
-4. `developer_key` 由认证服务注入，浏览器不得提交。
+2. 正式出口为登录态 `GET /api/v1/me/profile/enhanced-features`，只返回 confirmed snapshot；
+3. 画像值、mask、锁定状态、证据引用或用户确认结果变化时更新 `profile_version`；
+4. `developer_key` 由认证服务从 session 中的 GitHub login 注入并执行
+   `strip().casefold()`，浏览器不得提交身份字段。
 
 画像出口必须返回：`profile_state`、`profile_key`、`profile_version`、
 `developer_key`、`as_of`、`feature_schema_version`、`feature_names`、`values`、
@@ -27,6 +28,12 @@
 `profile_state=confirmed`，`developer_key=strip().casefold()` 后必须等于 D 注入的已认证
 GitHub login，`feature_names` 顺序必须与冻结模型一致。B 不需要实现 pair features、worker
 或缓存。
+
+已接受身份边界：GitHub login 属于认证身份，不要求仅因改名而重写不可变特征快照的
+`profile_version`。C 的 context key 独立绑定规范化认证 login、完整平台画像指纹和 confirmed
+snapshot 指纹；因此 login 变化即使沿用原 `profile_version`，旧缓存也会失效。worker 编码前
+还会拒绝 confirmed snapshot 的 `developer_key` 与当前认证 login 不一致。B/D 无需补充身份
+版本接线。
 
 ## D 只需提供和配置
 
@@ -73,7 +80,7 @@ Secret；模型文件、用户数据、缓存与 Secret 均不进入 Git。
 5. `/api/v1/status` 展示真实模型版本，Secret、用户数据和运行缓存不进入 Git。
 
 本地证据见 `docs/artifacts/c_gated_local_acceptance_20261108/`：正式平台测试
-`1037 passed`；真实冻结资产 Mock B/D 验收通过。仓库实验脚本的全量自动收集另依赖
+`1038 passed`；真实冻结资产 Mock B/D 验收通过。仓库实验脚本的全量自动收集另依赖
 `transfer_cold_v3` 与 `lightgbm`，不属于生产 C 端测试环境。
 
 生产验收只需替换 B 画像与 D 身份/候选两个 Mock 边界，不再要求组长提供材料或参与实现。

@@ -154,6 +154,21 @@ class ConfirmedProfileGatedTests(unittest.TestCase):
         failed = process(self.path, self.config, reject_identity)
         self.assertEqual(failed["state"], "failed")
 
+    def test_authenticated_login_change_invalidates_same_profile_version(self):
+        self.assertEqual(process(self.path, self.config, self.encoder)["state"], "ready")
+        renamed = confirmed_profile(developer_key="renamed-login", version="confirmed-v1")
+        renamed_key = context_key(self.fixture.profile, "renamed-login", renamed)
+        self.assertNotEqual(self.request["context_key"], renamed_key)
+        scorer = CachedGatedScorer(self.fixture.bundle, self.cache).bind_enhanced_profile(
+            renamed
+        )
+        with self.assertRaises(RuntimeError):
+            scorer.score(
+                profile=self.fixture.profile,
+                developer_key="renamed-login",
+                candidates=self.fixture.tasks,
+            )
+
     def test_preparation_request_contains_exact_b_snapshot(self):
         scorer = CachedGatedScorer(
             self.fixture.bundle,
