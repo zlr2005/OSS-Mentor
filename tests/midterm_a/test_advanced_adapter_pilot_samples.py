@@ -29,7 +29,7 @@ class HistoricalReplayTests(unittest.TestCase):
             pilot.replay_title('today', [event] * 100, '2025-04-01T00:00:00Z')
 
     def test_replay_preserves_unknowns_and_rejects_future_contribution(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-replay-test-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-replay-test-') as directory:
             root = Path(directory)
             (root / 'evidence').mkdir()
             (root / 'evidence/selected_0_2025_history.json').write_text(json.dumps({'observed_at': '2026-11-02 13:47:33 UTC'}))
@@ -64,7 +64,7 @@ class HistoricalBodyImportTests(unittest.TestCase):
             'title': 'current title', 'body': 'historical body', 'lastEditedAt': edited_at}
         if omit_last_edited:
             del issue['lastEditedAt']
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-body-test-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-body-test-') as directory:
             root = Path(directory)
             (root / 'response.json').write_text(json.dumps({'data': {'q0': {'issue': issue}}}))
             with patch.object(pilot, 'OUT', root):

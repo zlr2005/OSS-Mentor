@@ -9,11 +9,14 @@ import math
 from pathlib import Path
 import re
 import socket
+import sys
 import http.client
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'src'))
 
 ENDPOINT='http://cc-2ze7189376o5m9759.public.clickhouse.ads.aliyuncs.com:8123/'
 ROOT=Path('D:/OSS-Mentor/data/teacher_clickhouse')
@@ -260,7 +263,7 @@ def prompt_credentials():
 
 
 def run(plan_path,resume=None,ignore_rolling_hour=False,ignore_rolling_day=False,extended_run=False):
-    import msvcrt
+    from oss_mentor.file_lock import acquire_lock,release_lock
     plan=read(plan_path)
     if plan['policy']!=POLICY or plan['budget']!=DEFAULT_BUDGET:raise ValueError('Unrecognized budget policy')
     for b in plan['batches']:
@@ -268,9 +271,8 @@ def run(plan_path,resume=None,ignore_rolling_hour=False,ignore_rolling_day=False
     if extended_run and any(b.get('query_layout') not in ('scope_prewhere_v1','action_prewhere_v2') for b in plan['batches']):
         raise ValueError('Extended runs require daily PREWHERE scopes')
     ROOT.mkdir(parents=True,exist_ok=True)
-    lock=(ROOT/'optimized_collection.lock').open('a+b');lock.seek(0);lock.write(b'0');lock.flush();lock.seek(0)
-    try:msvcrt.locking(lock.fileno(),msvcrt.LK_NBLCK,1)
-    except OSError:lock.close();raise RuntimeError('Another optimized collector is active') from None
+    try:lock=acquire_lock(ROOT/'optimized_collection.lock')
+    except OSError:raise RuntimeError('Another optimized collector is active') from None
     try:
         # Refuse concurrent legacy collectors, including credential-waiting windows.
         for other in ROOT.glob('*/status.json'):
@@ -408,7 +410,7 @@ def run(plan_path,resume=None,ignore_rolling_hour=False,ignore_rolling_day=False
         print(f'State saved. {len(unique)} discovered; {len(pending)+len(deferred_failures)} pending; reason={reason}.',flush=True)
         print('Discovered identities require current-state screening before recommendation.',flush=True)
     finally:
-        lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1);lock.close()
+        release_lock(lock)
 
 
 if __name__=='__main__':

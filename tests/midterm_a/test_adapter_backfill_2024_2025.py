@@ -77,7 +77,7 @@ class BackfillBoundaryTests(unittest.TestCase):
             client.call(endpoint='/user')
 
     def test_profiles_merge_same_account_and_cutoff_across_repositories(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-aggregate-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-aggregate-') as directory:
             output = Path(directory)
             records = []
             for i, (repo, path) in enumerate([('o/source', 'src/main.py'), ('o/tests', 'tests/test_main.py')]):
@@ -96,7 +96,7 @@ class BackfillBoundaryTests(unittest.TestCase):
             self.assertEqual(profiles[0]['profile_state'], 'research_preview')
 
     def test_full_scope_includes_minor_languages(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-scope-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-scope-') as directory:
             root = Path(directory)
             source = root / 'source'
             (source / 'tables').mkdir(parents=True)
@@ -111,7 +111,7 @@ class BackfillBoundaryTests(unittest.TestCase):
             self.assertEqual({r['name'] for r in plan['repositories']}, {'o/r0', 'o/r1', 'o/r2'})
 
     def test_pagination_preserves_old_prs_and_replays_without_duplicate_selection(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-pages-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-pages-') as directory:
             root = Path(directory)
             seeds = root / 'seeds.json'
             seeds.write_text(json.dumps({'2': {'developer_key': 'opaque-2'}}))
@@ -136,7 +136,7 @@ class BackfillBoundaryTests(unittest.TestCase):
                 self.assertEqual(len(backfill.read(root / 'selected_prs.json')), 2)
 
     def test_control_batch_filters_actual_positive_issue(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-controls-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-controls-') as directory:
             root = Path(directory)
             positive = self.issue()
             positive['url'] = 'https://github.com/o/r/issues/1'
@@ -155,7 +155,7 @@ class BackfillBoundaryTests(unittest.TestCase):
             self.assertEqual([r['issue_key'] for r in records], ['o/r#2'])
 
     def test_cached_evidence_tamper_is_rejected_without_network(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-cache-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-cache-') as directory:
             root = Path(directory)
             request = {'query': None, 'endpoint': '/repos/o/r/commits?per_page=3'}
             identity = backfill.digest(backfill.canonical(request))
@@ -184,7 +184,7 @@ class BackfillBoundaryTests(unittest.TestCase):
         self.assertEqual(backfill.join_samples([outcome], controls, [profile])[0], [])
 
     def test_missing_history_repair_uses_only_other_seed_repo_and_is_idempotent(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-repair-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-repair-') as directory:
             root = Path(directory)
             source = root / 'source'
             (source / 'tables').mkdir(parents=True)
@@ -227,7 +227,7 @@ class BackfillBoundaryTests(unittest.TestCase):
                 self.assertEqual(first, (backfill.OUT / 'historical_contributions.jsonl').read_bytes())
 
     def test_search_over_1000_splits_dates_and_deduplicates_prefix(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp', prefix='adapter-complete-') as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT, prefix='adapter-complete-') as directory:
             root = Path(directory)
             first = {'url': 'https://github.com/o/r/pull/1', 'createdAt': '2025-01-01T00:00:00Z'}
             second = {'url': 'https://github.com/o/r/pull/2', 'createdAt': '2025-09-01T00:00:00Z'}
