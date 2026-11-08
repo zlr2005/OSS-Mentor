@@ -1124,9 +1124,6 @@ class RecommendationApi:
         contract_profile = as_developer_profile_v2(profile)
         recommendation_service = self.recommendation_service
         base_scorer = recommendation_service.model_scorer
-        bind_enhanced = getattr(base_scorer, "bind_enhanced_profile", None)
-        if callable(bind_enhanced):
-            base_scorer = bind_enhanced(enhanced_profile)
         try:
             scorer = scorer_with_profile(
                 base_scorer,

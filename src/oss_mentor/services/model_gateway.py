@@ -140,6 +140,9 @@ def scorer_with_profile(
         raise ValueError("advanced adapter mode must be off, shadow or serve")
     if base_scorer is None:
         return None
+    bind_enhanced_profile = getattr(base_scorer, "bind_enhanced_profile", None)
+    if callable(bind_enhanced_profile):
+        base_scorer = bind_enhanced_profile(profile_snapshot)
     has_adapter = getattr(base_scorer, "profile_adapter", None) is not None
     if mode != "off" and service_track == "growth" and profile_snapshot is not None:
         if not has_adapter:
