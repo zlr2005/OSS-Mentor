@@ -40,6 +40,23 @@ class IdentityStoreTests(unittest.TestCase):
         self.assertIsNotNone(first)
         self.assertIsNone(second)
 
+    def test_github_login_update_keeps_the_same_user_id(self) -> None:
+        user_id = self.store.create_user(
+            github_user_id=1001,
+            github_login="old-login",
+            display_name="Alice",
+        )
+        self.assertTrue(
+            self.store.update_github_login(
+                user_id=user_id,
+                github_login="new-login",
+            )
+        )
+        updated = self.store.find_user_by_github_id(1001)
+        self.assertEqual(user_id, updated["user_id"])
+        self.assertEqual("new-login", updated["github_login"])
+        self.assertEqual("Alice", updated["display_name"])
+
     def test_session_lifecycle(self) -> None:
         user_id = self.store.create_user(github_user_id=2002, github_login="bob")
         self.store.create_session(

@@ -41,6 +41,13 @@ class FakeIdentityStore:
                 return user
         return None
 
+    def update_github_login(self, *, user_id, github_login):
+        user = self.find_user(user_id)
+        if user is None or user.get("deleted_at"):
+            return False
+        user["github_login"] = github_login
+        return True
+
     def find_user(self, user_id):
         for user in self.users:
             if user["user_id"] == user_id:
@@ -201,6 +208,34 @@ class AuthServiceTests(unittest.TestCase):
         user = service.current_user("valid-session")
         self.assertIsNotNone(user)
         self.assertEqual("alice", user["github_login"])
+
+    def test_oauth_callback_syncs_renamed_github_login_without_changing_user_id(self) -> None:
+        service = AuthService(self.store, _settings())
+        existing_user_id = self.store.create_user(
+            github_user_id=101,
+            github_login="old-login",
+            display_name="Alice",
+        )
+        started = service.start_oauth(return_to="/profile")
+        with patch.object(
+            service,
+            "_exchange_code",
+            return_value={"access_token": "fixture-token"},
+        ), patch.object(
+            service,
+            "_fetch_github_user",
+            return_value={"id": 101, "login": "new-login", "name": "Alice"},
+        ):
+            result = service.handle_callback(
+                code="fixture-code",
+                state=started["state"],
+            )
+        updated = self.store.find_user_by_github_id(101)
+        self.assertEqual(existing_user_id, updated["user_id"])
+        self.assertEqual("new-login", updated["github_login"])
+        self.assertEqual("new-login", result["user"]["github_login"])
+        current = service.current_user(result["session_id"])
+        self.assertEqual("new-login", current["github_login"])
 
     def test_logout_revokes_session(self) -> None:
         service = AuthService(self.store, _settings())

@@ -101,6 +101,26 @@ class IdentityStore:
             ).fetchone()
         return dict(row) if row else None
 
+    def update_github_login(self, *, user_id: int, github_login: str) -> bool:
+        """Update the current GitHub login for a stable numeric identity."""
+
+        normalized = str(github_login).strip()
+        if not normalized:
+            raise ValueError("github_login must not be empty")
+        self.initialize()
+        now = self._now()
+        with self.connect() as connection:
+            self._ensure_tables(connection)
+            cursor = connection.execute(
+                """
+                UPDATE oss_user
+                SET github_login = ?, updated_at = ?
+                WHERE user_id = ? AND deleted_at IS NULL
+                """,
+                (normalized, now, user_id),
+            )
+            return cursor.rowcount == 1
+
     def find_user(self, user_id: int) -> dict[str, Any] | None:
         self.initialize()
         with self.connect() as connection:
