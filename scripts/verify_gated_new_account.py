@@ -18,9 +18,9 @@ from run_gated_feature_worker import process,atomic_json
 def run(login,output):
     user=GitHubProfileSource()._get('/users/'+login)
     output.mkdir(parents=True,exist_ok=False)
-    config=dict(bundle=str(ROOT/'data/midterm/working/platform_gated_bundle_20261108_v1'),
+    config=dict(bundle=str(ROOT/'data/gated-v1/bundle'),
         cache=str(output/'cache'),requests=str(output/'requests'),database=str(output/'users.sqlite3'),
-        assets='D:/OSS-Mentor-assets/pr39',auto_collect_public=True,evidence_by_login={})
+        assets=str(ROOT/'data/gated-v1/assets'),auto_collect_public=True,evidence_by_login={})
     store=SQLiteCandidateStore(Path(config['database']),ROOT/'db/sqlite/001_mvp.sql');store.initialize()
     IdentityStore(store).create_user(github_user_id=user['id'],github_login=user['login'])
     case=GatedScoringTests();case.setUp()

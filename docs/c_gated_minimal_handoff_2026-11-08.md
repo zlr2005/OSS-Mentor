@@ -1,6 +1,6 @@
 # C 端最终门控模型最小协作交接
 
-基线：PR #40 `9bf9208d237f343ad3d1d993ccbe9a0f31c4935b`；模型 `coder-gated-marginal_positive-s20261102`。
+资产来源基线：PR #40 `9bf9208d237f343ad3d1d993ccbe9a0f31c4935b`；模型 `coder-gated-marginal_positive-s20261102`。
 
 ## C 已自行完成
 
@@ -10,6 +10,8 @@
 - Mock B 确认画像、Mock D 身份与候选接口；
 - MiniLM 与 repository mapping 的本地重建及一致性校验；
 - 真实冻结资产的离线编码、发布、评分和版本切换验收。
+- 已接收并校验 `portable_gated_pr40_9bf9208d.zip`，资产版本和校验和不再依赖组长确认；
+- 正式资产已安装到本地忽略目录 `data/gated-v1`，Git 中只保存资产锁、安装器和验收报告。
 
 ## B 只需确认和提供
 
@@ -38,17 +40,27 @@ GitHub login，`feature_names` 顺序必须与冻结模型一致。B 不需要�
 `github_verified_at`、`task_feature_version` 及现有难度、技能和任务类型字段。D 只在服务端
 注入身份；浏览器请求中的 login 或数字 ID 不作为可信输入。D 不需要实现模型编码或排序。
 
-## 组长只需确认
+## 资产已闭环，无需再向组长索取
 
-1. 模型版本、seed、MiniLM revision 和 mapping 版本；
-2. 交付包及关键资产 SHA-256；
-3. 当前 repository mapping 的 OOS 策略是否获准上线。
+- 压缩包 SHA-256：`179d6fe270522f194e7242ddd837a1850637c3c2f581a0e35300069fbcfcff0f`；
+- 内部清单：422 个文件全部通过 SHA-256 校验；
+- 固定 seed：`20261102`；
+- MiniLM revision：`c21050a7ef692090620a6d037dd736908f9c7cf6`，一致性探针为 `[1, 384]`；
+- 正式 repository mapping：97 行，原始 SHA-256
+  `c0c665d7153caa4f65c04fcbecc8f1a341380cc078e2b5a75762456bdbccc2ab`；
+- 门控 `weights.npz` SHA-256：
+  `f933bf970c906abcd44fff88dc76c9b8c065ace6fedc7e95557db5b2e10f5505`。
 
-待确认的本地重建结果：MiniLM revision
-`c21050a7ef692090620a6d037dd736908f9c7cf6`；mapping 97 行且键值语义一致，
-SHA-256 `d9bfdb59d2eb35f46ba899ca33edaaccb1b01def8e02b676a7b1f88c6125befd`；
-门控 `weights.npz` SHA-256
-`f933bf970c906abcd44fff88dc76c9b8c065ace6fedc7e95557db5b2e10f5505`。
+版本锁位于 `config/gated_runtime_assets.lock.json`。可用以下命令从原始压缩包重建本地运行目录：
+
+```powershell
+python scripts/rebuild_gated_runtime_assets.py `
+  --archive portable_gated_pr40_9bf9208d.zip `
+  --output data/gated-v1
+```
+
+worker 配置从 `config/gated_worker.example.json` 复制到忽略目录后，由 D 注入生产路径和
+Secret；模型文件、用户数据、缓存与 Secret 均不进入 Git。
 
 ## 联调完成标准
 
@@ -63,4 +75,4 @@ SHA-256 `d9bfdb59d2eb35f46ba899ca33edaaccb1b01def8e02b676a7b1f88c6125befd`；
 `1037 passed`；真实冻结资产 Mock B/D 验收通过。仓库实验脚本的全量自动收集另依赖
 `transfer_cold_v3` 与 `lightgbm`，不属于生产 C 端测试环境。
 
-生产验收只替换上述三个 Mock 边界，不再要求 B、D 或组长参与 C 端实现。
+生产验收只需替换 B 画像与 D 身份/候选两个 Mock 边界，不再要求组长提供材料或参与实现。

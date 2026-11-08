@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
 import sys
+import tempfile
+import zipfile
 
 import numpy as np
 import pyarrow as pa
@@ -15,6 +18,7 @@ import pyarrow.parquet as pq
 
 
 ROOT = Path(__file__).resolve().parents[1]
+LOCK_PATH = ROOT / "config/gated_runtime_assets.lock.json"
 
 
 def sha256(path: Path) -> str:
@@ -33,13 +37,46 @@ def file_manifest(root: Path) -> dict[str, str]:
     }
 
 
-def rebuild(source: Path, output: Path) -> dict[str, object]:
+def asset_lock() -> dict[str, object]:
+    return json.loads(LOCK_PATH.read_text(encoding="utf-8"))
+
+
+@contextmanager
+def portable_source(*, source: Path | None, archive: Path | None):
+    if (source is None) == (archive is None):
+        raise ValueError("Supply exactly one of source or archive")
+    if source is not None:
+        yield source.resolve(), None
+        return
+    archive = archive.resolve()
+    lock = asset_lock()
+    archive_digest = sha256(archive)
+    if archive_digest != lock["archive_sha256"]:
+        raise ValueError("Portable archive checksum does not match the asset lock")
+    with tempfile.TemporaryDirectory(prefix="oss-mentor-gated-") as temporary:
+        destination = Path(temporary).resolve()
+        with zipfile.ZipFile(archive) as package:
+            for item in package.infolist():
+                target = (destination / item.filename).resolve()
+                if destination not in target.parents and target != destination:
+                    raise ValueError(f"Unsafe portable archive member: {item.filename}")
+            package.extractall(destination)
+        yield destination, archive_digest
+
+
+def rebuild(
+    source: Path,
+    output: Path,
+    *,
+    archive_sha256: str | None = None,
+) -> dict[str, object]:
     source = source.resolve()
     output = output.resolve()
+    lock = asset_lock()
     if output.exists():
         raise FileExistsError("Output must not already exist")
     expected = json.loads((source / "SHA256_manifest.json").read_text(encoding="utf-8"))
-    if expected.get("source_head") != "9bf9208d237f343ad3d1d993ccbe9a0f31c4935b":
+    if expected.get("source_head") != lock["source_head"]:
         raise ValueError("Portable source is not the approved PR #40 head")
     for name, digest in expected["files"].items():
         path = source / name
@@ -54,6 +91,8 @@ def rebuild(source: Path, output: Path) -> dict[str, object]:
     shutil.copy2(source / "bundle/weights.npz", output / "bundle/weights.npz")
 
     mapping_path = output / "assets/runs/public-supplement-20261106-v2/mappings/repository_mapping.parquet"
+    if sha256(mapping_path) != lock["repository_mapping_sha256"]:
+        raise ValueError("Repository mapping does not match the locked production asset")
     source_mapping = pq.read_table(mapping_path)
     rows = sorted(
         zip(
@@ -71,8 +110,7 @@ def rebuild(source: Path, output: Path) -> dict[str, object]:
             "repository_id": [int(value) for _, value in rows],
         }
     )
-    pq.write_table(rebuilt_mapping, mapping_path, compression="zstd", version="2.6")
-    roundtrip = pq.read_table(mapping_path)
+    roundtrip = rebuilt_mapping
     rebuilt_rows = list(
         zip(
             roundtrip["repository_key"].to_pylist(),
@@ -86,6 +124,17 @@ def rebuild(source: Path, output: Path) -> dict[str, object]:
     manifest = json.loads(
         (source / "bundle/manifest.template.json").read_text(encoding="utf-8")
     )
+    locked_fields = {
+        "model_version": lock["model_version"],
+        "feature_schema": lock["feature_schema"],
+        "seed": lock["seed"],
+        "encoder_version": f"all-MiniLM-L6-v2@{lock['minilm_revision']}",
+        "weights_sha256": lock["bundle_weights_sha256"],
+        "backbone_dependencies": lock["required_backbone_dependencies"],
+    }
+    for field, value in locked_fields.items():
+        if manifest.get(field) != value:
+            raise ValueError(f"Portable {field} does not match the asset lock")
     manifest["backbone_dependencies"] = {
         str((output / relative).resolve()): digest
         for relative, digest in manifest["backbone_dependencies"].items()
@@ -121,6 +170,8 @@ def rebuild(source: Path, output: Path) -> dict[str, object]:
 
     report = {
         "status": "passed",
+        "source_archive": lock["archive_name"] if archive_sha256 else None,
+        "source_archive_sha256": archive_sha256,
         "source_head": expected["source_head"],
         "source_files_verified": len(expected["files"]),
         "repository_mapping_rows": len(rows),
@@ -141,7 +192,11 @@ def rebuild(source: Path, output: Path) -> dict[str, object]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", type=Path, required=True)
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument("--source", type=Path)
+    source_group.add_argument("--archive", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    print(json.dumps(rebuild(args.source, args.output), ensure_ascii=False, indent=2))
+    with portable_source(source=args.source, archive=args.archive) as (source, archive_digest):
+        report = rebuild(source, args.output, archive_sha256=archive_digest)
+    print(json.dumps(report, ensure_ascii=False, indent=2))

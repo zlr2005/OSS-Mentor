@@ -6,7 +6,7 @@
 
 ## 实际交付与验证
 
-运行包：`data/midterm/working/platform_gated_bundle_20261108_v1/`，包含 `weights.npz` 和 `manifest.json`。选用已记录的多正例边际损失方向，**显式固定seed20261102**，没有按验证成绩选最优seed。
+运行包：`data/gated-v1/bundle/`，包含已校验的 `weights.npz` 和 `manifest.json`；编码资产位于 `data/gated-v1/assets/`，冻结 CODER 源码位于 `data/gated-v1/coder_source/`。版本锁为 `config/gated_runtime_assets.lock.json`。选用已记录的多正例边际损失方向，**显式固定seed20261102**，没有按验证成绩选最优seed。
 
 研究中的五seed均值为MRR0.639812、Recall@5 90.14%；当前单seed导出包在相同209条开发目标上的MRR为 **0.637815**、Recall@5 **89.95%**，不能将五seed均值冒充单个上线包的成绩。
 
@@ -76,8 +76,8 @@ score(profile=DeveloperProfileV2, developer_key=..., candidates=[...]) -> ModelS
 已有模型包后，先用真实上游准备的输入发布缓存：
 
 ```powershell
-& 'D:/OSS-Mentor-assets/pr39/runtime-cpu/Scripts/python.exe' scripts/prepare_gated_context.py `
-  --bundle data/midterm/working/platform_gated_bundle_20261108_v1 `
+python scripts/prepare_gated_context.py `
+  --bundle data/gated-v1/bundle `
   --profile CURRENT_PROFILE.json --candidates CURRENT_TASKS.json `
   --prepared PREPARED_FEATURES.npz --provenance FEATURE_PROVENANCE.json `
   --cache NEW_LIVE_CACHE --developer-key ACTUAL_LOGIN
@@ -88,18 +88,18 @@ score(profile=DeveloperProfileV2, developer_key=..., candidates=[...]) -> ModelS
 再对实际库存检查覆盖，返回ready=false或退出码2时不应宣称已就绪：
 
 ```powershell
-& 'D:/OSS-Mentor-assets/pr39/runtime-cpu/Scripts/python.exe' scripts/check_gated_readiness.py `
+python scripts/check_gated_readiness.py `
   --database ACTUAL_PLATFORM.sqlite3 `
-  --bundle data/midterm/working/platform_gated_bundle_20261108_v1 `
+  --bundle data/gated-v1/bundle `
   --cache NEW_LIVE_CACHE --profile CURRENT_PROFILE.json --developer-key ACTUAL_LOGIN
 ```
 
 检查会执行既有推荐服务的筛选与模型评分；没有合格任务也不会误报模型覆盖就绪。然后才使用新增入口启动，不覆盖旧默认启动脚本：
 
 ```powershell
-& 'D:/OSS-Mentor-assets/pr39/runtime-cpu/Scripts/python.exe' scripts/run_gated_api.py `
+python scripts/run_gated_api.py `
   --database ACTUAL_PLATFORM.sqlite3 `
-  --bundle data/midterm/working/platform_gated_bundle_20261108_v1 `
+  --bundle data/gated-v1/bundle `
   --cache NEW_LIVE_CACHE --port 8767
 ```
 

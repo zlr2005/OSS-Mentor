@@ -1,6 +1,6 @@
 # 多正例门控模型：首个真实账号接入进度
 
-最新进度：实际编码和自动缓存发布已实现，zlr2005的4条库存候选已在真实模型服务层得到推荐，列表/详情分数一致。启用后台worker后可自动消费新画像准备请求。详见 `gated_feature_worker_2026-11-08.md`；下文未实现编码的描述保留为阶段记录。
+最新进度：实际编码和自动缓存发布已实现，zlr2005的4条库存候选已在真实模型服务层得到推荐，列表/详情分数一致。组长提供的正式便携资产已经校验并安装到 `data/gated-v1`，版本锁为 `config/gated_runtime_assets.lock.json`；当前外部对接只剩 B 画像出口与 D 身份/候选/Secret。启用后台worker后可自动消费新画像准备请求。详见 `gated_feature_worker_2026-11-08.md`；下文未实现编码的描述保留为阶段记录。
 
 ## B/D兼容修复
 
@@ -21,7 +21,7 @@
 便捷入口 `scripts/run_gated_platform.ps1` 默认使用有真实账号的 `data/oss_mentor.sqlite3`，端口8767，关闭后台刷新。准备好当前缓存后可执行：
 
 ```powershell
-pwsh -File scripts/run_gated_platform.ps1 -PythonPath 'D:/OSS-Mentor-assets/pr39/runtime-cpu/Scripts/python.exe'
+pwsh -File scripts/run_gated_platform.ps1 -PythonPath python
 ```
 
 ## 已核对的真实输入

@@ -1,7 +1,7 @@
 param(
     [string]$PythonPath = 'python',
     [string]$Database = 'data/oss_mentor.sqlite3',
-    [string]$Bundle = 'data/midterm/working/platform_gated_bundle_20261108_v1',
+    [string]$Bundle = 'data/gated-v1/bundle',
     [string]$Cache = 'data/midterm/platform/gated_live',
     [int]$Port = 8767,
     [switch]$AssumeInventoryAvailable,

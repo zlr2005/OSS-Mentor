@@ -1,14 +1,16 @@
 {
   "status": "passed",
+  "source_archive": "portable_gated_pr40_9bf9208d.zip",
+  "source_archive_sha256": "179d6fe270522f194e7242ddd837a1850637c3c2f581a0e35300069fbcfcff0f",
   "source_head": "9bf9208d237f343ad3d1d993ccbe9a0f31c4935b",
   "source_files_verified": 422,
   "repository_mapping_rows": 97,
   "repository_mapping_semantically_identical": true,
-  "repository_mapping_sha256": "d9bfdb59d2eb35f46ba899ca33edaaccb1b01def8e02b676a7b1f88c6125befd",
+  "repository_mapping_sha256": "c0c665d7153caa4f65c04fcbecc8f1a341380cc078e2b5a75762456bdbccc2ab",
   "minilm_revision": "c21050a7ef692090620a6d037dd736908f9c7cf6",
   "minilm_probe_shape": [1, 384],
   "minilm_probe_sha256": "5bf8844740b67819228da0d391e10167d1bc73d2c6fc3789d8df361cec4e25a5",
   "bundle_weights_sha256": "f933bf970c906abcd44fff88dc76c9b8c065ace6fedc7e95557db5b2e10f5505",
-  "rebuilt_files": 89,
+  "rebuilt_files": 73,
   "frozen_coder_source": "coder_source"
 }

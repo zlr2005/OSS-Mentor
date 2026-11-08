@@ -17,7 +17,7 @@
 
 ```powershell
 pwsh -File scripts/run_gated_platform.ps1 `
-  -PythonPath 'D:/OSS-Mentor-assets/pr39/runtime-cpu/Scripts/python.exe' `
+  -PythonPath python `
   -WorkerConfig data/midterm/working/gated_live_worker_20261108_v1/config.json `
   -AssumeInventoryAvailable
 ```
@@ -25,7 +25,7 @@ pwsh -File scripts/run_gated_platform.ps1 `
 单次处理已有请求（失败退出码2）：
 
 ```powershell
-& 'D:/OSS-Mentor-assets/pr39/runtime-cpu/Scripts/python.exe' scripts/run_gated_feature_worker.py `
+python scripts/run_gated_feature_worker.py `
   --config data/midterm/working/gated_live_worker_20261108_v1/config.json --once
 ```
 
@@ -37,7 +37,7 @@ pwsh -File scripts/run_gated_platform.ps1 `
 
 本账号没有提供已核实成功解决历史，使用HistoryFusion已有的“历史不可用时返回原画像表示”路径，不伪造成功历史。以实际代码文件与当前Issue文本生成MiniLM语义和16维交互特征；Issue的32维向量使用原任务编码函数（最多16段，未知协同/结构通道为零，保留已知仓库表示）。该冷启动策略与有成功历史的查询不同，不宣称完整历史已收齐。
 
-后台编码依赖当前机器上的 `tmp/pr39-review/CODER/src` 冻结模型实现与D盘编码资产；迁移机器时需要显式部署这些依赖。当前请求内推理仍仅依赖NumPy。
+后台编码依赖已锁定并随正式便携包安装的 `data/gated-v1/coder_source` 与 `data/gated-v1/assets`；不再依赖组长机器上的 D 盘目录。当前请求内推理仍仅依赖NumPy。
 
 ## 更新与故障
 
