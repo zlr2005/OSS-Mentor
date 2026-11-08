@@ -9,18 +9,29 @@ import sys
 import numpy as np
 
 ROOT=Path(__file__).resolve().parents[1]
-CODER_SOURCE=ROOT/'tmp/pr39-review/CODER/src'
-if not CODER_SOURCE.is_dir():CODER_SOURCE=ROOT/'CODER/src'
 sys.path.insert(0,str(ROOT/'src'))
 from oss_mentor.gated_scoring import content_hash,issue_key,sha_file
 from oss_mentor.profiling.evidence import interpret_github_contributions
 from oss_mentor.profiling.assessment import _normalize_external_evidence,_fuse_feature
 
 
+def _coder_source(assets):
+    configured=os.environ.get('OSS_MENTOR_CODER_SOURCE')
+    candidates=[
+        Path(configured) if configured else None,
+        assets.parent/'coder_source',
+        assets.parent/'workspace/tmp/pr39-review/CODER/src',
+        ROOT/'tmp/pr39-review/CODER/src',
+        ROOT/'CODER/src',
+    ]
+    for candidate in candidates:
+        if candidate is not None and (candidate/'coder_issue/training/advanced_issue_inputs.py').is_file():
+            return candidate
+    raise ValueError('Frozen CODER encoding source is missing advanced_issue_inputs.py')
+
+
 def encode(request, bundle, evidence_dir, assets):
-    runtime_coder_source=assets.parent/'coder_source'
-    selected_coder_source=runtime_coder_source if runtime_coder_source.is_dir() else CODER_SOURCE
-    if not selected_coder_source.is_dir():raise ValueError('Frozen CODER encoding source is missing')
+    selected_coder_source=_coder_source(assets)
     sys.path.insert(0,str(selected_coder_source))
     import torch
     from torch import nn

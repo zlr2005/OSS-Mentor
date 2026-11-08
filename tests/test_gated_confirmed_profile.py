@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 import unittest
 
 import numpy as np
@@ -19,6 +20,9 @@ from oss_mentor.gated_scoring import (
     content_hash,
     enhanced_profile_fingerprint,
 )
+from oss_mentor.api import RecommendationApi
+from oss_mentor.services.auth_service import SESSION_COOKIE_NAME
+from oss_mentor.services.recommendation_service import RecommendationService
 from run_gated_feature_worker import atomic_json, process
 
 
@@ -128,6 +132,47 @@ class ConfirmedProfileGatedTests(unittest.TestCase):
             enhanced_profile_fingerprint(self.enhanced),
         )
         self.assertEqual(metadata["enhanced_profile_version"], "confirmed-v1")
+
+    def test_authenticated_api_binds_confirmed_profile_to_gated_scorer(self):
+        self.assertEqual(process(self.path, self.config, self.encoder)["state"], "ready")
+        profile_payload = asdict(self.fixture.profile)
+        auth = SimpleNamespace(
+            current_user=lambda session_id: (
+                {"user_id": 1, "github_login": "sample"}
+                if session_id == "confirmed-session"
+                else None
+            )
+        )
+        profiles = SimpleNamespace(profile_for_user=lambda user_id: profile_payload)
+        midterm = SimpleNamespace(
+            enhanced_features=lambda **_kwargs: SimpleNamespace(
+                to_dict=lambda: self.enhanced
+            )
+        )
+        service = RecommendationService(
+            fixtures.Store(self.fixture.profile, self.fixture.tasks),
+            model_scorer=CachedGatedScorer(self.fixture.bundle, self.cache),
+            auth_service=auth,
+            profile_service=profiles,
+        )
+        api = RecommendationApi(
+            fixtures.Store(self.fixture.profile, self.fixture.tasks),
+            auth_service=auth,
+            profile_service=profiles,
+            recommendation_service=service,
+            midterm_profile_service=midterm,
+        )
+        response = api.handle(
+            "GET",
+            "/api/v1/me/recommendations",
+            cookies={SESSION_COOKIE_NAME: "confirmed-session"},
+        )
+        self.assertEqual(200, response.status, response.body)
+        self.assertEqual("coder_gated", response.body["rankings"][0]["scoring_engine"])
+        self.assertEqual(
+            self.fixture.model.manifest["model_version"],
+            response.body["rankings"][0]["model_version"],
+        )
 
     def test_profile_version_and_identity_change_require_new_context(self):
         self.assertEqual(process(self.path, self.config, self.encoder)["state"], "ready")
