@@ -9,14 +9,14 @@ import numpy as np
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
 from oss_mentor.contracts import DeveloperProfileV2
 from oss_mentor.services.profile_service import as_developer_profile_v2
-from oss_mentor.gated_scoring import FEATURE_SCHEMA,NumpyGatedModel,context_key,fingerprint,content_hash,issue_key,sha_file,_moment
+from oss_mentor.gated_scoring import FEATURE_SCHEMA,NumpyGatedModel,context_key_from_fingerprint,fingerprint,content_hash,issue_key,sha_file,_moment
 
 
 def prepare(bundle,profile_path,candidates_path,prepared,provenance_path,cache,developer_key):
     model=NumpyGatedModel(bundle);raw_profile=json.loads(profile_path.read_text(encoding='utf-8'))
     profile=as_developer_profile_v2(raw_profile.get('profile',raw_profile))
     candidates=json.loads(candidates_path.read_text(encoding='utf-8'));provenance=json.loads(provenance_path.read_text(encoding='utf-8'))
-    key=context_key(profile,developer_key)
+    key=context_key_from_fingerprint(profile,developer_key,provenance.get('enhanced_profile_sha256'))
     if provenance.get('feature_schema')!=FEATURE_SCHEMA or provenance.get('backbone_sha256')!=model.manifest['backbone_sha256']:raise ValueError('Offline feature provenance/model mismatch')
     if provenance.get('context_key')!=key:raise ValueError('Offline features belong to another profile or user')
     if provenance.get('features_sha256')!=sha_file(prepared):raise ValueError('Offline feature checksum mismatch')
@@ -39,6 +39,8 @@ def prepare(bundle,profile_path,candidates_path,prepared,provenance_path,cache,d
     metadata=dict(context_key=key,profile_sha256=fingerprint(profile),feature_schema=FEATURE_SCHEMA,backbone_sha256=model.manifest['backbone_sha256'],
         scope=provenance['scope'],as_of=provenance['as_of'],expires_at=provenance['expires_at'],features_sha256=sha_file(target),
         evidence_manifest_sha256=provenance['evidence_manifest_sha256'],source_features_sha256=sha_file(prepared))
+    metadata['enhanced_profile_sha256']=provenance.get('enhanced_profile_sha256')
+    metadata['enhanced_profile_version']=provenance.get('enhanced_profile_version')
     metadata.update(cold_start=bool(provenance.get('cold_start',False)),collection_status=provenance.get('collection_status'))
     meta.write_text(json.dumps(metadata,indent=2),encoding='utf-8');print(json.dumps(dict(context_key=key,candidates=len(keys),cache=str(cache))))
 

@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "mock_b_schema": "enhanced-profile-export-v0.1",
+  "mock_b_profile_version": "mock-b-confirmed-v1",
+  "mock_d_authenticated_login": "mock-user",
+  "mock_d_numeric_identity": 4242,
+  "candidate_repository": "aframevr/aframe",
+  "initial_scoring_engine": "profile_bootstrap_rules",
+  "ready_scoring_engine": "coder_gated",
+  "changed_profile_scoring_engine": "profile_bootstrap_rules",
+  "model_version": "coder-gated-marginal_positive-s20261102",
+  "context_key": "ab82482359f191ac770d1d675a15b267b928ed9c98fd31893ef511d213a4f141",
+  "real_frozen_assets": true,
+  "real_oauth_exercised": false,
+  "real_github_inventory_used": false
+}

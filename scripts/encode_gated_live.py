@@ -9,16 +9,22 @@ import sys
 import numpy as np
 
 ROOT=Path(__file__).resolve().parents[1]
-sys.path[:0]=[str(ROOT/'src'),str(ROOT/'tmp/pr39-review/CODER/src')]
+CODER_SOURCE=ROOT/'tmp/pr39-review/CODER/src'
+if not CODER_SOURCE.is_dir():CODER_SOURCE=ROOT/'CODER/src'
+sys.path.insert(0,str(ROOT/'src'))
 from oss_mentor.gated_scoring import content_hash,issue_key,sha_file
 from oss_mentor.profiling.evidence import interpret_github_contributions
 from oss_mentor.profiling.assessment import _normalize_external_evidence,_fuse_feature
 
 
 def encode(request, bundle, evidence_dir, assets):
+    runtime_coder_source=assets.parent/'coder_source'
+    selected_coder_source=runtime_coder_source if runtime_coder_source.is_dir() else CODER_SOURCE
+    if not selected_coder_source.is_dir():raise ValueError('Frozen CODER encoding source is missing')
+    sys.path.insert(0,str(selected_coder_source))
     import torch
     from torch import nn
-    from coder_issue.models.profile import ProfileResidualAdapter,ProfileAdapterConfig,PROFILE_FEATURE_NAMES
+    from coder_issue.models.profile import ProfileResidualAdapter,ProfileAdapterConfig,PROFILE_FEATURE_NAMES,tensorize_confirmed_profile
     from coder_issue.models.text_encoder import FrozenTransformerEncoder
     from coder_issue.training.advanced_issue_inputs import encode_candidates
     torch.set_num_threads(2)
@@ -62,12 +68,25 @@ def encode(request, bundle, evidence_dir, assets):
             raw.append(dict(feature_name='preference.language.'+language,value=1.,confidence=.65,
                 source_kind='github_direct',evidence_ref='github-language:'+d['content_sha256'],
                 observed_at=evidence['as_of'],source_ref=str(evidence_dir),content_sha256=d['content_sha256']))
-    normalized=_normalize_external_evidence(raw,allowed_features=set(PROFILE_FEATURE_NAMES))
-    features=[_fuse_feature(name,[r for r in normalized if r['feature_name']==name]) for name in PROFILE_FEATURE_NAMES]
-    values=torch.tensor([[f['proposed_value'] for f in features]],dtype=torch.float32)
-    mask=torch.tensor([[f['observed'] for f in features]],dtype=torch.bool)
-    adapter=ProfileResidualAdapter(ProfileAdapterConfig(embedding_dim=32,hidden_dim=32,residual_scale=.75,gate_mode='none'))
+    try:adapter_config=ProfileAdapterConfig(embedding_dim=32,hidden_dim=32,residual_scale=.75,gate_mode='none')
+    except TypeError:adapter_config=ProfileAdapterConfig(embedding_dim=32,hidden_dim=32,residual_scale=.75)
+    adapter=ProfileResidualAdapter(adapter_config)
     adapter.load_state_dict(torch.load(assets/f'runs/bottleneck-diagnostics-20261106-v1/original-{seed}/weights.pt',weights_only=True));adapter.eval()
+    enhanced=request.get('enhanced_profile')
+    if enhanced is not None:
+        tensors=tensorize_confirmed_profile(enhanced,config=adapter.config)
+        requested=(request.get('developer_key') or '').strip().casefold() or None
+        if tensors.developer_key!=requested:raise ValueError('Confirmed profile identity does not match authenticated user')
+        values=tensors.values.unsqueeze(0);mask=tensors.observed_mask.unsqueeze(0)
+        features=[dict(feature_name=name,proposed_value=float(value),observed=bool(observed),
+                       evidence_refs=list(refs),source='confirmed_profile')
+                  for name,value,observed,refs in zip(enhanced['feature_names'],enhanced['values'],
+                                                      enhanced['observed_mask'],enhanced['evidence_refs'])]
+    else:
+        normalized=_normalize_external_evidence(raw,allowed_features=set(PROFILE_FEATURE_NAMES))
+        features=[_fuse_feature(name,[r for r in normalized if r['feature_name']==name]) for name in PROFILE_FEATURE_NAMES]
+        values=torch.tensor([[f['proposed_value'] for f in features]],dtype=torch.float32)
+        mask=torch.tensor([[f['observed'] for f in features]],dtype=torch.bool)
     with np.load(base/'embeddings.npz',allow_pickle=False) as z:
         population=torch.tensor(z['user_embeddings'].mean(0)[None],dtype=torch.float32)
     # No verified resolved-history supplied: HistoryFusion's existing unavailable path returns original.
@@ -108,5 +127,7 @@ def encode(request, bundle, evidence_dir, assets):
         expires_at=min(now+timedelta(hours=24),observed+(timedelta(minutes=5) if evidence.get('collection_status')=='unavailable' else timedelta(hours=24))).isoformat(),
         profile_features=features,item_encoding=item_audit,history_mode='no_verified_resolved_history',
         history_complete=False,source_evidence_as_of=evidence['as_of'],
+        confirmed_profile_version=enhanced.get('profile_version') if enhanced else None,
+        confirmed_profile_as_of=enhanced.get('as_of') if enhanced else None,
         cold_start=not bool(texts),collection_status=evidence.get('collection_status','bounded_public_sample'),
         extra_dependencies={str(base/'weights.pt'):sha_file(base/'weights.pt'),str(assets/'runs/public-supplement-20261106-v2/mappings/repository_mapping.parquet'):sha_file(assets/'runs/public-supplement-20261106-v2/mappings/repository_mapping.parquet')})

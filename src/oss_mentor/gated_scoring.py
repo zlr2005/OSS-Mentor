@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import copy
 from datetime import datetime,timedelta,timezone
 import hashlib
 import json
@@ -32,8 +33,26 @@ def fingerprint(profile:DeveloperProfileV2)->str:
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def context_key(profile:DeveloperProfileV2,developer_key:str|None)->str:
-    return hashlib.sha256(((developer_key or '').strip().casefold()+'\0'+fingerprint(profile)).encode()).hexdigest()
+def enhanced_profile_fingerprint(profile:dict[str,Any]|None)->str|None:
+    if profile is None:return None
+    if not isinstance(profile,dict):raise TypeError('Enhanced profile must be a dictionary')
+    payload=json.dumps(profile,sort_keys=True,separators=(',',':'),ensure_ascii=False)
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def context_key_from_fingerprint(profile:DeveloperProfileV2,developer_key:str|None,enhanced_fingerprint:str|None)->str:
+    if enhanced_fingerprint is not None and (
+        len(enhanced_fingerprint)!=64
+        or any(character not in '0123456789abcdef' for character in enhanced_fingerprint.lower())
+    ):
+        raise ValueError('Enhanced profile fingerprint must be a SHA-256 hex digest')
+    enhanced=enhanced_fingerprint or ''
+    payload=(developer_key or '').strip().casefold()+'\0'+fingerprint(profile)+'\0'+enhanced
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def context_key(profile:DeveloperProfileV2,developer_key:str|None,enhanced_profile:dict[str,Any]|None=None)->str:
+    return context_key_from_fingerprint(profile,developer_key,enhanced_profile_fingerprint(enhanced_profile))
 
 
 def issue_key(candidate:dict[str,Any])->str:
@@ -106,15 +125,21 @@ class CachedGatedScorer:
         self.model=NumpyGatedModel(bundle);self.cache=Path(cache);self.allow_historical=allow_historical
         self.request_dir=Path(request_dir) if request_dir is not None else None
         self.automatic_encoding=automatic_encoding
+        self.enhanced_profile=None
+
+    def bind_enhanced_profile(self,profile:dict[str,Any]|None):
+        bound=copy.copy(self);bound.enhanced_profile=copy.deepcopy(profile)
+        return bound
 
     def _request_features(self,profile,developer_key,candidates):
         if self.request_dir is None:
             return
-        payload=dict(context_key=context_key(profile,developer_key),profile=asdict(profile),
+        payload=dict(context_key=context_key(profile,developer_key,self.enhanced_profile),profile=asdict(profile),
                      developer_key=developer_key,candidates=list(candidates),
                      feature_schema=FEATURE_SCHEMA,backbone_sha256=self.model.manifest['backbone_sha256'],
                      model_version=self.model.manifest['model_version'],state='required',
                      automatic_encoding_available=self.automatic_encoding)
+        if self.enhanced_profile is not None:payload['enhanced_profile']=self.enhanced_profile
         request_id=hashlib.sha256(json.dumps(payload,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
         self.request_dir.mkdir(parents=True,exist_ok=True)
         target=self.request_dir/(request_id+'.json')
@@ -158,7 +183,7 @@ class CachedGatedScorer:
             raise
 
     def _score_cached(self,*,profile,developer_key,candidates):
-        key=context_key(profile,developer_key)
+        key=context_key(profile,developer_key,self.enhanced_profile)
         try:meta,index,hashes,coder,pair,logits=self._context(key)
         except FileNotFoundError as exc:raise ModelFeaturesRequired('当前画像的推荐特征尚未准备完成；画像已保留，需要生成特征后再获取推荐。') from exc
         scope=meta.get('scope')
@@ -170,6 +195,8 @@ class CachedGatedScorer:
             if not at<expiry<=at+timedelta(hours=24):raise RuntimeError('Invalid gated context validity window')
             if not at<=now<expiry:raise ModelFeaturesRequired('推荐特征需要更新；画像已保留，更新完成后可重新获取推荐。')
         if meta.get('profile_sha256')!=fingerprint(profile):raise ModelFeaturesRequired('画像已修改，需要重新准备推荐特征。')
+        expected_enhanced=enhanced_profile_fingerprint(self.enhanced_profile)
+        if meta.get('enhanced_profile_sha256')!=expected_enhanced:raise ModelFeaturesRequired('确认画像已修改，需要重新准备推荐特征。')
         ids=[];candidate_ids=[]
         for candidate in candidates:
             task_id=candidate.get('task_candidate_id')

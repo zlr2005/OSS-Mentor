@@ -11,7 +11,7 @@ import uuid
 import numpy as np
 
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
-from oss_mentor.gated_scoring import CachedGatedScorer,NumpyGatedModel,FEATURE_SCHEMA,context_key,sha_file
+from oss_mentor.gated_scoring import CachedGatedScorer,NumpyGatedModel,FEATURE_SCHEMA,context_key,enhanced_profile_fingerprint,sha_file
 from oss_mentor.services.profile_service import as_developer_profile_v2
 from prepare_gated_context import prepare
 
@@ -31,11 +31,12 @@ def process(request_path,config,encoder=None):
     request=json.loads(request_path.read_text(encoding='utf-8'))
     try:
         model=NumpyGatedModel(bundle);profile=as_developer_profile_v2(request['profile'])
-        if request['context_key']!=context_key(profile,request['developer_key']):raise ValueError('Request profile identity mismatch')
+        enhanced=request.get('enhanced_profile')
+        if request['context_key']!=context_key(profile,request['developer_key'],enhanced):raise ValueError('Request profile identity mismatch')
         if request['feature_schema']!=FEATURE_SCHEMA or request['backbone_sha256']!=model.manifest['backbone_sha256'] or request['model_version']!=model.manifest['model_version']:
             raise ValueError('Request model mismatch')
         try:
-            CachedGatedScorer(bundle,cache).score(profile=profile,developer_key=request['developer_key'],candidates=request['candidates'])
+            CachedGatedScorer(bundle,cache).bind_enhanced_profile(enhanced).score(profile=profile,developer_key=request['developer_key'],candidates=request['candidates'])
             result=dict(state='ready',context_key=request['context_key'],checked_at=datetime.now(timezone.utc).isoformat())
             atomic_json(status_path,result);return result
         except (OSError,ValueError,KeyError,RuntimeError):pass
@@ -58,14 +59,16 @@ def process(request_path,config,encoder=None):
         atomic_json(work/'profile.json',request['profile']);atomic_json(work/'candidates.json',request['candidates'])
         provenance=dict(audit,scope='live',context_key=request['context_key'],feature_schema=FEATURE_SCHEMA,
             backbone_sha256=model.manifest['backbone_sha256'],features_sha256=sha_file(work/'prepared.npz'))
+        provenance['enhanced_profile_sha256']=enhanced_profile_fingerprint(enhanced)
+        provenance['enhanced_profile_version']=enhanced.get('profile_version') if enhanced else None
         atomic_json(work/'provenance.json',provenance)
         # prepare publishes a full pair in a fresh directory; readers cannot see it yet.
         prepare(bundle,work/'profile.json',work/'candidates.json',work/'prepared.npz',work/'provenance.json',generation,request['developer_key'])
-        CachedGatedScorer(bundle,generation).score(profile=profile,developer_key=request['developer_key'],candidates=request['candidates'])
+        CachedGatedScorer(bundle,generation).bind_enhanced_profile(enhanced).score(profile=profile,developer_key=request['developer_key'],candidates=request['candidates'])
         pointer=cache/(request['context_key']+'.current.json')
         atomic_json(pointer,dict(generation=generation.name,context_key=request['context_key']))
         # Re-read through the same route used by the running platform.
-        CachedGatedScorer(bundle,cache).score(profile=profile,developer_key=request['developer_key'],candidates=request['candidates'])
+        CachedGatedScorer(bundle,cache).bind_enhanced_profile(enhanced).score(profile=profile,developer_key=request['developer_key'],candidates=request['candidates'])
         result=dict(state='ready',context_key=request['context_key'],generation=generation.name,
                     completed_at=datetime.now(timezone.utc).isoformat(),candidates=len(request['candidates']))
     except Exception as exc:
