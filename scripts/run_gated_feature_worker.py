@@ -25,6 +25,23 @@ def atomic_json(path,payload):
     finally:Path(temporary).unlink(missing_ok=True)
 
 
+def _latest_requests(directory):
+    selected={}
+    for path in directory.glob('*.json'):
+        try:
+            payload=json.loads(path.read_text(encoding='utf-8'))
+            context=payload.get('context_key')
+            requested_at=datetime.fromisoformat(str(payload['requested_at']).replace('Z','+00:00'))
+            if requested_at.tzinfo is None:requested_at=requested_at.replace(tzinfo=timezone.utc)
+            timestamp=requested_at.timestamp()
+        except (OSError,KeyError,TypeError,ValueError):
+            context=None;timestamp=None
+        identity=('context',context) if context else ('file',path.name)
+        key=(timestamp is not None,timestamp if timestamp is not None else 0.0,path.stat().st_mtime_ns,path.name)
+        if identity not in selected or key>selected[identity][0]:selected[identity]=(key,path)
+    return [path for _,path in sorted(selected.values(),key=lambda item:item[0],reverse=True)]
+
+
 def process(request_path,config,encoder=None):
     bundle=Path(config['bundle']);cache=Path(config['cache'])
     status_path=Path(config['requests'])/'status'/(request_path.stem+'.json')
@@ -93,7 +110,10 @@ def run(config,once=False):
     failed=False
     try:
         while True:
-            for path in sorted(directory.glob('*.json')):
+            # Candidate changes create a new request file while keeping the same
+            # profile/identity context. Older files must not overwrite a newer
+            # generation for that context on the next retry.
+            for path in _latest_requests(directory):
                 if time.monotonic()-last.get(path.name,-1e9)<60:continue
                 try:result=process(path,config)
                 except Exception as exc:result=dict(state='failed',reason=str(exc))
