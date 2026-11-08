@@ -970,6 +970,20 @@ class RecommendationApi:
                 "create a profile before requesting recommendations",
             )
         developer_key = verified_developer_key(user.get("github_login"))
+        requires_confirmed_profile = (
+            getattr(
+                self.recommendation_service.model_scorer,
+                "scoring_engine",
+                None,
+            )
+            == "coder_gated"
+        )
+        if requires_confirmed_profile and self.midterm_profile_service is None:
+            return self._error(
+                503,
+                "service_not_ready",
+                "confirmed profile service is required for gated recommendations",
+            )
         enhanced_profile = None
         if self.midterm_profile_service is not None:
             try:
@@ -977,10 +991,13 @@ class RecommendationApi:
                     user_id=user_id,
                     developer_key=developer_key,
                 ).to_dict()
-            except (
-                MidtermProfileRequiredError,
-                MidtermProfileNotConfirmedError,
-            ):
+            except MidtermProfileRequiredError as exc:
+                if requires_confirmed_profile:
+                    return self._error(404, "profile_required", str(exc))
+                enhanced_profile = None
+            except MidtermProfileNotConfirmedError as exc:
+                if requires_confirmed_profile:
+                    return self._error(404, "profile_not_confirmed", str(exc))
                 enhanced_profile = None
             except ValueError as exc:
                 return self._error(

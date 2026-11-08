@@ -8,6 +8,10 @@ from pathlib import Path
 from oss_mentor.api import RecommendationApi
 from oss_mentor.model_scoring import ModelScore, ModelScoreBatch
 from oss_mentor.services.recommendation_service import RecommendationService
+from oss_mentor.services.midterm_profile_service import (
+    MidtermProfileNotConfirmedError,
+    MidtermProfileRequiredError,
+)
 from oss_mentor.sqlite_store import SQLiteCandidateStore
 
 
@@ -181,6 +185,94 @@ class ApiTests(unittest.TestCase):
         self.assertIn("created_at", response.body)
         self.assertEqual("known_history", response.body["rankings"][0]["profile_mode"])
         self.assertEqual("fixture", response.body["rankings"][0]["coverage_state"])
+
+    def test_gated_recommendations_require_confirmed_profile_service(self) -> None:
+        store = self.store
+
+        class Auth:
+            def current_user(self, session_id):
+                if session_id == "session":
+                    return {"user_id": 7, "github_login": "Known-Login"}
+                return None
+
+        class Profiles:
+            def profile_for_user(self, user_id):
+                return store.profile_for_matching("demo") if user_id == 7 else None
+
+        class GatedScorer:
+            scoring_engine = "coder_gated"
+
+            def score(self, **_kwargs):
+                raise AssertionError("unconfirmed profile reached gated scorer")
+
+        api = RecommendationApi(
+            store,
+            auth_service=Auth(),
+            profile_service=Profiles(),
+            recommendation_service=RecommendationService(
+                store,
+                model_scorer=GatedScorer(),
+            ),
+        )
+        response = api.handle(
+            "GET",
+            "/api/v1/me/recommendations",
+            {"limit": ["1"]},
+            cookies={"oss_mentor_session": "session"},
+        )
+        self.assertEqual(503, response.status, response.body)
+        self.assertEqual("service_not_ready", response.body["error"]["code"])
+
+    def test_gated_recommendations_propagate_unconfirmed_profile_errors(self) -> None:
+        store = self.store
+
+        class Auth:
+            def current_user(self, session_id):
+                if session_id == "session":
+                    return {"user_id": 7, "github_login": "Known-Login"}
+                return None
+
+        class Profiles:
+            def profile_for_user(self, user_id):
+                return store.profile_for_matching("demo") if user_id == 7 else None
+
+        class GatedScorer:
+            scoring_engine = "coder_gated"
+
+            def score(self, **_kwargs):
+                raise AssertionError("unconfirmed profile reached gated scorer")
+
+        class EnhancedProfiles:
+            def __init__(self, error):
+                self.error = error
+
+            def enhanced_features(self, **_kwargs):
+                raise self.error("confirmed profile is required")
+
+        cases = (
+            (MidtermProfileRequiredError, "profile_required"),
+            (MidtermProfileNotConfirmedError, "profile_not_confirmed"),
+        )
+        for error, code in cases:
+            with self.subTest(code=code):
+                api = RecommendationApi(
+                    store,
+                    auth_service=Auth(),
+                    profile_service=Profiles(),
+                    midterm_profile_service=EnhancedProfiles(error),
+                    recommendation_service=RecommendationService(
+                        store,
+                        model_scorer=GatedScorer(),
+                    ),
+                )
+                response = api.handle(
+                    "GET",
+                    "/api/v1/me/recommendations",
+                    {"limit": ["1"]},
+                    cookies={"oss_mentor_session": "session"},
+                )
+                self.assertEqual(404, response.status, response.body)
+                self.assertEqual(code, response.body["error"]["code"])
 
     def test_health_and_profiles(self) -> None:
         health = self.api.handle("GET", "/health")

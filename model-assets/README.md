@@ -5,6 +5,8 @@ After cloning, install Git LFS and run:
 
 ```powershell
 git lfs pull
+python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu `
+  -e ".[gated-worker]"
 python scripts/rebuild_gated_runtime_assets.py `
   --archive model-assets/portable_gated_pr40_9bf9208d.zip `
   --output data/gated-v1

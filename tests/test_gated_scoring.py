@@ -12,7 +12,7 @@ import numpy as np
 
 from oss_mentor.api import RecommendationApi
 from oss_mentor.contracts import DeveloperProfileV2,REASON_CODE_NEGATIVE_FEEDBACK
-from oss_mentor.gated_scoring import CachedGatedScorer,NumpyGatedModel,FEATURE_SCHEMA,context_key,fingerprint,content_hash,sha_file
+from oss_mentor.gated_scoring import CachedGatedScorer,NumpyGatedModel,FEATURE_SCHEMA,context_key,enhanced_profile_fingerprint,fingerprint,content_hash,sha_file
 from oss_mentor.services.recommendation_service import RecommendationService,ModelUnavailableError
 
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
@@ -59,7 +59,7 @@ class GatedScoringTests(unittest.TestCase):
             operating_systems=('linux',),preferred_task_types=('testing',),max_code_difficulty=1,max_setup_difficulty=1,desired_skill_stretch=0,skills={'python':2})
         self.tasks=[candidate(1),candidate(2)];self.cache=self.root/'cache';self.make_cache()
 
-    def make_cache(self,*,scope='live',as_of=None,expires=None,developer_key=None):
+    def make_cache(self,*,scope='live',as_of=None,expires=None,developer_key=None,enhanced_profile=None):
         now=datetime.now(timezone.utc);at=as_of or now-timedelta(minutes=1);end=expires or now+timedelta(hours=1)
         rng=np.random.default_rng(3);u=rng.normal(size=32).astype(np.float32);u/=np.linalg.norm(u);v=np.tile(u,(2,1))
         coder=np.column_stack([np.tile(u,(2,1)),v,np.tile(u,(2,1))*v,np.abs(np.tile(u,(2,1))-v)])
@@ -67,8 +67,10 @@ class GatedScoringTests(unittest.TestCase):
             content_hashes=np.asarray([content_hash(t) for t in self.tasks]),coder_features=coder,pair_features=np.zeros((2,16),dtype=np.float32),coder_logits=np.asarray([-.1,.1],dtype=np.float32))
         profile_path=self.root/'profile.json';profile_path.write_text(json.dumps(asdict(self.profile)))
         task_path=self.root/'candidates.json';task_path.write_text(json.dumps(self.tasks))
-        provenance=dict(context_key=context_key(self.profile,developer_key),feature_schema=FEATURE_SCHEMA,backbone_sha256=self.model.manifest['backbone_sha256'],
+        provenance=dict(context_key=context_key(self.profile,developer_key,enhanced_profile),feature_schema=FEATURE_SCHEMA,backbone_sha256=self.model.manifest['backbone_sha256'],
             features_sha256=sha_file(features),evidence_manifest_sha256='b'*64,scope=scope,as_of=at.isoformat(),expires_at=end.isoformat())
+        provenance['enhanced_profile_sha256']=enhanced_profile_fingerprint(enhanced_profile)
+        provenance['enhanced_profile_version']=enhanced_profile.get('profile_version') if enhanced_profile else None
         proof=self.root/'provenance.json';proof.write_text(json.dumps(provenance))
         prepare(self.bundle,profile_path,task_path,features,proof,self.cache,developer_key)
 
@@ -135,9 +137,15 @@ class GatedScoringTests(unittest.TestCase):
         auth=AuthService(identities,AuthSettings(session_secret='isolated-test-secret'))
         profiles=ProfileService(storage);payload=asdict(self.profile);payload.pop('profile_source')
         profiles.save_manual_profile(payload,user_id=uid)
-        self.profile=profiles.profile_for_user_contract(uid);self.make_cache(developer_key='cached-user')
+        enhanced=dict(profile_state='confirmed',profile_version='confirmed:test',developer_key='cached-user')
+        class ConfirmedProfiles:
+            def enhanced_features(self,**_kwargs):
+                class Features:
+                    def to_dict(self):return dict(enhanced)
+                return Features()
+        self.profile=profiles.profile_for_user_contract(uid);self.make_cache(developer_key='cached-user',enhanced_profile=enhanced)
         store=Store(self.profile,self.tasks);service=RecommendationService(store,model_scorer=CachedGatedScorer(self.bundle,self.cache),auth_service=auth,profile_service=profiles)
-        api=RecommendationApi(store,auth_service=auth,profile_service=profiles,recommendation_service=service)
+        api=RecommendationApi(store,auth_service=auth,profile_service=profiles,midterm_profile_service=ConfirmedProfiles(),recommendation_service=service)
         response=api.handle('GET','/api/v1/me/recommendations',cookies={SESSION_COOKIE_NAME:'gated-test-session'})
         self.assertEqual(response.status,200,response.body)
         self.assertEqual(response.body['count'],2)

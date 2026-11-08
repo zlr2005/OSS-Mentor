@@ -35,6 +35,10 @@ snapshot 指纹；因此 login 变化即使沿用原 `profile_version`，旧缓�
 还会拒绝 confirmed snapshot 的 `developer_key` 与当前认证 login 不一致。B/D 无需补充身份
 版本接线。
 
+正式 gated 路由强制要求该 confirmed snapshot：画像缺失、未确认或画像服务未配置时分别
+返回 `profile_required`、`profile_not_confirmed` 或 `service_not_ready`，不会用公开证据生成
+替代 23 维画像后进入 `coder_gated`。
+
 ## D 只需提供和配置
 
 1. 已认证身份接口：规范 GitHub login、数字 ID、user ID；
@@ -70,6 +74,17 @@ python scripts/rebuild_gated_runtime_assets.py `
 worker 配置从 `config/gated_worker.example.json` 复制到忽略目录后，由 D 注入生产路径和
 Secret；模型文件、用户数据、缓存与 Secret 均不进入 Git。
 
+worker 使用锁定的独立依赖组安装：
+
+```powershell
+python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu `
+  -e ".[gated-worker]"
+```
+
+容器部署可使用 `Dockerfile.gated-worker`，挂载重建后的 `data/gated-v1`、请求/缓存目录与
+生产配置。CI 会在干净 Python 3.11 环境拉取 LFS、安装该依赖组、重建正式资产并执行真实
+冻结资产的 Mock B/C/D smoke test。
+
 ## 联调完成标准
 
 1. D 注入身份，C 拉取 B confirmed snapshot 与 D 当前候选；
@@ -80,7 +95,7 @@ Secret；模型文件、用户数据、缓存与 Secret 均不进入 Git。
 5. `/api/v1/status` 展示真实模型版本，Secret、用户数据和运行缓存不进入 Git。
 
 本地证据见 `docs/artifacts/c_gated_local_acceptance_20261108/`：正式平台测试
-`1038 passed`；真实冻结资产 Mock B/D 验收通过。仓库实验脚本的全量自动收集另依赖
+`1040 passed`；真实冻结资产 Mock B/D 验收通过。仓库实验脚本的全量自动收集另依赖
 `transfer_cold_v3` 与 `lightgbm`，不属于生产 C 端测试环境。
 
 生产验收只需替换 B 画像与 D 身份/候选两个 Mock 边界，不再要求组长提供材料或参与实现。
