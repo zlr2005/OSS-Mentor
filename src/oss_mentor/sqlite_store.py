@@ -11,6 +11,8 @@ from typing import Any
 from oss_mentor.candidate_rules import EligibilityResult
 from oss_mentor.developer_profiles import DeveloperProfile
 from oss_mentor.task_features import SkillRequirement, TaskFeatures
+from oss_mentor.candidate_freshness import recommendation_is_current, verification_deadline
+from oss_mentor.task_readiness import task_review_reasons
 
 
 class _ClosingConnection(sqlite3.Connection):
@@ -259,6 +261,16 @@ class SQLiteCandidateStore:
             values,
         )
 
+        # Each successful observation replaces the old lease; imports may supply a
+        # shorter original deadline, but can never renew it by being imported.
+        deadline = verification_deadline(record)
+        if 'verification_expires_at' in {r['name'] for r in connection.execute('PRAGMA table_info(task_candidate)')}:
+            connection.execute(
+                "UPDATE task_candidate SET verification_expires_at = ? "
+                "WHERE repository_id = ? AND issue_number = ?",
+                (deadline.isoformat() if deadline else None, repository_id, record['issue_number']),
+            )
+
     def update_repository_metadata(
         self,
         *,
@@ -417,14 +429,16 @@ class SQLiteCandidateStore:
             ):
                 type_identified_count += 1
 
+        current_tasks = self.matchable_candidates()
         return {
             "database_ready": True,
             "database_path": str(self.database_path),
             "repository_count": repository_count,
             "candidate_count": candidate_count,
             "eligible_count": eligible_count,
-            "matchable_count": features_extracted_count,
-            "newcomer_count": newcomer_count,
+            "matchable_count": len(current_tasks),
+            "newcomer_count": sum(bool(task['newcomer_label_signal']) for task in current_tasks),
+            "stored_eligible_newcomer_count": newcomer_count,
             "last_sync_at": last_sync_at,
             "features_extracted_count": features_extracted_count,
             "type_identified_count": type_identified_count,
@@ -449,7 +463,9 @@ class SQLiteCandidateStore:
         self.initialize()
         cutoff = (datetime.now(timezone.utc) - timedelta(hours=older_than_hours)).isoformat()
         clauses = [
-            "(tc.github_verified_at IS NULL OR tc.github_verified_at < ?)",
+            "(julianday(tc.github_verified_at) IS NULL OR julianday(tc.github_verified_at) < julianday(?) "
+            "OR (tc.verification_expires_at IS NOT NULL AND "
+            "COALESCE(julianday(tc.verification_expires_at), 0) <= julianday('now')))",
         ]
         parameters: list[Any] = [cutoff]
         if repositories:
@@ -461,7 +477,7 @@ class SQLiteCandidateStore:
             rows = connection.execute(
                 f"""
                 SELECT
-                    tc.task_candidate_id, tc.repository_id, tc.issue_number,
+                    tc.task_candidate_id, tc.repository_id, tc.issue_number, tc.github_issue_id,
                     tc.github_verified_at, tc.candidate_eligibility,
                     r.full_name AS repository
                 FROM task_candidate AS tc
@@ -569,6 +585,7 @@ class SQLiteCandidateStore:
                 f"""
                 SELECT
                     r.full_name AS repository,
+                    tc.github_verified_at, tc.verification_expires_at, tc.candidate_availability,
                     tc.issue_number,
                     tc.github_issue_id,
                     tc.title,
@@ -897,6 +914,14 @@ class SQLiteCandidateStore:
             for row in rows
         ]
 
+    def candidate_admission_policy(self, full_name: str, issue_number: int) -> str | None:
+        from oss_mentor.candidate_admission import expanded_content, EXPANDED_CONTENT_POLICY
+        with self.connect() as connection:
+            row = connection.execute('''SELECT tc.feature_evidence_json FROM task_candidate tc
+                JOIN repository r USING(repository_id) WHERE r.full_name=? COLLATE NOCASE AND tc.issue_number=?''',
+                (full_name, issue_number)).fetchone()
+        return EXPANDED_CONTENT_POLICY if row and expanded_content(dict(row)) else None
+
     def matchable_candidates(self) -> list[dict[str, Any]]:
         self.initialize()
         with self.connect() as connection:
@@ -920,15 +945,11 @@ class SQLiteCandidateStore:
         by_task: dict[int, list[dict[str, Any]]] = {}
         for row in requirements:
             by_task.setdefault(int(row["task_candidate_id"]), []).append(dict(row))
-        return [
-            {
-                **dict(row),
-                "labels": json.loads(row["labels_json"]),
-                "task_types": json.loads(row["task_types_json"]),
-                "requirements": by_task.get(int(row["task_candidate_id"]), []),
-            }
-            for row in candidates
-        ]
+        tasks = [
+            {**dict(row), 'labels': json.loads(row['labels_json']), 'task_types': json.loads(row['task_types_json']),
+             'requirements': by_task.get(int(row['task_candidate_id']), [])}
+            for row in candidates if recommendation_is_current(dict(row))]
+        return [task for task in tasks if not task_review_reasons(task)]
 
     def feedback_states(
         self, feedback_context: str, task_candidate_ids: list[int]
@@ -1156,6 +1177,10 @@ class SQLiteCandidateStore:
             raise ValueError(f"unsupported track: {track}")
         score_column = "newcomer_score" if track == "newcomer" else "growth_value_score"
         newcomer_clause = "AND tc.newcomer_label_signal = 1" if track == "newcomer" else ""
+        ready_ids = [task['task_candidate_id'] for task in self.matchable_candidates()]
+        if not ready_ids:
+            return []
+        ready_clause = ','.join('?' for _ in ready_ids)
         with self.connect() as connection:
             rows = connection.execute(
                 f"""
@@ -1182,10 +1207,18 @@ class SQLiteCandidateStore:
                 WHERE tc.candidate_eligibility = 'eligible'
                   AND tc.task_feature_version IS NOT NULL
                   {newcomer_clause}
+                  AND tc.task_candidate_id IN ({ready_clause})
+                  AND tc.candidate_availability = 'available'
+                  AND julianday(tc.github_verified_at) <= julianday('now')
+                  AND julianday(tc.github_verified_at, '+24 hours') > julianday('now')
+                  AND (tc.verification_expires_at IS NULL OR julianday(tc.verification_expires_at) > julianday('now'))
+                  AND COALESCE(r.is_archived, 0) = 0
+                  AND COALESCE(r.is_disabled, 0) = 0
+                  AND COALESCE(r.maintenance_status, 'active') != 'inactive'
                 ORDER BY {score_column} DESC, tc.last_activity_at DESC
                 LIMIT ?
                 """,
-                (limit,),
+                (*ready_ids, limit),
             ).fetchall()
         return [
             {

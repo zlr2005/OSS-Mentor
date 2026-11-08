@@ -1,0 +1,485 @@
+[
+  {
+    "repository": "pytest-dev/pytest",
+    "language_track": "Python",
+    "level": "进阶起步",
+    "focus": "测试框架与插件生态",
+    "prerequisites": [
+      "Python 测试",
+      "fixture 与 hook",
+      "打包基础"
+    ],
+    "module_paths": [
+      "src/_pytest",
+      "testing"
+    ],
+    "proposed_outcome": "做一个针对实际测试流程的 pytest 插件，配套样例项目和回归测试。",
+    "acceptance": [
+      "插件行为可在样例项目复现",
+      "正常、异常及配置边界有测试",
+      "说明与既有插件的区别"
+    ],
+    "setup_notes": "先运行贡献指南中的本地测试流程，再选一个 hook；独立插件可在自己的仓库实现。",
+    "coordination": "核心行为变化先与维护者讨论；插件不等于会被 pytest-dev 接收。",
+    "contribution_doc": "CONTRIBUTING.rst",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "encode/httpx",
+    "language_track": "Python",
+    "level": "专项进阶",
+    "focus": "HTTP 客户端与传输层",
+    "prerequisites": [
+      "Python 异步",
+      "HTTP",
+      "pytest"
+    ],
+    "module_paths": [
+      "httpx/_transports",
+      "tests"
+    ],
+    "proposed_outcome": "针对一个真实网络边界场景制作可复现传输测试或自定义 transport 示例。",
+    "acceptance": [
+      "本地服务可复现",
+      "同步与异步行为分别说明",
+      "超时和资源释放有断言"
+    ],
+    "setup_notes": "按 docs/contributing.md 建开发环境，避免直接使用外部线上服务测试。",
+    "coordination": "现阶段先学习和验证；近期人类 PR 合并活动不足以确认，暂不进入推荐池。",
+    "contribution_doc": "docs/contributing.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "scikit-learn/scikit-learn",
+    "language_track": "Python",
+    "level": "专项进阶",
+    "focus": "机器学习接口一致性与评估",
+    "prerequisites": [
+      "NumPy",
+      "统计与机器学习",
+      "单元测试"
+    ],
+    "module_paths": [
+      "sklearn/preprocessing",
+      "sklearn/metrics",
+      "benchmarks"
+    ],
+    "proposed_outcome": "选一个已有预处理或指标接口，补边界测试并给出正确性与性能对照。",
+    "acceptance": [
+      "与现有接口约定一致",
+      "覆盖数据类型与边界输入",
+      "报告可复现的基准环境"
+    ],
+    "setup_notes": "阅读完整开发者贡献指南；先跑单个模块，涉及编译组件时按官方构建说明。",
+    "coordination": "新算法和公共接口变更需先讨论；不要把实验结果当作项目已接受的新功能。",
+    "contribution_doc": "doc/developers/contributing.rst",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "OpenRefine/OpenRefine",
+    "language_track": "Java",
+    "level": "进阶起步",
+    "focus": "数据清洗扩展与前后端协作",
+    "prerequisites": [
+      "Java",
+      "Maven",
+      "JavaScript"
+    ],
+    "module_paths": [
+      "extensions",
+      "main"
+    ],
+    "proposed_outcome": "制作一个面向实际数据清洗流程的扩展，提供样例数据、测试和安装说明。",
+    "acceptance": [
+      "扩展可在本地加载",
+      "输入输出可用样例验证",
+      "有 Java 测试及必要界面截图"
+    ],
+    "setup_notes": "先读官方扩展指南，参考已存在的扩展目录；开发文档与代码版本需匹配。",
+    "coordination": "新功能先在开发者论坛交流，核心改动按项目流程关联需求。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "apache/gravitino",
+    "language_track": "Java",
+    "level": "专项进阶",
+    "focus": "数据目录适配与元数据集成",
+    "prerequisites": [
+      "Java",
+      "SQL/JDBC",
+      "集成测试"
+    ],
+    "module_paths": [
+      "catalogs/catalog-jdbc-postgresql",
+      "catalogs/catalog-jdbc-common",
+      "design-docs"
+    ],
+    "proposed_outcome": "围绕一种熟悉的数据源，完善目录操作兼容性测试及配置文档。",
+    "acceptance": [
+      "能复现数据库与目录交互",
+      "成功和失败路径有测试",
+      "说明兼容版本和环境"
+    ],
+    "setup_notes": "按贡献指南确认 JDK、构建配置和依赖服务；从单一 catalog 开始。",
+    "coordination": "新增 catalog 或跨模块接口先讨论设计；不直接承诺接入主线。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "testcontainers/testcontainers-java",
+    "language_track": "Java",
+    "level": "进阶起步",
+    "focus": "容器化集成测试与模块适配",
+    "prerequisites": [
+      "Java",
+      "Docker",
+      "JUnit"
+    ],
+    "module_paths": [
+      "modules/postgresql",
+      "modules/junit-jupiter",
+      "core"
+    ],
+    "proposed_outcome": "为熟悉的服务整理可重复集成测试，验证启动等待、版本差异和资源清理。",
+    "acceptance": [
+      "一次本地运行可重现测试环境",
+      "启动失败与清理有检查",
+      "配置及版本可追溯"
+    ],
+    "setup_notes": "需要可用的容器环境，按 docs/contributing.md 构建单一模块。",
+    "coordination": "新模块与镜像版本支持先检查现有实现和维护要求。",
+    "contribution_doc": "docs/contributing.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "prometheus/prometheus",
+    "language_track": "Go",
+    "level": "深度挑战",
+    "focus": "查询语义与监控数据处理",
+    "prerequisites": [
+      "Go",
+      "PromQL",
+      "性能分析"
+    ],
+    "module_paths": [
+      "promql/parser",
+      "promql/promqltest",
+      "scrape"
+    ],
+    "proposed_outcome": "选择一种查询边界或抓取场景，提交语义测试和可复现实验报告。",
+    "acceptance": [
+      "查询结果有基准预期",
+      "性能结论注明样本和环境",
+      "遵守兼容性约定"
+    ],
+    "setup_notes": "先按贡献指南跑相关 Go 测试，查询语法涉及生成文件时遵循官方步骤。",
+    "coordination": "查询语义、存储和公共行为改动先讨论；不从整套 TSDB 重写开始。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "etcd-io/etcd",
+    "language_track": "Go",
+    "level": "深度挑战",
+    "focus": "分布式客户端与故障场景",
+    "prerequisites": [
+      "Go 并发",
+      "分布式系统",
+      "集成测试"
+    ],
+    "module_paths": [
+      "client/v3",
+      "tests",
+      "server"
+    ],
+    "proposed_outcome": "围绕客户端重连或超时构造可控故障实验，并补稳定回归测试。",
+    "acceptance": [
+      "故障注入可重复",
+      "恢复后状态可核对",
+      "超时及资源泄漏有检查"
+    ],
+    "setup_notes": "阅读贡献指南，按官方说明准备本地开发环境及测试集群。",
+    "coordination": "先从客户端和测试入手；一致性、持久化核心改动需更深入设计讨论。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "caddyserver/caddy",
+    "language_track": "Go",
+    "level": "专项进阶",
+    "focus": "HTTP 模块与服务配置",
+    "prerequisites": [
+      "Go",
+      "HTTP",
+      "集成测试"
+    ],
+    "module_paths": [
+      "modules/caddyhttp",
+      "caddyconfig",
+      "caddytest"
+    ],
+    "proposed_outcome": "针对一个服务场景开发模块原型或配置适配样例，验证请求处理与失败路径。",
+    "acceptance": [
+      "模块或配置可在本地示例运行",
+      "请求和错误路径有测试",
+      "说明配置语义与生命周期"
+    ],
+    "setup_notes": "先按贡献指南理解构建和本地测试方法，再阅读相邻模块。",
+    "coordination": "外部模块与核心收录是不同路径；核心需求先讨论，避免重复已有模块。",
+    "contribution_doc": ".github/CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "diesel-rs/diesel",
+    "language_track": "Rust",
+    "level": "专项进阶",
+    "focus": "类型安全查询与数据库兼容性",
+    "prerequisites": [
+      "Rust trait/泛型",
+      "SQL",
+      "数据库测试"
+    ],
+    "module_paths": [
+      "diesel",
+      "diesel_compile_tests",
+      "diesel_tests"
+    ],
+    "proposed_outcome": "针对一种查询表达式补编译期测试与数据库回归案例，解释类型约束。",
+    "acceptance": [
+      "编译通过与失败案例都有预期",
+      "所选数据库能复现行为",
+      "说明 API 与类型约束影响"
+    ],
+    "setup_notes": "按官方说明准备 Rust 和数据库依赖，优先限定一个后端。",
+    "coordination": "新功能先发讨论帖；官方对 AI 使用及新手标签任务有具体限制，提交前阅读指南。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "pola-rs/polars",
+    "language_track": "Rust",
+    "level": "深度挑战",
+    "focus": "列式数据处理与 Python/Rust 边界",
+    "prerequisites": [
+      "Rust",
+      "Python 数据分析",
+      "基准测试"
+    ],
+    "module_paths": [
+      "crates/polars-io",
+      "crates/polars-ops",
+      "py-polars"
+    ],
+    "proposed_outcome": "选一个数据类型或 I/O 场景，补 Python/Rust 对照回归与性能实验。",
+    "acceptance": [
+      "数据类型和空值边界可复现",
+      "新旧行为对照明确",
+      "基准注明规模与环境"
+    ],
+    "setup_notes": "从官方贡献文档设置 Rust/Python 开发环境，先限定模块与数据规模。",
+    "coordination": "新功能先讨论需求与 API；性能改动需要正确性证据，不只给单次耗时。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "tokio-rs/tokio",
+    "language_track": "Rust",
+    "level": "深度挑战",
+    "focus": "异步工具与并发行为",
+    "prerequisites": [
+      "Rust async/Future",
+      "并发",
+      "测试设计"
+    ],
+    "module_paths": [
+      "tokio-util",
+      "tokio-util/tests",
+      "examples"
+    ],
+    "proposed_outcome": "选择一个异步工具场景，完善取消、超时或背压行为的示例和回归。",
+    "acceptance": [
+      "能说明任务与资源生命周期",
+      "正常和取消路径有测试",
+      "兼容性与运行方式明确"
+    ],
+    "setup_notes": "从 docs/contributing/README.md 入手，再阅读对应组件和现有测试。",
+    "coordination": "先从 tokio-util 或样例入手，调度器和同步原语核心改动需深入验证。",
+    "contribution_doc": "docs/contributing/README.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "vitejs/vite",
+    "language_track": "TypeScript",
+    "level": "专项进阶",
+    "focus": "构建工具、插件与兼容性",
+    "prerequisites": [
+      "TypeScript",
+      "Node.js",
+      "前端构建"
+    ],
+    "module_paths": [
+      "packages/vite",
+      "playground",
+      "packages/plugin-legacy"
+    ],
+    "proposed_outcome": "针对实际构建场景制作插件或最小项目，并补兼容性回归。",
+    "acceptance": [
+      "最小项目可运行",
+      "开发与构建行为分别验证",
+      "边界配置有回归"
+    ],
+    "setup_notes": "按贡献指南确认 pnpm 和工具版本，使用 playground 重现。",
+    "coordination": "新增配置与依赖先讨论；独立插件可先在生态项目实现。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "TanStack/query",
+    "language_track": "TypeScript",
+    "level": "进阶起步",
+    "focus": "缓存状态与框架适配",
+    "prerequisites": [
+      "TypeScript",
+      "React 或另一框架",
+      "异步状态"
+    ],
+    "module_paths": [
+      "packages/query-core",
+      "packages/react-query",
+      "examples"
+    ],
+    "proposed_outcome": "围绕缓存失效、重试或持久化做一个可运行适配示例并补行为测试。",
+    "acceptance": [
+      "交互过程可复现",
+      "缓存与网络状态有断言",
+      "公共 API 兼容性明确"
+    ],
+    "setup_notes": "按贡献指南准备 monorepo 环境，先选一个框架适配层。",
+    "coordination": "跨框架核心变更需讨论；先核对已有适配器和插件。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "typescript-eslint/typescript-eslint",
+    "language_track": "TypeScript",
+    "level": "专项进阶",
+    "focus": "类型感知静态分析与规则开发",
+    "prerequisites": [
+      "TypeScript 类型系统",
+      "AST",
+      "ESLint"
+    ],
+    "module_paths": [
+      "packages/eslint-plugin",
+      "packages/rule-tester",
+      "packages/parser"
+    ],
+    "proposed_outcome": "实现一条针对真实代码问题的规则原型，补有效、无效及自动修复测试。",
+    "acceptance": [
+      "规则目标有正反例",
+      "类型信息依赖明确",
+      "修复不改变程序语义"
+    ],
+    "setup_notes": "官方开发文档给出 monorepo 构建、测试、lint 和类型检查入口。",
+    "coordination": "新核心规则先讨论收录标准；独立插件可验证需求，不承诺主线收录。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "eslint/eslint",
+    "language_track": "JavaScript",
+    "level": "进阶起步",
+    "focus": "规则插件与代码质量工具",
+    "prerequisites": [
+      "JavaScript",
+      "AST",
+      "单元测试"
+    ],
+    "module_paths": [
+      "lib/rules",
+      "lib/rule-tester",
+      "tests"
+    ],
+    "proposed_outcome": "开发一条独立自定义规则或插件，附规则说明、错误示例和修复测试。",
+    "acceptance": [
+      "规则可在样例仓库启用",
+      "覆盖有效与无效代码",
+      "自动修复有回归"
+    ],
+    "setup_notes": "先读官方自定义规则文档，再看 RuleTester 与相邻规则。",
+    "coordination": "核心规则有提案流程与 CLA 要求；独立插件无需伪装成核心新功能。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "nodejs/undici",
+    "language_track": "JavaScript",
+    "level": "专项进阶",
+    "focus": "HTTP 客户端与 Web 标准兼容",
+    "prerequisites": [
+      "Node.js",
+      "HTTP/流",
+      "异步测试"
+    ],
+    "module_paths": [
+      "lib/dispatcher",
+      "lib/web",
+      "test"
+    ],
+    "proposed_outcome": "构造本地 HTTP 服务，补连接复用、取消或 Fetch 行为的回归场景。",
+    "acceptance": [
+      "无需外部网络即可复现",
+      "客户端和服务端资源可清理",
+      "需要时对照 Web 平台测试"
+    ],
+    "setup_notes": "贡献指南列有本地测试、WPT、lint 和基准入口；先选单个场景。",
+    "coordination": "协议和公共行为改动先讨论，性能结论须配正确性检查。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  },
+  {
+    "repository": "rollup/rollup",
+    "language_track": "JavaScript",
+    "level": "深度挑战",
+    "focus": "打包、插件交互与产物验证",
+    "prerequisites": [
+      "JavaScript/TypeScript",
+      "ES modules",
+      "构建测试"
+    ],
+    "module_paths": [
+      "src/ast",
+      "src/watch",
+      "test"
+    ],
+    "proposed_outcome": "围绕 tree-shaking 或插件交互制作最小打包样例，并补产物回归测试。",
+    "acceptance": [
+      "输入与输出差异明确",
+      "相关输出格式有检查",
+      "说明运行行为是否保持"
+    ],
+    "setup_notes": "先读 ARCHITECTURE.md；贡献指南说明 Rust 工具链和测试分类。",
+    "coordination": "运行时语义和打包策略变更先讨论；许可元数据未识别，已另读仓库 LICENSE.md。",
+    "contribution_doc": "CONTRIBUTING.md",
+    "suggestion_author": "assistant",
+    "difficulty_ground_truth": false
+  }
+]

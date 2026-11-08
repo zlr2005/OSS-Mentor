@@ -1,4 +1,4 @@
-"""Export a small, sanitized SQLite fixture from a local OSS-Mentor database."""
+"""Export a sanitized SQLite fixture from a local OSS-Mentor database."""
 
 from __future__ import annotations
 
@@ -75,7 +75,14 @@ def _selected_task_ids(connection: sqlite3.Connection, per_language: int) -> set
     return selected
 
 
-def export_fixture(source: Path, output: Path, per_language: int) -> None:
+def export_fixture(
+    source: Path,
+    output: Path,
+    per_language: int,
+    *,
+    all_candidates: bool = False,
+    include_issue_bodies: bool = False,
+) -> None:
     source = source.resolve()
     output = output.resolve()
     if source == output:
@@ -92,7 +99,15 @@ def export_fixture(source: Path, output: Path, per_language: int) -> None:
     try:
         source_connection.backup(output_connection)
         output_connection.execute("PRAGMA foreign_keys = OFF")
-        selected = _selected_task_ids(output_connection, per_language)
+        if all_candidates:
+            selected = {
+                row[0]
+                for row in output_connection.execute(
+                    "SELECT task_candidate_id FROM task_candidate"
+                )
+            }
+        else:
+            selected = _selected_task_ids(output_connection, per_language)
         if not selected:
             raise RuntimeError("source database has no eligible scored candidates")
 
@@ -130,29 +145,48 @@ def export_fixture(source: Path, output: Path, per_language: int) -> None:
         )
         output_connection.execute("DELETE FROM developer_profile WHERE profile_source != 'demo'")
 
-        # Keep only public fields required by the demo UI and precomputed ranking data.
+        # Keep public issue content only when explicitly requested for downstream
+        # feature extraction. Account-related metadata and collection warnings are
+        # removed from every sanitized export.
+        if include_issue_bodies:
+            output_connection.execute(
+                """
+                UPDATE task_candidate
+                SET github_issue_id = NULL,
+                    author_association = NULL,
+                    warnings_json = '[]'
+                """
+            )
+        else:
+            output_connection.execute(
+                """
+                UPDATE task_candidate
+                SET github_issue_id = NULL,
+                    author_association = NULL,
+                    body_text = NULL,
+                    warnings_json = '[]'
+                """
+            )
         output_connection.execute(
             """
-            UPDATE task_candidate
-            SET github_issue_id = NULL,
-                author_association = NULL,
-                body_text = NULL,
-                warnings_json = '[]'
-            """
+            INSERT INTO schema_metadata(key, value)
+            VALUES ('fixture_kind', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
+            ("sanitized-full" if all_candidates else "sanitized-demo",),
+        )
+        fixture_policy = (
+            "public-issue-content-no-feedback"
+            if include_issue_bodies
+            else "public-task-metadata-no-bodies-no-feedback"
         )
         output_connection.execute(
             """
             INSERT INTO schema_metadata(key, value)
-            VALUES ('fixture_kind', 'sanitized-demo')
+            VALUES ('fixture_policy', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
-            """
-        )
-        output_connection.execute(
-            """
-            INSERT INTO schema_metadata(key, value)
-            VALUES ('fixture_policy', 'public-task-metadata-no-bodies-no-feedback')
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value
-            """
+            """,
+            (fixture_policy,),
         )
         output_connection.commit()
         output_connection.execute("VACUUM")
@@ -171,6 +205,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=8,
         help="maximum eligible candidates retained per language (default: 8)",
     )
+    parser.add_argument(
+        "--all-candidates",
+        action="store_true",
+        help="retain every candidate instead of creating a per-language sample",
+    )
+    parser.add_argument(
+        "--include-issue-bodies",
+        action="store_true",
+        help="retain public Issue body text for downstream feature extraction",
+    )
     return parser
 
 
@@ -178,8 +222,14 @@ def main() -> int:
     args = build_parser().parse_args()
     if args.per_language < 1:
         raise SystemExit("--per-language must be at least 1")
-    export_fixture(args.source, args.output, args.per_language)
-    print(f"Wrote sanitized demo fixture: {args.output}")
+    export_fixture(
+        args.source,
+        args.output,
+        args.per_language,
+        all_candidates=args.all_candidates,
+        include_issue_bodies=args.include_issue_bodies,
+    )
+    print(f"Wrote sanitized fixture: {args.output}")
     return 0
 
 

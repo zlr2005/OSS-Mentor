@@ -1,0 +1,2310 @@
+{
+  "batches": [
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 0,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 1,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 2,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 3,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 4,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 5,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 6,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 7,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 8,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 9,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 10,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 11,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 12,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 13,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 14,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 15,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 16,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 17,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 18,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 19,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 20,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 21,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 22,
+      "owner": 1525981
+    },
+    {
+      "reason": "split_saturated_hourly",
+      "parent_key": "python__cpython_202610_day04",
+      "name": "python/cpython",
+      "end_day": 0,
+      "day": 4,
+      "id": 81598961,
+      "month": 202610,
+      "hour": 23,
+      "owner": 1525981
+    },
+    {
+      "hour": -1,
+      "id": 85095608,
+      "owner": 698437,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "airbnb/visx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 9185792,
+      "owner": 47359,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "apache/echarts",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 523043277,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "astral-sh/ruff",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 699532645,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "astral-sh/uv",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 53631945,
+      "owner": 456674,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "BurntSushi/ripgrep",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 188953831,
+      "owner": 42944450,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "CircuitVerse/Interactive-Book",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 212613049,
+      "owner": 59704711,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "cli/cli",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 133442384,
+      "owner": 42048915,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "denoland/deno",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 179492861,
+      "owner": 19159390,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "encode/httpx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 11061773,
+      "owner": 6019716,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "eslint/eslint",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 450625045,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "facebook/buck2",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 94911145,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "facebook/docusaurus",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 29759715,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "facebook/zstd",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 160919119,
+      "owner": 156354296,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "fastapi/fastapi",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 23096959,
+      "owner": 4314092,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "golang/go",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 267719344,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "google/ml-compiler-opt",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 35969061,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "google/styleguide",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 364474335,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "google/zx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 155220641,
+      "owner": 25720743,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "huggingface/transformers",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 5101141,
+      "owner": 104800540,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "jqlang/jq",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1027384981,
+      "owner": 126733545,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "langchain-ai/deepagents",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 884411799,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "microsoft/Agents-for-net",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 156293506,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "microsoft/SandDance",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 349233926,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "microsoft/sarif-js-sdk",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 20929025,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "microsoft/TypeScript",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 41881900,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "microsoft/vscode",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 61973853,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "microsoft/vscode-mssql",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 16408992,
+      "owner": 6471485,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "neovim/neovim",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 27193779,
+      "owner": 9950313,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "nodejs/node",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 908607,
+      "owner": 288276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "numpy/numpy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 186024298,
+      "owner": 50749515,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "nushell/nushell",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 596892,
+      "owner": 16748505,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "pallets/flask",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 858127,
+      "owner": 21206976,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "pandas-dev/pandas",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 75104123,
+      "owner": 25822731,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "prettier/prettier",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1362490,
+      "owner": 50630501,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "psf/requests",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 90194616,
+      "owner": 110818415,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "pydantic/pydantic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 37489525,
+      "owner": 8897583,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "pytest-dev/pytest",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 81598961,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "python/cpython",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 7053637,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "python/mypy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 724712,
+      "owner": 5430905,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "rust-lang/rust",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 843222,
+      "owner": 365630,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "scikit-learn/scikit-learn",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 130464961,
+      "owner": 4209276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "sharkdp/bat",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 926248435,
+      "owner": 173204339,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "supercog-ai/agentic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 74293321,
+      "owner": 23617963,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "sveltejs/svelte",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 220809393,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "Textualize/rich",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 355959597,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "Textualize/textual",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 67836789,
+      "owner": 20248544,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "tokio-rs/tokio",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 70107786,
+      "owner": 14985020,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "vercel/next.js",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 257485422,
+      "owner": 65625612,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "vitejs/vite",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 137078487,
+      "owner": 6128107,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "vuejs/core",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 340547520,
+      "owner": 79345384,
+      "day": 0,
+      "end_day": 0,
+      "month": 202604,
+      "name": "zed-industries/zed",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 85095608,
+      "owner": 698437,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "airbnb/visx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 9185792,
+      "owner": 47359,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "apache/echarts",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 523043277,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "astral-sh/ruff",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 699532645,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "astral-sh/uv",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 53631945,
+      "owner": 456674,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "BurntSushi/ripgrep",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 188953831,
+      "owner": 42944450,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "CircuitVerse/Interactive-Book",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 212613049,
+      "owner": 59704711,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "cli/cli",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 133442384,
+      "owner": 42048915,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "denoland/deno",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 179492861,
+      "owner": 19159390,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "encode/httpx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 11061773,
+      "owner": 6019716,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "eslint/eslint",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 450625045,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "facebook/buck2",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 94911145,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "facebook/docusaurus",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 29759715,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "facebook/zstd",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 160919119,
+      "owner": 156354296,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "fastapi/fastapi",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 23096959,
+      "owner": 4314092,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "golang/go",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 267719344,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "google/ml-compiler-opt",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 35969061,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "google/styleguide",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 364474335,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "google/zx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 155220641,
+      "owner": 25720743,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "huggingface/transformers",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 5101141,
+      "owner": 104800540,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "jqlang/jq",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1027384981,
+      "owner": 126733545,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "langchain-ai/deepagents",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 884411799,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "microsoft/Agents-for-net",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 156293506,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "microsoft/SandDance",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 349233926,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "microsoft/sarif-js-sdk",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 20929025,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "microsoft/TypeScript",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 41881900,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "microsoft/vscode",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 61973853,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "microsoft/vscode-mssql",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 16408992,
+      "owner": 6471485,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "neovim/neovim",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 27193779,
+      "owner": 9950313,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "nodejs/node",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 908607,
+      "owner": 288276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "numpy/numpy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 186024298,
+      "owner": 50749515,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "nushell/nushell",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 596892,
+      "owner": 16748505,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "pallets/flask",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 858127,
+      "owner": 21206976,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "pandas-dev/pandas",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 75104123,
+      "owner": 25822731,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "prettier/prettier",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1362490,
+      "owner": 50630501,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "psf/requests",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 90194616,
+      "owner": 110818415,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "pydantic/pydantic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 37489525,
+      "owner": 8897583,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "pytest-dev/pytest",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 81598961,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "python/cpython",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 7053637,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "python/mypy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 724712,
+      "owner": 5430905,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "rust-lang/rust",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 843222,
+      "owner": 365630,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "scikit-learn/scikit-learn",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 130464961,
+      "owner": 4209276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "sharkdp/bat",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 926248435,
+      "owner": 173204339,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "supercog-ai/agentic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 74293321,
+      "owner": 23617963,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "sveltejs/svelte",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 220809393,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "Textualize/rich",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 355959597,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "Textualize/textual",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 67836789,
+      "owner": 20248544,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "tokio-rs/tokio",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 70107786,
+      "owner": 14985020,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "vercel/next.js",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 257485422,
+      "owner": 65625612,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "vitejs/vite",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 137078487,
+      "owner": 6128107,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "vuejs/core",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 340547520,
+      "owner": 79345384,
+      "day": 0,
+      "end_day": 0,
+      "month": 202603,
+      "name": "zed-industries/zed",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 85095608,
+      "owner": 698437,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "airbnb/visx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 9185792,
+      "owner": 47359,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "apache/echarts",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 523043277,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "astral-sh/ruff",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 699532645,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "astral-sh/uv",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 53631945,
+      "owner": 456674,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "BurntSushi/ripgrep",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 188953831,
+      "owner": 42944450,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "CircuitVerse/Interactive-Book",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 212613049,
+      "owner": 59704711,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "cli/cli",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 133442384,
+      "owner": 42048915,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "denoland/deno",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 179492861,
+      "owner": 19159390,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "encode/httpx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 11061773,
+      "owner": 6019716,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "eslint/eslint",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 450625045,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "facebook/buck2",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 94911145,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "facebook/docusaurus",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 29759715,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "facebook/zstd",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 160919119,
+      "owner": 156354296,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "fastapi/fastapi",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 23096959,
+      "owner": 4314092,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "golang/go",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 267719344,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "google/ml-compiler-opt",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 35969061,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "google/styleguide",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 364474335,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "google/zx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 155220641,
+      "owner": 25720743,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "huggingface/transformers",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 5101141,
+      "owner": 104800540,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "jqlang/jq",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1027384981,
+      "owner": 126733545,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "langchain-ai/deepagents",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 884411799,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "microsoft/Agents-for-net",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 156293506,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "microsoft/SandDance",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 349233926,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "microsoft/sarif-js-sdk",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 20929025,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "microsoft/TypeScript",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 41881900,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "microsoft/vscode",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 61973853,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "microsoft/vscode-mssql",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 16408992,
+      "owner": 6471485,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "neovim/neovim",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 27193779,
+      "owner": 9950313,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "nodejs/node",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 908607,
+      "owner": 288276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "numpy/numpy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 186024298,
+      "owner": 50749515,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "nushell/nushell",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 596892,
+      "owner": 16748505,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "pallets/flask",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 858127,
+      "owner": 21206976,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "pandas-dev/pandas",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 75104123,
+      "owner": 25822731,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "prettier/prettier",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1362490,
+      "owner": 50630501,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "psf/requests",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 90194616,
+      "owner": 110818415,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "pydantic/pydantic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 37489525,
+      "owner": 8897583,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "pytest-dev/pytest",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 81598961,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "python/cpython",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 7053637,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "python/mypy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 724712,
+      "owner": 5430905,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "rust-lang/rust",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 843222,
+      "owner": 365630,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "scikit-learn/scikit-learn",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 130464961,
+      "owner": 4209276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "sharkdp/bat",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 926248435,
+      "owner": 173204339,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "supercog-ai/agentic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 74293321,
+      "owner": 23617963,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "sveltejs/svelte",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 220809393,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "Textualize/rich",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 355959597,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "Textualize/textual",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 67836789,
+      "owner": 20248544,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "tokio-rs/tokio",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 70107786,
+      "owner": 14985020,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "vercel/next.js",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 257485422,
+      "owner": 65625612,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "vitejs/vite",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 137078487,
+      "owner": 6128107,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "vuejs/core",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 340547520,
+      "owner": 79345384,
+      "day": 0,
+      "end_day": 0,
+      "month": 202602,
+      "name": "zed-industries/zed",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 85095608,
+      "owner": 698437,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "airbnb/visx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 9185792,
+      "owner": 47359,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "apache/echarts",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 523043277,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "astral-sh/ruff",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 699532645,
+      "owner": 115962839,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "astral-sh/uv",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 53631945,
+      "owner": 456674,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "BurntSushi/ripgrep",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 188953831,
+      "owner": 42944450,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "CircuitVerse/Interactive-Book",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 212613049,
+      "owner": 59704711,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "cli/cli",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 133442384,
+      "owner": 42048915,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "denoland/deno",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 179492861,
+      "owner": 19159390,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "encode/httpx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 11061773,
+      "owner": 6019716,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "eslint/eslint",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 450625045,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "facebook/buck2",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 94911145,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "facebook/docusaurus",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 29759715,
+      "owner": 69631,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "facebook/zstd",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 160919119,
+      "owner": 156354296,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "fastapi/fastapi",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 23096959,
+      "owner": 4314092,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "golang/go",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 267719344,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "google/ml-compiler-opt",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 35969061,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "google/styleguide",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 364474335,
+      "owner": 1342004,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "google/zx",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 155220641,
+      "owner": 25720743,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "huggingface/transformers",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 5101141,
+      "owner": 104800540,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "jqlang/jq",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1027384981,
+      "owner": 126733545,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "langchain-ai/deepagents",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 884411799,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "microsoft/Agents-for-net",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 156293506,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "microsoft/SandDance",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 349233926,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "microsoft/sarif-js-sdk",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 20929025,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "microsoft/TypeScript",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 41881900,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "microsoft/vscode",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 61973853,
+      "owner": 6154722,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "microsoft/vscode-mssql",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 16408992,
+      "owner": 6471485,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "neovim/neovim",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 27193779,
+      "owner": 9950313,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "nodejs/node",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 908607,
+      "owner": 288276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "numpy/numpy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 186024298,
+      "owner": 50749515,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "nushell/nushell",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 596892,
+      "owner": 16748505,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "pallets/flask",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 858127,
+      "owner": 21206976,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "pandas-dev/pandas",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 75104123,
+      "owner": 25822731,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "prettier/prettier",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 1362490,
+      "owner": 50630501,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "psf/requests",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 90194616,
+      "owner": 110818415,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "pydantic/pydantic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 37489525,
+      "owner": 8897583,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "pytest-dev/pytest",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 81598961,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "python/cpython",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 7053637,
+      "owner": 1525981,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "python/mypy",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 724712,
+      "owner": 5430905,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "rust-lang/rust",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 843222,
+      "owner": 365630,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "scikit-learn/scikit-learn",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 130464961,
+      "owner": 4209276,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "sharkdp/bat",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 926248435,
+      "owner": 173204339,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "supercog-ai/agentic",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 74293321,
+      "owner": 23617963,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "sveltejs/svelte",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 220809393,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "Textualize/rich",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 355959597,
+      "owner": 93378883,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "Textualize/textual",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 67836789,
+      "owner": 20248544,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "tokio-rs/tokio",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 70107786,
+      "owner": 14985020,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "vercel/next.js",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 257485422,
+      "owner": 65625612,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "vitejs/vite",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 137078487,
+      "owner": 6128107,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "vuejs/core",
+      "reason": "new_historical_month"
+    },
+    {
+      "hour": -1,
+      "id": 340547520,
+      "owner": 79345384,
+      "day": 0,
+      "end_day": 0,
+      "month": 202601,
+      "name": "zed-industries/zed",
+      "reason": "new_historical_month"
+    }
+  ],
+  "purpose": "Teacher events collection only; defer eligibility screening",
+  "source_batch": "D:\\OSS-Mentor\\data\\teacher_clickhouse\\round5_20261018T052711Z"
+}

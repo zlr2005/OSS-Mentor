@@ -1,0 +1,2108 @@
+{
+  "partial_current_date": "2026-10-18",
+  "batches": [
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day01_to08",
+      "month": 202610,
+      "day": 1,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day01_to08",
+      "month": 202610,
+      "day": 2,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day01_to08",
+      "month": 202610,
+      "day": 3,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day01_to08",
+      "month": 202610,
+      "day": 4,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day01_to08",
+      "month": 202610,
+      "day": 5,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day01_to08",
+      "month": 202610,
+      "day": 6,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day01_to08",
+      "month": 202610,
+      "day": 7,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day01_to08",
+      "month": 202610,
+      "day": 1,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day01_to08",
+      "month": 202610,
+      "day": 2,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day01_to08",
+      "month": 202610,
+      "day": 3,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day01_to08",
+      "month": 202610,
+      "day": 4,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day01_to08",
+      "month": 202610,
+      "day": 5,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day01_to08",
+      "month": 202610,
+      "day": 6,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day01_to08",
+      "month": 202610,
+      "day": 7,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day08_to15",
+      "month": 202610,
+      "day": 8,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day08_to15",
+      "month": 202610,
+      "day": 9,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day08_to15",
+      "month": 202610,
+      "day": 10,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day08_to15",
+      "month": 202610,
+      "day": 11,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day08_to15",
+      "month": 202610,
+      "day": 12,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day08_to15",
+      "month": 202610,
+      "day": 13,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202610_day08_to15",
+      "month": 202610,
+      "day": 14,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "owner": 5430905,
+      "parent_key": "rust-lang__rust_202610_day08_to15",
+      "month": 202610,
+      "day": 8,
+      "name": "rust-lang/rust",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "owner": 5430905,
+      "parent_key": "rust-lang__rust_202610_day08_to15",
+      "month": 202610,
+      "day": 9,
+      "name": "rust-lang/rust",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "owner": 5430905,
+      "parent_key": "rust-lang__rust_202610_day08_to15",
+      "month": 202610,
+      "day": 10,
+      "name": "rust-lang/rust",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "owner": 5430905,
+      "parent_key": "rust-lang__rust_202610_day08_to15",
+      "month": 202610,
+      "day": 11,
+      "name": "rust-lang/rust",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "owner": 5430905,
+      "parent_key": "rust-lang__rust_202610_day08_to15",
+      "month": 202610,
+      "day": 12,
+      "name": "rust-lang/rust",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "owner": 5430905,
+      "parent_key": "rust-lang__rust_202610_day08_to15",
+      "month": 202610,
+      "day": 13,
+      "name": "rust-lang/rust",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "owner": 5430905,
+      "parent_key": "rust-lang__rust_202610_day08_to15",
+      "month": 202610,
+      "day": 14,
+      "name": "rust-lang/rust",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day08_to15",
+      "month": 202610,
+      "day": 8,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day08_to15",
+      "month": 202610,
+      "day": 9,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day08_to15",
+      "month": 202610,
+      "day": 10,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day08_to15",
+      "month": 202610,
+      "day": 11,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day08_to15",
+      "month": 202610,
+      "day": 12,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day08_to15",
+      "month": 202610,
+      "day": 13,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202610_day08_to15",
+      "month": 202610,
+      "day": 14,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 186024298,
+      "owner": 50749515,
+      "parent_key": "nushell__nushell_202610_day15_to17",
+      "month": 202610,
+      "day": 15,
+      "name": "nushell/nushell",
+      "reason": "retry_failed",
+      "end_day": 17
+    },
+    {
+      "id": 212613049,
+      "owner": 59704711,
+      "parent_key": "cli__cli_202609_day01_to08",
+      "month": 202609,
+      "day": 1,
+      "name": "cli/cli",
+      "reason": "retry_failed",
+      "end_day": 8
+    },
+    {
+      "id": 67836789,
+      "owner": 20248544,
+      "parent_key": "tokio-rs__tokio_202609_day08_to15",
+      "month": 202609,
+      "day": 8,
+      "name": "tokio-rs/tokio",
+      "reason": "retry_failed",
+      "end_day": 15
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day08_to15",
+      "month": 202609,
+      "day": 8,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day08_to15",
+      "month": 202609,
+      "day": 9,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day08_to15",
+      "month": 202609,
+      "day": 10,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day08_to15",
+      "month": 202609,
+      "day": 11,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day08_to15",
+      "month": 202609,
+      "day": 12,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day08_to15",
+      "month": 202609,
+      "day": 13,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day08_to15",
+      "month": 202609,
+      "day": 14,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day15_to22",
+      "month": 202609,
+      "day": 15,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day15_to22",
+      "month": 202609,
+      "day": 16,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day15_to22",
+      "month": 202609,
+      "day": 17,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day15_to22",
+      "month": 202609,
+      "day": 18,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day15_to22",
+      "month": 202609,
+      "day": 19,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day15_to22",
+      "month": 202609,
+      "day": 20,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day15_to22",
+      "month": 202609,
+      "day": 21,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202609_day22_to29",
+      "month": 202609,
+      "day": 22,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202609_day22_to29",
+      "month": 202609,
+      "day": 23,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202609_day22_to29",
+      "month": 202609,
+      "day": 24,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202609_day22_to29",
+      "month": 202609,
+      "day": 25,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202609_day22_to29",
+      "month": 202609,
+      "day": 26,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202609_day22_to29",
+      "month": 202609,
+      "day": 27,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "owner": 1525981,
+      "parent_key": "python__cpython_202609_day22_to29",
+      "month": 202609,
+      "day": 28,
+      "name": "python/cpython",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day22_to29",
+      "month": 202609,
+      "day": 22,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day22_to29",
+      "month": 202609,
+      "day": 23,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day22_to29",
+      "month": 202609,
+      "day": 24,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day22_to29",
+      "month": 202609,
+      "day": 25,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day22_to29",
+      "month": 202609,
+      "day": 26,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day22_to29",
+      "month": 202609,
+      "day": 27,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202609_day22_to29",
+      "month": 202609,
+      "day": 28,
+      "name": "golang/go",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day22_to29",
+      "month": 202609,
+      "day": 22,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day22_to29",
+      "month": 202609,
+      "day": 23,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day22_to29",
+      "month": 202609,
+      "day": 24,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day22_to29",
+      "month": 202609,
+      "day": 25,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day22_to29",
+      "month": 202609,
+      "day": 26,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day22_to29",
+      "month": 202609,
+      "day": 27,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202609_day22_to29",
+      "month": 202609,
+      "day": 28,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 212613049,
+      "owner": 59704711,
+      "parent_key": "cli__cli_202609_day29_to31",
+      "month": 202609,
+      "day": 29,
+      "name": "cli/cli",
+      "reason": "retry_failed",
+      "end_day": 31
+    },
+    {
+      "id": 23096959,
+      "owner": 4314092,
+      "parent_key": "golang__go_202608_day22_to29",
+      "month": 202608,
+      "day": 22,
+      "name": "golang/go",
+      "reason": "retry_failed",
+      "end_day": 29
+    },
+    {
+      "id": 212613049,
+      "owner": 59704711,
+      "parent_key": "cli__cli_202607",
+      "month": 202607,
+      "day": 0,
+      "name": "cli/cli",
+      "reason": "retry_failed",
+      "end_day": 0
+    },
+    {
+      "id": 5101141,
+      "owner": 104800540,
+      "parent_key": "jqlang__jq_202607",
+      "month": 202607,
+      "day": 0,
+      "name": "jqlang/jq",
+      "reason": "retry_failed",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 1,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 2,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 3,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 4,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 5,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 6,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 7,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 8,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 9,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 10,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 11,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 12,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 13,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 14,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 15,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 16,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 17,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 18,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 19,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 20,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 21,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 22,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 23,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 24,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 25,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 26,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 27,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 28,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 29,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 30,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "owner": 79345384,
+      "parent_key": "zed-industries__zed_202605",
+      "month": 202605,
+      "day": 31,
+      "name": "zed-industries/zed",
+      "reason": "split_saturated",
+      "end_day": 0
+    },
+    {
+      "id": 85095608,
+      "partial_day": false,
+      "owner": 698437,
+      "month": 202610,
+      "day": 17,
+      "name": "airbnb/visx",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 9185792,
+      "partial_day": false,
+      "owner": 47359,
+      "month": 202610,
+      "day": 17,
+      "name": "apache/echarts",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 523043277,
+      "partial_day": false,
+      "owner": 115962839,
+      "month": 202610,
+      "day": 17,
+      "name": "astral-sh/ruff",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 699532645,
+      "partial_day": false,
+      "owner": 115962839,
+      "month": 202610,
+      "day": 17,
+      "name": "astral-sh/uv",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 53631945,
+      "partial_day": false,
+      "owner": 456674,
+      "month": 202610,
+      "day": 17,
+      "name": "BurntSushi/ripgrep",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 188953831,
+      "partial_day": false,
+      "owner": 42944450,
+      "month": 202610,
+      "day": 17,
+      "name": "CircuitVerse/Interactive-Book",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 212613049,
+      "partial_day": false,
+      "owner": 59704711,
+      "month": 202610,
+      "day": 17,
+      "name": "cli/cli",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 133442384,
+      "partial_day": false,
+      "owner": 42048915,
+      "month": 202610,
+      "day": 17,
+      "name": "denoland/deno",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 179492861,
+      "partial_day": false,
+      "owner": 19159390,
+      "month": 202610,
+      "day": 17,
+      "name": "encode/httpx",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 11061773,
+      "partial_day": false,
+      "owner": 6019716,
+      "month": 202610,
+      "day": 17,
+      "name": "eslint/eslint",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 450625045,
+      "partial_day": false,
+      "owner": 69631,
+      "month": 202610,
+      "day": 17,
+      "name": "facebook/buck2",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 94911145,
+      "partial_day": false,
+      "owner": 69631,
+      "month": 202610,
+      "day": 17,
+      "name": "facebook/docusaurus",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 29759715,
+      "partial_day": false,
+      "owner": 69631,
+      "month": 202610,
+      "day": 17,
+      "name": "facebook/zstd",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 160919119,
+      "partial_day": false,
+      "owner": 156354296,
+      "month": 202610,
+      "day": 17,
+      "name": "fastapi/fastapi",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "partial_day": false,
+      "owner": 4314092,
+      "month": 202610,
+      "day": 17,
+      "name": "golang/go",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 267719344,
+      "partial_day": false,
+      "owner": 1342004,
+      "month": 202610,
+      "day": 17,
+      "name": "google/ml-compiler-opt",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 35969061,
+      "partial_day": false,
+      "owner": 1342004,
+      "month": 202610,
+      "day": 17,
+      "name": "google/styleguide",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 364474335,
+      "partial_day": false,
+      "owner": 1342004,
+      "month": 202610,
+      "day": 17,
+      "name": "google/zx",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 155220641,
+      "partial_day": false,
+      "owner": 25720743,
+      "month": 202610,
+      "day": 17,
+      "name": "huggingface/transformers",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 5101141,
+      "partial_day": false,
+      "owner": 104800540,
+      "month": 202610,
+      "day": 17,
+      "name": "jqlang/jq",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 1027384981,
+      "partial_day": false,
+      "owner": 126733545,
+      "month": 202610,
+      "day": 17,
+      "name": "langchain-ai/deepagents",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 884411799,
+      "partial_day": false,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 17,
+      "name": "microsoft/Agents-for-net",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 156293506,
+      "partial_day": false,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 17,
+      "name": "microsoft/SandDance",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 349233926,
+      "partial_day": false,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 17,
+      "name": "microsoft/sarif-js-sdk",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 20929025,
+      "partial_day": false,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 17,
+      "name": "microsoft/TypeScript",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 41881900,
+      "partial_day": false,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 17,
+      "name": "microsoft/vscode",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 61973853,
+      "partial_day": false,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 17,
+      "name": "microsoft/vscode-mssql",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 16408992,
+      "partial_day": false,
+      "owner": 6471485,
+      "month": 202610,
+      "day": 17,
+      "name": "neovim/neovim",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 27193779,
+      "partial_day": false,
+      "owner": 9950313,
+      "month": 202610,
+      "day": 17,
+      "name": "nodejs/node",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 908607,
+      "partial_day": false,
+      "owner": 288276,
+      "month": 202610,
+      "day": 17,
+      "name": "numpy/numpy",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 186024298,
+      "partial_day": false,
+      "owner": 50749515,
+      "month": 202610,
+      "day": 17,
+      "name": "nushell/nushell",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 596892,
+      "partial_day": false,
+      "owner": 16748505,
+      "month": 202610,
+      "day": 17,
+      "name": "pallets/flask",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 858127,
+      "partial_day": false,
+      "owner": 21206976,
+      "month": 202610,
+      "day": 17,
+      "name": "pandas-dev/pandas",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 75104123,
+      "partial_day": false,
+      "owner": 25822731,
+      "month": 202610,
+      "day": 17,
+      "name": "prettier/prettier",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 1362490,
+      "partial_day": false,
+      "owner": 50630501,
+      "month": 202610,
+      "day": 17,
+      "name": "psf/requests",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 90194616,
+      "partial_day": false,
+      "owner": 110818415,
+      "month": 202610,
+      "day": 17,
+      "name": "pydantic/pydantic",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 37489525,
+      "partial_day": false,
+      "owner": 8897583,
+      "month": 202610,
+      "day": 17,
+      "name": "pytest-dev/pytest",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "partial_day": false,
+      "owner": 1525981,
+      "month": 202610,
+      "day": 17,
+      "name": "python/cpython",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 7053637,
+      "partial_day": false,
+      "owner": 1525981,
+      "month": 202610,
+      "day": 17,
+      "name": "python/mypy",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "partial_day": false,
+      "owner": 5430905,
+      "month": 202610,
+      "day": 17,
+      "name": "rust-lang/rust",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 843222,
+      "partial_day": false,
+      "owner": 365630,
+      "month": 202610,
+      "day": 17,
+      "name": "scikit-learn/scikit-learn",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 130464961,
+      "partial_day": false,
+      "owner": 4209276,
+      "month": 202610,
+      "day": 17,
+      "name": "sharkdp/bat",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 926248435,
+      "partial_day": false,
+      "owner": 173204339,
+      "month": 202610,
+      "day": 17,
+      "name": "supercog-ai/agentic",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 74293321,
+      "partial_day": false,
+      "owner": 23617963,
+      "month": 202610,
+      "day": 17,
+      "name": "sveltejs/svelte",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 220809393,
+      "partial_day": false,
+      "owner": 93378883,
+      "month": 202610,
+      "day": 17,
+      "name": "Textualize/rich",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 355959597,
+      "partial_day": false,
+      "owner": 93378883,
+      "month": 202610,
+      "day": 17,
+      "name": "Textualize/textual",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 67836789,
+      "partial_day": false,
+      "owner": 20248544,
+      "month": 202610,
+      "day": 17,
+      "name": "tokio-rs/tokio",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 70107786,
+      "partial_day": false,
+      "owner": 14985020,
+      "month": 202610,
+      "day": 17,
+      "name": "vercel/next.js",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 257485422,
+      "partial_day": false,
+      "owner": 65625612,
+      "month": 202610,
+      "day": 17,
+      "name": "vitejs/vite",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 137078487,
+      "partial_day": false,
+      "owner": 6128107,
+      "month": 202610,
+      "day": 17,
+      "name": "vuejs/core",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "partial_day": false,
+      "owner": 79345384,
+      "month": 202610,
+      "day": 17,
+      "name": "zed-industries/zed",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 85095608,
+      "partial_day": true,
+      "owner": 698437,
+      "month": 202610,
+      "day": 18,
+      "name": "airbnb/visx",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 9185792,
+      "partial_day": true,
+      "owner": 47359,
+      "month": 202610,
+      "day": 18,
+      "name": "apache/echarts",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 523043277,
+      "partial_day": true,
+      "owner": 115962839,
+      "month": 202610,
+      "day": 18,
+      "name": "astral-sh/ruff",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 699532645,
+      "partial_day": true,
+      "owner": 115962839,
+      "month": 202610,
+      "day": 18,
+      "name": "astral-sh/uv",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 53631945,
+      "partial_day": true,
+      "owner": 456674,
+      "month": 202610,
+      "day": 18,
+      "name": "BurntSushi/ripgrep",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 188953831,
+      "partial_day": true,
+      "owner": 42944450,
+      "month": 202610,
+      "day": 18,
+      "name": "CircuitVerse/Interactive-Book",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 212613049,
+      "partial_day": true,
+      "owner": 59704711,
+      "month": 202610,
+      "day": 18,
+      "name": "cli/cli",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 133442384,
+      "partial_day": true,
+      "owner": 42048915,
+      "month": 202610,
+      "day": 18,
+      "name": "denoland/deno",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 179492861,
+      "partial_day": true,
+      "owner": 19159390,
+      "month": 202610,
+      "day": 18,
+      "name": "encode/httpx",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 11061773,
+      "partial_day": true,
+      "owner": 6019716,
+      "month": 202610,
+      "day": 18,
+      "name": "eslint/eslint",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 450625045,
+      "partial_day": true,
+      "owner": 69631,
+      "month": 202610,
+      "day": 18,
+      "name": "facebook/buck2",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 94911145,
+      "partial_day": true,
+      "owner": 69631,
+      "month": 202610,
+      "day": 18,
+      "name": "facebook/docusaurus",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 29759715,
+      "partial_day": true,
+      "owner": 69631,
+      "month": 202610,
+      "day": 18,
+      "name": "facebook/zstd",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 160919119,
+      "partial_day": true,
+      "owner": 156354296,
+      "month": 202610,
+      "day": 18,
+      "name": "fastapi/fastapi",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 23096959,
+      "partial_day": true,
+      "owner": 4314092,
+      "month": 202610,
+      "day": 18,
+      "name": "golang/go",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 267719344,
+      "partial_day": true,
+      "owner": 1342004,
+      "month": 202610,
+      "day": 18,
+      "name": "google/ml-compiler-opt",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 35969061,
+      "partial_day": true,
+      "owner": 1342004,
+      "month": 202610,
+      "day": 18,
+      "name": "google/styleguide",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 364474335,
+      "partial_day": true,
+      "owner": 1342004,
+      "month": 202610,
+      "day": 18,
+      "name": "google/zx",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 155220641,
+      "partial_day": true,
+      "owner": 25720743,
+      "month": 202610,
+      "day": 18,
+      "name": "huggingface/transformers",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 5101141,
+      "partial_day": true,
+      "owner": 104800540,
+      "month": 202610,
+      "day": 18,
+      "name": "jqlang/jq",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 1027384981,
+      "partial_day": true,
+      "owner": 126733545,
+      "month": 202610,
+      "day": 18,
+      "name": "langchain-ai/deepagents",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 884411799,
+      "partial_day": true,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 18,
+      "name": "microsoft/Agents-for-net",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 156293506,
+      "partial_day": true,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 18,
+      "name": "microsoft/SandDance",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 349233926,
+      "partial_day": true,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 18,
+      "name": "microsoft/sarif-js-sdk",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 20929025,
+      "partial_day": true,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 18,
+      "name": "microsoft/TypeScript",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 41881900,
+      "partial_day": true,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 18,
+      "name": "microsoft/vscode",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 61973853,
+      "partial_day": true,
+      "owner": 6154722,
+      "month": 202610,
+      "day": 18,
+      "name": "microsoft/vscode-mssql",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 16408992,
+      "partial_day": true,
+      "owner": 6471485,
+      "month": 202610,
+      "day": 18,
+      "name": "neovim/neovim",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 27193779,
+      "partial_day": true,
+      "owner": 9950313,
+      "month": 202610,
+      "day": 18,
+      "name": "nodejs/node",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 908607,
+      "partial_day": true,
+      "owner": 288276,
+      "month": 202610,
+      "day": 18,
+      "name": "numpy/numpy",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 186024298,
+      "partial_day": true,
+      "owner": 50749515,
+      "month": 202610,
+      "day": 18,
+      "name": "nushell/nushell",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 596892,
+      "partial_day": true,
+      "owner": 16748505,
+      "month": 202610,
+      "day": 18,
+      "name": "pallets/flask",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 858127,
+      "partial_day": true,
+      "owner": 21206976,
+      "month": 202610,
+      "day": 18,
+      "name": "pandas-dev/pandas",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 75104123,
+      "partial_day": true,
+      "owner": 25822731,
+      "month": 202610,
+      "day": 18,
+      "name": "prettier/prettier",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 1362490,
+      "partial_day": true,
+      "owner": 50630501,
+      "month": 202610,
+      "day": 18,
+      "name": "psf/requests",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 90194616,
+      "partial_day": true,
+      "owner": 110818415,
+      "month": 202610,
+      "day": 18,
+      "name": "pydantic/pydantic",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 37489525,
+      "partial_day": true,
+      "owner": 8897583,
+      "month": 202610,
+      "day": 18,
+      "name": "pytest-dev/pytest",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 81598961,
+      "partial_day": true,
+      "owner": 1525981,
+      "month": 202610,
+      "day": 18,
+      "name": "python/cpython",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 7053637,
+      "partial_day": true,
+      "owner": 1525981,
+      "month": 202610,
+      "day": 18,
+      "name": "python/mypy",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 724712,
+      "partial_day": true,
+      "owner": 5430905,
+      "month": 202610,
+      "day": 18,
+      "name": "rust-lang/rust",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 843222,
+      "partial_day": true,
+      "owner": 365630,
+      "month": 202610,
+      "day": 18,
+      "name": "scikit-learn/scikit-learn",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 130464961,
+      "partial_day": true,
+      "owner": 4209276,
+      "month": 202610,
+      "day": 18,
+      "name": "sharkdp/bat",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 926248435,
+      "partial_day": true,
+      "owner": 173204339,
+      "month": 202610,
+      "day": 18,
+      "name": "supercog-ai/agentic",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 74293321,
+      "partial_day": true,
+      "owner": 23617963,
+      "month": 202610,
+      "day": 18,
+      "name": "sveltejs/svelte",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 220809393,
+      "partial_day": true,
+      "owner": 93378883,
+      "month": 202610,
+      "day": 18,
+      "name": "Textualize/rich",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 355959597,
+      "partial_day": true,
+      "owner": 93378883,
+      "month": 202610,
+      "day": 18,
+      "name": "Textualize/textual",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 67836789,
+      "partial_day": true,
+      "owner": 20248544,
+      "month": 202610,
+      "day": 18,
+      "name": "tokio-rs/tokio",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 70107786,
+      "partial_day": true,
+      "owner": 14985020,
+      "month": 202610,
+      "day": 18,
+      "name": "vercel/next.js",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 257485422,
+      "partial_day": true,
+      "owner": 65625612,
+      "month": 202610,
+      "day": 18,
+      "name": "vitejs/vite",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 137078487,
+      "partial_day": true,
+      "owner": 6128107,
+      "month": 202610,
+      "day": 18,
+      "name": "vuejs/core",
+      "reason": "new_recent_day",
+      "end_day": 0
+    },
+    {
+      "id": 340547520,
+      "partial_day": true,
+      "owner": 79345384,
+      "month": 202610,
+      "day": 18,
+      "name": "zed-industries/zed",
+      "reason": "new_recent_day",
+      "end_day": 0
+    }
+  ],
+  "source_status_sha256": "D09A582A385C2659D7ADD42FE440445814C4B37452DBC851875A07223F8BC860",
+  "source_batch": "D:\\OSS-Mentor\\data\\teacher_clickhouse\\round4_20261016T121511Z",
+  "purpose": "Teacher events discovery only; collect and deduplicate now, screen later"
+}

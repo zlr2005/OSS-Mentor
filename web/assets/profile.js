@@ -56,6 +56,9 @@ const SKILL_NAMES = [
   "Java",
   "Go",
   "Rust",
+  "C",
+  "C++",
+  "Groovy",
   "testing",
   "git",
   "documentation",
@@ -1433,7 +1436,17 @@ function handleConsentChange() {
 }
 
 async function handleGithubImport() {
-  if (!canChangeServerProfile()) return;
+  if (!canChangeServerProfile()) {
+    setGithubImportStatus(
+      !state.ready
+        ? "画像尚未加载，请先登录或重新加载页面。"
+        : state.busy
+          ? "正在处理上一项操作，请稍后再试。"
+          : "请先点击上方“保存画像”，保存成功后再生成 GitHub 画像建议。",
+      "error",
+    );
+    return;
+  }
   const consent = byId("github-import-consent");
 
   if (!consent || !consent.checked) {

@@ -18,6 +18,9 @@ from oss_mentor.collector.source_comparison import (
     normalize_github_issue,
 )
 from oss_mentor.storage.candidates import CandidateStorage, as_candidate_storage
+from oss_mentor.candidate_context import context_review_reasons, expanded_context_warnings, PR_URL
+from oss_mentor.candidate_admission import EXPANDED_CONTENT_POLICY
+from oss_mentor.candidate_freshness import verification_is_current
 
 
 REPOSITORY_INACTIVITY_DAYS = 180
@@ -184,9 +187,14 @@ class CandidateSynchronizer:
                 events.extend(response.payload)
         return self._has_linked_open_pr(events)
 
-    def fetch_current_issue(self, full_name: str, issue_number: int) -> dict[str, Any]:
+    def fetch_current_issue(self, full_name: str, issue_number: int, *, admission_policy: str | None = None) -> dict[str, Any]:
         """Fetch and normalize one current GitHub issue, including linked PR state."""
 
+        if admission_policy is None:
+            reader = getattr(self.store, 'candidate_admission_policy', None)
+            admission_policy = reader(full_name, issue_number) if callable(reader) else None
+        if admission_policy not in {None, EXPANDED_CONTENT_POLICY}:
+            raise ValueError('Unknown admission policy')
         github_response = self._github_get(
             f"/repos/{full_name}/issues/{issue_number}"
         )
@@ -211,15 +219,61 @@ class CandidateSynchronizer:
             fetched_at=github_response.fetched_at.isoformat(),
         )
         github_record["is_pull_request"] = "pull_request" in github_response.payload
+        if admission_policy:
+            github_record['admission_policy'] = admission_policy
+        if (github_response.payload.get('state') not in {'open', 'closed'}
+                or type(github_response.payload.get('locked')) is not bool
+                or not isinstance(github_response.payload.get('assignees'), list)):
+            raise ValueError('GitHub issue status evidence is incomplete')
         if (
             not github_record["is_pull_request"]
             and github_record["state"] == "open"
             and github_record["assignment_state"] == "unassigned"
             and not github_record["is_locked"]
         ):
-            github_record["has_linked_open_pr"] = self._check_linked_open_pr(
-                full_name, issue_number
-            )
+            events = []
+            checked_pages = 0
+            for page_number, response in enumerate(self.github_client.iter_pages(
+                f'/repos/{full_name}/issues/{issue_number}/timeline', params={'per_page': 100}
+            ), 1):
+                if page_number > 20 or not isinstance(response.payload, list):
+                    raise ValueError('timeline incomplete or exceeds refresh page budget')
+                if not all(isinstance(event, dict) for event in response.payload):
+                    raise ValueError('invalid timeline event')
+                checked_pages += 1
+                events.extend(response.payload)
+            if not checked_pages:
+                raise ValueError('timeline was not read')
+            relaxed = admission_policy == EXPANDED_CONTENT_POLICY
+            reasons = context_review_reasons(github_response.payload, events, expanded=True) if relaxed else context_review_reasons(github_response.payload, events)
+            if relaxed:
+                github_record['admission_warnings'] = expanded_context_warnings(github_response.payload, events)
+            references = set()
+            for event in events:
+                issue = (event.get('source') or {}).get('issue') or {}
+                if event.get('event') == 'cross-referenced' and 'pull_request' in issue:
+                    url = (issue.get('pull_request') or {}).get('url')
+                    if not url:
+                        reasons.append('referenced_pr_identity_missing')
+                    else:
+                        references.add(url)
+            for text in [github_response.payload.get('body') or ''] + [e.get('body') or '' for e in events if e.get('event') == 'commented']:
+                references.update(f'https://api.github.com/repos/{repo}/pulls/{number}' for repo, number in PR_URL.findall(text))
+            reference_budget = 100 if relaxed else 30
+            if len(references) > reference_budget:
+                raise ValueError('referenced PRs exceed refresh request budget')
+            opened = False
+            for url in sorted(references):
+                # Never follow arbitrary URLs from remote content or send tokens there.
+                import re
+                if not re.fullmatch(r'https://api\.github\.com/repos/[\w.-]+/[\w.-]+/pulls/\d+', url):
+                    raise ValueError('invalid referenced PR URL')
+                pr = self._github_get(url).payload
+                if not isinstance(pr, dict) or pr.get('state') not in {'open', 'closed'}:
+                    raise ValueError('referenced PR state not verified')
+                opened = opened or pr['state'] == 'open'
+            github_record['has_linked_open_pr'] = opened
+            github_record['context_review_reasons'] = reasons
         return github_record
 
     def fetch_repository_health(self, full_name: str) -> dict[str, Any]:
@@ -951,24 +1005,15 @@ class CandidateService:
         if row is None:
             raise KeyError(f"candidate {task_candidate_id} was not found")
         refreshed = False
-        verified_at = row.get("github_verified_at")
-        stale = True
-        if verified_at:
-            try:
-                parsed = datetime.fromisoformat(
-                    str(verified_at).replace("Z", "+00:00")
-                )
-                if parsed.tzinfo is None:
-                    parsed = parsed.replace(tzinfo=timezone.utc)
-                stale = datetime.now(timezone.utc) - parsed > timedelta(hours=24)
-            except ValueError:
-                stale = True
+        stale = not verification_is_current(row)
         if stale:
             try:
                 current = self.synchronizer.fetch_current_issue(
                     str(row["repository"]),
                     int(row["issue_number"]),
                 )
+                if row.get('github_issue_id') and str(current.get('github_issue_id')) != str(row['github_issue_id']):
+                    raise GitHubApiError('issue identity changed', status_code=410)
             except GitHubApiError as exc:
                 if exc.status_code in {404, 410}:
                     self.store.mark_candidate_unavailable(

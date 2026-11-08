@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from datetime import datetime, timezone
 
 from oss_mentor.contracts import (
     REASON_CODE_NEGATIVE_FEEDBACK,
@@ -23,6 +24,7 @@ from oss_mentor.storage.recommendations import SQLiteRecommendationStorage
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "db" / "sqlite" / "001_mvp.sql"
+VERIFIED_AT = datetime.now(timezone.utc).isoformat()
 
 
 def candidate(candidate_id: int, score: float, *, repository: str = "example/demo"):
@@ -40,11 +42,13 @@ def candidate(candidate_id: int, score: float, *, repository: str = "example/dem
         "text_clarity_score": score,
         "primary_language": "Python",
         "task_types": ["testing"],
+        "task_feature_version": "task-features-v0.4",
+        "feature_evidence": {"difficulty_assessment": {"information_quality": {"actionability": "actionable"}}},
         "requirements": [
             {"skill_name": "Python", "minimum_level": 1, "importance": 1.0}
         ],
         "candidate_availability": "available",
-        "github_verified_at": "2026-09-29T00:00:00Z",
+        "github_verified_at": VERIFIED_AT,
         "warnings_json": "[]",
     }
 
@@ -114,6 +118,16 @@ class RecommendationContractTests(unittest.TestCase):
         self.assertEqual("fixture_cache", batch.rankings[0]["coverage_state"])
         self.assertEqual(["Known-User"], scorer.developer_keys)
 
+    def test_expanded_unknown_type_can_be_returned_with_uncertainty_warnings(self):
+        task=candidate(1,80)
+        task['body_text']='The module has a particular configuration behavior that needs investigation and coordination.'
+        task['task_types']=['other']
+        task['feature_evidence']['recommendation_admission']={'policy_version':'expanded-content-v1'}
+        task['feature_evidence']['difficulty_assessment']['information_quality']['actionability']='unclear'
+        item=RecommendationService(CandidateStoreFixture([task])).recommend(profile=profile()).items[0]
+        self.assertTrue(any('待确认' in warning for warning in item.warnings))
+        self.assertEqual(RecommendationService._task_types(task),set())
+
     def test_service_accepts_profile_contract_and_maps_match_result(self):
         store = CandidateStoreFixture([candidate(1, 80)])
         item = RecommendationService(store).recommend(profile=profile()).items[0]
@@ -126,7 +140,7 @@ class RecommendationContractTests(unittest.TestCase):
         self.assertEqual(("Python",), item.matched_skills)
         self.assertTrue(item.reasons)
         self.assertTrue(all(reason.code and reason.evidence for reason in item.reasons))
-        self.assertEqual("2026-09-29T00:00:00Z", item.verified_at)
+        self.assertEqual(VERIFIED_AT, item.verified_at)
 
     def test_rejects_legacy_dictionary_profile(self):
         with self.assertRaises(TypeError):

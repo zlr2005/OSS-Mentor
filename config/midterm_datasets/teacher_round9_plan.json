@@ -1,0 +1,103 @@
+{
+  "source_batch": "D:\\OSS-Mentor\\data\\teacher_clickhouse\\round8_20261018T072551Z",
+  "source_status_sha256": "6E5AB198A321D9FCF72633D088ECADA75921702F1E878B66BC2A1F1BE13E88A2",
+  "purpose": "Teacher events only; remove duplicate projected rows in SELECT, no source mutations",
+  "batches": [
+    {
+      "owner": 126733545,
+      "hour": 15,
+      "id": 1027384981,
+      "end_day": 0,
+      "parent_key": "langchain-ai__deepagents_202604_day11_hour15",
+      "name": "langchain-ai/deepagents",
+      "distinct_events": true,
+      "day": 11,
+      "month": 202604,
+      "reason": "distinct_duplicate_heavy_sample"
+    },
+    {
+      "owner": 126733545,
+      "hour": 18,
+      "id": 1027384981,
+      "end_day": 0,
+      "parent_key": "langchain-ai__deepagents_202604_day15_hour18",
+      "name": "langchain-ai/deepagents",
+      "distinct_events": true,
+      "day": 15,
+      "month": 202604,
+      "reason": "distinct_duplicate_heavy_sample"
+    },
+    {
+      "owner": 50749515,
+      "hour": 18,
+      "id": 186024298,
+      "end_day": 0,
+      "parent_key": "nushell__nushell_202604_day17_hour18",
+      "name": "nushell/nushell",
+      "distinct_events": true,
+      "day": 17,
+      "month": 202604,
+      "reason": "distinct_duplicate_heavy_sample"
+    },
+    {
+      "owner": 50749515,
+      "hour": 7,
+      "id": 186024298,
+      "end_day": 0,
+      "parent_key": "nushell__nushell_202604_day19_hour07",
+      "name": "nushell/nushell",
+      "distinct_events": true,
+      "day": 19,
+      "month": 202604,
+      "reason": "distinct_duplicate_heavy_sample"
+    },
+    {
+      "owner": 126733545,
+      "hour": 10,
+      "id": 1027384981,
+      "end_day": 0,
+      "parent_key": "langchain-ai__deepagents_202603_day07_hour10",
+      "name": "langchain-ai/deepagents",
+      "distinct_events": true,
+      "day": 7,
+      "month": 202603,
+      "reason": "distinct_duplicate_heavy_sample"
+    },
+    {
+      "owner": 6154722,
+      "hour": 6,
+      "id": 41881900,
+      "end_day": 0,
+      "parent_key": "microsoft__vscode_202602_day11_hour06",
+      "name": "microsoft/vscode",
+      "distinct_events": false,
+      "day": 11,
+      "month": 202602,
+      "reason": "retry_failed"
+    },
+    {
+      "owner": 126733545,
+      "hour": 4,
+      "id": 1027384981,
+      "end_day": 0,
+      "parent_key": "langchain-ai__deepagents_202601_day13_hour04",
+      "name": "langchain-ai/deepagents",
+      "distinct_events": true,
+      "day": 13,
+      "month": 202601,
+      "reason": "distinct_duplicate_heavy_sample"
+    },
+    {
+      "owner": 126733545,
+      "hour": 2,
+      "id": 1027384981,
+      "end_day": 0,
+      "parent_key": "langchain-ai__deepagents_202601_day26_hour02",
+      "name": "langchain-ai/deepagents",
+      "distinct_events": true,
+      "day": 26,
+      "month": 202601,
+      "reason": "distinct_duplicate_heavy_sample"
+    }
+  ]
+}

@@ -152,9 +152,11 @@ class RecommendationApi:
         profile_service: ProfileService | None = None,
         github_profile_source: GitHubProfileSource | None = None,
         recommendation_service: RecommendationService | None = None,
+        refresh_worker=None,
         candidate_service: CandidateService | None = None,
     ) -> None:
         self.store = store
+        self.refresh_worker = refresh_worker
         self.candidate_service = candidate_service
         self.candidate_storage: SQLiteCandidateStorage | None = None
         if isinstance(store, SQLiteCandidateStore):
@@ -402,6 +404,8 @@ class RecommendationApi:
         feedback_context: str | None = None,
         developer_key: str | None = None,
     ) -> ApiResponse:
+        tasks = self.store.matchable_candidates()
+        task_by_id = {int(task['task_candidate_id']): task for task in tasks}
         batch = self.recommendation_service.recommend(
             profile=as_developer_profile_v2(profile),
             limit=limit,
@@ -436,6 +440,12 @@ class RecommendationApi:
                             {"skill": name, "gap": 1, "developer_level": 0, "required_level": 1}
                             for name in item.missing_skills
                         ],
+                        'difficulty': {
+                            'code': task_by_id[item.task_candidate_id].get('estimated_code_difficulty'),
+                            'setup': task_by_id[item.task_candidate_id].get('estimated_setup_difficulty'),
+                        },
+                        'verified_at': task_by_id[item.task_candidate_id].get('github_verified_at'),
+                        'verification_expires_at': task_by_id[item.task_candidate_id].get('verification_expires_at'),
                     }
                     for item in batch.items
                 ],
@@ -491,7 +501,7 @@ class RecommendationApi:
         except sqlite3.Error:
             response = self._error(503, "service_not_ready", "database is unavailable or requires migration")
         except ModelUnavailableError as exc:
-            response = self._error(503, "model_unavailable", str(exc))
+            response = self._error(503, exc.code, str(exc))
         body_out = {**response.body, "request_id": request_id}
         if "error" in body_out:
             body_out["error"]["request_id"] = request_id
@@ -714,6 +724,7 @@ class RecommendationApi:
                 200,
                 {
                     **status_data,
+                    'automatic_refresh': self.refresh_worker.status() if self.refresh_worker else {'enabled': False},
                     "api_version": API_VERSION,
                     "match_version": MATCH_VERSION_V2,
                 },
@@ -970,6 +981,7 @@ def serve(
     cors_origin: str | None = None,
     static_root: Path | None = None,
     auth_service: AuthService | None = None,
+    refresh_worker=None,
     recommendation_service: RecommendationService | None = None,
     candidate_service: CandidateService | None = None,
 ) -> None:
@@ -978,14 +990,19 @@ def serve(
         auth_service=auth_service,
         recommendation_service=recommendation_service,
         candidate_service=candidate_service,
+        refresh_worker=refresh_worker,
     )
     server = ThreadingHTTPServer(
         (host, port),
         make_handler(api, cors_origin=cors_origin, static_root=static_root),
     )
     try:
+        if refresh_worker:
+            refresh_worker.start()
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        if refresh_worker:
+            refresh_worker.stop()
         server.server_close()

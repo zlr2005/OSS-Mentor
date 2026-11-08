@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 from oss_mentor.api import RecommendationApi
@@ -50,6 +51,14 @@ class FakeStore:
                 "growth_value_score": 50.0,
                 "primary_language": "Python",
                 "task_types": ["bug_fix"],
+                "task_feature_version": "task-features-v0.4",
+                "feature_evidence": {
+                    "difficulty_assessment": {
+                        "information_quality": {"actionability": "actionable"}
+                    }
+                },
+                "candidate_availability": "available",
+                "github_verified_at": datetime.now(timezone.utc).isoformat(),
                 "requirements": [
                     {"skill_name": "Python", "minimum_level": 1, "importance": 1.0}
                 ],

@@ -10,10 +10,17 @@ const messageAction = document.querySelector("#message-action");
 const profileSummary = document.querySelector("#profile-summary");
 const contextState = document.querySelector("#context-state");
 let feedbackContext = null;
+let preparationPolls = 0;
 
 const warningLabels = {
   diversity_repository_cap_relaxed: "候选仓库不足，已放宽单仓库数量限制。",
   diversity_task_type_relaxed: "候选类型不足，结果可能集中在同一任务类型。",
+  rule_reasons_are_context_only: "以下依据说明画像与任务的匹配情况，不是模型分数的加分明细。",
+  gated_scores_are_not_success_probabilities: "排序分用于比较推荐顺序，不代表完成任务的概率。",
+  inventory_availability_assumed: "本次试用按库存记录展示，未重新核验任务状态。",
+  profile_bootstrap_recommendations: "当前先根据你填写的画像推荐，个性化模型正在准备。",
+  model_features_preparing: "系统正在自动准备推荐资料，无需重复填写画像。",
+  coder_no_public_code_history: "暂未取得可用的公开代码历史，使用新用户推荐模式。",
 };
 
 function escapeHtml(value) {
@@ -78,7 +85,7 @@ function reasonRow(reason) {
   return `<div class="reason-row">
     <strong>${escapeHtml(reason.label)}</strong>
     <span>${escapeHtml(reason.evidence)}</span>
-    <output data-negative="${delta < 0}">${points >= 0 ? "+" : ""}${points} 点</output>
+    <output data-negative="${delta < 0}">${delta === 0 ? "匹配依据" : `${points >= 0 ? "+" : ""}${points} 点`}</output>
     <small>${escapeHtml(reason.code)} · ${escapeHtml(reason.feature_version)}</small>
   </div>`;
 }
@@ -130,6 +137,12 @@ async function loadRecommendations() {
     if (!items.length) showMessage("暂时没有符合条件的任务", "可以放宽画像中的语言、任务类型或难度设置。", {href: "/profile", label: "调整画像"});
     status.textContent = `${items.length} 个可领取任务`;
     contextState.textContent = "已同步";
+    if ((body.warnings || []).includes("model_features_preparing")) {
+      contextState.textContent = "个性化准备中";
+      if (preparationPolls++ < 24) setTimeout(loadRecommendations, 5000);
+    } else {
+      preparationPolls = 0;
+    }
   } catch (error) {
     list.innerHTML = "";
     profileSummary.innerHTML = "<div><dt>状态</dt><dd>暂不可用</dd></div>";
@@ -137,6 +150,10 @@ async function loadRecommendations() {
       showMessage("需要先登录", "登录后我们才能读取属于你的当前画像。", {href: "/login?return_to=%2Frecommendations", label: "前往登录"}, true);
     } else if (error.code === "profile_not_found" || error.code === "profile_required") {
       showMessage("还没有开发者画像", "先完成画像，再回来查看个性化推荐。", {href: "/profile", label: "创建画像"}, false);
+    } else if (error.code === "model_features_required") {
+      showMessage("推荐资料需要准备", "你的画像已保留。首次使用或修改画像后，需要准备与当前画像对应的推荐特征；目前尚未完成，请在准备完成后重新获取推荐。", null, false);
+    } else if (error.code === "model_unavailable") {
+      showMessage("推荐模型暂不可用", "画像和反馈不受影响，推荐模型恢复后可重新获取结果。", null, true);
     } else {
       showMessage("推荐暂时不可用", `${error.message}，请稍后重试。`, {href: "#", label: "重新加载"}, true);
       messageAction.addEventListener("click", event => { event.preventDefault(); loadRecommendations(); }, {once: true});

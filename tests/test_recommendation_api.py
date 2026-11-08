@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from datetime import datetime, timezone
 
 from oss_mentor.api import RecommendationApi
 from oss_mentor.services.auth_service import AuthService, AuthSettings, SESSION_COOKIE_NAME
@@ -31,11 +32,13 @@ def candidate(candidate_id: int, score: float) -> dict:
         "text_clarity_score": score,
         "primary_language": "Python",
         "task_types": ["testing"],
+        "task_feature_version": "task-features-v0.4",
+        "feature_evidence": {"difficulty_assessment": {"information_quality": {"actionability": "actionable"}}},
         "requirements": [
             {"skill_name": "Python", "minimum_level": 1, "importance": 1.0}
         ],
         "candidate_availability": "available",
-        "github_verified_at": "2026-09-29T00:00:00Z",
+        "github_verified_at": datetime.now(timezone.utc).isoformat(),
         "warnings_json": "[]",
     }
 

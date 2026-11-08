@@ -1,0 +1,32 @@
+{
+  "astral-sh/uv#17399": {
+    "title": "How to avoid environment creation race conditions?",
+    "note": "以使用咨询为主，需先确认维护者认可的具体开发任务。",
+    "issue_id": "3798784649"
+  },
+  "denoland/deno#36898": {
+    "title": "v2.9.7 is not published on npm",
+    "note": "发布缺失可能需要维护者发布权限，需确认可公开贡献的代码修复范围。",
+    "issue_id": "5572568139"
+  },
+  "microsoft/vscode#341456": {
+    "title": "HELP",
+    "note": "描述不足以定位本项目的可执行开发任务，需进一步确认。",
+    "issue_id": "5841174933"
+  },
+  "microsoft/vscode#289785": {
+    "title": "Search result navigation does not provide target selection/range to custom editors (webview editors)",
+    "note": "认领表述实际指用户开发自己的 Markdown 编辑器；最新维护流程留言仍为社区投票候选功能，需确认维护者接受的具体实现范围后再推荐。",
+    "issue_id": "3845184376"
+  },
+  "nushell/nushell#17336": {
+    "title": "Install with package manager on a linux cluster as user (no access permission to `/etc/apt/`)",
+    "note": "working on 指用户在共享 Linux 集群工作，并非认领任务；讨论主要是受限 sudo 权限和安装咨询，需确认可执行的文档或代码改动范围。",
+    "issue_id": "3804398776"
+  },
+  "nodejs/node#66440": {
+    "title": "Problem with newer `less`",
+    "note": "正文仅有外部 Issue 链接，缺少本仓库的任务说明，暂不直接推荐。",
+    "issue_id": "5666434070"
+  }
+}

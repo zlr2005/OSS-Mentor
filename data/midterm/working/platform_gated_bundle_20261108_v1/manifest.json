@@ -1,0 +1,28 @@
+{
+  "format": "coder-gated-numpy-v1",
+  "feature_schema": "coder-gated-128+16-v1",
+  "model_version": "coder-gated-marginal_positive-s20261102",
+  "dataset_version": "public-text-supervision-20261107-v1",
+  "graph_version": "gfibot-m0-v1.1-fixed-train-graph",
+  "encoder_version": "all-MiniLM-L6-v2@c21050a7ef692090620a6d037dd736908f9c7cf6",
+  "seed": 20261102,
+  "arm": "marginal_positive",
+  "backbone_sha256": "f0c2343d737b21d40192ed494d4b5811d979f92390f07c246c4076a20899c7f3",
+  "backbone_dependencies": {
+    "C:\\Users\\zhuli\\Desktop\\\u5927\u5b66\\OSS-Mentor\\data\\midterm\\working\\rc1_training_inputs_20261106_v1\\historical_issue_embeddings.npz": "6cb0b8d3a178f8ff6bd90fb2495c0b10d9cc1f0b3dda7b78d122f468bfc585c8",
+    "D:\\OSS-Mentor-assets\\pr39\\encoding-assets\\coder_bundle\\data\\models\\gfibot-m0-v1.1\\coder\\coder-full-search8-v1\\embeddings.npz": "70b6dc84c990af49d160014db3619407b6654f20b1288e02641698ab8092fd8d",
+    "D:\\OSS-Mentor-assets\\pr39\\encoding-assets\\coder_bundle\\data\\models\\gfibot-m0-v1.1\\coder\\coder-full-search8-v1\\model_manifest.json": "62974d6a16e1c3dd00fb9b4179fc6cca68f81de7739351cafd65bedb953b3f48",
+    "D:\\OSS-Mentor-assets\\pr39\\runs\\bottleneck-diagnostics-20261106-v1\\original-20261102\\weights.pt": "4eb4db4d633f6e04f1ae57ed9b3ef9d67ea993d24c6d7d8a63f9ef10dd5ed1ea",
+    "D:\\OSS-Mentor-assets\\pr39\\runs\\history-fusion-v2-20261106-v1\\learned_behavior-20261102\\weights.pt": "d6d216f21d2ee33b71a94ca9d76059687b23de34477551466ba190770159dc73",
+    "D:\\OSS-Mentor-assets\\pr39\\runs\\transfer-cold-v3-20261107-v1\\cosine-20261102\\weights.pt": "34504bfdf1942594720968cc380b0278b3f349017d4784e76fcf7a24814823be"
+  },
+  "weights_sha256": "f933bf970c906abcd44fff88dc76c9b8c065ace6fedc7e95557db5b2e10f5505",
+  "original_weights_sha256": "7f910144440d91707de2d95d957cd480cc81dbdad85be5d28c283b2ab2061280",
+  "normalizer_sha256": "fa9c41a4850695a5404b7771083559345f6dd34d84c15abe604dbe70669156f6",
+  "experiment_protocol_sha256": "b5a218346935b75f0ff4dc2efb6d3ff7f1679fda0ed2a38b418e48e830654352",
+  "selection": "explicit seed; no automatic best-seed selection",
+  "scores_are_probabilities": false,
+  "independently_tested": false,
+  "inherited_audit_limit": "legacy CODER graph/base publication audit incomplete; partial-profile reconstruction cannot retroactively sanitize frozen CODER training",
+  "runtime_download_or_training": false
+}
