@@ -1,6 +1,7 @@
 from dataclasses import asdict
 from datetime import datetime,timedelta,timezone
 import json
+import os
 from pathlib import Path
 import sys
 import unittest
@@ -9,7 +10,7 @@ import numpy as np
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'scripts'),str(ROOT/'tests')]
 import test_gated_scoring as fixtures
-from run_gated_feature_worker import process,atomic_json
+from run_gated_feature_worker import process,atomic_json,_latest_requests
 from oss_mentor.gated_scoring import CachedGatedScorer,context_key,content_hash,FEATURE_SCHEMA
 
 
@@ -52,6 +53,18 @@ class FeatureWorkerTests(unittest.TestCase):
         def failed(*args):raise RuntimeError('encoder unavailable')
         self.assertEqual(process(self.path,self.config,failed)['state'],'failed')
         self.assertEqual(pointer.read_bytes(),original)
+
+    def test_worker_uses_only_latest_request_per_profile_context(self):
+        requests=self.root/'queued';requests.mkdir()
+        older=dict(self.request,requested_at='2026-11-08T10:00:00Z')
+        newer=dict(self.request,requested_at='2026-11-08T11:00:00Z')
+        other=dict(self.request,context_key='c'*64,developer_key='other',requested_at='2026-11-08T09:00:00Z')
+        older_path=requests/'older.json';newer_path=requests/'newer.json';other_path=requests/'other.json'
+        atomic_json(older_path,older);atomic_json(newer_path,newer);atomic_json(other_path,other)
+        os.utime(other_path,(2_000_000_000,2_000_000_000))
+        selected=_latest_requests(requests)
+        self.assertEqual({newer_path,other_path},set(selected))
+        self.assertNotIn(older_path,selected)
 
     def test_wrong_model_and_bad_output_never_publish(self):
         self.request['backbone_sha256']='0'*64;atomic_json(self.path,self.request)

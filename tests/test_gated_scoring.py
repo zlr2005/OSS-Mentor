@@ -17,6 +17,7 @@ from oss_mentor.services.recommendation_service import RecommendationService,Mod
 
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 from prepare_gated_context import prepare
+from encode_gated_live import _coder_source
 
 
 def candidate(i,language='Python'):
@@ -58,6 +59,13 @@ class GatedScoringTests(unittest.TestCase):
         self.profile=DeveloperProfileV2(profile_key='prepared-test',display_name='Test',service_track='newcomer',preferred_languages=('Python',),
             operating_systems=('linux',),preferred_task_types=('testing',),max_code_difficulty=1,max_setup_difficulty=1,desired_skill_stretch=0,skills={'python':2})
         self.tasks=[candidate(1),candidate(2)];self.cache=self.root/'cache';self.make_cache()
+
+    def test_portable_coder_source_is_discovered_from_package_workspace(self):
+        package=self.root/'portable-package';assets=package/'assets';assets.mkdir(parents=True)
+        source=package/'workspace/tmp/pr39-review/CODER/src'
+        module=source/'coder_issue/training/advanced_issue_inputs.py'
+        module.parent.mkdir(parents=True);module.write_text('',encoding='utf-8')
+        self.assertEqual(source,_coder_source(assets))
 
     def make_cache(self,*,scope='live',as_of=None,expires=None,developer_key=None,enhanced_profile=None):
         now=datetime.now(timezone.utc);at=as_of or now-timedelta(minutes=1);end=expires or now+timedelta(hours=1)
