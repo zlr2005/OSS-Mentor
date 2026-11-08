@@ -11,10 +11,14 @@ from oss_mentor.storage.candidates import (
     SyncAlreadyRunningError,
     as_candidate_storage,
 )
+from oss_mentor.storage.base import MidtermProfileStore
+from oss_mentor.storage.profiles import SQLiteMidtermProfileStore
 
 __all__ = [
     "CandidateStorage",
+    "MidtermProfileStore",
     "SQLiteCandidateStorage",
+    "SQLiteMidtermProfileStore",
     "SyncAlreadyRunningError",
     "as_candidate_storage",
 ]

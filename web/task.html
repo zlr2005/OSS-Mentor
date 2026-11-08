@@ -1,102 +1,95 @@
 <!doctype html>
-<!--
-THESIS: 任务详情是一份可以慢读的凭据，而不是把 GitHub 页面再抄一遍。
-OWN-WORLD: 延续 OSS-Mentor 的纸张米白、森林绿、陶土橙，用事实栏 + 正文栏组织“这个任务是什么、现在还领得到吗”。
-STORY: 用户从推荐清单进入，确认可用性与复核时间，读完描述，再决定去 GitHub 打开或记录反馈。
-FIRST VIEWPORT: 顶栏下方左侧是可用性事实栏，右侧标题、复核时间与正文同时出现，反馈按钮紧随正文。
-FORM: Operate 模式的“任务审阅台”，与推荐页共用观感；桌面双栏、移动端单列。
--->
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="OSS-Mentor 单个开源任务的详情、当前可用性与反馈">
-    <title>任务详情 · OSS-Mentor</title>
-    <link rel="stylesheet" href="/assets/styles.css">
-    <link rel="stylesheet" href="/assets/recommendations.css">
-    <link rel="stylesheet" href="/assets/task.css">
-    <script src="/assets/task.js" defer></script>
-  </head>
-  <body>
-    <header class="topbar recommendation-topbar">
-      <a class="brand" href="/" aria-label="OSS-Mentor 首页">
-        <span class="brand-mark" aria-hidden="true">OM</span>
-        <span>OSS-Mentor</span>
-      </a>
-      <nav aria-label="主要导航">
-        <a href="/profile">画像</a>
-        <a href="/recommendations">我的推荐</a>
-        <a href="/task" aria-current="page">任务详情</a>
-      </nav>
-    </header>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>任务详情 · OSS-Mentor</title>
+<meta name="description" content="OSS-Mentor 任务详情：上游正文、技能要求、关联路径、通用开始步骤、贡献入口与推荐依据。">
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/ui.js" defer></script>
+<script src="/assets/task.js" defer></script>
+</head>
+<body data-page="task">
+<a class="skip" href="#main">跳到主要内容</a>
 
-    <main class="task-main">
-      <header class="task-heading">
-        <p class="recommendation-kicker" id="task-repository">正在读取任务…</p>
-        <h1 id="task-title">任务详情</h1>
-        <p class="task-subline">
-          <span id="task-issue-number">—</span>
-          <span id="task-verified-at">复核时间读取中</span>
-        </p>
-      </header>
+<div class="demo-strip">
+  <div class="wrap">
+    <span class="dot" aria-hidden="true"></span>
+    <p><strong>任务详情。</strong>标题、正文、标签、可用性来自本地候选快照；通用开始步骤由页面生成，不冒充上游结构化数据。</p>
+  </div>
+</div>
 
-      <div class="task-layout">
-        <aside class="task-facts recommendation-context" aria-labelledby="facts-title">
-          <div class="context-heading">
-            <p>当前状态</p>
-            <span id="task-status" role="status" aria-live="polite">读取中</span>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">OM</span>OSS-Mentor</a>
+    <nav class="nav" aria-label="主导航">
+      <a href="/recommendations">全部推荐</a>
+      <a href="/recommendation-run">推荐说明</a>
+      <a href="/status">系统状态</a>
+      <a href="/profile">个人信息</a>
+    </nav>
+    <div class="session" id="session-status" role="status" aria-live="polite">
+      <span class="avatar-mono" aria-hidden="true">?</span>
+      <span class="who">任务详情<small>本地候选快照</small></span>
+      <span class="pill pill--neutral">detail</span>
+    </div>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="page-head band" aria-labelledby="detail-page-title">
+    <div class="wrap">
+      <p class="crumbs"><a href="/recommendations">← 返回推荐</a><span aria-hidden="true">/</span><span>任务详情</span></p>
+      <h1 id="detail-page-title">任务详情与开始步骤</h1>
+      <p class="lead">先确认任务仍可领取，再阅读上游正文、技能要求与贡献指南。页面不会自动领取 Issue、发表评论或发起 PR。</p>
+      <p class="head-meta">
+        <span class="mono">task_candidate_id <span id="task-id-label">—</span></span>
+        <span aria-hidden="true">·</span>
+        <a href="/status">系统状态</a>
+        <span aria-hidden="true">·</span>
+        <a href="/recommendation-run">推荐说明</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="rec-list-section" aria-labelledby="detail-title">
+    <div class="wrap">
+      <div class="banner" id="task-message" hidden role="status"></div>
+
+      <div class="run-context" id="task-context" hidden></div>
+
+      <div id="task-body" aria-live="polite">
+        <div class="skel" role="status">
+          <span class="sr-only">正在读取任务详情</span>
+          <div class="skel-card" aria-hidden="true">
+            <div class="sk sk--s"></div><div class="sk sk--t"></div><div class="sk"></div>
+            <div class="sk sk--m"></div><div class="sk sk--s"></div>
           </div>
-          <h2 id="facts-title">可领取性</h2>
-          <dl class="context-list" id="task-facts">
-            <div><dt>可用性</dt><dd id="task-availability">—</dd></div>
-            <div><dt>仓库</dt><dd id="task-repository-fact">—</dd></div>
-            <div><dt>Issue</dt><dd id="task-issue-fact">—</dd></div>
-            <div><dt>复核</dt><dd id="task-verified-fact">—</dd></div>
-          </dl>
-          <ul class="task-reasons" id="task-availability-reasons"></ul>
-          <p class="context-note">
-            可用性来自最近一次 GitHub 复核。超过 24 小时的记录会被标为待复核，可手动重新复核一次。
-          </p>
-          <button class="refresh-button task-refresh" id="refresh-task" type="button">
-            重新复核可用性
-          </button>
-          <a class="profile-link" id="task-github-link" href="#" target="_blank" rel="noopener noreferrer">
-            在 GitHub 打开 <span aria-hidden="true">↗</span>
-          </a>
-        </aside>
-
-        <section class="task-body-panel" aria-labelledby="body-title">
-          <h2 id="body-title">任务描述</h2>
-          <div class="task-body" id="task-body" aria-busy="true">
-            <p class="task-placeholder">正在读取任务描述…</p>
-          </div>
-
-          <div class="task-message" id="task-message" role="status" hidden>
-            <strong id="task-message-title"></strong>
-            <p id="task-message-copy"></p>
-            <a id="task-message-action" href="/recommendations" hidden>返回推荐</a>
-          </div>
-
-          <section class="task-feedback" aria-labelledby="feedback-title">
-            <h2 id="feedback-title">你的判断</h2>
-            <p class="task-feedback-copy">
-              反馈只记录在你当前的画像下，用于调整后续推荐排序。
-            </p>
-            <div class="feedback-actions" id="feedback-actions">
-              <button type="button" class="feedback-button" data-feedback="interested">感兴趣</button>
-              <button type="button" class="feedback-button" data-feedback="not_suitable">不适合我</button>
-              <button type="button" class="feedback-button" data-feedback="started">已开始</button>
-              <button type="button" class="feedback-button" data-feedback="completed">已完成</button>
-            </div>
-            <p class="feedback-note" id="feedback-note" role="status" aria-live="polite"></p>
-          </section>
-        </section>
+        </div>
       </div>
-    </main>
 
-    <footer>
-      <span>OSS-Mentor · 任务详情 v0.5</span>
-      <span>先确认任务仍然可领取，再决定是否投入。</span>
-    </footer>
-  </body>
+      <div class="detail-foot" id="task-actions" style="margin-top:18px" hidden>
+        <div class="ic-actions" id="feedback-actions" role="group" aria-label="记录任务反馈">
+          <button class="btn btn--sm btn--ghost" type="button" data-feedback="interested">感兴趣</button>
+          <button class="btn btn--sm btn--ghost" type="button" data-feedback="not_suitable">不适合我</button>
+          <button class="btn btn--sm btn--ghost" type="button" data-feedback="started">已开始</button>
+          <button class="btn btn--sm btn--ghost" type="button" data-feedback="completed">已完成</button>
+          <span class="feedback-status" id="feedback-note" role="status"></span>
+        </div>
+        <a class="btn btn--sm btn--ghost" id="task-github" href="#" target="_blank" rel="noopener noreferrer" hidden>查看 GitHub 原文</a>
+        <button class="btn btn--sm btn--quiet" type="button" id="refresh-task">重新复核可用性</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bottom" style="margin-top:0;border-top:0;padding-top:0">
+      <span>OSS-Mentor · 任务详情</span>
+      <span>不自动领取 Issue · 不自动评论 · 不承诺协作者身份</span>
+    </div>
+  </div>
+</footer>
+</body>
 </html>

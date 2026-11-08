@@ -132,8 +132,32 @@ candidates.npz
 & '.\CODER\.venv\Scripts\python.exe' -m oss_mentor serve-api `
   --coder-model-dir '.\data\models\gfibot-m0-v1.1\coder\coder-full-search8-v1' `
   --coder-mapping-dir '.\data\midterm\normalized\gfibot-m0-v1.1\mappings' `
-  --coder-candidate-cache '.\data\midterm\platform\coder-full-search8-v1\candidates.npz'
+  --coder-candidate-cache '.\data\midterm\platform\coder-full-search8-v1\candidates.npz' `
+  --profile-adapter-dir '.\data\models\gfibot-m0-v1.1\coder\profile-adapter-v1' `
+  --advanced-adapter-mode shadow
 ```
+
+`--profile-adapter-dir` 也可通过 `OSS_MENTOR_PROFILE_ADAPTER_DIR` 设置。目录必须包含
+`adapter_manifest.json`、`weights.pt` 与 `_SUCCESS`；manifest 必须声明
+`service_track=growth`、`base_user_mode=population_mean`，且基础模型版本与当前 CODER
+bundle 完全一致。未配置 adapter 时，`/api/v1/me/recommendations` 只使用基础 CODER；
+配置后，已在平台确认的 23 维画像会通过 D 侧 scorer adapter 注入同一次基础模型评分。
+没有已确认画像的请求仍走基础 CODER，不会伪造全零画像或静默切换规则排序。
+
+`--advanced-adapter-mode` / `OSS_MENTOR_ADVANCED_ADAPTER_MODE` 支持：
+
+- `off`：不加载 profile adapter，只使用基础 CODER。
+- `shadow`：同一候选集同时计算 original/profile 排名，用户仍看到 original；配对结果写入
+  `recommendation_advanced_adapter_shadow`，用于稳定性审计。
+- `serve`：growth 用户有 confirmed 画像时使用画像增强排序；没有 confirmed 画像时仍使用基础
+  CODER。
+
+`shadow` 和 `serve` 必须配置 adapter bundle。模型、画像、adapter 或候选缓存不完整时
+fail closed，不允许静默切换成另一套排序。
+
+推荐响应与 `/api/v1/recommendation-runs/{run_id}` 会返回 `advanced_adapter` 运行信息。
+shadow 配对结果写入 `recommendation_advanced_adapter_shadow`，包含基础模型版本、adapter
+版本、画像版本、画像模式、候选快照哈希，以及 original/profile 的逐候选分数和排名。
 
 ### 旧规则兼容演示
 

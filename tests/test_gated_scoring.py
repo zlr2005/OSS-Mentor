@@ -258,5 +258,20 @@ class GatedScoringTests(unittest.TestCase):
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 main(['serve-api','--gated-bundle',str(self.bundle)]+flags)
 
+    def test_gated_model_and_advanced_adapter_mode_are_explicitly_exclusive(self):
+        from contextlib import redirect_stderr
+        import io
+        from oss_mentor.cli import main
+        from oss_mentor.sqlite_store import SQLiteCandidateStore
+        database=self.root/'database.sqlite3'
+        SQLiteCandidateStore(database,ROOT/'db/sqlite/001_mvp.sql').initialize()
+        error=io.StringIO()
+        with redirect_stderr(error),self.assertRaises(SystemExit):
+            main(['serve-api','--database',str(database),
+                  '--gated-bundle',str(self.bundle),'--gated-cache',str(self.cache),
+                  '--advanced-adapter-mode','shadow','--profile-adapter-dir',str(self.root)])
+        # Configuration is rejected before a missing bundle can select another engine.
+        self.assertIn('Gated ranking cannot run advanced adapter',error.getvalue())
+
 
 if __name__=='__main__':unittest.main()

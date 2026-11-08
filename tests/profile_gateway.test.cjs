@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
+const {execFileSync} = require('node:child_process');
 const source = fs.readFileSync(path.join(__dirname, '../web/assets/profile.js'), 'utf8');
 
 function harness(search = '') {
@@ -182,4 +183,13 @@ test('logout accepts the auth response and redirects to login', async () => {
   assert.equal(h.calls[0][1].credentials, 'same-origin');
   assert.deepEqual(h.navigations, ['/login?return_to=%2Fprofile']);
   assert.equal(h.run('state.busy'), false);
+});
+
+test('questionnaire and shared UI scripts parse', () => {
+  for (const file of ['questionnaire.js', 'run.js', 'session-nav.js', 'ui.js']) {
+    execFileSync(process.execPath, [
+      '--check',
+      path.join(__dirname, '../web/assets', file),
+    ]);
+  }
 });

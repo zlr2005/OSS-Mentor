@@ -9,27 +9,51 @@
     >
     <title>我的画像 · OSS-Mentor</title>
 
-    <!-- D 维护的共享视觉变量与基础样式，只引用，不修改 -->
-    <link rel="stylesheet" href="/assets/styles.css">
+    <!-- D 维护的共享白红主题、视觉变量与基础样式 -->
+    <link rel="stylesheet" href="/assets/app.css">
 
     <!-- B5 页面专属样式 -->
     <link rel="stylesheet" href="/assets/profile.css">
 
     <!-- B5 页面专属交互 -->
+    <script src="/assets/session-nav.js" defer></script>
     <script src="/assets/profile.js" defer></script>
   </head>
 
   <body>
     <header class="topbar">
-      <a class="brand" href="/" aria-label="返回 OSS-Mentor 首页">
-        <span class="brand-mark" aria-hidden="true">OM</span>
-        <span>OSS-Mentor</span>
-      </a>
+      <div class="wrap topbar-inner">
+        <a class="brand" href="/" aria-label="返回 OSS-Mentor 首页">
+          <span class="brand-mark" aria-hidden="true">OM</span>
+          <span>OSS-Mentor</span>
+        </a>
 
-      <div class="profile-top-actions">
-        <a class="profile-back-link" href="/login?return_to=%2Fprofile">登录 / 重新登录</a>
-        <a class="profile-back-link" href="/recommendations">个性化推荐</a>
-        <a class="profile-back-link" href="/">返回推荐页</a>
+        <nav class="nav" aria-label="主导航">
+          <a href="/recommendations">全部推荐</a>
+          <a href="/recommendation-run">推荐说明</a>
+          <a href="/status">系统状态</a>
+          <a href="/profile" aria-current="page">个人信息</a>
+        </nav>
+
+        <div
+          class="session"
+          data-session-nav
+          id="session-status"
+          aria-label="当前账户与会话操作"
+        >
+          <span class="avatar-mono" aria-hidden="true">?</span>
+          <span class="who" role="status" aria-live="polite">
+            正在读取会话<small>本地服务</small>
+          </span>
+          <span class="pill pill--neutral">…</span>
+          <div class="session-actions" role="group" aria-label="账户操作"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="profile-main">
+      <section class="profile-mode-panel" aria-label="数据模式">
+        <p id="profile-mode-note" role="status">正在连接真实画像服务…</p>
         <span
           class="status-pill"
           id="profile-api-status"
@@ -38,16 +62,6 @@
         >
           正在检查画像服务
         </span>
-      </div>
-    </header>
-
-    <main class="profile-main">
-      <section class="profile-mode-panel" aria-label="数据模式">
-        <p id="profile-mode-note" role="status">正在连接真实画像服务…</p>
-        <a href="/login?return_to=%2Fprofile">登录 / 重新登录</a>
-        <span aria-hidden="true"> · </span>
-        <button type="button" id="logout-button" class="profile-inline-link">退出登录</button>
-        <span aria-hidden="true"> · </span>
         <a href="/profile">真实服务 / 重新加载</a>
         <span aria-hidden="true"> · </span>
         <a href="/profile?mode=demo">显式进入演示模式</a>
@@ -925,6 +939,111 @@
       </section>
 
       <!-- =========================================================
+           GROWTH QUESTIONNAIRE
+           ========================================================= -->
+      <section
+        class="profile-section"
+        id="profile-questionnaire"
+        aria-labelledby="questionnaire-title"
+      >
+        <div class="profile-section-heading">
+          <div>
+            <p class="eyebrow">Growth Questions</p>
+            <h2 id="questionnaire-title">成长问答</h2>
+          </div>
+
+          <p>
+            回答会先生成未保存的预览和确认计划。只有你逐项接受或拒绝并确认后，
+            新画像版本才会写入当前账户。
+          </p>
+        </div>
+
+        <p
+          class="profile-form-note"
+          id="questionnaire-status"
+          role="status"
+          aria-live="polite"
+        >
+          正在检查问卷接口…
+        </p>
+
+        <div id="questionnaire-shell" hidden>
+          <form id="questionnaire-form" class="questionnaire-form">
+            <div id="questionnaire-questions"></div>
+
+            <div class="questionnaire-actions">
+              <p id="questionnaire-form-error" class="profile-form-error" hidden></p>
+              <button
+                id="questionnaire-preview-button"
+                class="profile-save-button"
+                type="submit"
+              >
+                <span>生成画像预览</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </form>
+
+          <div
+            id="questionnaire-preview"
+            class="questionnaire-preview"
+            aria-live="polite"
+            hidden
+          >
+            <div class="questionnaire-preview-head">
+              <div>
+                <p class="profile-card-kicker">Unsaved Preview</p>
+                <h3>确认前先检查变化</h3>
+              </div>
+              <span class="profile-state-badge" data-state="pending">
+                尚未写入
+              </span>
+            </div>
+
+            <div id="questionnaire-preview-summary" class="questionnaire-summary"></div>
+            <div id="questionnaire-features" class="questionnaire-feature-grid"></div>
+
+            <div class="questionnaire-plan-head">
+              <div>
+                <p class="profile-card-kicker">Explicit Decisions</p>
+                <h4>逐项接受或拒绝</h4>
+              </div>
+              <span id="questionnaire-decision-count">0 / 0</span>
+            </div>
+
+            <div id="questionnaire-suggestions" class="questionnaire-suggestion-list"></div>
+
+            <div class="questionnaire-actions questionnaire-actions--split">
+              <button
+                id="questionnaire-reset-button"
+                class="profile-secondary-button"
+                type="button"
+              >
+                返回修改回答
+              </button>
+              <button
+                id="questionnaire-confirm-button"
+                class="profile-save-button"
+                type="button"
+                disabled
+              >
+                <span>确认并生成新版本</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+
+            <p
+              id="questionnaire-result"
+              class="questionnaire-result"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
            GITHUB IMPORT
            ========================================================= -->
       <section
@@ -1328,5 +1447,6 @@
       <span>OSS-Mentor · Developer Profile</span>
       <span>手工优先 · 来源可追溯 · GitHub 建议需确认</span>
     </footer>
+    <script src="/assets/questionnaire.js" defer></script>
   </body>
 </html>

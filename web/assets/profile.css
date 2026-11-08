@@ -12,6 +12,208 @@
   padding: 0 28px 90px;
 }
 
+.profile-global-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 253, 247, .92);
+  backdrop-filter: blur(14px);
+}
+
+.profile-topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 64px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.profile-global-topbar .brand {
+  flex: none;
+  gap: 9px;
+  color: var(--ink);
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.profile-global-topbar .brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #d43b2d;
+  font-size: 11px;
+}
+
+.profile-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.profile-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.profile-nav a:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  background: rgba(255, 255, 255, .7);
+}
+
+.profile-nav a[aria-current="page"] {
+  color: var(--ink);
+  border-color: #d1d2cc;
+  background: #ecece7;
+  font-weight: 700;
+}
+
+.profile-nav a[aria-current="page"]::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #d43b2d;
+}
+
+.profile-global-topbar .session {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  margin-left: auto;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .72);
+}
+
+.profile-global-topbar .avatar-mono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #cdcec8;
+  border-radius: 50%;
+  background: #e9e9e3;
+  color: #53605a;
+  font: 600 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.profile-global-topbar .who {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.profile-global-topbar .who small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.profile-global-topbar .who .session-error {
+  color: #a53327;
+}
+
+.profile-global-topbar .pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.profile-global-topbar .pill--ok {
+  color: #176b50;
+  border-color: #b9d6c7;
+  background: #dcebe3;
+}
+
+.profile-global-topbar .pill--neutral {
+  color: var(--muted);
+  border-color: var(--line);
+  background: #ecece7;
+}
+
+.profile-global-topbar .pill--warn {
+  color: #8a5b10;
+  border-color: #e1c989;
+  background: #fbf0cf;
+}
+
+.profile-global-topbar .session-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 1px;
+  padding-left: 7px;
+  border-left: 1px solid var(--line);
+}
+
+.profile-global-topbar .session-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.profile-global-topbar .session-action:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  background: #f1f1ec;
+}
+
+.profile-global-topbar .session-action--primary {
+  color: #a92c22;
+  border-color: #efc7c1;
+  background: #fdf0ed;
+}
+
+.profile-global-topbar .session-action--danger:hover {
+  color: #a53327;
+  border-color: #e6bbb3;
+  background: #f7ddd8;
+}
+
+.profile-global-topbar .session-action[disabled] {
+  cursor: wait;
+  color: var(--muted);
+  border-color: transparent;
+  background: transparent;
+}
+
 .profile-top-actions {
   display: flex;
   align-items: center;
@@ -1280,6 +1482,50 @@
 }
 
 @media (max-width: 760px) {
+  .profile-topbar-inner {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding: 10px 18px;
+  }
+
+  .profile-nav {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .profile-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-global-topbar .session {
+    padding: 4px 6px 4px 4px;
+    gap: 6px;
+  }
+
+  .profile-global-topbar .who {
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .profile-global-topbar .who small,
+  .profile-global-topbar .pill {
+    display: none;
+  }
+
+  .profile-global-topbar .session-actions {
+    padding-left: 4px;
+  }
+
+  .profile-global-topbar .session-action {
+    padding: 0 6px;
+    font-size: 11px;
+  }
+
   .profile-main {
     padding: 0 18px 60px;
   }
@@ -1965,3 +2211,602 @@
 [hidden] { display: none !important; }
 .profile-mode-panel { padding: 1rem; margin-bottom: 1.25rem; border: 1px solid currentColor; border-radius: 12px; }
 .profile-mode-panel p { margin: 0 0 .5rem; }
+
+
+/* ================================================================
+   Shared white + red theme alignment
+
+   The profile page used the earlier green/cream palette. Keep its layout
+   and components, but map the legacy aliases to the same tokens used by
+   home, recommendations, task and recommendation-run pages.
+   ================================================================ */
+
+:root {
+  --ink: var(--fg);
+  --paper: var(--bg);
+  --card: var(--surface);
+  --line: var(--border);
+  --green: var(--accent);
+  --green-soft: var(--accent-tint);
+  --orange: var(--accent);
+  --orange-soft: var(--accent-tint);
+  --blue: var(--accent);
+  --shadow: var(--elev-raised);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+}
+
+.profile-global-topbar {
+  border-color: var(--border);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+}
+
+.profile-global-topbar .brand-mark {
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+.profile-nav a[aria-current="page"],
+.profile-global-topbar .pill--neutral,
+.profile-global-topbar .avatar-mono {
+  color: var(--fg-2);
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+.profile-global-topbar .pill--ok {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 32%, transparent);
+}
+
+.profile-global-topbar .session {
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border-color: var(--border);
+}
+
+.profile-global-topbar .session-action:hover {
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+.profile-global-topbar .session-action--primary {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 32%, transparent);
+}
+
+.profile-mode-panel {
+  color: var(--muted);
+  background: var(--surface);
+  border-color: color-mix(in oklab, var(--accent) 26%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
+.profile-mode-panel a,
+.profile-back-link:hover,
+.profile-inline-link:hover {
+  color: var(--accent);
+}
+
+.profile-hero::before {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--accent) 10%, transparent),
+    transparent 67%
+  );
+}
+
+.profile-hero-copy .eyebrow,
+.profile-principle-index {
+  color: var(--accent);
+}
+
+.profile-principle {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 8px 26px color-mix(in oklab, var(--fg) 5%, transparent);
+}
+
+.profile-principle:hover {
+  border-color: color-mix(in oklab, var(--accent) 36%, var(--border));
+  box-shadow: 0 12px 32px color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.profile-overview-card,
+.github-import-card,
+.github-import-summary,
+.profile-editor {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--elev-raised);
+}
+
+.profile-overview-card {
+  background: linear-gradient(155deg, var(--surface), var(--surface-2));
+  box-shadow:
+    0 28px 70px color-mix(in oklab, var(--fg) 12%, transparent),
+    0 2px 10px color-mix(in oklab, var(--fg) 4%, transparent);
+}
+
+.profile-overview-card::before {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--accent) 15%, transparent),
+    transparent 68%
+  );
+}
+
+.profile-state-badge,
+.profile-state-badge[data-state="empty"] {
+  color: var(--muted);
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.profile-state-badge[data-state="ready"],
+.profile-state-badge[data-state="saved"] {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 32%, transparent);
+}
+
+.profile-state-badge[data-state="dirty"],
+.profile-state-badge[data-state="pending"] {
+  color: var(--accent-dim);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 26%, transparent);
+}
+
+.profile-state-badge[data-state="error"],
+.profile-form-error,
+.github-import-status[data-state="error"] {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-color: color-mix(in oklab, var(--danger) 34%, transparent);
+}
+
+.profile-identity {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+}
+
+.profile-avatar {
+  background: var(--accent);
+  box-shadow: 0 8px 18px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.profile-overview-list dd {
+  color: var(--fg-2);
+}
+
+.profile-editor {
+  background: var(--surface);
+}
+
+.profile-field input,
+.profile-field select,
+.profile-skill-row select {
+  color: var(--fg);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.profile-field input:hover,
+.profile-field select:hover,
+.profile-skill-row select:hover {
+  border-color: color-mix(in oklab, var(--accent) 38%, var(--border));
+}
+
+.profile-field input:focus,
+.profile-field select:focus,
+.profile-skill-row select:focus,
+.suggestion-filter select:focus {
+  outline-color: var(--accent-ring);
+  border-color: var(--accent);
+}
+
+.profile-choice-grid label,
+.profile-skill-row {
+  color: var(--muted);
+  background: var(--surface-2);
+  border-color: var(--border-soft);
+}
+
+.profile-choice-grid label:hover,
+.profile-skill-row:hover {
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--border));
+}
+
+.profile-choice-grid label:has(input:checked),
+.profile-skill-row[data-locked="true"] {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 34%, transparent);
+}
+
+.profile-form-footer {
+  background: var(--surface-2);
+}
+
+.profile-save-button {
+  box-shadow: 0 8px 20px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.suggestion-toolbar,
+.suggestion-evidence,
+.provenance-card {
+  background: var(--surface-2);
+  border-color: var(--border-soft);
+}
+
+.suggestion-card,
+.github-import-rules > div,
+.github-consent {
+  border-color: var(--border);
+}
+
+.suggestion-card[data-status="accepted"] {
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+}
+
+.suggestion-change > div:last-child {
+  border-color: color-mix(in oklab, var(--accent) 32%, var(--border));
+}
+
+.provenance-card:hover {
+  border-color: color-mix(in oklab, var(--accent) 32%, var(--border));
+}
+
+/* Keep the white/red palette, but remove decorative red radial washes. */
+.profile-hero::before,
+.profile-overview-card::before,
+.github-import-card::after {
+  display: none;
+}
+
+
+/* ================================================================
+   Midterm questionnaire
+   ================================================================ */
+
+#questionnaire-status[data-state="ready"],
+#questionnaire-status[data-state="success"] {
+  color: var(--accent);
+}
+
+#questionnaire-status[data-state="error"] {
+  color: var(--danger);
+}
+
+.questionnaire-form,
+.questionnaire-preview {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--elev-ring);
+}
+
+.questionnaire-question {
+  padding: 0 0 24px;
+  margin: 0 0 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.questionnaire-question:last-child {
+  padding-bottom: 0;
+  margin-bottom: 8px;
+  border-bottom: 0;
+}
+
+.questionnaire-prompt {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 13px;
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.questionnaire-question-meta {
+  flex: none;
+  padding: 2px 8px;
+  color: var(--accent);
+  background: var(--accent-tint);
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, transparent);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.questionnaire-hint {
+  margin: -5px 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.questionnaire-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.questionnaire-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    color .15s ease,
+    background .15s ease,
+    border-color .15s ease;
+}
+
+.questionnaire-option:hover {
+  color: var(--fg);
+  border-color: color-mix(in oklab, var(--accent) 30%, var(--border));
+}
+
+.questionnaire-option:has(input:checked) {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+
+.questionnaire-option input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.questionnaire-option-label {
+  min-width: 0;
+}
+
+.questionnaire-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.questionnaire-actions .profile-form-error {
+  flex: 1;
+  margin: 0;
+  text-align: left;
+}
+
+.questionnaire-actions--split {
+  justify-content: space-between;
+}
+
+.questionnaire-preview {
+  margin-top: 22px;
+}
+
+.questionnaire-preview-head,
+.questionnaire-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.questionnaire-preview-head h3,
+.questionnaire-plan-head h4 {
+  margin: 3px 0 0;
+}
+
+.questionnaire-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.questionnaire-summary-card {
+  display: grid;
+  gap: 3px;
+  padding: 15px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 13px;
+}
+
+.questionnaire-summary-card strong {
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.questionnaire-summary-card small,
+.questionnaire-summary-label {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.questionnaire-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.questionnaire-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 11px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.questionnaire-feature code {
+  overflow: hidden;
+  color: var(--fg-2);
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.questionnaire-feature strong {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.questionnaire-feature-tag {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.questionnaire-plan-head {
+  margin-bottom: 14px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+#questionnaire-decision-count {
+  color: var(--muted);
+  font: 600 12px/1.4 var(--font-mono);
+}
+
+.questionnaire-suggestion-list {
+  display: grid;
+  gap: 10px;
+}
+
+.questionnaire-suggestion {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.questionnaire-suggestion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.questionnaire-suggestion-head code {
+  overflow: hidden;
+  color: var(--fg-2);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.questionnaire-suggestion-value {
+  flex: none;
+  color: var(--accent);
+  font: 600 12px/1.4 var(--font-mono);
+}
+
+.questionnaire-suggestion-evidence,
+.questionnaire-blocked {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.questionnaire-blocked {
+  color: var(--danger);
+}
+
+.questionnaire-decision-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.questionnaire-decision {
+  min-height: 34px;
+  padding: 0 13px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.questionnaire-decision:hover {
+  color: var(--fg);
+  border-color: color-mix(in oklab, var(--accent) 34%, var(--border));
+}
+
+.questionnaire-decision.is-selected {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: color-mix(in oklab, var(--accent) 42%, transparent);
+}
+
+.questionnaire-result {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  color: var(--accent);
+  background: var(--accent-tint);
+  border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.questionnaire-result[data-state="error"] {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-color: color-mix(in oklab, var(--danger) 30%, transparent);
+}
+
+.questionnaire-empty {
+  padding: 16px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: 11px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .questionnaire-form,
+  .questionnaire-preview {
+    padding: 20px;
+  }
+
+  .questionnaire-options,
+  .questionnaire-summary,
+  .questionnaire-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .questionnaire-actions,
+  .questionnaire-actions--split {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .questionnaire-actions .profile-save-button,
+  .questionnaire-actions .profile-secondary-button {
+    width: 100%;
+  }
+}

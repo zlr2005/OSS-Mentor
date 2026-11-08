@@ -246,6 +246,7 @@ class CandidateStore(Protocol):
         feedback_context: str,
         service_track: str,
         feedback_state: str,
+        run_id: str | None = None,
     ) -> dict: ...
 
     def feedback_summary(self) -> dict: ...

@@ -183,6 +183,10 @@ def interpret_github_contributions(
         event_at = _iso_utc(
             raw.get("event_at"), f"contribution_records[{index}].event_at"
         )
+        record_observed_at = _iso_utc(
+            raw.get("observed_at", normalized_observed_at),
+            f"contribution_records[{index}].observed_at",
+        )
         evidence_location = _text(
             raw.get("evidence_location"),
             f"contribution_records[{index}].evidence_location",
@@ -206,7 +210,7 @@ def interpret_github_contributions(
             exclusion_reason = "author_identity_not_confirmed"
         elif event_at > normalized_as_of:
             exclusion_reason = "event_after_profile_as_of"
-        elif event_at > normalized_observed_at:
+        elif event_at > record_observed_at:
             exclusion_reason = "event_after_collection_observed_at"
         elif document is None:
             exclusion_reason = "code_document_missing"
@@ -222,6 +226,7 @@ def interpret_github_contributions(
             **identity_material,
             "file_key": file_key,
             "event_at": event_at,
+            "observed_at": record_observed_at,
             "identity_status": identity_status,
             "evidence_location": evidence_location,
             "path_kind": path_kind,
@@ -250,7 +255,7 @@ def interpret_github_contributions(
                     "source_kind": "github_direct",
                     "evidence_ref": evidence_ref,
                     "event_at": event_at,
-                    "observed_at": normalized_observed_at,
+                    "observed_at": record_observed_at,
                     "repository_key": repository_key,
                     "file_key": file_key,
                     "file_version_key": file_version_key,

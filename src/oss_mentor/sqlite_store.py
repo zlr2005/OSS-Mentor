@@ -983,6 +983,7 @@ class SQLiteCandidateStore:
         feedback_context: str,
         service_track: str,
         feedback_state: str,
+        run_id: str | None = None,
     ) -> dict[str, Any]:
         """Upsert current feedback and append an event only when the state changes."""
 
@@ -996,9 +997,35 @@ class SQLiteCandidateStore:
             ).fetchone()
             if candidate is None:
                 raise ValueError("task candidate does not exist")
+            if run_id is not None:
+                recommendation_run = connection.execute(
+                    """
+                    SELECT feedback_context
+                    FROM recommendation_run
+                    WHERE run_id = ?
+                    """,
+                    (run_id,),
+                ).fetchone()
+                if recommendation_run is None:
+                    raise ValueError("recommendation run does not exist")
+                if recommendation_run["feedback_context"] != feedback_context:
+                    raise ValueError("feedback context does not match recommendation run")
+                shown = connection.execute(
+                    """
+                    SELECT 1
+                    FROM recommendation_run_item
+                    WHERE run_id = ? AND task_candidate_id = ?
+                    """,
+                    (run_id, task_candidate_id),
+                ).fetchone()
+                if shown is None:
+                    raise ValueError(
+                        "task candidate was not shown in recommendation run"
+                    )
             current = connection.execute(
                 """
-                SELECT recommendation_feedback_id, feedback_state, created_at, updated_at
+                SELECT recommendation_feedback_id, feedback_state, created_at,
+                       updated_at, recommendation_run_id
                 FROM recommendation_feedback
                 WHERE task_candidate_id = ? AND feedback_context = ?
                 """,
@@ -1006,6 +1033,16 @@ class SQLiteCandidateStore:
             ).fetchone()
             previous_state = str(current["feedback_state"]) if current else None
             if current is not None and previous_state == feedback_state:
+                effective_run_id = run_id or current["recommendation_run_id"]
+                if run_id is not None and current["recommendation_run_id"] != run_id:
+                    connection.execute(
+                        """
+                        UPDATE recommendation_feedback
+                        SET recommendation_run_id = ?
+                        WHERE recommendation_feedback_id = ?
+                        """,
+                        (run_id, current["recommendation_feedback_id"]),
+                    )
                 return {
                     "task_candidate_id": task_candidate_id,
                     "feedback_context": feedback_context,
@@ -1014,14 +1051,16 @@ class SQLiteCandidateStore:
                     "changed": False,
                     "created_at": current["created_at"],
                     "updated_at": current["updated_at"],
+                    "run_id": effective_run_id,
                 }
             if current is None:
                 cursor = connection.execute(
                     """
                     INSERT INTO recommendation_feedback (
                         task_candidate_id, feedback_context, service_track,
-                        feedback_state, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?)
+                        feedback_state, created_at, updated_at,
+                        recommendation_run_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         task_candidate_id,
@@ -1030,29 +1069,33 @@ class SQLiteCandidateStore:
                         feedback_state,
                         now,
                         now,
+                        run_id,
                     ),
                 )
                 feedback_id = int(cursor.lastrowid)
                 created_at = now
+                effective_run_id = run_id
             else:
                 feedback_id = int(current["recommendation_feedback_id"])
                 created_at = str(current["created_at"])
+                effective_run_id = run_id or current["recommendation_run_id"]
                 connection.execute(
                     """
                     UPDATE recommendation_feedback
-                    SET service_track = ?, feedback_state = ?, updated_at = ?
+                    SET service_track = ?, feedback_state = ?, updated_at = ?,
+                        recommendation_run_id = COALESCE(?, recommendation_run_id)
                     WHERE recommendation_feedback_id = ?
                     """,
-                    (service_track, feedback_state, now, feedback_id),
+                    (service_track, feedback_state, now, run_id, feedback_id),
                 )
             connection.execute(
                 """
                 INSERT INTO recommendation_feedback_event (
                     recommendation_feedback_id, previous_state,
-                    feedback_state, occurred_at
-                ) VALUES (?, ?, ?, ?)
+                    feedback_state, occurred_at, run_id
+                ) VALUES (?, ?, ?, ?, ?)
                 """,
-                (feedback_id, previous_state, feedback_state, now),
+                (feedback_id, previous_state, feedback_state, now, effective_run_id),
             )
         return {
             "task_candidate_id": task_candidate_id,
@@ -1062,6 +1105,7 @@ class SQLiteCandidateStore:
             "changed": True,
             "created_at": created_at,
             "updated_at": now,
+            "run_id": effective_run_id,
         }
 
     def feedback_summary(self) -> dict[str, Any]:
