@@ -1,0 +1,9 @@
+{
+  "bundle": "/app/data/gated-v1/bundle",
+  "cache": "/app/data/midterm/platform/gated_live",
+  "requests": "/app/data/midterm/platform/gated_feature_requests",
+  "assets": "/app/data/gated-v1/assets",
+  "database": "/app/data/oss_mentor.sqlite3",
+  "auto_collect_public": true,
+  "evidence_by_login": {}
+}

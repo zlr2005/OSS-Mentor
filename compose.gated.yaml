@@ -1,0 +1,58 @@
+name: oss-mentor-gated
+
+services:
+  gated-api:
+    build: .
+    command:
+      - python
+      - -m
+      - oss_mentor
+      - serve-api
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8765"
+      - --allow-remote
+      - --gated-bundle
+      - /app/data/gated-v1/bundle
+      - --gated-cache
+      - /app/data/midterm/platform/gated_live
+      - --gated-request-dir
+      - /app/data/midterm/platform/gated_feature_requests
+      - --refresh-interval-seconds
+      - "0"
+    ports:
+      - "${OSS_MENTOR_PORT:-8765}:8765"
+    environment:
+      OSS_MENTOR_HOST: 0.0.0.0
+      OSS_MENTOR_PORT: "8765"
+      OSS_MENTOR_BASE_URL: "${OSS_MENTOR_BASE_URL:-http://127.0.0.1:8765}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+      GITHUB_OAUTH_CLIENT_ID: "${GITHUB_OAUTH_CLIENT_ID:-}"
+      GITHUB_OAUTH_CLIENT_SECRET: "${GITHUB_OAUTH_CLIENT_SECRET:-}"
+      OSS_MENTOR_SESSION_SECRET: "${OSS_MENTOR_SESSION_SECRET:-}"
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  gated-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.gated-worker
+    command: ["--config", "/app/data/gated_worker.container.json"]
+    environment:
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+      OSS_MENTOR_CODER_SOURCE: /app/data/gated-v1/coder_source
+    volumes:
+      - ./data:/app/data
+      - ./config/gated_worker.container.json:/app/data/gated_worker.container.json:ro
+    depends_on:
+      gated-api:
+        condition: service_started
+    restart: unless-stopped
