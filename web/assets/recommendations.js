@@ -268,7 +268,15 @@
       return;
     }
     const context = state.batch?.feedback_context || "";
-    const model = state.batch?.model || null;
+    const firstRanking = (state.batch?.rankings || [])[0] || {};
+    const model = state.batch?.model || (
+      firstRanking.scoring_engine
+        ? {
+            variant: firstRanking.scoring_engine,
+            version: firstRanking.model_version || "",
+          }
+        : null
+    );
     elements.list.innerHTML = items.map((item, index) => {
       const globalIndex = state.items.indexOf(item) + 1;
       return ui.issueCard(item, globalIndex, {

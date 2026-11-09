@@ -9,6 +9,7 @@ const shared = fs.readFileSync(path.join(__dirname, '../web/assets/ui.js'), 'utf
 async function page(body, statusCode = 200) {
   const nodes = new Map();
   const timers = [];
+  const cards = [];
   function node(id) {
     if (!nodes.has(id)) nodes.set(id, {
       hidden: false, textContent: '', innerHTML: '', disabled: false,
@@ -26,8 +27,12 @@ async function page(body, statusCode = 200) {
       return body;
     },
     storeBatch() {}, trackLabel: v => v || '', skeleton: () => 'loading',
-    runContext: () => '', issueCard: () => '<article>Task</article>',
+    runContext: () => '',
     panel: (code,title,copy) => `${code} ${title} ${copy}`,
+    issueCard: (item, index, options) => {
+      cards.push(options);
+      return '<article>Task</article>';
+    },
   };
   const context = vm.createContext({
     document: {body: {dataset: {page:'recommendations'}}, getElementById: node,
@@ -37,7 +42,7 @@ async function page(body, statusCode = 200) {
   });
   vm.runInContext(source, context);
   await new Promise(resolve => setImmediate(resolve));
-  return {nodes,context,timers};
+  return {nodes,context,timers,cards};
 }
 
 test('first-use feature state preserves profile without claiming encoding is running', async () => {
@@ -97,4 +102,14 @@ test('initial recommendations stay visible while model prepares and automaticall
   assert.match(nodes.get('recommendation-message').innerHTML,/个性化准备中/);
   assert.equal(timers.length,1);
   assert.equal(timers[0].delay,5000);
+});
+
+test('gated ranking metadata is available when the batch has no top-level model', async () => {
+  const {cards} = await page({
+    profile: {},
+    items: [{service_track: 'newcomer'}],
+    rankings: [{scoring_engine: 'coder_gated', model_version: 'gated-v1'}],
+  });
+  assert.equal(cards[0].model.variant, 'coder_gated');
+  assert.equal(cards[0].model.version, 'gated-v1');
 });
