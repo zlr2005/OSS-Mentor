@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from oss_mentor.sqlite_store import SQLiteCandidateStore
+from oss_mentor.storage.base import IdentitySessionStore
 from oss_mentor.storage.identity import IdentityStore
 
 
@@ -39,6 +40,26 @@ class IdentityStoreTests(unittest.TestCase):
         second = self.store.consume_oauth_state("hash-a")
         self.assertIsNotNone(first)
         self.assertIsNone(second)
+
+    def test_github_login_update_keeps_the_same_user_id(self) -> None:
+        user_id = self.store.create_user(
+            github_user_id=1001,
+            github_login="old-login",
+            display_name="Alice",
+        )
+        self.assertTrue(
+            self.store.update_github_login(
+                user_id=user_id,
+                github_login="new-login",
+            )
+        )
+        updated = self.store.find_user_by_github_id(1001)
+        self.assertEqual(user_id, updated["user_id"])
+        self.assertEqual("new-login", updated["github_login"])
+        self.assertEqual("Alice", updated["display_name"])
+
+    def test_identity_store_satisfies_session_protocol(self) -> None:
+        self.assertIsInstance(self.store, IdentitySessionStore)
 
     def test_session_lifecycle(self) -> None:
         user_id = self.store.create_user(github_user_id=2002, github_login="bob")
