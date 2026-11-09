@@ -1,0 +1,29 @@
+{
+  "rule_ranking": {
+    "unauthenticated_status": 401,
+    "unauthenticated_code": "authentication_required",
+    "authenticated_status": 200,
+    "returned_items": 10,
+    "availability": "available",
+    "item_warnings": [
+      "inventory_availability_assumed",
+      "offline_inventory_handoff_not_online_reverified",
+      "handoff_omits_issue_labels_and_activity",
+      "newcomer_signal_not_reconstructable"
+    ]
+  },
+  "gated_without_complete_cache": {
+    "status": 503,
+    "code": "model_features_required"
+  },
+  "gated_external_worker": {
+    "status": 200,
+    "returned_items": 10,
+    "scoring_engine": "profile_bootstrap_rules",
+    "coverage_state": "initializing",
+    "warnings": [
+      "model_features_preparing",
+      "profile_bootstrap_recommendations"
+    ]
+  }
+}

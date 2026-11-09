@@ -1,0 +1,15 @@
+{
+  "context_key": "bcbe441091cabe3bb9cef79f263b1938488af29dd82f24a8f1c2eb410e451de5",
+  "profile_key": "platform-gated-e2e",
+  "profile_version": "profile:f313195d7ef15aae5054",
+  "profile_state": "confirmed",
+  "eligible_candidates": 1195,
+  "candidate_input_sha256": "ebad1ecbe7b045584aa83ac0506efc0b356fb651f5f462a15ef1b5293e11e3d7",
+  "candidate_input_size_bytes": 18193762,
+  "worker_request_sha256": "8752e0288d510f4bd3cbeb8d14fc18df229f5854938ea07dcf9c2dd8dba58872",
+  "worker_request_size_bytes": 18377023,
+  "model_version": "coder-gated-marginal_positive-s20261102",
+  "feature_schema": "coder-gated-128+16-v1",
+  "worker_outcome": "interrupted_during_cpu_encoding",
+  "cache_published": false
+}
