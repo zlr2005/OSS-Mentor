@@ -176,6 +176,42 @@ class InventoryHandoffTests(unittest.TestCase):
                 connection.execute("SELECT COUNT(*) FROM task_skill_requirement").fetchone()[0],
             )
 
+    def test_v2_metadata_is_consumed_and_newcomer_signal_is_recomputed(self):
+        row = dict(self.row)
+        row.update(
+            labels=["good first issue", "bug"],
+            created_at="2026-09-01T00:00:00+00:00",
+            last_activity_at="2026-09-02T00:00:00+00:00",
+            newcomer_label_signal=1,
+            source_recommendable_under_assumption_v1=True,
+            handoff_review_reasons=[],
+        )
+        row["content_hash"] = content_hash(row)
+        row["source_content_hash"] = row["content_hash"]
+        self._write_handoff([row])
+        result = import_recommendable_handoff(
+            self.handoff,
+            self.database,
+            assume_inventory_available=True,
+        )
+        self.assertEqual(1, result["rows_with_labels_field"])
+        self.assertEqual(1, result["rows_with_created_at"])
+        self.assertEqual(1, result["rows_with_last_activity_at"])
+        self.assertEqual(1, result["source_newcomer_label_signals"])
+        self.assertEqual(1, result["recomputed_newcomer_label_signals"])
+        self.assertEqual([], result["source_newcomer_signal_mismatches"])
+        with closing(sqlite3.connect(self.database)) as connection:
+            connection.row_factory = sqlite3.Row
+            candidate = connection.execute(
+                "SELECT * FROM task_candidate WHERE github_issue_id = 10042"
+            ).fetchone()
+        self.assertEqual(1, candidate["newcomer_label_signal"])
+        self.assertEqual("2026-09-01T00:00:00+00:00", candidate["created_at"])
+        self.assertEqual("2026-09-02T00:00:00+00:00", candidate["last_activity_at"])
+        self.assertNotIn("handoff_omits_issue_labels_and_activity", candidate["warnings_json"])
+        self.assertNotIn("newcomer_signal_not_reconstructable", candidate["warnings_json"])
+        self.assertNotIn("handoff_created_at_missing", candidate["warnings_json"])
+
     def test_older_handoff_cannot_overwrite_newer_candidate_evidence(self):
         current = dict(self.row)
         current["title"] = "Newer observation of parser crash"

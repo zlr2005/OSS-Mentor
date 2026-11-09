@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "dataset_version": "a_full_inventory_assumed_20261109_v2",
+  "handoff_manifest_sha256": "a251698be4fd7651c8be3f8dd43c93166a97177bd670db530e70b8f6a8a0fb16",
+  "source_rows": 6364,
+  "source_repositories": 272,
+  "source_default_id_mappings": 6364,
+  "source_web_id_mappings": 6364,
+  "redacted_rows": 1,
+  "rows_with_labels_field": 6364,
+  "rows_with_created_at": 6286,
+  "rows_with_last_activity_at": 6364,
+  "source_newcomer_label_signals": 32,
+  "recomputed_newcomer_label_signals": 32,
+  "source_newcomer_signal_comparison_available": true,
+  "source_newcomer_signal_mismatches": [],
+  "import_counts": {
+    "inserted": 6364
+  },
+  "handoff_candidate_count": 6364,
+  "handoff_matchable_under_assumption": 6364,
+  "handoff_matchable_without_assumption": 0,
+  "handoff_review_blocked": 0,
+  "handoff_review_reasons": {},
+  "inventory_availability_assumed": true,
+  "online_reverified": false
+}

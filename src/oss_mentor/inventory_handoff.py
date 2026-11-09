@@ -17,6 +17,7 @@ from oss_mentor.candidate_freshness import (
     parse_timestamp,
     recommendation_is_current,
 )
+from oss_mentor.candidate_rules import has_beginner_label
 from oss_mentor.gated_scoring import content_hash
 from oss_mentor.storage.candidates import SQLiteCandidateStorage
 from oss_mentor.task_features import extract_task_features
@@ -54,8 +55,6 @@ _REQUIRED_ROW_FIELDS = frozenset(
 _HANDOFF_WARNINGS = (
     "inventory_availability_assumed",
     "offline_inventory_handoff_not_online_reverified",
-    "handoff_omits_issue_labels_and_activity",
-    "newcomer_signal_not_reconstructable",
 )
 
 
@@ -212,6 +211,27 @@ def _validate_rows(
             raise HandoffValidationError("verified_at must be timezone-aware")
         if not isinstance(row["redacted_fields"], list):
             raise HandoffValidationError("redacted_fields must be a list")
+        if "labels" in row:
+            labels = row["labels"]
+            if not isinstance(labels, list) or not all(isinstance(label, str) for label in labels):
+                raise HandoffValidationError("labels must be a list of strings")
+        for field in ("created_at", "last_activity_at"):
+            if field in row and row[field] not in (None, ""):
+                if not isinstance(row[field], str) or parse_timestamp(row[field]) is None:
+                    raise HandoffValidationError(f"{field} must be timezone-aware")
+        if "newcomer_label_signal" in row and row["newcomer_label_signal"] not in (0, 1, False, True):
+            raise HandoffValidationError("newcomer_label_signal must be 0 or 1")
+        if "source_recommendable_under_assumption_v1" in row and not isinstance(
+            row["source_recommendable_under_assumption_v1"], bool
+        ):
+            raise HandoffValidationError(
+                "source_recommendable_under_assumption_v1 must be boolean"
+            )
+        if "handoff_review_reasons" in row:
+            if not isinstance(row["handoff_review_reasons"], list) or row["handoff_review_reasons"]:
+                raise HandoffValidationError(
+                    "recommendable subset contains handoff review exclusions"
+                )
         computed_hash = content_hash(row)
         if computed_hash != row["content_hash"]:
             raise HandoffValidationError(f"content hash mismatch: {row['issue_key']}")
@@ -243,7 +263,7 @@ def _feature_values(
     record = {
         "title": row["title"],
         "body_text": row["body_text"],
-        "labels": [],
+        "labels": list(row.get("labels") or []),
         "primary_language": row["language"],
         "comment_count": 0,
         "candidate_eligibility": "eligible",
@@ -258,6 +278,10 @@ def _feature_values(
         "handoff_content_hash": row["content_hash"],
         "source_content_hash": row["source_content_hash"],
         "redacted_fields": row["redacted_fields"],
+        "source_newcomer_label_signal": row.get("newcomer_label_signal"),
+        "labels_exported": "labels" in row,
+        "created_at_exported": "created_at" in row,
+        "last_activity_at_exported": "last_activity_at" in row,
         "task_feature_version": row["task_feature_version"],
         "features_recomputed_from_delivery_text": True,
         "admission_policy_source": "recommendable_under_assumption",
@@ -265,6 +289,22 @@ def _feature_values(
         "online_reverified_this_export": False,
     }
     return features.to_dict(), evidence
+
+
+def _row_warnings(row: dict[str, Any]) -> list[str]:
+    warnings = list(_HANDOFF_WARNINGS)
+    if "labels" not in row:
+        warnings.extend((
+            "handoff_omits_issue_labels_and_activity",
+            "newcomer_signal_not_reconstructable",
+        ))
+    elif row.get("created_at") in (None, ""):
+        warnings.append("handoff_created_at_missing")
+    if "last_activity_at" not in row or row.get("last_activity_at") in (None, ""):
+        warnings.append("handoff_last_activity_missing")
+    if row["redacted_fields"]:
+        warnings.append("handoff_public_text_redacted")
+    return warnings
 
 
 def import_recommendable_handoff(
@@ -346,26 +386,27 @@ def import_recommendable_handoff(
                 )
                 continue
 
-            warnings = list(_HANDOFF_WARNINGS)
-            if row["redacted_fields"]:
-                warnings.append("handoff_public_text_redacted")
-            newcomer_signal = int(current["newcomer_label_signal"]) if current else 0
+            warnings = _row_warnings(row)
+            if "labels" in row:
+                newcomer_signal = int(has_beginner_label(row["labels"]))
+            else:
+                newcomer_signal = int(current["newcomer_label_signal"]) if current else 0
             values = (
                 repository_id,
                 row["issue_number"],
                 row["github_issue_id"],
                 row["url"],
-                "",
+                row.get("created_at") or "",
                 None,
                 row["title"],
                 row["body_text"],
-                "[]",
+                json.dumps(row.get("labels") or [], ensure_ascii=False, sort_keys=True),
                 "open",
                 "unassigned",
                 0,
                 0,
                 0,
-                None,
+                row.get("last_activity_at"),
                 "github_rest",
                 row["verified_at"],
                 row["verified_at"],
@@ -543,6 +584,29 @@ def import_recommendable_handoff(
             for row in rows
         ),
         "redacted_rows": sum(bool(row["redacted_fields"]) for row in rows),
+        "rows_with_labels_field": sum("labels" in row for row in rows),
+        "rows_with_created_at": sum(bool(row.get("created_at")) for row in rows),
+        "rows_with_last_activity_at": sum(
+            bool(row.get("last_activity_at")) for row in rows
+        ),
+        "source_newcomer_label_signals": sum(
+            bool(row.get("newcomer_label_signal")) for row in rows
+        ),
+        "recomputed_newcomer_label_signals": sum(
+            int(record["newcomer_label_signal"]) for record in handoff_rows
+        ),
+        "source_newcomer_signal_comparison_available": all(
+            "newcomer_label_signal" in row for row in rows
+        ),
+        "source_newcomer_signal_mismatches": (
+            [
+                row["issue_key"]
+                for row in rows
+                if bool(row["newcomer_label_signal"]) != bool(has_beginner_label(row["labels"]))
+            ]
+            if all("labels" in row and "newcomer_label_signal" in row for row in rows)
+            else []
+        ),
         "import_counts": dict(counts),
         "target_candidate_count": len(imported_ids),
         "handoff_candidate_count": len(handoff_rows),
@@ -555,7 +619,11 @@ def import_recommendable_handoff(
         "online_reverified": False,
         "limitations": [
             "The handoff is not a fresh online GitHub inventory verification.",
-            "Issue labels, created_at and activity timestamps are absent; newcomer gating cannot be reconstructed.",
+            (
+                "The handoff omits labels and activity metadata; newcomer gating cannot be reconstructed."
+                if any("labels" not in row for row in rows)
+                else "Newcomer labels are recomputed from exported labels; this is not an online freshness check."
+            ),
             "Difficulty and clarity features are recomputed from handoff text, while task types and skill requirements are preserved.",
         ],
     }
