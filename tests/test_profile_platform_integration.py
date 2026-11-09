@@ -64,6 +64,29 @@ class ProfilePlatformIntegrationTests(unittest.TestCase):
         self.assertEqual(before, self.service.profile_for_user(self.owner))
         self.assertIsNone(self.service.profile_for_user(self.other))
 
+    def test_github_login_update_preserves_profile_ownership_and_version(self):
+        self.service.save_manual_profile(self.profile, user_id=self.owner)
+        before_row = self.service.profile_for_user(self.owner)
+        before_contract = self.service.profile_for_user_contract(self.owner)
+
+        self.assertTrue(
+            IdentityStore(self.storage).update_github_login(
+                user_id=self.owner,
+                github_login="owner-renamed",
+            )
+        )
+
+        after_row = self.service.profile_for_user(self.owner)
+        after_contract = self.service.profile_for_user_contract(self.owner)
+        self.assertEqual(before_row, after_row)
+        self.assertEqual(before_contract, after_contract)
+        self.assertEqual(self.owner, after_row["user_id"])
+        self.assertEqual(self.profile["profile_key"], after_row["profile_key"])
+        self.assertEqual(
+            before_contract.profile_version,
+            after_contract.profile_version,
+        )
+
     def test_unknown_owner_and_invalid_id_leave_no_profile(self):
         for user_id in (True, 0, -1, "1", 999):
             with self.subTest(user_id=user_id), self.assertRaises(ValueError):
