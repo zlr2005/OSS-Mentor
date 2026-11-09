@@ -3,30 +3,149 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>登录 · OSS-Mentor</title>
   <link rel="stylesheet" href="/assets/login.css">
   <script src="/assets/login.js" defer></script>
 </head>
 <body>
-<div class="card">
-  <div class="brand">OSS-<span>Mentor</span></div>
-  <p class="subtitle">登录后导入 GitHub 公开数据，生成个性化画像与任务推荐</p>
+  <a class="skip-link" href="#login-panel">跳到登录</a>
 
-  <div id="error" class="error-msg" role="alert"></div>
-  <p id="loading" class="loading" hidden>正在跳转到 GitHub…</p>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="返回 OSS-Mentor 首页">
+      <span class="brand-mark" aria-hidden="true">OM</span>
+      <span class="brand-name">OSS-Mentor</span>
+    </a>
+    <a class="home-link" href="/">浏览公共候选 <span aria-hidden="true">→</span></a>
+  </header>
 
-  <a id="github-login" class="login-button" href="#">
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-    </svg>
-    使用 GitHub 登录
-  </a>
+  <main class="login-layout">
+    <section class="story" aria-labelledby="login-title">
+      <div class="story-copy">
+        <h1 id="login-title">让下一项开源任务，<br>真正适合你。</h1>
+        <p class="story-lede">
+          从 GitHub 公开贡献与个人画像出发，解释为什么某个 Issue 适合你，
+          而不是只给一个无法核验的分数。
+        </p>
 
-  <div class="demo-note">
-    也可以<a href="/">返回首页</a>浏览明确标记的公共候选；个性化推荐需要登录并完成个人画像。
-  </div>
-</div>
+        <ol class="flow" aria-label="从 GitHub 到推荐的三个步骤">
+          <li>
+            <span class="flow-number" aria-hidden="true">1</span>
+            <span><strong>连接 GitHub</strong><small>读取公开贡献与语言信息</small></span>
+          </li>
+          <li>
+            <span class="flow-number" aria-hidden="true">2</span>
+            <span><strong>形成能力画像</strong><small>技能、环境、兴趣与成长目标</small></span>
+          </li>
+          <li>
+            <span class="flow-number" aria-hidden="true">3</span>
+            <span><strong>获得可解释推荐</strong><small>候选状态、匹配依据与技能缺口</small></span>
+          </li>
+        </ol>
+      </div>
 
+      <aside class="preview-card" data-ui aria-label="画像与推荐示意">
+        <div class="preview-head">
+          <div>
+            <strong>画像 → 推荐</strong>
+            <span>界面示意</span>
+          </div>
+          <span class="preview-status">已连接</span>
+        </div>
 
+        <div class="profile-row">
+          <span class="profile-avatar" aria-hidden="true">你</span>
+          <span class="profile-copy">
+            <strong>进阶贡献者画像</strong>
+            <small>Python · Windows · 测试与文档</small>
+          </span>
+          <span class="profile-version">v3</span>
+        </div>
+
+        <div class="issue-list">
+          <article class="issue-row">
+            <span class="issue-rank">01</span>
+            <span class="issue-copy">
+              <strong>补充 Windows 安装流程的回归测试</strong>
+              <small>Python · testing · 单模块</small>
+            </span>
+            <span class="issue-score">92</span>
+          </article>
+          <article class="issue-row">
+            <span class="issue-rank">02</span>
+            <span class="issue-copy">
+              <strong>修复 CLI 参数解析的边界情况</strong>
+              <small>Python · bug_fix · 可复现</small>
+            </span>
+            <span class="issue-score">86</span>
+          </article>
+        </div>
+
+        <p class="preview-note">
+          推荐只用于辅助选择，不会自动领取 Issue 或向维护者发起请求。
+        </p>
+      </aside>
+    </section>
+
+    <section class="login-panel" id="login-panel" aria-labelledby="login-card-title">
+      <div class="login-card">
+        <div class="github-mark" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </div>
+
+        <h2 id="login-card-title">使用 GitHub 继续</h2>
+        <p class="login-lede">
+          授权后返回个人信息页，导入公开数据并建立你的能力画像。
+        </p>
+
+        <a
+          id="github-login"
+          class="github-button is-pending"
+          href="#"
+          aria-disabled="true"
+        >
+          <span class="button-status" id="login-label">正在连接 GitHub…</span>
+          <span class="button-arrow" aria-hidden="true">→</span>
+        </a>
+
+        <p id="loading" class="login-status" role="status" aria-live="polite" hidden>
+          正在跳转到 GitHub，请稍候…
+        </p>
+
+        <div id="error" class="error-panel" role="alert" hidden>
+          <strong>登录暂不可用</strong>
+          <p id="error-message"></p>
+          <button id="retry-login" class="retry-button" type="button">重新检测登录配置</button>
+        </div>
+
+        <dl class="login-facts">
+          <div>
+            <dt>授权范围</dt>
+            <dd>GitHub 公开资料</dd>
+          </div>
+          <div>
+            <dt>支持的账号</dt>
+            <dd>任意 GitHub 账号</dd>
+          </div>
+          <div>
+            <dt>本地会话</dt>
+            <dd>7 天，可随时退出</dd>
+          </div>
+        </dl>
+
+        <p class="privacy-note">
+          不保存 GitHub 密码；访问令牌只保留在当前服务进程内，重启后需要重新登录。
+        </p>
+
+        <a class="guest-link" href="/">暂不登录，先浏览公共候选</a>
+      </div>
+
+      <p class="account-tip">
+        需要切换 GitHub 账号时，使用 <code>start-web.cmd</code> 打开的隐私窗口。
+      </p>
+    </section>
+  </main>
 </body>
 </html>

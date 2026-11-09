@@ -7,17 +7,11 @@
 <meta name="description" content="OSS-Mentor 推荐说明：模型、画像来源、数据版本、理由与 warnings。">
 <link rel="stylesheet" href="/assets/app.css">
 <script src="/assets/ui.js" defer></script>
+<script src="/assets/session-nav.js" defer></script>
 <script src="/assets/run.js" defer></script>
 </head>
 <body data-page="run">
 <a class="skip" href="#main">跳到主要内容</a>
-
-<div class="demo-strip">
-  <div class="wrap">
-    <span class="dot" aria-hidden="true"></span>
-    <p><strong>推荐说明。</strong>模型、数据、画像版本与理由都来自服务端批次；没有接入的字段会明确显示为未登记。</p>
-  </div>
-</div>
 
 <header class="topbar">
   <div class="wrap topbar-inner">
@@ -28,10 +22,11 @@
       <a href="/status">系统状态</a>
       <a href="/profile">个人信息</a>
     </nav>
-    <div class="session" role="status" aria-live="polite">
-      <span class="avatar-mono" aria-hidden="true">R</span>
-      <span class="who">推荐说明<small>可追溯批次</small></span>
-      <span class="pill pill--neutral" id="run-pill">读取中</span>
+    <div class="session" data-session-nav id="session-status" aria-label="当前账户与会话操作">
+      <span class="avatar-mono" aria-hidden="true">?</span>
+      <span class="who" role="status" aria-live="polite">正在读取会话<small>本地服务</small></span>
+      <span class="pill pill--neutral">…</span>
+      <div class="session-actions" role="group" aria-label="账户操作"></div>
     </div>
   </div>
 </header>
@@ -39,10 +34,12 @@
 <main id="main" tabindex="-1">
   <section class="page-head band" aria-labelledby="run-page-title">
     <div class="wrap">
-      <h1 id="run-page-title">这次推荐是怎么来的</h1>
+      <h1 id="run-page-title">推荐说明</h1>
       <p class="lead">这里展示本次运行的模型、画像来源、匹配版本、warnings 和每条推荐的依据。它不展示训练参数或内部权重。</p>
       <p class="head-meta">
         <span class="mono" id="run-id-meta">run_id —</span>
+        <span aria-hidden="true">·</span>
+        <span class="pill pill--neutral" id="run-pill">读取中</span>
         <span aria-hidden="true">·</span>
         <a href="/status">系统状态</a>
       </p>
@@ -93,13 +90,5 @@
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <div class="foot-bottom" style="margin-top:0;border-top:0;padding-top:0">
-      <span>OSS-Mentor · 推荐说明</span>
-      <span>批次可追溯 · 模型与规则分开标识</span>
-    </div>
-  </div>
-</footer>
 </body>
 </html>

@@ -6,6 +6,7 @@
   const elements = {
     list: document.getElementById("issue-list"),
     message: document.getElementById("recommendation-message"),
+    workbench: document.getElementById("recommendation-workbench"),
     runContext: document.getElementById("run-context"),
     toolbar: document.getElementById("home-toolbar") || document.getElementById("list-toolbar"),
     resultNote: document.getElementById("home-result-note") || document.getElementById("list-note"),
@@ -30,7 +31,6 @@
     track: "all",
     query: "",
     preview: new URLSearchParams(window.location.search).get("state"),
-    preparationPolls: 0,
   };
 
   function currentReturnTo() {
@@ -54,9 +54,9 @@
         `<a class="session-action session-action--primary" href="${ui.escapeHtml(loginUrl())}">登录</a>`;
       return;
     }
-    elements.sessionActions.innerHTML = `
-      <button class="session-action" type="button" data-session-action="relogin" title="退出当前会话后重新进行 GitHub 授权">重新登录</button>
-      <button class="session-action session-action--danger" type="button" data-session-action="logout" title="结束当前本地登录会话">退出登录</button>`;
+    elements.sessionActions.innerHTML =
+      `<button class="session-action session-action--quiet" type="button" data-session-action="relogin" title="退出当前实例并重新登录">重新登录</button>` +
+      `<button class="session-action session-action--danger" type="button" data-session-action="logout" title="结束当前本地登录会话">退出登录</button>`;
   }
 
   function setSessionError(message) {
@@ -66,15 +66,38 @@
     small.classList.add("session-error");
   }
 
+  function renderGithubAvatar(avatar, user, fallback) {
+    if (!avatar) return;
+    const login = typeof user?.github_login === "string" ? user.github_login.trim() : "";
+    avatar.replaceChildren();
+    if (!login) {
+      avatar.textContent = fallback;
+      return;
+    }
+    const image = document.createElement("img");
+    image.alt = "";
+    image.decoding = "async";
+    image.referrerPolicy = "no-referrer";
+    image.addEventListener("error", () => {
+      avatar.textContent = fallback;
+    }, { once: true });
+    image.src = `https://github.com/${encodeURIComponent(login)}.png?size=80`;
+    avatar.appendChild(image);
+  }
+
   function setSessionChip({ authenticated, user, available }) {
     if (!elements.sessionStatus) return;
     const avatar = elements.sessionStatus.querySelector(".avatar-mono");
     const who = elements.sessionStatus.querySelector(".who");
     setSessionActions({ authenticated, available });
     if (!available) {
-      if (avatar) avatar.textContent = "!";
+      if (avatar) {
+        avatar.replaceChildren();
+        avatar.textContent = "!";
+      }
       if (who) who.innerHTML = "登录服务未配置<small>当前仅能浏览公共候选</small>";
       if (elements.sessionPill) {
+        elements.sessionPill.hidden = false;
         elements.sessionPill.textContent = "demo";
         elements.sessionPill.className = "pill pill--warn";
       }
@@ -82,17 +105,21 @@
     }
     if (authenticated) {
       const name = user?.display_name || user?.github_login || "已登录用户";
-      if (avatar) avatar.textContent = String(name).slice(0, 1).toUpperCase();
-      if (who) who.innerHTML = `${ui.escapeHtml(name)}<small>会话已建立</small>`;
+      renderGithubAvatar(avatar, user, String(name).slice(0, 1).toUpperCase());
+      if (who) who.textContent = name;
       if (elements.sessionPill) {
-        elements.sessionPill.textContent = "已登录";
-        elements.sessionPill.className = "pill pill--ok";
+        elements.sessionPill.hidden = true;
+        elements.sessionPill.textContent = "";
       }
       return;
     }
-    if (avatar) avatar.textContent = "访";
+    if (avatar) {
+      avatar.replaceChildren();
+      avatar.textContent = "访";
+    }
     if (who) who.innerHTML = "未登录<small>可浏览公共候选</small>";
     if (elements.sessionPill) {
+      elements.sessionPill.hidden = false;
       elements.sessionPill.textContent = "public";
       elements.sessionPill.className = "pill pill--neutral";
     }
@@ -168,6 +195,11 @@
     if (elements.message) elements.message.hidden = true;
   }
 
+  function setRunContext(markup = "") {
+    if (elements.runContext) elements.runContext.innerHTML = markup;
+    elements.workbench?.classList?.toggle("has-context", Boolean(markup.trim()));
+  }
+
   function renderPreviewPanel(code, title, body, actions) {
     elements.list.innerHTML = ui.panel(code, title, body, actions);
     elements.resultNote.textContent = title;
@@ -236,11 +268,22 @@
       return;
     }
     const context = state.batch?.feedback_context || "";
-    const runId = state.batch?.run_id || "";
-    const model = state.batch?.model || null;
+    const firstRanking = (state.batch?.rankings || [])[0] || {};
+    const model = state.batch?.model || (
+      firstRanking.scoring_engine
+        ? {
+            variant: firstRanking.scoring_engine,
+            version: firstRanking.model_version || "",
+          }
+        : null
+    );
     elements.list.innerHTML = items.map((item, index) => {
       const globalIndex = state.items.indexOf(item) + 1;
-      return ui.issueCard(item, globalIndex, { feedbackContext: context, runId, model });
+      return ui.issueCard(item, globalIndex, {
+        feedbackContext: context,
+        model,
+        runId: state.batch?.run_id || "",
+      });
     }).join("");
     if (elements.toggleReasons?.getAttribute("aria-pressed") === "true") {
       elements.list.querySelectorAll("details").forEach((details) => { details.open = true; });
@@ -297,7 +340,7 @@
     setSessionChip({ authenticated: false, user: null, available: session?.available !== false });
     renderSessionCard(null);
     if (elements.toolbar) elements.toolbar.hidden = true;
-    if (elements.runContext) elements.runContext.innerHTML = "";
+    setRunContext();
     elements.list.innerHTML = ui.panel(
       "401 authentication_required",
       "登录后生成个性化推荐",
@@ -316,7 +359,7 @@
     setSessionChip({ authenticated: true, user: session.user, available: true });
     renderSessionCard(null);
     if (elements.toolbar) elements.toolbar.hidden = true;
-    if (elements.runContext) elements.runContext.innerHTML = "";
+    setRunContext();
     elements.list.innerHTML = ui.panel(
       "profile: null",
       "画像未完成或不存在",
@@ -339,13 +382,21 @@
       state.items = batch.items || [];
       ui.storeBatch(batch);
       renderSessionCard(batch);
-      if (elements.runContext) elements.runContext.innerHTML = ui.runContext(batch);
+      setRunContext(ui.runContext(batch));
       if (elements.toolbar) elements.toolbar.hidden = false;
       if (elements.primaryAction) {
         elements.primaryAction.textContent = "调整个人画像";
         elements.primaryAction.href = "/profile";
       }
       hideMessage();
+      if ((batch.warnings || []).includes("model_features_preparing")) {
+        showMessage(
+          "model_features_preparing",
+          "个性化准备中",
+          "画像已保留；系统会在后台准备推荐特征，本批次结果暂不会被清空。"
+        );
+        setTimeout(() => loadAuthenticated(session), 5000);
+      }
       if (state.preview === "stale") {
         showMessage(
           "dataset: stale",
@@ -357,12 +408,6 @@
       updateCounts();
       renderList();
       loadProjects(batch.run_id);
-      if ((batch.warnings || []).includes("model_features_preparing")) {
-        showMessage("model_features_preparing", "个性化准备中", "当前先按你填写的画像推荐，系统正在自动准备个性化模型资料，无需重复填写。完成后将自动更新。");
-        if (state.preparationPolls++ < 24) setTimeout(() => loadAuthenticated(session), 5000);
-      } else {
-        state.preparationPolls = 0;
-      }
     } catch (error) {
       if (error.status === 401) {
         renderAnonymous(session);
@@ -372,13 +417,34 @@
         renderNoProfile(session);
         return;
       }
-      if (error.code === "model_features_required") {
-        renderPreviewPanel("model_features_required", "推荐资料需要准备", "你的画像已保留。首次使用或修改画像后，需要准备对应资料，完成后可重新获取推荐。", '<a class="btn btn--sm btn--ghost" href="/recommendations">重新获取</a>');
+      if (error.status === 404 && error.code === "profile_not_confirmed") {
+        renderSessionCard(null);
+        setRunContext();
+        if (elements.toolbar) elements.toolbar.hidden = true;
+        elements.list.innerHTML = ui.panel(
+          "404 profile_not_confirmed",
+          "画像还需要完成问卷确认",
+          "基础画像已保存，但 23 维增强画像尚未确认。请回到个人信息页完成问卷预览和确认，然后再获取推荐。",
+          `<a class="btn btn--sm btn--ghost" href="/profile">完成问卷确认</a><a class="link-ext" href="/status">查看系统状态</a>`
+        );
+        elements.resultNote.textContent = "画像未确认";
         loadPublicCandidates();
         return;
       }
       renderSessionCard(null);
+      setRunContext();
       if (elements.toolbar) elements.toolbar.hidden = true;
+      if (error.code === "model_features_required") {
+        elements.list.innerHTML = ui.panel(
+          "503 model_features_required",
+          "推荐资料需要准备",
+          "画像已保留。系统需要先生成该画像对应的推荐特征，完成后再返回个性化结果。",
+          `<a class="btn btn--sm btn--ghost" href="/status">查看系统状态</a><a class="link-ext" href="/recommendations">重新加载</a>`
+        );
+        elements.resultNote.textContent = "推荐资料准备中";
+        loadPublicCandidates();
+        return;
+      }
       elements.list.innerHTML = ui.panel(
         error.code || `http: ${error.status}`,
         "推荐暂时不可用",
@@ -393,6 +459,7 @@
   function renderAuthUnavailable(session) {
     setSessionChip({ authenticated: false, user: null, available: false });
     renderSessionCard(null);
+    setRunContext();
     if (elements.toolbar) elements.toolbar.hidden = true;
     elements.list.innerHTML = ui.panel(
       "503 service_not_ready",

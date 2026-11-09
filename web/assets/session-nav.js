@@ -21,8 +21,8 @@
   function setActions(authenticated) {
     if (!actions) return;
     actions.innerHTML = authenticated
-      ? `<button class="session-action" type="button" data-session-action="relogin" title="退出当前会话后重新进行 GitHub 授权">重新登录</button>
-         <button class="session-action session-action--danger" type="button" data-session-action="logout" title="结束当前本地登录会话">退出登录</button>`
+      ? `<button class="session-action session-action--quiet" type="button" data-session-action="relogin" title="退出当前实例并重新登录">重新登录</button>` +
+        `<button class="session-action session-action--danger" type="button" data-session-action="logout" title="结束当前本地登录会话">退出登录</button>`
       : `<a class="session-action session-action--primary" href="${loginUrl()}">登录</a>`;
   }
 
@@ -34,10 +34,33 @@
     who.appendChild(detail);
   }
 
+  function renderGithubAvatar(user, fallback) {
+    if (!avatar) return;
+    const login = typeof user?.github_login === "string" ? user.github_login.trim() : "";
+    avatar.replaceChildren();
+    if (!login) {
+      avatar.textContent = fallback;
+      return;
+    }
+    const image = document.createElement("img");
+    image.alt = "";
+    image.decoding = "async";
+    image.referrerPolicy = "no-referrer";
+    image.addEventListener("error", () => {
+      avatar.textContent = fallback;
+    }, { once: true });
+    image.src = `https://github.com/${encodeURIComponent(login)}.png?size=80`;
+    avatar.appendChild(image);
+  }
+
   function renderUnauthenticated() {
-    if (avatar) avatar.textContent = "访";
+    if (avatar) {
+      avatar.replaceChildren();
+      avatar.textContent = "访";
+    }
     if (who) who.innerHTML = "未登录<small>可浏览公共候选</small>";
     if (pill) {
+      pill.hidden = false;
       pill.textContent = "public";
       pill.className = "pill pill--neutral";
     }
@@ -46,25 +69,25 @@
 
   function renderAuthenticated(user) {
     const name = user?.display_name || user?.github_login || "已登录用户";
-    if (avatar) avatar.textContent = String(name).slice(0, 1).toUpperCase();
+    renderGithubAvatar(user, String(name).slice(0, 1).toUpperCase());
     if (who) {
-      who.innerHTML = "";
-      who.append(document.createTextNode(name));
-      const detail = document.createElement("small");
-      detail.textContent = "会话已建立";
-      who.appendChild(detail);
+      who.textContent = name;
     }
     if (pill) {
-      pill.textContent = "已登录";
-      pill.className = "pill pill--ok";
+      pill.hidden = true;
+      pill.textContent = "";
     }
     setActions(true);
   }
 
   function renderUnavailable(message) {
-    if (avatar) avatar.textContent = "!";
+    if (avatar) {
+      avatar.replaceChildren();
+      avatar.textContent = "!";
+    }
     if (who) who.innerHTML = "登录服务不可用<small>请检查服务状态</small>";
     if (pill) {
+      pill.hidden = false;
       pill.textContent = "503";
       pill.className = "pill pill--warn";
     }

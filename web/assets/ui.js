@@ -114,13 +114,14 @@
     return (reasons || []).map((reason) => {
       const points = Math.round(Number(reason.score_delta || 0) * 100);
       const label = reason.label || REASON_LABELS[reason.code] || reason.code || "推荐依据";
+      const pointsLabel = points === 0 ? "匹配依据" : `${points >= 0 ? "+" : ""}${points} 点`;
       return `<li class="reason">
         <div class="r-head">
           <span class="r-label">${escapeHtml(label)}</span>
           <span class="r-ver">${escapeHtml(reason.feature_version || "")}</span>
         </div>
         <p class="r-text">${escapeHtml(reason.evidence || "无额外证据")}</p>
-        <code class="r-ev">${points === 0 ? "匹配依据" : `${points >= 0 ? "+" : ""}${points} 点`}</code>
+        <code class="r-ev">${pointsLabel}</code>
       </li>`;
     }).join("");
   }
@@ -160,7 +161,9 @@
       model_features_preparing: "系统正在自动准备推荐资料。",
       coder_no_public_code_history: "暂未取得可用公开代码历史，使用新用户推荐模式。",
     };
-    return (warnings || []).map(value => `<p class="r-text">${escapeHtml(labels[value] || value)}</p>`).join("");
+    return (warnings || []).map(value =>
+      `<p class="r-text">${escapeHtml(labels[value] || value)}</p>`
+    ).join("");
   }
 
   function issueCard(item, index, options) {
@@ -277,11 +280,17 @@
     const profile = batch.profile || {};
     const runId = batch.run_id || "";
     const query = runId ? `?run_id=${encodeURIComponent(runId)}` : "";
-    return `<div class="run-context" id="run-context">
+    const count = batch.count ?? (batch.items || []).length;
+    return `<div class="run-context">
       <div class="run-context-main">
-        <p class="eyebrow"><span class="mono">本次运行</span></p>
-        <p><b>${escapeHtml(profile.display_name || profile.profile_key || "当前画像")}</b> · ${escapeHtml(trackLabel(profile.service_track || batch.service_track))} · 画像 ${escapeHtml(profile.profile_version || "未标注版本")} · ${batch.count ?? (batch.items || []).length} 条</p>
-        <p class="note mono">${escapeHtml(runId || "即时结果")} · ${escapeHtml(batch.match_version || "")} · 模型与数据版本见推荐说明</p>
+        <p class="run-context-label">当前画像</p>
+        <p class="run-context-name">${escapeHtml(profile.display_name || profile.profile_key || "当前画像")}</p>
+        <dl class="run-context-facts">
+          <div><dt>推荐轨道</dt><dd>${escapeHtml(trackLabel(profile.service_track || batch.service_track))}</dd></div>
+          <div><dt>画像版本</dt><dd class="mono">${escapeHtml(profile.profile_version || "未标注")}</dd></div>
+          <div><dt>本次推荐</dt><dd>${count} 条</dd></div>
+        </dl>
+        <p class="run-context-note mono" title="${escapeHtml(runId || "即时结果")}">${escapeHtml(runId ? runId.slice(0, 12) : "即时结果")}${runId ? "…" : ""} · ${escapeHtml(batch.match_version || "匹配版本未登记")}</p>
       </div>
       <div class="run-context-actions">
         ${runId ? `<a class="btn btn--sm btn--ghost" href="/recommendation-run${query}">推荐说明</a>` : ""}

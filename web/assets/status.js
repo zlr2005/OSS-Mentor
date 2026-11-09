@@ -53,6 +53,14 @@
     return Number.isFinite(number) ? `${(number * 100).toFixed(1)}%` : "—";
   }
 
+  function formatTimestamp(value) {
+    if (!value) return "未记录";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const pad = (part) => String(part).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
   function renderStatus(status) {
     elements.statusGrid.innerHTML = [
       kpi("数据库", status.database_ready ? "ready" : "not ready", status.database_error || ""),
@@ -60,7 +68,7 @@
       kpi("候选任务", status.candidate_count),
       kpi("可推荐任务", status.eligible_count),
       kpi("新人友好", status.newcomer_count),
-      kpi("最后同步", status.last_sync_at || "未记录"),
+      kpi("最后同步", formatTimestamp(status.last_sync_at)),
     ].join("");
     elements.qualityGrid.innerHTML = [
       kpi("任务类型识别率", percent(status.type_identification_rate), `${status.type_identified_count ?? "—"} / ${status.eligible_count ?? "—"}`),

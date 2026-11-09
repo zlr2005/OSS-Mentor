@@ -7,17 +7,11 @@
 <meta name="description" content="OSS-Mentor 系统状态：数据库、候选库存、数据质量、反馈统计、模型版本与失败状态。">
 <link rel="stylesheet" href="/assets/app.css">
 <script src="/assets/ui.js" defer></script>
+<script src="/assets/session-nav.js" defer></script>
 <script src="/assets/status.js" defer></script>
 </head>
 <body data-page="status">
 <a class="skip" href="#main">跳到主要内容</a>
-
-<div class="demo-strip">
-  <div class="wrap">
-    <span class="dot" aria-hidden="true"></span>
-    <p><strong>系统状态。</strong>库存、数据质量和反馈来自本地服务；模型未接入 CODER 时会明确显示规则兼容模式。</p>
-  </div>
-</div>
 
 <header class="topbar">
   <div class="wrap topbar-inner">
@@ -28,10 +22,11 @@
       <a href="/status" aria-current="page">系统状态</a>
       <a href="/profile">个人信息</a>
     </nav>
-    <div class="session" role="status" aria-live="polite">
-      <span class="avatar-mono" aria-hidden="true">S</span>
-      <span class="who">系统状态<small>本地服务</small></span>
-      <span class="pill pill--neutral" id="status-pill">读取中</span>
+    <div class="session" data-session-nav id="session-status" aria-label="当前账户与会话操作">
+      <span class="avatar-mono" aria-hidden="true">?</span>
+      <span class="who" role="status" aria-live="polite">正在读取会话<small>本地服务</small></span>
+      <span class="pill pill--neutral">…</span>
+      <div class="session-actions" role="group" aria-label="账户操作"></div>
     </div>
   </div>
 </header>
@@ -39,10 +34,12 @@
 <main id="main" tabindex="-1">
   <section class="page-head band" aria-labelledby="status-title">
     <div class="wrap">
-      <h1 id="status-title">本次运行的元数据与异常状态</h1>
+      <h1 id="status-title">系统状态</h1>
       <p class="lead">这一页说明推荐来自哪里：数据库、候选库存、数据质量、反馈统计、模型版本与已知失败状态。它不展示训练参数或内部权重。</p>
       <p class="head-meta">
         <span class="mono" id="status-updated">正在读取…</span>
+        <span aria-hidden="true">·</span>
+        <span class="pill pill--neutral" id="status-pill">读取中</span>
         <span aria-hidden="true">·</span>
         <a href="/recommendation-run">查看推荐说明</a>
       </p>
@@ -127,13 +124,5 @@
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <div class="foot-bottom" style="margin-top:0;border-top:0;padding-top:0">
-      <span>OSS-Mentor · 系统状态</span>
-      <span>fixture / rule_legacy / CODER 标识分开显示</span>
-    </div>
-  </div>
-</footer>
 </body>
 </html>
