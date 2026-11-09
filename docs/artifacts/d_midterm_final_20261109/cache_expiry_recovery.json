@@ -1,0 +1,78 @@
+{
+  "status": "passed",
+  "context_key": "bcbe441091cabe3bb9cef79f263b1938488af29dd82f24a8f1c2eb410e451de5",
+  "expired_generation": "17ce3fe58f664c7b954160f33e101600",
+  "expired_at": "2026-11-09T13:22:13.423907+00:00",
+  "preparing": {
+    "requested_at": "2026-11-09T13:22:19.284006+00:00",
+    "http_status": 200,
+    "items": 100,
+    "rankings": 100,
+    "scoring_engines": [
+      "profile_bootstrap_rules"
+    ],
+    "warnings": [
+      "model_features_preparing",
+      "profile_bootstrap_recommendations"
+    ],
+    "explicit_preparing_state": true,
+    "silent_legacy_fallback": false
+  },
+  "evidence_refresh": {
+    "as_of": "2026-11-09T13:33:36.762446+00:00",
+    "login": "ding89852",
+    "github_numeric_id": 300752611,
+    "documents": 3,
+    "retained_authored_paths": 67,
+    "history_complete": false,
+    "collection_method": "read-only gh api public-evidence refresh"
+  },
+  "worker": {
+    "state": "ready",
+    "generation": "dfb0c5cd5a6040528f1d43660cd1f3da",
+    "completed_at": "2026-11-09T13:39:41.659345+00:00",
+    "candidates": 501,
+    "context_metadata_sha256": "7f10f560516de4ad1eef9e44fe152f6cebf6426483c9750d093a90757c9fa26b",
+    "features_sha256": "bee411264e08b912e5f9fc800212e962a5a9a5aa590872dd0ec623c9a31b621b",
+    "evidence_manifest_sha256": "223dee1c9bed52764f3b5d873889742606bc72da112e1f0193287ed3d358c86d",
+    "as_of": "2026-11-09T13:34:02.822040+00:00",
+    "expires_at": "2026-11-10T13:33:36.762446+00:00",
+    "model_version": "coder-gated-marginal_positive-s20261102",
+    "profile_mode": "prepared_profile_gated",
+    "coverage_state": "gated_prepared_context",
+    "cold_start": false,
+    "history_complete": false
+  },
+  "read_back": {
+    "scores": 501,
+    "unique_task_ids": 501,
+    "model_version": "coder-gated-marginal_positive-s20261102",
+    "profile_mode": "prepared_profile_gated",
+    "coverage_states": [
+      "gated_prepared_context"
+    ],
+    "warnings": [
+      "gated_scores_are_not_success_probabilities"
+    ]
+  },
+  "recovered": {
+    "requested_at": "2026-11-09T13:39:46.979235+00:00",
+    "http_status": 200,
+    "items": 100,
+    "rankings": 100,
+    "scoring_engines": [
+      "coder_gated"
+    ],
+    "profile_modes": [
+      "prepared_profile_gated"
+    ],
+    "coverage_states": [
+      "gated_prepared_context"
+    ],
+    "warnings": [
+      "gated_scores_are_not_success_probabilities",
+      "rule_reasons_are_context_only"
+    ]
+  },
+  "candidate_count_note": "The expiry-recovery request used 501 candidates because the separate preverified pytest candidate's 24-hour inventory window expired earlier the same day. The 502-candidate summary applies to the original online-refresh acceptance window."
+}

@@ -3,6 +3,18 @@
   "target_strict_available": 500,
   "strict_request_available": 502,
   "cache_compatible_available": 502,
+  "reverified_available_count": 501,
+  "preexisting_valid_not_rechecked_count": 1,
+  "preexisting_valid_not_rechecked_candidates": [
+    {
+      "task_candidate_id": 7,
+      "repository": "pytest-dev/pytest",
+      "issue_number": 10605,
+      "github_verified_at": "2026-11-08T12:56:44.766505+00:00",
+      "verification_expires_at": "2026-11-09T12:56:44.766505+00:00",
+      "reason": "Still inside the strict 24-hour verification window when this refresh started; it was not part of the 600 candidates rechecked in this GraphQL run."
+    }
+  ],
   "uncached_eligible_count": 0,
   "changed_content_eligible_count": 0,
   "availability_counts": {

@@ -49,6 +49,28 @@
 - GraphQL batch：30
 - 错误：0
 
+502 条由两部分组成：
+
+- 本轮 GraphQL 在线复核为 `available`：501 条；
+- 开始本轮刷新前仍在严格 24 小时有效期内的既有验证：1 条，
+  `pytest-dev/pytest#10605`（task candidate 7）。该候选的 `github_verified_at` 为
+  `2026-11-08T12:56:44.766505+00:00`，有效期到
+  `2026-11-09T12:56:44.766505+00:00`。本轮刷新开始于
+  `2026-11-09T07:31:36.943680+00:00`，因此它当时仍有效，未被重复 GraphQL 复核，但被严格
+  库存逻辑纳入。
+
+task type 是多标签统计，一个候选可以同时具有多个任务类型。502 条候选共产生 562 个
+task type 赋值，因此各类型数量之和大于候选数。
+
+解释覆盖和画像状态汇总：
+
+- explanation complete：502；
+- explanation missing：0；
+- `history_incomplete_count`：502；
+- `cold_start_count`：0；
+- cache profile mode：`prepared_profile_gated`；
+- `history_complete=false` 表示 bounded public evidence sample 不完整，不表示 cold start。
+
 达到中期清单“至少 500 条可推荐任务”的目标。该结果对应一个真实画像的可推荐池，不是跨全部
 6364 条候选的全局在线复核。
 
@@ -100,6 +122,24 @@ GitHub OAuth code。
 - recommendations：503 `model_features_required`
 - 没有 bootstrap 或 legacy 静默回退
 
+### 3.1 Cache 过期、准备态与新 generation 恢复
+
+正式 cache 在 `2026-11-09T13:22:13.423907+00:00` 到期后，执行了完整恢复链路：
+
+1. 过期后请求 `/api/v1/me/recommendations?limit=100`，平台进入显式准备态；
+2. preparing 响应为 100 items / 100 rankings，全部
+   `scoring_engine=profile_bootstrap_rules`，带
+   `model_features_preparing` 和 `profile_bootstrap_recommendations` warning；
+3. worker 使用刷新后的 bounded public evidence 编码，发布新 generation
+   `dfb0c5cd5a6040528f1d43660cd1f3da`，状态为 `ready`，覆盖 501 条当次请求候选；
+4. 新 generation 发布后再次请求，恢复为 100/100 `coder_gated`，全部
+   `profile_mode=prepared_profile_gated`、`coverage_state=gated_prepared_context`；
+5. 没有任何一步把 bootstrap 或 legacy 结果标成 `coder_gated`。
+
+恢复请求只有 501 条，是因为前一条既有验证 `pytest-dev/pytest#10605` 的 24 小时有效期在
+当天较早时已经结束；这不改变原始在线验收窗口中的 502 条汇总。详细记录见
+`docs/artifacts/d_midterm_final_20261109/cache_expiry_recovery.json`。
+
 ## 4. 容器与 PostgreSQL 验证
 
 本机已安装并验证 Docker：
@@ -137,7 +177,15 @@ PostgreSQL 使用隔离 `postgres:16-alpine` 容器启动，实际执行：
 `download-r2.pytorch.org` 持续超时；GitHub Actions 的 gated worker Docker build 已通过。
 这被记录为本地网络限制，不表述为 Dockerfile 代码失败。
 
-## 5. 复现命令
+## 5. 验证
+
+- `tests/midterm_d`：30/30；
+- 新增验收产物一致性测试：4/4；
+- inventory/migration/API/推荐定向回归：66/66；
+- Node：23/23；
+- `compileall`、JSON 解析、`git diff --check`：通过。
+
+## 6. 复现命令
 
 在线复核：
 
@@ -160,9 +208,10 @@ python -m oss_mentor serve-api `
   --refresh-interval-seconds 0
 ```
 
-## 6. 保留限制
+## 7. 保留限制
 
-- 当前 cache 仍是 live cache，`expires_at=2026-11-09T13:22:13.423907+00:00`，过期后必须重新生成；
+- 原始正式 cache 的 `expires_at=2026-11-09T13:22:13.423907+00:00`；过期恢复验收已发布新
+  generation，后续在线演示仍需按实际 `expires_at` 重新生成；
 - gated scores 是排序分数，不是成功概率；
 - 1,132/1,195 条模型输入使用零协同/结构特征加冻结文本特征；
 - `history_complete=false`，表示历史证据不完整，不是 cold start；

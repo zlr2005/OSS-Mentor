@@ -13,6 +13,8 @@
     "documentation": 7,
     "refactor": 3
   },
+  "task_type_counts_are_multilabel": true,
+  "task_type_assignment_count": 562,
   "newcomer_labeled": 2,
   "difficulty": {
     "1": 472,
