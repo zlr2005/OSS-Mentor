@@ -5,7 +5,6 @@ const state = {
   selected: null,
   mode: "preset",
   feedbackContext: null,
-  feedbackRunId: null,
   feedbackClientId: null,
   availability: null,
   availabilityRequest: 0,
@@ -66,9 +65,7 @@ async function getJson(url, options = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-      const error = new Error(payload.error?.message || `请求失败（${response.status}）`);
-      error.code = payload.error?.code;
-      throw error;
+    throw new Error(payload.error?.message || `请求失败（${response.status}）`);
   }
   return payload;
 }
@@ -154,21 +151,13 @@ function renderSkills(gaps) {
       <div class="skill-item ${hasGap ? "gap" : ""}">
         <span>${escapeHtml(label)}</span>
         <span class="skill-levels">${item.developer_level} → ${item.required_level}
-          ${hasGap ? `<span class="gap-badge">差 ${item.gap}</span>` : "✓"}
+          ${hasGap ? `<span class="gap-badge">差 ${item.gap}</span>` : "已覆盖"}
         </span>
       </div>`;
   }).join("");
 }
 
 function renderRecommendation(item, index) {
-  const warningLabels = {
-    profile_bootstrap_recommendations: "当前根据填写的画像推荐，个性化模型正在准备。",
-    model_features_preparing: "系统正在自动准备推荐资料。",
-    coder_no_public_code_history: "暂未取得可用公开代码历史，使用新用户推荐模式。",
-    inventory_availability_assumed: "本次试用未重新核验任务状态。",
-    rule_reasons_are_context_only: "匹配依据不是模型分数的加分明细。",
-    gated_scores_are_not_success_probabilities: "排序分不代表完成任务的概率。",
-  };
   const reasonText = item.reasons.map(translateReason).join("；");
   const feedbackStatus = item.feedback_state
     ? `当前状态：${feedbackLabels[item.feedback_state]}`
@@ -186,9 +175,7 @@ function renderRecommendation(item, index) {
           <span class="tag">${item.track === "newcomer" ? "首次贡献" : "进阶成长"}</span>
           <span class="tag">技能覆盖 ${Math.round(item.skill_coverage * 100)}%</span>
           <span class="tag">最大差距 ${item.maximum_skill_gap} 级</span>
-          ${item.difficulty ? `<span class="tag">估计代码难度 ${escapeHtml(item.difficulty.code)}/3 · 环境难度 ${escapeHtml(item.difficulty.setup)}/3</span>` : ""}
         </div>
-        ${(item.warnings || []).length ? `<p class="feedback-status">${(item.warnings || []).map(value => escapeHtml(warningLabels[value] || value)).join("；")}</p>` : ""}
         <div class="reason-box">
           <strong>为什么推荐</strong>
           <p>${reasonText}</p>
@@ -433,7 +420,6 @@ async function loadRecommendations({ scrollToResults = true } = {}) {
   try {
     const payload = await request;
     state.feedbackContext = payload.feedback_context;
-    state.feedbackRunId = payload.run_id || null;
     elements.count.textContent = `找到 ${payload.count} 个通过门槛的任务`;
     if (!payload.items.length) {
       elements.list.innerHTML = "";
@@ -447,11 +433,7 @@ async function loadRecommendations({ scrollToResults = true } = {}) {
   } catch (error) {
     elements.list.innerHTML = "";
     elements.count.textContent = "推荐加载失败";
-    if (error.code === "model_features_required") {
-      showMessage("推荐资料需要准备", "首次使用或修改画像后，需要准备对应的推荐资料，完成后可重新获取推荐。", "empty");
-    } else {
-      showMessage("无法生成推荐", error.message, "error");
-    }
+    showMessage("无法生成推荐", error.message, "error");
   } finally {
     elements.button.disabled = state.mode === "custom"
       ? !state.availability?.current_selection_count
@@ -471,16 +453,14 @@ async function saveFeedback(button) {
   buttons.forEach(item => { item.disabled = true; });
   status.textContent = "正在保存…";
   try {
-    const feedbackBody = {
-      task_candidate_id: Number(button.dataset.taskCandidateId),
-      feedback_context: state.feedbackContext,
-      feedback_state: button.dataset.feedbackState,
-    };
-    if (state.feedbackRunId) feedbackBody.run_id = state.feedbackRunId;
     const payload = await getJson("/api/v1/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(feedbackBody),
+      body: JSON.stringify({
+        task_candidate_id: Number(button.dataset.taskCandidateId),
+        feedback_context: state.feedbackContext,
+        feedback_state: button.dataset.feedbackState,
+      }),
     });
     const savedState = payload.feedback.feedback_state;
     buttons.forEach(item => {

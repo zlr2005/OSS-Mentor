@@ -114,13 +114,14 @@
     return (reasons || []).map((reason) => {
       const points = Math.round(Number(reason.score_delta || 0) * 100);
       const label = reason.label || REASON_LABELS[reason.code] || reason.code || "推荐依据";
+      const pointsLabel = points === 0 ? "匹配依据" : `${points >= 0 ? "+" : ""}${points} 点`;
       return `<li class="reason">
         <div class="r-head">
           <span class="r-label">${escapeHtml(label)}</span>
           <span class="r-ver">${escapeHtml(reason.feature_version || "")}</span>
         </div>
         <p class="r-text">${escapeHtml(reason.evidence || "无额外证据")}</p>
-        <code class="r-ev">${points === 0 ? "匹配依据" : `${points >= 0 ? "+" : ""}${points} 点`}</code>
+        <code class="r-ev">${pointsLabel}</code>
       </li>`;
     }).join("");
   }
@@ -144,29 +145,15 @@
     return `${model.variant} · ${model.version}`;
   }
 
-  function detailUrl(item, feedbackContext, runId) {
+  function detailUrl(item, feedbackContext) {
     const query = new URLSearchParams({ task_candidate_id: String(item.task_candidate_id) });
     if (feedbackContext) query.set("feedback_context", feedbackContext);
-    if (runId) query.set("run_id", runId);
     return `/task?${query.toString()}`;
-  }
-
-  function warningList(warnings) {
-    const labels = {
-      rule_reasons_are_context_only: "匹配依据不是模型分数的加分明细。",
-      gated_scores_are_not_success_probabilities: "排序分不代表完成任务的概率。",
-      inventory_availability_assumed: "本次试用未重新核验任务状态。",
-      profile_bootstrap_recommendations: "当前根据填写的画像推荐，个性化模型正在准备。",
-      model_features_preparing: "系统正在自动准备推荐资料。",
-      coder_no_public_code_history: "暂未取得可用公开代码历史，使用新用户推荐模式。",
-    };
-    return (warnings || []).map(value => `<p class="r-text">${escapeHtml(labels[value] || value)}</p>`).join("");
   }
 
   function issueCard(item, index, options) {
     const availability = availabilityInfo(item);
     const feedbackContext = options.feedbackContext || "";
-    const runId = options.runId || "";
     const feedbackState = item.feedback_state || "";
     const reasons = item.reasons || [];
     const first = index === 1;
@@ -176,7 +163,7 @@
          <button class="btn btn--sm btn--ghost" type="button" data-feedback="not_suitable" ${feedbackState ? "disabled" : ""}>${feedbackState === "not_suitable" ? "已记录不适合" : "不适合我"}</button>
          <span class="feedback-status" role="status"></span>`
       : "";
-    return `<article class="issue ${first ? "is-top" : ""}" data-candidate-id="${item.task_candidate_id}" data-track="${escapeHtml(item.service_track || "")}" data-feedback-context="${escapeHtml(feedbackContext)}" data-run-id="${escapeHtml(runId)}">
+    return `<article class="issue ${first ? "is-top" : ""}" data-candidate-id="${item.task_candidate_id}" data-track="${escapeHtml(item.service_track || "")}" data-feedback-context="${escapeHtml(feedbackContext)}">
       <div class="ic-body">
         <header class="ic-top">
           <span class="repo">
@@ -188,7 +175,7 @@
           ${trackPill(item.service_track)}
           <span class="pill ${availability.className}" title="${escapeHtml(availability.title)}">${escapeHtml(availability.text)}</span>
         </header>
-        <h3 class="ic-title"><a href="${escapeHtml(detailUrl(item, feedbackContext, runId))}">${escapeHtml(item.title)}</a></h3>
+        <h3 class="ic-title"><a href="${escapeHtml(detailUrl(item, feedbackContext))}">${escapeHtml(item.title)}</a></h3>
         <div class="ic-meta">
           <span class="meta-item mono">代码难度 ${item.difficulty?.code ?? "—"} · 环境 ${item.difficulty?.setup ?? "—"}</span>
           <span class="dot-sep" aria-hidden="true"></span>
@@ -207,14 +194,13 @@
       <details class="ic-reasons reasons">
         <summary><span class="chev" aria-hidden="true"></span>推荐依据 <span class="count mono">${reasons.length} 条</span></summary>
         <ul class="reason-list">${reasonList(reasons)}</ul>
-        ${warningList(item.warnings)}
       </details>
       <div class="ic-skills">${skillRows(item)}</div>
       <footer class="ic-foot">
         <span class="model-badge" title="模型与版本来自服务端">${escapeHtml(modelLabel(options.model))}</span>
         <div class="ic-actions">
           ${feedbackActions}
-          <a class="btn btn--sm btn--ghost" href="${escapeHtml(detailUrl(item, feedbackContext, runId))}">查看详情</a>
+          <a class="btn btn--sm btn--ghost" href="${escapeHtml(detailUrl(item, feedbackContext))}">查看详情</a>
           <a class="link-ext" href="${escapeHtml(safeGithubUrl(item.html_url))}" target="_blank" rel="noopener noreferrer">GitHub 原文</a>
         </div>
       </footer>
@@ -277,11 +263,17 @@
     const profile = batch.profile || {};
     const runId = batch.run_id || "";
     const query = runId ? `?run_id=${encodeURIComponent(runId)}` : "";
-    return `<div class="run-context" id="run-context">
+    const count = batch.count ?? (batch.items || []).length;
+    return `<div class="run-context">
       <div class="run-context-main">
-        <p class="eyebrow"><span class="mono">本次运行</span></p>
-        <p><b>${escapeHtml(profile.display_name || profile.profile_key || "当前画像")}</b> · ${escapeHtml(trackLabel(profile.service_track || batch.service_track))} · 画像 ${escapeHtml(profile.profile_version || "未标注版本")} · ${batch.count ?? (batch.items || []).length} 条</p>
-        <p class="note mono">${escapeHtml(runId || "即时结果")} · ${escapeHtml(batch.match_version || "")} · 模型与数据版本见推荐说明</p>
+        <p class="run-context-label">当前画像</p>
+        <p class="run-context-name">${escapeHtml(profile.display_name || profile.profile_key || "当前画像")}</p>
+        <dl class="run-context-facts">
+          <div><dt>推荐轨道</dt><dd>${escapeHtml(trackLabel(profile.service_track || batch.service_track))}</dd></div>
+          <div><dt>画像版本</dt><dd class="mono">${escapeHtml(profile.profile_version || "未标注")}</dd></div>
+          <div><dt>本次推荐</dt><dd>${count} 条</dd></div>
+        </dl>
+        <p class="run-context-note mono" title="${escapeHtml(runId || "即时结果")}">${escapeHtml(runId ? runId.slice(0, 12) : "即时结果")}${runId ? "…" : ""} · ${escapeHtml(batch.match_version || "匹配版本未登记")}</p>
       </div>
       <div class="run-context-actions">
         ${runId ? `<a class="btn btn--sm btn--ghost" href="/recommendation-run${query}">推荐说明</a>` : ""}
@@ -367,23 +359,21 @@
     }
   }
 
-  async function submitFeedback(taskCandidateId, state, feedbackContext, runId, button, status) {
+  async function submitFeedback(taskCandidateId, state, feedbackContext, button, status) {
     if (!feedbackContext) return;
     const original = button.textContent;
     button.disabled = true;
     button.textContent = "保存中…";
     if (status) status.textContent = "";
     try {
-      const body = {
-        task_candidate_id: Number(taskCandidateId),
-        feedback_context: feedbackContext,
-        feedback_state: state,
-      };
-      if (runId) body.run_id = runId;
       await requestJson("/api/v1/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          task_candidate_id: Number(taskCandidateId),
+          feedback_context: feedbackContext,
+          feedback_state: state,
+        }),
       });
       button.textContent = state === "not_suitable" ? "已记录不适合" : "已记录";
       if (status) status.textContent = "反馈已保存";
@@ -401,9 +391,8 @@
     if (!card) return;
     const batch = readBatch();
     const context = card.dataset.feedbackContext || batch?.feedback_context || "";
-    const runId = card.dataset.runId || batch?.run_id || "";
     const status = card.querySelector(".feedback-status");
-    submitFeedback(card.dataset.candidateId, button.dataset.feedback, context, runId, button, status);
+    submitFeedback(card.dataset.candidateId, button.dataset.feedback, context, button, status);
   });
 
   window.OMUI = {

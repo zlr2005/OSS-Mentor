@@ -12,13 +12,6 @@
 <body data-page="recommendations">
 <a class="skip" href="#main">跳到主要内容</a>
 
-<div class="demo-strip">
-  <div class="wrap">
-    <span class="dot" aria-hidden="true"></span>
-    <p><strong>MVP 预览环境。</strong>推荐来自本地候选池；模型状态与数据版本在推荐说明和系统状态页可追溯。</p>
-  </div>
-</div>
-
 <header class="topbar">
   <div class="wrap topbar-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">OM</span>OSS-Mentor</a>
@@ -40,8 +33,14 @@
 </header>
 
 <main id="main" tabindex="-1">
-  <section class="page-head band" aria-label="推荐概览">
+  <section class="page-head band" aria-labelledby="recommendations-title">
     <div class="wrap">
+      <div class="page-title-row">
+        <div class="page-title-copy">
+          <h1 id="recommendations-title">开源任务推荐</h1>
+          <p class="lead">按当前画像筛选仍可领取的任务，并查看匹配依据、技能差距与可用性。</p>
+        </div>
+      </div>
       <p class="head-meta">
         <span class="mono">推荐数量 <span id="result-count">—</span></span>
         <span aria-hidden="true">·</span>
@@ -54,30 +53,33 @@
     <div class="wrap">
       <div class="sec-head">
         <div class="sec-copy">
-          <p class="eyebrow"><span class="mono">01</span> 推荐列表</p>
           <h2 id="list-title">本次运行的推荐结果</h2>
         </div>
         <p class="note" id="list-note" role="status">正在读取推荐…</p>
       </div>
 
-      <div id="run-context"></div>
-      <div class="banner" id="recommendation-message" hidden role="status"></div>
+      <div class="recommendation-workbench" id="recommendation-workbench">
+        <aside class="recommendation-ledger" id="run-context" aria-label="本次推荐上下文"></aside>
+        <div class="recommendation-results">
+          <div class="banner" id="recommendation-message" hidden role="status"></div>
 
-      <div class="toolbar" id="list-toolbar" hidden>
-        <div class="seg" role="group" aria-label="按推荐轨道筛选">
-          <button class="seg-btn" type="button" data-track="all" aria-pressed="true">全部 <span class="mono" id="track-count-all">0</span></button>
-          <button class="seg-btn" type="button" data-track="newcomer" aria-pressed="false">新手 <span class="mono" id="track-count-newcomer">0</span></button>
-          <button class="seg-btn" type="button" data-track="growth" aria-pressed="false">进阶 <span class="mono" id="track-count-growth">0</span></button>
+          <div class="toolbar" id="list-toolbar" hidden>
+            <div class="seg" role="group" aria-label="按推荐轨道筛选">
+              <button class="seg-btn" type="button" data-track="all" aria-pressed="true">全部 <span class="mono" id="track-count-all">0</span></button>
+              <button class="seg-btn" type="button" data-track="newcomer" aria-pressed="false">新手 <span class="mono" id="track-count-newcomer">0</span></button>
+              <button class="seg-btn" type="button" data-track="growth" aria-pressed="false">进阶 <span class="mono" id="track-count-growth">0</span></button>
+            </div>
+            <label class="search-field">
+              <span class="sr-only">搜索仓库或标题</span>
+              <input type="search" id="recommendation-search" placeholder="搜索仓库或标题" autocomplete="off">
+            </label>
+            <div class="spacer"></div>
+            <button class="btn btn--sm btn--quiet" type="button" id="toggle-reasons" aria-pressed="false">展开全部推荐依据</button>
+          </div>
+
+          <div class="issue-list" id="issue-list" aria-live="polite"></div>
         </div>
-        <label class="search-field">
-          <span class="sr-only">搜索仓库或标题</span>
-          <input type="search" id="recommendation-search" placeholder="搜索仓库或标题" autocomplete="off">
-        </label>
-        <div class="spacer"></div>
-        <button class="btn btn--sm btn--quiet" type="button" id="toggle-reasons" aria-pressed="false">展开全部推荐依据</button>
       </div>
-
-      <div class="issue-list" id="issue-list" aria-live="polite"></div>
     </div>
   </section>
 
@@ -85,7 +87,6 @@
     <div class="wrap">
       <div class="sec-head">
         <div class="sec-copy">
-          <p class="eyebrow"><span class="mono">02</span> 公共候选</p>
           <h2 id="pub-title">未登录也能浏览的公开候选</h2>
         </div>
       </div>
@@ -101,7 +102,6 @@
     <div class="wrap">
       <div class="sec-head">
         <div class="sec-copy">
-          <p class="eyebrow"><span class="mono">03</span> 项目机会</p>
           <h2 id="proj-title">进阶轨道的项目参与建议</h2>
           <p class="lead">项目参与建议不承诺加入协作者，也不代表维护者已经邀请你参与。</p>
         </div>
@@ -112,13 +112,5 @@
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <div class="foot-bottom" style="margin-top:0;border-top:0;padding-top:0">
-      <span>OSS-Mentor · 全部推荐</span>
-      <span>反馈只作用于当前画像 · 不自动领取 Issue</span>
-    </div>
-  </div>
-</footer>
 </body>
 </html>
