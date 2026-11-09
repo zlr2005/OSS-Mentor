@@ -100,17 +100,42 @@ GitHub OAuth code。
 - recommendations：503 `model_features_required`
 - 没有 bootstrap 或 legacy 静默回退
 
-## 4. 部署边界
+## 4. 容器与 PostgreSQL 验证
 
-- GitHub Actions 的 Docker build、gated runtime smoke、SQLite/PostgreSQL migration、
-  Node、Web smoke 和 secret scan 已通过；
-- 本机没有 Docker CLI，因此本轮不能在当前机器执行真实容器启动；
-- 本机 PostgreSQL 14 客户端和服务监听存在，但没有可用的项目运行凭据，不能声明生产
-  PostgreSQL 运行时已验证；
-- 已完成的替代验证是：最新 main 独立进程启动、真实 cache 加载、严格 HTTP、重启恢复和缺缓存
-  fail-closed。
+本机已安装并验证 Docker：
 
-PostgreSQL 生产运行和容器部署仍是发布环境门禁，不影响本轮 SQLite 中期演示闭环。
+- Docker Engine 29.1.3；
+- Docker Compose 2.40.3；
+- Docker Buildx 0.30.1；
+- 主服务镜像 `oss-mentor:docker-env-check` 构建成功，大小 327MB；
+- `docker compose -f compose.gated.yaml config --quiet` 通过；
+- 容器内 CLI `python -m oss_mentor --help` 通过。
+
+主服务容器使用隔离 SQLite、正式 v2 bundle/cache 和最新 main 启动，未启用 assumed inventory
+或 legacy ranking。容器 HTTP 验收：
+
+- `/health`、`/`、`/profile`、`/recommendations`、`/status`：200；
+- 登录推荐 `limit=100`：200；
+- 100/100 rankings 为 `coder_gated`；
+- 未登录：401；
+- `docker restart` 后再次返回 100/100 `coder_gated`，cache 正常重新加载。
+
+PostgreSQL 使用隔离 `postgres:16-alpine` 容器启动，实际执行：
+
+- `db/postgres/001_initial.sql`
+- `db/postgres/002_profile_identity.sql`
+- `scripts/ci_postgres_profile_check.sql`
+- `db/postgres/003_recommendation_runs.sql`
+- `scripts/ci_postgres_recommendation_check.sql`
+
+全部迁移和检查通过，public schema 共 20 张表。
+
+目前应用运行时仍使用 SQLite；仓库没有完整 PostgreSQL 存储适配器。因此本轮可以声明
+“PostgreSQL 16 真实迁移和约束检查通过”，不能声明“应用已切换 PostgreSQL 生产运行时”。
+
+`Dockerfile.gated-worker` 的本地镜像构建尝试下载 184.5MB CPU PyTorch，但本机代理到
+`download-r2.pytorch.org` 持续超时；GitHub Actions 的 gated worker Docker build 已通过。
+这被记录为本地网络限制，不表述为 Dockerfile 代码失败。
 
 ## 5. 复现命令
 
@@ -141,4 +166,5 @@ python -m oss_mentor serve-api `
 - gated scores 是排序分数，不是成功概率；
 - 1,132/1,195 条模型输入使用零协同/结构特征加冻结文本特征；
 - `history_complete=false`，表示历史证据不完整，不是 cold start；
-- 502 条在线可用候选属于当前 growth 验收画像，不代表全部语言和全部用户画像。
+- 502 条在线可用候选属于当前 growth 验收画像，不代表全部语言和全部用户画像；
+- 应用运行时仍为 SQLite，PostgreSQL 生产适配器尚未实现。
