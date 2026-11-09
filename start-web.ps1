@@ -8,6 +8,10 @@ param(
     [switch]$UseTerminalConfig
 )
 
+# This launcher starts the basic SQLite Web/API process only.
+# It does not start the gated feature worker. Use
+# scripts/run_gated_platform.ps1 with a worker config for the full
+# coder_gated path.
 $ErrorActionPreference = "Stop"
 
 if (
@@ -512,6 +516,7 @@ Write-Host "App:      http://127.0.0.1:$Port/"
 Write-Host "Login:    $loginUrl"
 Write-Host "Callback: http://127.0.0.1:$Port/api/v1/auth/github/callback"
 Write-Host "Database: $databasePath"
+Write-Host "Mode:     basic Web/API; gated worker is not started by this launcher."
 if (-not $NormalBrowser) {
     Write-Host "Browser:  private window (allows a different GitHub account)"
 } else {

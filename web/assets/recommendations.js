@@ -271,7 +271,11 @@
     const model = state.batch?.model || null;
     elements.list.innerHTML = items.map((item, index) => {
       const globalIndex = state.items.indexOf(item) + 1;
-      return ui.issueCard(item, globalIndex, { feedbackContext: context, model });
+      return ui.issueCard(item, globalIndex, {
+        feedbackContext: context,
+        model,
+        runId: state.batch?.run_id || "",
+      });
     }).join("");
     if (elements.toggleReasons?.getAttribute("aria-pressed") === "true") {
       elements.list.querySelectorAll("details").forEach((details) => { details.open = true; });
@@ -403,6 +407,20 @@
       }
       if (error.status === 404 && error.code === "profile_required") {
         renderNoProfile(session);
+        return;
+      }
+      if (error.status === 404 && error.code === "profile_not_confirmed") {
+        renderSessionCard(null);
+        setRunContext();
+        if (elements.toolbar) elements.toolbar.hidden = true;
+        elements.list.innerHTML = ui.panel(
+          "404 profile_not_confirmed",
+          "画像还需要完成问卷确认",
+          "基础画像已保存，但 23 维增强画像尚未确认。请回到个人信息页完成问卷预览和确认，然后再获取推荐。",
+          `<a class="btn btn--sm btn--ghost" href="/profile">完成问卷确认</a><a class="link-ext" href="/status">查看系统状态</a>`
+        );
+        elements.resultNote.textContent = "画像未确认";
+        loadPublicCandidates();
         return;
       }
       renderSessionCard(null);

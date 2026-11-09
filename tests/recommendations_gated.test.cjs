@@ -54,6 +54,13 @@ test('model outage remains distinct from login error and preserves public browsi
   assert.match(nodes.get('session-actions').innerHTML,/退出登录/);
 });
 
+test('unconfirmed profile is routed back to questionnaire confirmation', async () => {
+  const {nodes} = await page({error:{code:'profile_not_confirmed',message:'confirm first'}},404);
+  assert.match(nodes.get('issue-list').innerHTML,/完成问卷确认/);
+  assert.match(nodes.get('issue-list').innerHTML,/profile_not_confirmed/);
+  assert.doesNotMatch(nodes.get('issue-list').innerHTML,/推荐暂时不可用/);
+});
+
 test('context reasons show no invented points but keep negative feedback', async () => {
   const {context} = await page({items:[]});
   vm.runInContext(shared,context);
@@ -61,6 +68,27 @@ test('context reasons show no invented points but keep negative feedback', async
   assert.match(reason,/匹配依据/);
   assert.doesNotMatch(reason,/\+0 点/);
   assert.match(vm.runInContext('window.OMUI.reasonList([{score_delta:-.25}])',context),/-25 点/);
+});
+
+test('cards preserve recommendation run and warnings for feedback/detail tracing', async () => {
+  const {context} = await page({items:[]});
+  vm.runInContext(shared,context);
+  const card = vm.runInContext(`window.OMUI.issueCard({
+    task_candidate_id: 7, repository_full_name: 'pytest-dev/pytest',
+    issue_number: 10605, title: 'Task', service_track: 'growth', score: .5,
+    difficulty: {code: 1, setup: 1}, verified_at: '2026-11-09T00:00:00Z',
+    warnings: ['gated_scores_are_not_success_probabilities'],
+    matched_skills: [], missing_skills: [], reasons: [],
+    html_url: 'https://github.com/pytest-dev/pytest/issues/10605'
+  }, 1, {feedbackContext: 'user:1:profile:p', runId: 'run-123', model: null})`, context);
+  assert.match(card,/data-run-id="run-123"/);
+  assert.match(card,/run_id=run-123/);
+  assert.match(card,/排序分不代表完成任务的概率/);
+});
+
+test('feedback request carries the recommendation run id when present', async () => {
+  assert.match(shared,/body\.run_id = runId/);
+  assert.match(shared,/card\.dataset\.runId/);
 });
 
 test('initial recommendations stay visible while model prepares and automatically retry', async () => {
