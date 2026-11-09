@@ -266,11 +266,55 @@ class GatedScoringTests(unittest.TestCase):
         popen.return_value.wait.assert_called_once()
         self.assertTrue(serve.call_args.kwargs['recommendation_service'].model_scorer.automatic_encoding)
 
+    def test_cli_external_worker_enables_preparing_without_spawn(self):
+        from contextlib import redirect_stdout
+        import io
+        from unittest.mock import patch
+        from oss_mentor.cli import main
+        from oss_mentor.sqlite_store import SQLiteCandidateStore
+        database=self.root/'external-worker-cli.sqlite3'
+        SQLiteCandidateStore(database,ROOT/'db/sqlite/001_mvp.sql').initialize()
+        request_dir=self.root/'external-requests'
+        with patch('oss_mentor.cli.subprocess.Popen') as popen, patch('oss_mentor.cli.serve') as serve, redirect_stdout(io.StringIO()):
+            self.assertEqual(main(['serve-api','--database',str(database),
+                '--gated-bundle',str(self.bundle),'--gated-cache',str(self.cache),
+                '--gated-request-dir',str(request_dir),'--gated-external-worker',
+                '--refresh-interval-seconds','0']),0)
+        service=serve.call_args.kwargs['recommendation_service']
+        self.assertTrue(service.model_scorer.automatic_encoding)
+        self.assertTrue(service.allow_preparing_recommendations)
+        self.assertEqual(service.model_scorer.request_dir.resolve(),request_dir.resolve())
+        popen.assert_not_called()
+
+    def test_external_worker_bootstrap_marks_request_and_switches_to_gated(self):
+        from shutil import copyfile
+        request_dir=self.root/'external-bootstrap-requests'
+        external_cache=self.root/'external-bootstrap-cache'
+        scorer=CachedGatedScorer(self.bundle,external_cache,request_dir=request_dir,automatic_encoding=True)
+        service=RecommendationService(Store(self.profile,self.tasks),model_scorer=scorer,allow_preparing_recommendations=True)
+        first=service.recommend_batch(profile=self.profile,limit=2)
+        self.assertEqual(first.rankings[0]['scoring_engine'],'profile_bootstrap_rules')
+        self.assertIn('model_features_preparing',first.warnings)
+        request=json.loads(next(request_dir.glob('*.json')).read_text(encoding='utf-8'))
+        self.assertTrue(request['automatic_encoding_available'])
+        self.assertEqual(request['state'],'required')
+        external_cache.mkdir()
+        key=context_key(self.profile,None)
+        for suffix in ('.npz','.json'):
+            copyfile(self.cache/(key+suffix),external_cache/(key+suffix))
+        ready=service.recommend_batch(profile=self.profile,limit=2)
+        self.assertEqual(ready.rankings[0]['scoring_engine'],'coder_gated')
+        self.assertNotIn('model_features_preparing',ready.warnings)
+
     def test_cli_rejects_incomplete_or_conflicting_model_selection(self):
         from contextlib import redirect_stderr
         import io
         from oss_mentor.cli import main
-        for flags in [[], ['--gated-cache',str(self.cache),'--legacy-ranking']]:
+        for flags in [
+            [],
+            ['--gated-cache',str(self.cache),'--legacy-ranking'],
+            ['--gated-external-worker'],
+        ]:
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 main(['serve-api','--gated-bundle',str(self.bundle)]+flags)
 

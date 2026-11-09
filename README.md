@@ -218,6 +218,12 @@ OSS-Mentor-main/
 
 完整变量见 [.env.example](.env.example)。真实密钥不得写入仓库。
 
+门控模型的独立 API/worker 容器编排见
+[Gated 平台容器部署](docs/gated_container_deployment.md)，
+配置入口为 `compose.gated.yaml`。该编排使用 SQLite 运行时；PostgreSQL
+目前只有迁移与 schema CI，不能视为已完成运行时适配。默认 `compose.yaml`
+同样只运行 SQLite，不会因为启动 PostgreSQL 就自动切换运行时存储。
+
 ## 测试
 
 ```powershell
