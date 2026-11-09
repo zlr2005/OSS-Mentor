@@ -19,6 +19,9 @@ services:
       - /app/data/midterm/platform/gated_live
       - --gated-request-dir
       - /app/data/midterm/platform/gated_feature_requests
+      - --gated-external-worker
+      - --database
+      - /app/data/oss_mentor.sqlite3
       - --refresh-interval-seconds
       - "0"
     ports:
@@ -32,7 +35,9 @@ services:
       GITHUB_OAUTH_CLIENT_SECRET: "${GITHUB_OAUTH_CLIENT_SECRET:-}"
       OSS_MENTOR_SESSION_SECRET: "${OSS_MENTOR_SESSION_SECRET:-}"
     volumes:
-      - ./data:/app/data
+      - ./data/gated-v1:/app/data/gated-v1:ro
+      - ./data/midterm/platform:/app/data/midterm/platform
+      - ./data/oss_mentor.sqlite3:/app/data/oss_mentor.sqlite3
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health')"]
       interval: 30s
@@ -50,7 +55,9 @@ services:
       GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
       OSS_MENTOR_CODER_SOURCE: /app/data/gated-v1/coder_source
     volumes:
-      - ./data:/app/data
+      - ./data/gated-v1:/app/data/gated-v1:ro
+      - ./data/midterm/platform:/app/data/midterm/platform
+      - ./data/oss_mentor.sqlite3:/app/data/oss_mentor.sqlite3:ro
       - ./config/gated_worker.container.json:/app/data/gated_worker.container.json:ro
     depends_on:
       gated-api:

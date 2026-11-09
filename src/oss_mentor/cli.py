@@ -1003,8 +1003,18 @@ def command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
 def _command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
     gated_bundle = getattr(args, "gated_bundle", None)
     gated_cache = getattr(args, "gated_cache", None)
+    external_worker = bool(getattr(args, "gated_external_worker", False))
     if bool(gated_bundle) != bool(gated_cache):
         raise ConfigError("--gated-bundle and --gated-cache must be supplied together")
+    if external_worker and getattr(args, "gated_worker_config", None):
+        raise ConfigError(
+            "--gated-external-worker cannot be combined with --gated-worker-config"
+        )
+    if external_worker and (not gated_bundle or not getattr(args, "gated_request_dir", None)):
+        raise ConfigError(
+            "--gated-external-worker requires --gated-bundle, --gated-cache "
+            "and --gated-request-dir"
+        )
     if gated_bundle and (args.legacy_ranking or args.coder_model_dir or args.coder_mapping_dir or args.coder_candidate_cache):
         raise ConfigError("Gated ranking cannot be combined with legacy or original CODER options")
     store = _sqlite_store(settings, args.database)
@@ -1065,14 +1075,15 @@ def _command_serve_api(settings: Settings, args: argparse.Namespace) -> int:
         from oss_mentor.services.recommendation_service import RecommendationService
         if not Path(gated_cache).is_dir():
             raise ConfigError(f"Gated feature cache is missing: {gated_cache}")
+        gated_preparing = bool(getattr(args, 'gated_worker_config', None)) or external_worker
         try:
             scorer = CachedGatedScorer(Path(gated_bundle), Path(gated_cache),
-                automatic_encoding=bool(getattr(args, 'gated_worker_config', None)),
+                automatic_encoding=gated_preparing,
                 request_dir=Path(args.gated_request_dir) if getattr(args, 'gated_request_dir', None) else Path(gated_cache).parent / 'gated_feature_requests')
         except (OSError, ValueError, KeyError) as exc:
             raise ConfigError(f"Invalid gated model bundle: {exc}") from exc
         recommendation_service = RecommendationService(store, model_scorer=scorer,
-            allow_preparing_recommendations=bool(getattr(args, 'gated_worker_config', None)))
+            allow_preparing_recommendations=gated_preparing)
     elif not args.legacy_ranking:
         for required in (
             coder_model_dir / "model_manifest.json",
@@ -1665,6 +1676,7 @@ def build_parser() -> argparse.ArgumentParser:
     serve_command.add_argument("--gated-cache", help="Current offline feature context directory; required with --gated-bundle.")
     serve_command.add_argument('--gated-request-dir', help='Local directory for deduplicated feature preparation requests; defaults beside the gated cache.')
     serve_command.add_argument('--gated-worker-config', help='Trusted local feature-worker configuration; starts/stops a background encoder with this server.')
+    serve_command.add_argument('--gated-external-worker', action='store_true', help='Use an independently managed feature worker; requires --gated-request-dir and enables explicit preparing responses without spawning a second worker.')
     serve_command.add_argument('--assume-inventory-available', action='store_true', help='Trial mode: trust stored available status without enforcing inventory verification age; disables network refresh.')
     serve_command.add_argument(
         "--profile-adapter-dir",

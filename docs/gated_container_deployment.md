@@ -63,6 +63,16 @@ OSS_MENTOR_BASE_URL=https://your-domain.example
 docker compose -f compose.gated.yaml up --build
 ```
 
+`compose.gated.yaml` 使用两个进程：
+
+- `gated-api` 通过 `--gated-external-worker` 声明 worker 由外部进程管理；
+  它只写 request、读取 cache，不在 API 进程内启动第二个 worker。
+- `gated-worker` 独立消费 request、生成特征并原子发布 generation。
+
+因此首次请求应返回 `profile_bootstrap_rules` 和
+`model_features_preparing`，而不是直接返回 `503 model_features_required`。
+`data/gated-v1` 以只读方式挂载；cache、request 和 SQLite 目录保持可写。
+
 检查：
 
 ```powershell
