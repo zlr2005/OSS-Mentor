@@ -102,8 +102,39 @@ v2 已补齐 newcomer 所需 labels，且 D 重算的 32 个 newcomer 信号与 
 元数据变化，因此 C 必须使用 v2 request 重新发布缓存。已有 issue/content 编码结果可以在校验
 哈希和模型版本后复用，不能直接沿用旧上下文目录。
 
-使用现有真实账户证据和冻结运行资产启动完整编码后，CPU 编码耗时过长，按用户中断结束，未发布
-缓存。因此当前正式 gated 推荐仍以 fail-closed 为准，不能宣称 6,364 条候选均已被 CODER 评分。
+C 已完成 v2 正式缓存发布：
+
+- C 分支：`codex/c-gated-v2-cache`
+- C commit：`29991221ec7bc30df9eebbf4c6d3b4e0b15178eb`
+- cache generation：`17ce3fe58f664c7b954160f33e101600`
+- context manifest SHA-256：`e0cfb04bf1de94fa64796bf86260425a2a53c466ef71abdee1597611624bf00e`
+- prepared cache SHA-256：`1d65ca5593177892c16c6d9539dca22a775abf03519b81203ffcf07806f59c30`
+- 最小交付 archive SHA-256：`b96085779b97f65cb8a2435bdee50ed0eb74df7015d3fcd7774a13cbab0a5962`
+
+D 独立读回结果：
+
+- `CachedGatedScorer.score`：1,195 个评分、1,195 个唯一 task ID
+- `model_version=coder-gated-marginal_positive-s20261102`
+- `profile_mode=prepared_profile_gated`
+- 所有分数 `coverage_state=gated_prepared_context`
+- 仅保留正常 warning `gated_scores_are_not_success_probabilities`
+
+默认 gated HTTP 复验：
+
+- 未登录：HTTP 401 `authentication_required`
+- 登录 growth 画像请求 `limit=100`：HTTP 200
+- 返回 100 条推荐和 100 条 rankings
+- 所有 rankings 的 `scoring_engine=coder_gated`
+- 所有 rankings 使用同一正式模型版本和 `prepared_profile_gated`
+- 没有 bootstrap 或 legacy 静默回退
+
+C 的映射审计说明：冻结 repository mapping 覆盖 4 个仓库、63 条候选；其余 55 个仓库、1,132
+条候选使用“零协同/结构特征 + 冻结文本特征”，不是失败。历史模式为
+`no_verified_resolved_history`，`history_complete=false`，但不是 cold start。该限制应继续保留
+在验收解释中。
+
+该 live cache 的 `expires_at` 为 `2026-11-09T13:22:13.423907+00:00`（北京时间约 21:22）。
+D 的本次读回和 HTTP 验收发生在其有效期内；过期后必须重新生成 evidence 和 cache。
 
 ## 回归结果
 
@@ -116,6 +147,6 @@ v2 已补齐 newcomer 所需 labels，且 D 重算的 32 个 newcomer 信号与 
 
 ## 后续门禁
 
-1. C 基于 v2 request 完成 1,195 条候选的特征编码、映射覆盖和缓存发布。
-2. D 在缓存发布后重新跑 gated HTTP，确认返回 `scoring_engine=coder_gated`。
-3. 恢复严格测试前重新核验 GitHub 状态和有效期；当前数据不能作为线上实时库存。
+1. B 基于 D 的最终 gated HTTP 结果完成最终确认。
+2. 恢复严格测试前重新核验 GitHub 状态和有效期；当前数据不能作为线上实时库存。
+3. live cache 过期后不得继续用于推荐，必须重新生成 evidence 和 cache。
