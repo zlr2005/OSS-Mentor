@@ -1,0 +1,65 @@
+{
+  "unauthenticated": {
+    "status": 401,
+    "code": "authentication_required"
+  },
+  "growth": {
+    "status": 200,
+    "eligible_candidates": 1195,
+    "returned_items": 10,
+    "first_repository": "streamlit/streamlit",
+    "first_issue_number": 17026,
+    "warnings": [
+      "inventory_availability_assumed",
+      "offline_inventory_handoff_not_online_reverified"
+    ]
+  },
+  "newcomer": {
+    "status": 200,
+    "eligible_candidates": 5,
+    "returned_items": 5,
+    "first_repository": "matplotlib/matplotlib",
+    "first_issue_number": 32389,
+    "warnings": [
+      "inventory_availability_assumed",
+      "offline_inventory_handoff_not_online_reverified",
+      "diversity_repository_cap_relaxed"
+    ]
+  },
+  "gated_without_complete_cache": {
+    "status": 503,
+    "code": "model_features_required"
+  },
+  "gated_external_worker": {
+    "status": 200,
+    "returned_items": 10,
+    "scoring_engine": "profile_bootstrap_rules",
+    "coverage_state": "initializing",
+    "warnings": [
+      "model_features_preparing",
+      "profile_bootstrap_recommendations"
+    ]
+  },
+  "gated_final_cache": {
+    "status": 200,
+    "requested_limit": 100,
+    "returned_items": 100,
+    "returned_rankings": 100,
+    "scoring_engines": [
+      "coder_gated"
+    ],
+    "model_versions": [
+      "coder-gated-marginal_positive-s20261102"
+    ],
+    "profile_modes": [
+      "prepared_profile_gated"
+    ],
+    "coverage_states": [
+      "gated_prepared_context"
+    ],
+    "warnings": [
+      "gated_scores_are_not_success_probabilities",
+      "rule_reasons_are_context_only"
+    ]
+  }
+}
