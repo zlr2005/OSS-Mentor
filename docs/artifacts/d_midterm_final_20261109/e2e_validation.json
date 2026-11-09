@@ -1,0 +1,42 @@
+{
+  "/health": 200,
+  "/": 200,
+  "/profile": 200,
+  "/recommendations": 200,
+  "/status": 200,
+  "oauth_start": {
+    "status": 200,
+    "configured": true,
+    "authorize_host": "github.com"
+  },
+  "me": 200,
+  "profile_api": 200,
+  "questionnaire": 200,
+  "enhanced_features": 200,
+  "recommendations": {
+    "status": 200,
+    "count": 100,
+    "ranking_count": 100,
+    "scoring_engines": ["coder_gated"],
+    "model_versions": ["coder-gated-marginal_positive-s20261102"],
+    "profile_modes": ["prepared_profile_gated"],
+    "coverage_states": ["gated_prepared_context"]
+  },
+  "task_detail": 200,
+  "run_owner": 200,
+  "run_other_user": {
+    "status": 403,
+    "code": "insufficient_permission"
+  },
+  "feedback": {
+    "status": 200,
+    "run_id_match": true
+  },
+  "logout": {
+    "status": 200,
+    "after_logout_me": {
+      "status": 401,
+      "code": "authentication_required"
+    }
+  }
+}

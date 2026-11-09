@@ -1,0 +1,6 @@
+{
+  "status": 503,
+  "code": "model_features_required",
+  "message": "当前画像的推荐特征尚未准备完成；画像已保留，需要生成特征后再获取推荐。",
+  "fail_closed": true
+}
