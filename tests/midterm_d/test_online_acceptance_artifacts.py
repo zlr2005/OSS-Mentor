@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import unittest
@@ -79,6 +80,28 @@ class OnlineAcceptanceArtifactTests(unittest.TestCase):
         self.assertEqual(
             ["prepared_profile_gated"],
             recovery["recovered"]["profile_modes"],
+        )
+
+    def test_recovery_cache_zip_matches_delivery_manifest(self) -> None:
+        delivery = _load("cache_delivery.json")
+        archive = ARTIFACTS / delivery["file"]
+
+        self.assertTrue(archive.is_file())
+        self.assertEqual(delivery["zip_bytes"], archive.stat().st_size)
+        self.assertEqual(
+            delivery["zip_sha256"],
+            hashlib.sha256(archive.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(501, delivery["candidate_count"])
+        self.assertEqual(501, delivery["read_back_scores"])
+        self.assertEqual(501, delivery["read_back_unique_task_ids"])
+        self.assertEqual(
+            "2026-11-10T14:23:24.264691+00:00",
+            delivery["expires_at"],
+        )
+        self.assertEqual(
+            delivery["generation"],
+            _load("cache_expiry_recovery.json")["worker"]["generation"],
         )
 
 

@@ -131,10 +131,28 @@ GitHub OAuth code。
    `scoring_engine=profile_bootstrap_rules`，带
    `model_features_preparing` 和 `profile_bootstrap_recommendations` warning；
 3. worker 使用刷新后的 bounded public evidence 编码，发布新 generation
-   `dfb0c5cd5a6040528f1d43660cd1f3da`，状态为 `ready`，覆盖 501 条当次请求候选；
+   `454625782adc45a38cc2d7a53c532d4f`，状态为 `ready`，覆盖 501 条当次请求候选；
 4. 新 generation 发布后再次请求，恢复为 100/100 `coder_gated`，全部
    `profile_mode=prepared_profile_gated`、`coverage_state=gated_prepared_context`；
 5. 没有任何一步把 bootstrap 或 legacy 结果标成 `coder_gated`。
+
+可独立下载和校验的缓存包：
+
+- 文件：`docs/artifacts/d_midterm_final_20261109/coder_gated_recovery_cache_501_20261109.zip`
+- ZIP SHA-256：`c91f4c57aa3acc89a66973c48e071439b51d1dc4adc6687a4268570ed878f70f`
+- ZIP 根目录：`coder_gated_recovery_cache_501_20261109/`
+- context：`bcbe441091cabe3bb9cef79f263b1938488af29dd82f24a8f1c2eb410e451de5`
+- generation：`454625782adc45a38cc2d7a53c532d4f`
+- model：`coder-gated-marginal_positive-s20261102`
+- candidates：501
+- `expires_at=2026-11-10T14:23:24.264691+00:00`
+- context metadata SHA-256：
+  `92d09f8026514f584e4b63ab148705a07828237d1ce309e356767bdc7d4c79f5`
+- features SHA-256：
+  `bee411264e08b912e5f9fc800212e962a5a9a5aa590872dd0ec623c9a31b621b`
+
+ZIP 内含 cache pointer、generation metadata、features、生成该 generation 的 request、
+worker status、read-back 脚本、read-back 结果、delivery manifest 和 `SHA256SUMS.txt`。
 
 恢复请求只有 501 条，是因为前一条既有验证 `pytest-dev/pytest#10605` 的 24 小时有效期在
 当天较早时已经结束；这不改变原始在线验收窗口中的 502 条汇总。详细记录见
@@ -179,8 +197,8 @@ PostgreSQL 使用隔离 `postgres:16-alpine` 容器启动，实际执行：
 
 ## 5. 验证
 
-- `tests/midterm_d`：30/30；
-- 新增验收产物一致性测试：4/4；
+- `tests/midterm_d`：35/35；
+- 新增验收产物一致性测试：5/5；
 - inventory/migration/API/推荐定向回归：66/66；
 - Node：23/23；
 - `compileall`、JSON 解析、`git diff --check`：通过。
