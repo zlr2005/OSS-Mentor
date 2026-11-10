@@ -1,0 +1,23 @@
+{
+  "count": 502,
+  "repositories": 49,
+  "languages": {
+    "Python": 502
+  },
+  "task_types": {
+    "bug_fix": 258,
+    "feature": 121,
+    "other": 126,
+    "testing": 30,
+    "build_tooling": 17,
+    "documentation": 7,
+    "refactor": 3
+  },
+  "task_type_counts_are_multilabel": true,
+  "task_type_assignment_count": 562,
+  "newcomer_labeled": 2,
+  "difficulty": {
+    "1": 472,
+    "2": 30
+  }
+}

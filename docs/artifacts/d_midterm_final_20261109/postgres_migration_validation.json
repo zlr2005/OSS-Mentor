@@ -1,0 +1,14 @@
+{
+  "postgres_image": "postgres:16-alpine",
+  "migrations": [
+    "db/postgres/001_initial.sql",
+    "db/postgres/002_profile_identity.sql",
+    "scripts/ci_postgres_profile_check.sql",
+    "db/postgres/003_recommendation_runs.sql",
+    "scripts/ci_postgres_recommendation_check.sql"
+  ],
+  "status": "passed",
+  "public_table_count": 20,
+  "application_runtime": "SQLite",
+  "postgres_runtime_adapter_verified": false
+}

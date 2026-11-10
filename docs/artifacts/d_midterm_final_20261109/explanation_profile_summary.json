@@ -1,0 +1,33 @@
+{
+  "candidate_count": 502,
+  "explanation_complete_count": 502,
+  "explanation_missing_count": 0,
+  "explanation_complete_all": true,
+  "explanation_definition": "Every candidate has at least one structured reason, and every reason has a non-empty code, label, and evidence value.",
+  "reason_code_counts": {
+    "active_repository": 502,
+    "fresh_issue": 502,
+    "growth_value": 502,
+    "issue_clarity": 502,
+    "language_match": 502,
+    "skill_match": 502,
+    "skill_stretch": 502,
+    "task_type_match": 376
+  },
+  "reason_code_note": "task_type_match is absent for 126 candidates whose task type is other or not yet confirmed.",
+  "warning_counts": {
+    "任务涉及方案讨论，参与前需与维护者确认实现方向": 28,
+    "任务类型待确认，未计入类型偏好加分": 126,
+    "任务范围说明较少，参与前需与维护者确认目标": 126,
+    "难度与技能要求为规则推断，尚未经实际构建验证": 1
+  },
+  "profile_state": {
+    "profile_mode": "prepared_profile_gated",
+    "history_complete": false,
+    "history_incomplete_count": 502,
+    "cold_start": false,
+    "cold_start_count": 0,
+    "collection_status": "bounded_public_sample"
+  },
+  "profile_state_interpretation": "history_complete=false means the bounded public evidence sample is incomplete. It does not mean the user is a cold-start user."
+}
