@@ -214,7 +214,7 @@
       </details>
       <div class="ic-skills">${skillRows(item)}</div>
       <footer class="ic-foot">
-        <span class="model-badge" title="模型与版本来自服务端">${escapeHtml(modelLabel(options.model))}</span>
+        <span class="model-badge" style="background:transparent;border:0;padding:0" title="模型与版本来自服务端">${escapeHtml(modelLabel(options.model))}</span>
         <div class="ic-actions">
           ${feedbackActions}
           <a class="btn btn--sm btn--ghost" href="${escapeHtml(detailUrl(item, feedbackContext, runId))}">查看详情</a>
@@ -254,24 +254,53 @@
     </article>`;
   }
 
-  function projectCard(project) {
-    const related = (project.related_issues || []).map((issue) =>
+  function projectCard(project, index = 0) {
+    const issues = project.related_issues || [];
+    const related = issues.map((issue) =>
       `<li class="chip"><a href="/task?task_candidate_id=${issue.task_candidate_id}">#${issue.issue_number} · ${Math.round(Number(issue.score || 0) * 100)} 分 →</a></li>`
     ).join("") || "<li class=\"chip\">无关联 Issue</li>";
-    const basis = (project.basis || []).map((line, index) =>
-      `<li><span class="mono">${String(index + 1).padStart(2, "0")}</span><span>${escapeHtml(line)}</span></li>`
-    ).join("");
-    return `<article class="proj">
-      <header class="proj-head">
-        <span class="repo-mark" aria-hidden="true">${repoMark(project.repository_full_name)}</span>
-        <span><span class="pj-name">${escapeHtml(project.repository_full_name)}</span><span class="pj-sub">项目参与建议 · ${escapeHtml(project.ranking_source)}</span></span>
-        <span class="proj-rank"><b>${Math.round(Number(project.score || 0) * 100)}</b><small>聚合分</small></span>
-      </header>
-      <div class="d-block"><h4>依据</h4><ul class="d-list">${basis}</ul></div>
-      <div class="d-block"><h4>关联 Issue</h4><ul class="chips">${related}</ul></div>
-      <footer class="proj-foot">
-        <a class="link-ext" href="${escapeHtml(safeGithubUrl(project.repository_url))}" target="_blank" rel="noopener noreferrer">仓库与贡献入口</a>
-        <span class="note">项目参与建议，不承诺协作者身份</span>
+    const basis = (project.basis || []).map((line, basisIndex) =>
+      `<li class="reason"><div class="r-head"><span class="r-label">依据 ${String(basisIndex + 1).padStart(2, "0")}</span></div><p class="r-text">${escapeHtml(line)}</p></li>`
+    ).join("") || "<li class=\"reason\"><p class=\"r-text\">暂无额外依据</p></li>";
+    const first = index === 0;
+    const score = Math.max(0, Math.min(100, Math.round(Number(project.score || 0) * 100)));
+    const source = project.ranking_source || "issue aggregation";
+    return `<article class="issue ${first ? "is-top" : ""}">
+      <div class="ic-body">
+        <header class="ic-top">
+          <span class="repo">
+            <span class="repo-mark" aria-hidden="true">${repoMark(project.repository_full_name)}</span>
+            <span class="full mono">仓库推荐</span>
+          </span>
+          ${first ? '<span class="pill pill--top">最佳匹配</span>' : ""}
+          <span class="pill pill--neutral">聚合推荐</span>
+        </header>
+        <h3 class="ic-title">${escapeHtml(project.repository_full_name)}</h3>
+        <div class="ic-meta">
+          <span class="meta-item mono">${issues.length} 个关联 Issue</span>
+          <span class="dot-sep" aria-hidden="true"></span>
+          <span class="meta-item mono">${escapeHtml(source)}</span>
+        </div>
+      </div>
+      <div class="ic-score">
+        <span class="score-num">${score}</span>
+        <span class="score-label">聚合分</span>
+        <span class="score-bar" role="progressbar" aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100" aria-label="聚合分 ${score} 分">
+          <i style="width:${score}%"></i>
+        </span>
+      </div>
+      <details class="ic-reasons reasons">
+        <summary><span class="chev" aria-hidden="true"></span>推荐依据 <span class="count mono">${(project.basis || []).length} 条</span></summary>
+        <ul class="reason-list">${basis}</ul>
+      </details>
+      <div class="ic-skills">
+        <div class="skill-row"><span class="skill-key">关联 Issue</span><ul class="chips">${related}</ul></div>
+      </div>
+      <footer class="ic-foot">
+        <span class="model-badge" style="background:transparent;border:0;padding:0" title="仓库由本次 Issue 推荐聚合">${escapeHtml(source)}</span>
+        <div class="ic-actions">
+          <a class="btn btn--sm btn--ghost" href="${escapeHtml(safeGithubUrl(project.repository_url))}" target="_blank" rel="noopener noreferrer">仓库与贡献入口</a>
+        </div>
       </footer>
     </article>`;
   }

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>全部推荐 · OSS-Mentor</title>
 <meta name="description" content="OSS-Mentor 个性化推荐：按轨道筛选、查看推荐依据、记录反馈并进入任务详情。">
-<link rel="stylesheet" href="/assets/app.css">
+  <link rel="stylesheet" href="/assets/app.css?v=20261110-7">
 <script src="/assets/ui.js" defer></script>
 <script src="/assets/recommendations.js" defer></script>
 </head>
@@ -40,12 +40,8 @@
           <h1 id="recommendations-title">开源任务推荐</h1>
           <p class="lead">按当前画像筛选仍可领取的任务，并查看匹配依据、技能差距与可用性。</p>
         </div>
+        <aside class="recommendation-ledger" id="run-context" aria-label="本次推荐上下文"></aside>
       </div>
-      <p class="head-meta">
-        <span class="mono">推荐数量 <span id="result-count">—</span></span>
-        <span aria-hidden="true">·</span>
-        <span>模型与版本见 <a href="/recommendation-run">推荐说明</a></span>
-      </p>
     </div>
   </section>
 
@@ -55,11 +51,16 @@
         <div class="sec-copy">
           <h2 id="list-title">本次运行的推荐结果</h2>
         </div>
-        <p class="note" id="list-note" role="status">正在读取推荐…</p>
+        <div class="sec-head-tools">
+          <div class="seg" id="recommendation-view" role="group" aria-label="推荐对象">
+            <button class="view-btn" type="button" data-rec-view="issues" aria-pressed="true">Issue</button>
+            <button class="view-btn" type="button" data-rec-view="repositories" aria-pressed="false">仓库</button>
+          </div>
+          <p class="note" id="list-note" role="status">正在读取推荐…</p>
+        </div>
       </div>
 
       <div class="recommendation-workbench" id="recommendation-workbench">
-        <aside class="recommendation-ledger" id="run-context" aria-label="本次推荐上下文"></aside>
         <div class="recommendation-results">
           <div class="banner" id="recommendation-message" hidden role="status"></div>
 
@@ -98,15 +99,8 @@
     </div>
   </section>
 
-  <section id="project-opportunities" aria-labelledby="proj-title" hidden>
+  <section id="project-opportunities" hidden>
     <div class="wrap">
-      <div class="sec-head">
-        <div class="sec-copy">
-          <h2 id="proj-title">进阶轨道的项目参与建议</h2>
-          <p class="lead">项目参与建议不承诺加入协作者，也不代表维护者已经邀请你参与。</p>
-        </div>
-      </div>
-      <div class="project-note" id="project-note">项目推荐模型尚未接入；以下卡片使用本次 Issue 批次聚合，并在卡片上标注聚合来源。</div>
       <div class="proj-grid" id="proj-grid"></div>
     </div>
   </section>

@@ -97,20 +97,6 @@ a {
   letter-spacing: 0.04em;
 }
 
-.home-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.home-link:hover {
-  color: var(--accent);
-}
-
 .login-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(410px, 0.85fr);
@@ -120,7 +106,7 @@ a {
 .story {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   gap: 40px;
   overflow: hidden;
   padding: clamp(44px, 6vw, 88px);
@@ -197,156 +183,6 @@ a {
   font-size: 13px;
 }
 
-.preview-card {
-  width: min(620px, 100%);
-  padding: 20px;
-  border-radius: 18px;
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: 0 24px 70px rgb(53 8 8 / 24%);
-  animation: rise-in 620ms 100ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.preview-head,
-.profile-row,
-.issue-row {
-  display: flex;
-  align-items: center;
-}
-
-.preview-head {
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 16px;
-}
-
-.preview-head strong,
-.preview-head span {
-  display: block;
-}
-
-.preview-head strong {
-  font-size: 15px;
-}
-
-.preview-head div span {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.preview-status {
-  padding: 5px 9px;
-  border-radius: 7px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.profile-row {
-  gap: 12px;
-  padding: 14px;
-  border-radius: 12px;
-  background: var(--surface-soft);
-}
-
-.profile-avatar {
-  display: grid;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--ink);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 750;
-}
-
-.profile-copy {
-  min-width: 0;
-  flex: 1;
-}
-
-.profile-copy strong,
-.profile-copy small {
-  display: block;
-}
-
-.profile-copy strong {
-  font-size: 14px;
-}
-
-.profile-copy small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.profile-version {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.issue-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.issue-row {
-  gap: 12px;
-  padding: 13px 14px;
-  border-radius: 10px;
-  background: var(--surface-soft);
-}
-
-.issue-rank {
-  flex: 0 0 auto;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.issue-copy {
-  min-width: 0;
-  flex: 1;
-}
-
-.issue-copy strong,
-.issue-copy small {
-  display: block;
-}
-
-.issue-copy strong {
-  overflow: hidden;
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.issue-copy small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.issue-score {
-  flex: 0 0 auto;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.preview-note {
-  margin: 14px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .login-panel {
   display: flex;
   flex-direction: column;
@@ -389,17 +225,11 @@ a {
   letter-spacing: -0.035em;
 }
 
-.login-lede {
-  margin: 12px 0 24px;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.6;
-}
-
 .github-button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: 24px;
   min-height: 56px;
   padding: 0 18px;
   border-radius: 12px;
@@ -424,7 +254,6 @@ a {
 .github-button:focus-visible,
 .retry-button:focus-visible,
 .guest-link:focus-visible,
-.home-link:focus-visible,
 .brand:focus-visible {
   outline: none;
   box-shadow: var(--focus);
@@ -521,13 +350,6 @@ a {
   text-align: right;
 }
 
-.privacy-note {
-  margin: 18px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
 .guest-link {
   display: block;
   margin-top: 22px;
@@ -541,24 +363,6 @@ a {
 .guest-link:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.account-tip {
-  width: min(440px, 100%);
-  margin: 16px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-  text-align: center;
-}
-
-.account-tip code {
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: var(--surface);
-  color: var(--ink);
-  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-  font-size: 11px;
 }
 
 [hidden] {
@@ -594,11 +398,6 @@ a {
 
   .story h1 {
     font-size: clamp(42px, 8vw, 64px);
-  }
-
-  .preview-card {
-    width: 100%;
-    max-width: 680px;
   }
 
   .login-panel {
@@ -652,15 +451,6 @@ a {
     width: 30px;
     height: 30px;
     border-radius: 8px;
-  }
-
-  .preview-card {
-    padding: 14px;
-    border-radius: 14px;
-  }
-
-  .issue-copy strong {
-    white-space: normal;
   }
 
   .login-panel {

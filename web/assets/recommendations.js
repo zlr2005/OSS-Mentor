@@ -29,9 +29,13 @@
     batch: null,
     items: [],
     track: "all",
+    view: "issues",
     query: "",
+    projectAvailable: false,
+    projectCount: 0,
     preview: new URLSearchParams(window.location.search).get("state"),
   };
+  const supportsRepositoryView = page === "recommendations";
 
   function currentReturnTo() {
     const returnTo = `${window.location.pathname}${window.location.search}`;
@@ -197,7 +201,6 @@
 
   function setRunContext(markup = "") {
     if (elements.runContext) elements.runContext.innerHTML = markup;
-    elements.workbench?.classList?.toggle("has-context", Boolean(markup.trim()));
   }
 
   function renderPreviewPanel(code, title, body, actions) {
@@ -205,6 +208,37 @@
     elements.resultNote.textContent = title;
     if (elements.resultCount) elements.resultCount.textContent = "0";
     if (elements.toolbar) elements.toolbar.hidden = true;
+    syncProjectVisibility();
+  }
+
+  function syncProjectVisibility() {
+    if (!elements.projectSection) return;
+    elements.projectSection.hidden =
+      !state.projectAvailable ||
+      state.track === "newcomer" ||
+      (supportsRepositoryView && state.view !== "repositories");
+  }
+
+  function syncResultView() {
+    const repositoryView = supportsRepositoryView && state.view === "repositories";
+    if (elements.list) elements.list.hidden = repositoryView;
+    document.body?.classList?.toggle?.("repository-view", repositoryView);
+    if (elements.toolbar) {
+      if (repositoryView) elements.toolbar.hidden = false;
+      else if (!state.items.length) elements.toolbar.hidden = true;
+    }
+    document.querySelectorAll("[data-rec-view]").forEach((button) => {
+      button.setAttribute(
+        "aria-pressed",
+        String(button.dataset.recView === state.view)
+      );
+    });
+    syncProjectVisibility();
+    if (repositoryView && elements.resultNote) {
+      elements.resultNote.textContent = state.projectCount
+        ? `${state.projectCount} 个推荐仓库`
+        : (state.projectAvailable ? "暂无推荐仓库" : "正在读取推荐仓库…");
+    }
   }
 
   function counts() {
@@ -238,6 +272,7 @@
   }
 
   function renderList() {
+    syncProjectVisibility();
     if (!state.items.length) {
       renderPreviewPanel(
         "ok: 0 results",
@@ -256,6 +291,8 @@
         "换一个轨道或清空搜索词即可恢复。",
         `<button class="btn btn--sm btn--ghost" type="button" id="reset-filter">恢复全部筛选</button>`
       );
+      if (elements.toolbar && state.items.length) elements.toolbar.hidden = false;
+      updateCounts();
       document.getElementById("reset-filter")?.addEventListener("click", () => {
         state.track = "all";
         state.query = "";
@@ -292,6 +329,7 @@
     elements.resultNote.textContent = `${state.items.length} 条可领取任务${suffix}`;
     if (elements.resultCount) elements.resultCount.textContent = String(state.items.length);
     updateCounts();
+    syncResultView();
   }
 
   async function loadPublicCandidates(limit = 6) {
@@ -318,15 +356,22 @@
       const data = await ui.requestJson(
         `/api/v1/me/project-recommendations?run_id=${encodeURIComponent(runId)}`
       );
-      if (!(data.items || []).length) {
-        elements.projectSection.hidden = true;
+      const items = data.items || [];
+      state.projectAvailable = items.length > 0;
+      state.projectCount = items.length;
+      if (!items.length) {
+        syncResultView();
         return;
       }
-      elements.projectSection.hidden = false;
-      elements.projectNote.textContent = `项目排序来自本次 Issue 推荐的聚合（${data.ranking_source}）。项目模型尚未接入，因此不把它标成 CODER 项目推荐。`;
-      elements.projectGrid.innerHTML = data.items.map(ui.projectCard).join("");
+      if (elements.projectNote) {
+        elements.projectNote.textContent = `项目排序来自本次 Issue 推荐的聚合（${data.ranking_source}）。`;
+      }
+      elements.projectGrid.innerHTML = items.map(ui.projectCard).join("");
+      syncResultView();
     } catch (error) {
-      elements.projectSection.hidden = false;
+      state.projectAvailable = true;
+      state.projectCount = 0;
+      syncResultView();
       elements.projectGrid.innerHTML = ui.panel(
         error.code || `http: ${error.status}`,
         "项目推荐暂不可用",
@@ -553,10 +598,21 @@
     document.querySelectorAll(".seg-btn").forEach((button) => {
       button.addEventListener("click", () => {
         state.track = button.dataset.track || "all";
+        if (state.track === "newcomer" && state.view === "repositories") {
+          state.view = "issues";
+        }
         document.querySelectorAll(".seg-btn").forEach((item) => {
           item.setAttribute("aria-pressed", String(item === button));
         });
         renderList();
+        syncResultView();
+      });
+    });
+    document.querySelectorAll("[data-rec-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.view = button.dataset.recView || "issues";
+        if (state.view === "issues") renderList();
+        syncResultView();
       });
     });
     elements.toggleReasons?.addEventListener("click", () => {

@@ -16,7 +16,6 @@
       <span class="brand-mark" aria-hidden="true">OM</span>
       <span class="brand-name">OSS-Mentor</span>
     </a>
-    <a class="home-link" href="/">浏览公共候选 <span aria-hidden="true">→</span></a>
   </header>
 
   <main class="login-layout">
@@ -24,8 +23,7 @@
       <div class="story-copy">
         <h1 id="login-title">让下一项开源任务，<br>真正适合你。</h1>
         <p class="story-lede">
-          从 GitHub 公开贡献与个人画像出发，解释为什么某个 Issue 适合你，
-          而不是只给一个无法核验的分数。
+          从 GitHub 公开贡献与个人画像出发，为你推荐合适的 Issue。
         </p>
 
         <ol class="flow" aria-label="从 GitHub 到推荐的三个步骤">
@@ -44,47 +42,6 @@
         </ol>
       </div>
 
-      <aside class="preview-card" data-ui aria-label="画像与推荐示意">
-        <div class="preview-head">
-          <div>
-            <strong>画像 → 推荐</strong>
-            <span>界面示意</span>
-          </div>
-          <span class="preview-status">已连接</span>
-        </div>
-
-        <div class="profile-row">
-          <span class="profile-avatar" aria-hidden="true">你</span>
-          <span class="profile-copy">
-            <strong>进阶贡献者画像</strong>
-            <small>Python · Windows · 测试与文档</small>
-          </span>
-          <span class="profile-version">v3</span>
-        </div>
-
-        <div class="issue-list">
-          <article class="issue-row">
-            <span class="issue-rank">01</span>
-            <span class="issue-copy">
-              <strong>补充 Windows 安装流程的回归测试</strong>
-              <small>Python · testing · 单模块</small>
-            </span>
-            <span class="issue-score">92</span>
-          </article>
-          <article class="issue-row">
-            <span class="issue-rank">02</span>
-            <span class="issue-copy">
-              <strong>修复 CLI 参数解析的边界情况</strong>
-              <small>Python · bug_fix · 可复现</small>
-            </span>
-            <span class="issue-score">86</span>
-          </article>
-        </div>
-
-        <p class="preview-note">
-          推荐只用于辅助选择，不会自动领取 Issue 或向维护者发起请求。
-        </p>
-      </aside>
     </section>
 
     <section class="login-panel" id="login-panel" aria-labelledby="login-card-title">
@@ -96,9 +53,6 @@
         </div>
 
         <h2 id="login-card-title">使用 GitHub 继续</h2>
-        <p class="login-lede">
-          授权后返回个人信息页，导入公开数据并建立你的能力画像。
-        </p>
 
         <a
           id="github-login"
@@ -131,20 +85,13 @@
           </div>
           <div>
             <dt>本地会话</dt>
-            <dd>7 天，可随时退出</dd>
+            <dd>7 天</dd>
           </div>
         </dl>
 
-        <p class="privacy-note">
-          不保存 GitHub 密码；访问令牌只保留在当前服务进程内，重启后需要重新登录。
-        </p>
-
-        <a class="guest-link" href="/">暂不登录，先浏览公共候选</a>
+        <a class="guest-link" href="/">暂不登录，浏览公共候选</a>
       </div>
 
-      <p class="account-tip">
-        需要切换 GitHub 账号时，使用 <code>start-web.cmd</code> 打开的隐私窗口。
-      </p>
     </section>
   </main>
 </body>
