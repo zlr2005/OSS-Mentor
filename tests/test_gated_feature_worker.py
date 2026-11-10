@@ -11,7 +11,8 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'scripts'),str(ROOT/'tests')]
 import test_gated_scoring as fixtures
 from run_gated_feature_worker import process,atomic_json,_latest_requests
-from oss_mentor.gated_scoring import CachedGatedScorer,context_key,content_hash,FEATURE_SCHEMA
+from encode_gated_live import _reusable_issue_vectors
+from oss_mentor.gated_scoring import CachedGatedScorer,context_key,content_hash,issue_key,FEATURE_SCHEMA
 
 
 class FeatureWorkerTests(unittest.TestCase):
@@ -53,6 +54,20 @@ class FeatureWorkerTests(unittest.TestCase):
         def failed(*args):raise RuntimeError('encoder unavailable')
         self.assertEqual(process(self.path,self.config,failed)['state'],'failed')
         self.assertEqual(pointer.read_bytes(),original)
+
+    def test_reuses_verified_profile_independent_issue_vectors(self):
+        pairs=[(issue_key(task),content_hash(task)) for task in self.fixture.tasks]
+        reused=_reusable_issue_vectors(
+            self.fixture.cache,
+            self.fixture.model.manifest,
+            pairs,
+        )
+        self.assertEqual(set(pairs),set(reused))
+        path=self.fixture.cache/(context_key(self.fixture.profile,None)+'.npz')
+        with np.load(path,allow_pickle=False) as arrays:
+            expected=arrays['coder_features'][:,32:64]
+        for index,pair in enumerate(pairs):
+            np.testing.assert_array_equal(expected[index],reused[pair])
 
     def test_worker_uses_only_latest_request_per_profile_context(self):
         requests=self.root/'queued';requests.mkdir()

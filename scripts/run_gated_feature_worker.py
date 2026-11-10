@@ -71,7 +71,7 @@ def process(request_path,config,encoder=None):
             encoder=encode
         generation=cache/'generations'/uuid.uuid4().hex
         work=generation/'source';work.mkdir(parents=True,exist_ok=False)
-        arrays,audit=encoder(request,bundle,Path(evidence_path),Path(config['assets']))
+        arrays,audit=encoder(request,bundle,Path(evidence_path),Path(config['assets']),cache)
         np.savez_compressed(work/'prepared.npz',**arrays)
         atomic_json(work/'profile.json',request['profile']);atomic_json(work/'candidates.json',request['candidates'])
         provenance=dict(audit,scope='live',context_key=request['context_key'],feature_schema=FEATURE_SCHEMA,

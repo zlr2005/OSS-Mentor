@@ -30,7 +30,37 @@ def _coder_source(assets):
     raise ValueError('Frozen CODER encoding source is missing advanced_issue_inputs.py')
 
 
-def encode(request, bundle, evidence_dir, assets):
+def _reusable_issue_vectors(cache,bundle_manifest,pairs):
+    """Read the profile-independent item half from previously verified generations."""
+    if cache is None:return {}
+    cache=Path(cache);wanted=set(pairs);found={}
+    paths=sorted([*cache.glob('*.npz'),*(cache/'generations').glob('*/*.npz')])
+    for path in paths:
+        metadata_path=path.with_suffix('.json')
+        if not metadata_path.is_file():continue
+        try:
+            metadata=json.loads(metadata_path.read_text(encoding='utf-8'))
+            if metadata.get('backbone_sha256')!=bundle_manifest['backbone_sha256']:continue
+            if metadata.get('feature_schema')!=bundle_manifest['feature_schema']:continue
+            if metadata.get('features_sha256')!=sha_file(path):continue
+            with np.load(path,allow_pickle=False) as arrays:
+                keys=arrays['issue_keys'].astype(str).tolist();hashes=arrays['content_hashes'].astype(str).tolist()
+                coder=arrays['coder_features']
+                if coder.ndim!=2 or coder.shape[1]%4:continue
+                width=coder.shape[1]//4;vectors=coder[:,width:2*width]
+                if len(keys)!=len(hashes) or len(keys)!=len(vectors):continue
+                for index,(issue,digest) in enumerate(zip(keys,hashes)):
+                    pair=(issue,digest)
+                    if pair not in wanted or pair in found:continue
+                    vector=np.asarray(vectors[index],dtype=np.float32)
+                    if vector.shape!=(width,) or not np.isfinite(vector).all():continue
+                    found[pair]=vector.copy()
+        except (OSError,ValueError,KeyError,json.JSONDecodeError):
+            continue
+    return found
+
+
+def encode(request,bundle,evidence_dir,assets,cache=None):
     selected_coder_source=_coder_source(assets)
     sys.path.insert(0,str(selected_coder_source))
     import torch
@@ -38,7 +68,7 @@ def encode(request, bundle, evidence_dir, assets):
     from coder_issue.models.profile import ProfileResidualAdapter,ProfileAdapterConfig,PROFILE_FEATURE_NAMES,tensorize_confirmed_profile
     from coder_issue.models.text_encoder import FrozenTransformerEncoder
     from coder_issue.training.advanced_issue_inputs import encode_candidates
-    torch.set_num_threads(2)
+    torch.set_num_threads(max(1,min(8,int(os.environ.get('OSS_MENTOR_GATED_THREADS','8')))))
     manifest=json.loads((bundle/'manifest.json').read_text(encoding='utf-8'))
     for path,digest in manifest['backbone_dependencies'].items():
         if sha_file(Path(path))!=digest:raise ValueError('Frozen backbone dependency changed')
@@ -110,12 +140,36 @@ def encode(request, bundle, evidence_dir, assets):
     encoder=FrozenTransformerEncoder(str(encoder_path),revision=revision,allow_download=False,max_tokens=256)
     tasks=request['candidates'];keys=[issue_key(t) for t in tasks]
     if not keys:raise ValueError('No candidates')
+    hashes=[content_hash(t) for t in tasks]
+    reusable=_reusable_issue_vectors(cache,manifest,zip(keys,hashes))
     issue_texts=['[ISSUE] '+t['title']+'\n'+t['body_text'][:8192] for t in tasks]
     semantic=np.concatenate([encoder.encode(issue_texts[start:start+32]) for start in range(0,len(tasks),32)])
     user_text=encoder.encode(texts).mean(0) if texts else np.zeros(384,dtype=np.float32)
     rows=[dict(t,issue_key=k) for t,k in zip(tasks,keys)]
-    items,item_audit=encode_candidates(rows,model_dir=base,
-        mapping_dir=assets/'runs/public-supplement-20261106-v2/mappings',device='cpu',max_segments=16,segment_batch_size=32)
+    missing=[index for index,pair in enumerate(zip(keys,hashes)) if pair not in reusable]
+    if missing:
+        encoded,item_audit=encode_candidates([rows[index] for index in missing],model_dir=base,
+            mapping_dir=assets/'runs/public-supplement-20261106-v2/mappings',device='cpu',max_segments=16,segment_batch_size=32)
+        item_dim=encoded.shape[1]
+        items=np.zeros((len(tasks),item_dim),dtype=np.float32);items[missing]=encoded
+    elif reusable:
+        item_dim=len(next(iter(reusable.values())))
+        items=np.zeros((len(tasks),item_dim),dtype=np.float32)
+        item_audit=dict(model_version=manifest['model_version'],encoder_version=manifest['encoder_version'],embedding_dim=item_dim,
+            known_repository_count=0,out_of_sample_policy='reuse verified frozen issue vectors')
+    else:
+        raise ValueError('No reusable or encodable candidate vectors')
+    for index,pair in enumerate(zip(keys,hashes)):
+        if pair in reusable:
+            if reusable[pair].shape!=(item_dim,):raise ValueError('Reusable issue vector dimension mismatch')
+            items[index]=reusable[pair]
+    import pyarrow.parquet as pq
+    repository_keys={str(key).casefold() for key in pq.read_table(
+        assets/'runs/public-supplement-20261106-v2/mappings/repository_mapping.parquet',columns=['repository_key']
+    )['repository_key'].to_pylist()}
+    item_audit['known_repository_count']=sum(key.rsplit('#',1)[0] in repository_keys for key in keys)
+    item_audit['reused_candidate_count']=len(reusable)
+    item_audit['encoded_candidate_count']=len(missing)
     item=torch.tensor(items);u=nn.functional.normalize(user.expand(len(tasks),-1),dim=-1);v=nn.functional.normalize(item,dim=-1)
     coder=torch.cat([u,v,u*v,(u-v).abs()],dim=-1).numpy()
     directory=assets/f'runs/transfer-cold-v3-20261107-v1/cosine-{seed}'
@@ -132,7 +186,7 @@ def encode(request, bundle, evidence_dir, assets):
         same={c for r,c,p in hist if r==k.split('#')[0]}
         cosine=float(user_text@vector/max(float(np.linalg.norm(user_text)*np.linalg.norm(vector)),1e-12))
         pair.append([cosine,float(bool(same)),len(same)/max(len(commits),1),math.log1p(len(same)),math.log1p(len(commits)),math.log1p(len(paths)),math.log1p(sum(n in terms for n in names)),math.log1p(len(title)),math.log1p(len(body)),math.log1p(text.count('\n')),math.log1p(text.count('```')),math.log1p(len(re.findall(r'https?://',text)))]+[float(bool(re.search(pattern,terms))) for pattern in [r'\b(bug|error|crash|fail|regression)\b',r'\b(doc|docs|documentation|readme|typo)\b',r'\b(test|tests|coverage)\b',r'\b(feature|implement|support|enhancement)\b']])
-    return dict(issue_keys=np.asarray(keys),content_hashes=np.asarray([content_hash(t) for t in tasks]),
+    return dict(issue_keys=np.asarray(keys),content_hashes=np.asarray(hashes),
         coder_features=coder,pair_features=np.asarray(pair,dtype=np.float32),coder_logits=logits.numpy()),dict(
         evidence_manifest_sha256=sha_file(evidence_dir/'evidence_manifest.json'),as_of=now.isoformat(),
         expires_at=min(now+timedelta(hours=24),observed+(timedelta(minutes=5) if evidence.get('collection_status')=='unavailable' else timedelta(hours=24))).isoformat(),
