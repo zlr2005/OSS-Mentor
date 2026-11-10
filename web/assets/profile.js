@@ -2571,9 +2571,6 @@ function renderGatewayStatus() {
 async function initializeProfilePage() {
   bindEvents();
   updateInteractionState();
-  setText("profile-mode-note", state.gatewayMode === "api"
-    ? "真实服务模式：画像和建议保存在当前登录账户下，不写入浏览器演示存储。"
-    : "演示模式：使用固定样例和浏览器本地存储，不连接画像 API，也不读取真实 GitHub 数据。");
 
   setText(
     "profile-save-state",

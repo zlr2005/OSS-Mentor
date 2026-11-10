@@ -500,10 +500,15 @@ class RecommendationApi:
                     decisions=body["decisions"],
                     idempotency_key=body["idempotency_key"],
                 )
+                recommendation_preparation = self._prime_gated_recommendation_features(
+                    user=user,
+                    user_id=user_id,
+                )
                 return ApiResponse(
                     200,
                     {
                         "confirmation": confirmation.to_dict(),
+                        "recommendation_preparation": recommendation_preparation,
                         "api_version": MIDTERM_API_VERSION,
                     },
                 )
@@ -1016,6 +1021,57 @@ class RecommendationApi:
             enhanced_profile=enhanced_profile,
             owner_user_id=user_id,
         )
+
+    def _prime_gated_recommendation_features(
+        self,
+        *,
+        user: dict[str, Any],
+        user_id: int,
+    ) -> dict[str, Any]:
+        recommendation_service = self.recommendation_service
+        if (
+            recommendation_service is None
+            or self.profile_service is None
+            or self.midterm_profile_service is None
+        ):
+            return {"state": "not_configured"}
+        base_scorer = recommendation_service.model_scorer
+        if getattr(base_scorer, "scoring_engine", None) != "coder_gated":
+            return {"state": "not_configured"}
+        profile = self.profile_service.profile_for_user(user_id)
+        if profile is None:
+            return {"state": "profile_required"}
+        developer_key = verified_developer_key(user.get("github_login"))
+        try:
+            enhanced_profile = self.midterm_profile_service.enhanced_features(
+                user_id=user_id,
+                developer_key=developer_key,
+            ).to_dict()
+            scorer = scorer_with_profile(
+                base_scorer,
+                enhanced_profile,
+                mode=self.advanced_adapter_mode,
+                service_track=str(profile.get("service_track") or ""),
+            )
+            contract_profile = as_developer_profile_v2(profile)
+            candidate_service = copy.copy(recommendation_service)
+            candidate_service.model_scorer = scorer
+            candidates = candidate_service.eligible_candidates(contract_profile)
+            if not candidates:
+                return {"state": "no_candidates"}
+            scorer.score(
+                profile=contract_profile,
+                developer_key=developer_key,
+                candidates=candidates,
+            )
+            return {"state": "ready"}
+        except Exception as exc:
+            if getattr(exc, "error_code", None) == "model_features_required":
+                return {"state": "queued"}
+            return {
+                "state": "failed",
+                "code": str(getattr(exc, "error_code", type(exc).__name__)),
+            }
 
     @staticmethod
     def _error(status: int, code: str, message: str) -> ApiResponse:

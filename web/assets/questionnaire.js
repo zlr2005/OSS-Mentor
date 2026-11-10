@@ -381,14 +381,27 @@
         }),
       });
       const confirmation = body.confirmation;
+      const preparation = body.recommendation_preparation || {};
+      const preparationMessage = {
+        queued: "新推荐正在后台生成，完成后打开推荐页即可查看。",
+        ready: "新推荐已生成。",
+        no_candidates: "当前画像暂时没有匹配候选。",
+        failed: "推荐生成暂未启动，请打开推荐页后重试。",
+      }[preparation.state] || "";
       result.textContent =
         `画像已更新。新版本：${confirmation.new_profile_version}。` +
-        `已接受 ${confirmation.applied_suggestion_ids.length} 项，拒绝 ${confirmation.rejected_suggestion_ids.length} 项。`;
+        `已接受 ${confirmation.applied_suggestion_ids.length} 项，拒绝 ${confirmation.rejected_suggestion_ids.length} 项。` +
+        (preparationMessage ? ` ${preparationMessage}` : "");
       result.hidden = false;
       result.dataset.state = "success";
       state.confirmed = true;
       confirmButton.disabled = true;
-      setStatus("画像确认已保存；刷新页面后会读取当前版本。", "success");
+      setStatus(
+        preparation.state === "queued"
+          ? "画像确认已保存；新推荐正在后台生成。"
+          : "画像确认已保存；刷新页面后会读取当前版本。",
+        "success",
+      );
     } catch (error) {
       result.textContent =
         error.status === 409

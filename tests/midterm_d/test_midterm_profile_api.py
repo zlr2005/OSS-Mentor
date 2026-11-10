@@ -17,6 +17,30 @@ MIGRATIONS = ROOT / "db" / "sqlite"
 QUESTIONNAIRE_VERSION = "2026-10-18.v1"
 
 
+class _ModelFeaturesRequired(RuntimeError):
+    error_code = "model_features_required"
+
+
+class _GatedScorer:
+    scoring_engine = "coder_gated"
+
+    def bind_enhanced_profile(self, profile):
+        self.profile = profile
+        return self
+
+    def score(self, *, profile, developer_key, candidates):
+        del profile, developer_key, candidates
+        raise _ModelFeaturesRequired("feature request queued")
+
+
+class _GatedRecommendationService:
+    model_scorer = _GatedScorer()
+
+    def eligible_candidates(self, profile):
+        del profile
+        return [{"task_candidate_id": 1}]
+
+
 class MidtermProfileApiTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -237,7 +261,6 @@ class MidtermProfileApiTests(unittest.TestCase):
             confirmation["new_profile_version"],
             exported["profile_version"],
         )
-
         historical = self.call(
             "GET",
             "/api/v1/me/profile/enhanced-features",
@@ -247,6 +270,36 @@ class MidtermProfileApiTests(unittest.TestCase):
         self.assertEqual(
             exported["profile_version"],
             historical.body["features"]["profile_version"],
+        )
+
+    def test_confirmation_queues_new_gated_features(self) -> None:
+        self.api.recommendation_service = _GatedRecommendationService()
+        first = self.preview()
+        self.assertEqual(200, first.status, first.body)
+        suggestions = [
+            row
+            for row in first.body["plan"]["suggestions"]
+            if row["status"] == "pending"
+        ]
+        decisions = {
+            row["suggestion_id"]: "accept"
+            for row in suggestions
+        }
+
+        confirmed = self.call(
+            "POST",
+            "/api/v1/me/profile/assessment-confirm",
+            {
+                "plan_id": first.body["plan"]["plan_id"],
+                "decisions": decisions,
+                "idempotency_key": "confirm:queue-features",
+            },
+        )
+
+        self.assertEqual(200, confirmed.status, confirmed.body)
+        self.assertEqual(
+            {"state": "queued"},
+            confirmed.body["recommendation_preparation"],
         )
 
     def test_identity_fields_and_unknown_queries_are_rejected(self) -> None:
